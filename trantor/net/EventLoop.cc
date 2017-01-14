@@ -14,9 +14,6 @@
 using namespace std;
 namespace trantor
 {
-
-
-
     int createEventfd()
     {
         int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
@@ -37,10 +34,16 @@ namespace trantor
               poller_(new Poller(this)),
               currentActiveChannel_(NULL),
               eventHandling_(false),
-              timerQueue_(new TimerQueue(this))
+              timerQueue_(new TimerQueue(this)),
+              wakeupFd_(createEventfd()),
+              wakeupChannelPtr_(new Channel(this,wakeupFd_))
     {
         assert(t_loopInThisThread == 0);
         t_loopInThisThread = this;
+
+        wakeupChannelPtr_->setReadCallback(
+                std::bind(&EventLoop::wakeupRead, this));
+        wakeupChannelPtr_->enableReading();
 
     }
 
@@ -105,7 +108,7 @@ namespace trantor
             currentActiveChannel_ = NULL;
             eventHandling_ = false;
             std::cout << "looping" << endl;
-            //doPendingFunctors();
+            doRunInLoopFuncs();
         }
         looping_ = false;
     }
@@ -129,10 +132,10 @@ namespace trantor
     {
         {
             std::lock_guard<std::mutex> lock(funcsMutex_);
-            funcs_.push(cb);
+            funcs_.push_back(cb);
         }
 
-        if (!isInLoopThread() || callingFuncs_)
+        if (!isInLoopThread() || callingFuncs_ ||!looping_)
         {
             wakeup();
         }
@@ -149,5 +152,29 @@ namespace trantor
 
     void EventLoop::runEvery(double interval, const Func& cb){
         timerQueue_->addTimer(cb,Date::date(),interval);
+    }
+    void EventLoop::doRunInLoopFuncs()
+    {
+        callingFuncs_=true;
+        std::vector<Func> tmpFuncs;
+        {
+            std::lock_guard<std::mutex> lock(funcsMutex_);
+            tmpFuncs.swap(funcs_);
+        }
+        for(auto funcs:tmpFuncs)
+        {
+            funcs();
+        }
+        callingFuncs_ = false;
+    }
+    void EventLoop::wakeup()
+    {
+        uint64_t tmp=1;
+        int ret=write(wakeupFd_,&tmp,sizeof(tmp));
+    }
+    void EventLoop::wakeupRead()
+    {
+        uint64_t tmp;
+        read(wakeupFd_,&tmp,sizeof(tmp));
     }
 }

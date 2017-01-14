@@ -34,7 +34,8 @@ namespace trantor
         void removeChannel(Channel *chl);
         void runInLoop(const Func &f);
         void queueInLoop(const Func &f);
-        void wakeup(){};
+        void wakeup();
+        void wakeupRead();
         ///
         /// Runs callback at 'time'.
         /// Safe to call from other threads.
@@ -65,8 +66,12 @@ namespace trantor
 
         std::mutex funcsMutex_;
 
-        std::queue<Func> funcs_;
+        std::vector<Func> funcs_;
         std::unique_ptr<TimerQueue> timerQueue_;
         bool callingFuncs_=false;
+        int wakeupFd_;
+        std::unique_ptr<Channel> wakeupChannelPtr_;
+
+        void doRunInLoopFuncs();
     };
 }

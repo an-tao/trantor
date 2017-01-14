@@ -1,7 +1,7 @@
 #include <trantor/net/Channel.h>
 #include <trantor/net/EventLoop.h>
 #include <poll.h>
-
+#include <iostream>
 namespace trantor
 {
 	const int Channel::kNoneEvent=0;
