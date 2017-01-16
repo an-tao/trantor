@@ -1,6 +1,10 @@
 #pragma  once
 
 #include <stdint.h>
+#include <string>
+
+#define MICRO_SECONDS_PRE_SEC 1000000
+
 namespace trantor
 {
     class Date
@@ -8,7 +12,7 @@ namespace trantor
     public:
         Date():microSecondsSinceEpoch_(0){};
         ~Date(){};
-        Date after(double second) const;
+        const Date after(double second) const;
         static const Date date();
         bool operator < (const Date &date) const {
             return microSecondsSinceEpoch_ < date.microSecondsSinceEpoch_;
@@ -17,6 +21,10 @@ namespace trantor
             return microSecondsSinceEpoch_ > date.microSecondsSinceEpoch_;
         }
         int64_t microSecondsSinceEpoch() const {return microSecondsSinceEpoch_;}
+        std::string toFormattedString(bool showMicroseconds) const;//GMT
+        bool isSameSecond(const Date &date) const {
+            return microSecondsSinceEpoch_/MICRO_SECONDS_PRE_SEC==date.microSecondsSinceEpoch_/MICRO_SECONDS_PRE_SEC;
+        }
     private:
         Date(int64_t microSec):microSecondsSinceEpoch_(microSec){};
         int64_t microSecondsSinceEpoch_=0;

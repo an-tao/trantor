@@ -8,3 +8,6 @@ target_link_libraries(timer_test trantor)
 
 add_executable(run_in_loop_test RunInloopTest.cc)
 target_link_libraries(run_in_loop_test trantor)
+
+add_executable(logger_test LoggerTest.cc)
+target_link_libraries(logger_test trantor)
