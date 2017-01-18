@@ -107,7 +107,7 @@ namespace trantor
             }
             currentActiveChannel_ = NULL;
             eventHandling_ = false;
-            std::cout << "looping" << endl;
+            //std::cout << "looping" << endl;
             doRunInLoopFuncs();
         }
         looping_ = false;

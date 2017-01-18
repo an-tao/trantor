@@ -1,4 +1,4 @@
-#pragma  once
+#pragma once
 
 #include <stdint.h>
 #include <string>
@@ -7,26 +7,32 @@
 
 namespace trantor
 {
-    class Date
+class Date
+{
+  public:
+    Date() : microSecondsSinceEpoch_(0){};
+    ~Date(){};
+    const Date after(double second) const;
+    static const Date date();
+    bool operator<(const Date &date) const
     {
-    public:
-        Date():microSecondsSinceEpoch_(0){};
-        ~Date(){};
-        const Date after(double second) const;
-        static const Date date();
-        bool operator < (const Date &date) const {
-            return microSecondsSinceEpoch_ < date.microSecondsSinceEpoch_;
-        }
-        bool operator > (const Date &date) const {
-            return microSecondsSinceEpoch_ > date.microSecondsSinceEpoch_;
-        }
-        int64_t microSecondsSinceEpoch() const {return microSecondsSinceEpoch_;}
-        std::string toFormattedString(bool showMicroseconds) const;//GMT
-        bool isSameSecond(const Date &date) const {
-            return microSecondsSinceEpoch_/MICRO_SECONDS_PRE_SEC==date.microSecondsSinceEpoch_/MICRO_SECONDS_PRE_SEC;
-        }
-    private:
-        Date(int64_t microSec):microSecondsSinceEpoch_(microSec){};
-        int64_t microSecondsSinceEpoch_=0;
-    };
+        return microSecondsSinceEpoch_ < date.microSecondsSinceEpoch_;
+    }
+    bool operator>(const Date &date) const
+    {
+        return microSecondsSinceEpoch_ > date.microSecondsSinceEpoch_;
+    }
+    int64_t microSecondsSinceEpoch() const { return microSecondsSinceEpoch_; }
+    std::string toFormattedString(bool showMicroseconds) const; //GMT
+    bool isSameSecond(const Date &date) const
+    {
+        return microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC == date.microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC;
+    }
+    const Date roundSecond() const;
+    const Date roundDay() const;
+
+  private:
+    Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
+    int64_t microSecondsSinceEpoch_ = 0;
+};
 };

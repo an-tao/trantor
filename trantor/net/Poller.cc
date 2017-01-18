@@ -42,7 +42,7 @@ namespace trantor
         int savedErrno = errno;
         // Timestamp now(Timestamp::now());
         if (numEvents > 0) {
-            std::cout << numEvents << " events happended" << std::endl;
+            //std::cout << numEvents << " events happended" << std::endl;
             fillActiveChannels(numEvents, activeChannels);
             if (static_cast<size_t>(numEvents) == events_.size()) {
                 events_.resize(events_.size() * 2);

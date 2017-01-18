@@ -1,17 +1,25 @@
 #include <trantor/utils/Logger.h>
 #include <stdio.h>
+#include <thread>
+#include <unistd.h>
+#include <sys/syscall.h>
+
 namespace trantor
 {
     void defaultOutputFunction(const char *msg,uint64_t length)
     {
         fwrite(msg,1,length,stdout);
     }
-
-    uint64_t Logger::lastSecond_=0;
-    std::string Logger::lastTimeString_;
+    void defaultFlushFunction()
+    {
+        fflush(stdout);
+    }
+    static __thread time_t lastSecond_=0;
+    static __thread char lastTimeString_[32]={0};
+    static __thread pid_t threadId_ = 0;
     Logger::LogLevel Logger::logLevel_=DEBUG;
     std::function<void (const char *,uint64_t)> Logger::outputFunc_=defaultOutputFunction;
-
+    std::function<void ()> Logger::flushFunc_=defaultFlushFunction;
     void Logger::formatTime() {
         uint64_t now=date_.microSecondsSinceEpoch();
         uint64_t microSec=now%1000000;
@@ -19,20 +27,23 @@ namespace trantor
         if(now!=lastSecond_)
         {
             lastSecond_=now;
-            lastTimeString_=date_.toFormattedString(false);
+            strncpy(lastTimeString_,date_.toFormattedString(false).c_str(),sizeof(lastTimeString_));
         }
         logStream_<<lastTimeString_;
         char tmp[32];
-        sprintf(tmp,".%06ld GMT ",microSec);
+        sprintf(tmp,".%06ld UTC ",microSec);
         logStream_<<tmp;
+        if(threadId_==0)
+            threadId_=static_cast<pid_t>(::syscall(SYS_gettid));
+        logStream_<<threadId_;
     }
     static const char* logLevelStr[Logger::LogLevel::NUM_LOG_LEVELS]={
-            "TRACE ",
-            "DEBUG ",
-            "INFO  ",
-            "WARN  ",
-            "ERROR ",
-            "FATAL ",
+            " TRACE ",
+            " DEBUG ",
+            " INFO  ",
+            " WARN  ",
+            " ERROR ",
+            " FATAL ",
     };
     Logger::Logger(SourceFile file,int line)
     :sourceFile_(file),
@@ -66,11 +77,14 @@ namespace trantor
         formatTime();
         if (errno != 0)
         {
+            logStream_<<logLevelStr[level_];
             logStream_ << strerror(errno) << " (errno=" << errno << ") ";
         }
     }
     Logger::~Logger() {
         logStream_<<" - "<<sourceFile_.data_<<":"<<fileLine_<<std::endl;
         Logger::outputFunc_(logStream_.str().c_str(),logStream_.str().length());
+        if(level_>=ERROR)
+            Logger::flushFunc_();
     }
 }
