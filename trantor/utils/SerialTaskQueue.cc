@@ -1,4 +1,6 @@
 #include <trantor/utils/SerialTaskQueue.h>
+#include <trantor/utils/Logger.h>
+#include <sys/prctl.h>
 #include <iostream>
 namespace trantor
 {
@@ -8,15 +10,15 @@ namespace trantor
     {
         if(name.empty())
         {
-            queueName_="serail_task_queue_";
+            queueName_="SerailTaskQueue";
         }
-        std::cout<<"constract SerialTaskQueue('"<<queueName_<<"')"<<std::endl;
+        LOG_TRACE<<"constract SerialTaskQueue('"<<queueName_<<"')";
     }
     SerialTaskQueue::~SerialTaskQueue() {
         stop_= true;
         taskCond_.notify_all();
         thread_.join();
-        std::cout<<"unconstract SerialTaskQueue('"<<queueName_<<"')"<<std::endl;
+        LOG_TRACE<<"unconstract SerialTaskQueue('"<<queueName_<<"')";
     }
     void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task) {
         std::unique_lock<std::mutex> lock(taskMutex_);
@@ -24,6 +26,7 @@ namespace trantor
         taskCond_.notify_one();
     }
     void SerialTaskQueue::queueFunc() {
+        ::prctl(PR_SET_NAME,queueName_.c_str());
         while(!stop_)
         {
             std::function<void ()> r;
@@ -34,7 +37,7 @@ namespace trantor
                 }
                 if(taskQueue_.size()>0)
                 {
-                    std::cout<<"got a new task!"<<std::endl;
+                    LOG_TRACE<<"got a new task!";
                     r=std::move(taskQueue_.front());
                     taskQueue_.pop();
                 }

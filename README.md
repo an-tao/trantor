@@ -7,5 +7,5 @@
 Dependence:
 gcc 4.8.0 or newer;
 cmake 3.5 or newer;
-linux kernel 2.6 or newer;
+linux kernel 2.6.9 or newer;
                                              
