@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 # include directories
 INCLUDE_DIRECTORIES(
   ${PROJECT_SOURCE_DIR}
@@ -25,5 +26,4 @@ AUX_SOURCE_DIRECTORY(trantor/utils DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net DIR_SRC)
 ADD_LIBRARY(trantor ${DIR_SRC})
 target_link_libraries(trantor pthread rt)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 

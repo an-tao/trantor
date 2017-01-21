@@ -23,7 +23,8 @@ class Date
         return microSecondsSinceEpoch_ > date.microSecondsSinceEpoch_;
     }
     int64_t microSecondsSinceEpoch() const { return microSecondsSinceEpoch_; }
-    std::string toFormattedString(bool showMicroseconds) const; //GMT
+    std::string toFormattedString(bool showMicroseconds) const; //UTC
+    std::string toCustomedFormattedString(const std::string &fmtStr) const;//UTC
     bool isSameSecond(const Date &date) const
     {
         return microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC == date.microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC;

@@ -6,9 +6,9 @@
 
 namespace trantor
 {
-    void defaultOutputFunction(const char *msg,uint64_t length)
+    void defaultOutputFunction(const std::stringstream &out)
     {
-        fwrite(msg,1,length,stdout);
+        fwrite(out.str().c_str(),1,out.str().length(),stdout);
     }
     void defaultFlushFunction()
     {
@@ -18,7 +18,7 @@ namespace trantor
     static __thread char lastTimeString_[32]={0};
     static __thread pid_t threadId_ = 0;
     Logger::LogLevel Logger::logLevel_=DEBUG;
-    std::function<void (const char *,uint64_t)> Logger::outputFunc_=defaultOutputFunction;
+    std::function<void (const std::stringstream &)> Logger::outputFunc_=defaultOutputFunction;
     std::function<void ()> Logger::flushFunc_=defaultFlushFunction;
     void Logger::formatTime() {
         uint64_t now=date_.microSecondsSinceEpoch();
@@ -83,7 +83,7 @@ namespace trantor
     }
     Logger::~Logger() {
         logStream_<<" - "<<sourceFile_.data_<<":"<<fileLine_<<std::endl;
-        Logger::outputFunc_(logStream_.str().c_str(),logStream_.str().length());
+        Logger::outputFunc_(logStream_);
         if(level_>=ERROR)
             Logger::flushFunc_();
     }

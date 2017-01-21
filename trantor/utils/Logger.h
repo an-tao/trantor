@@ -58,7 +58,7 @@ namespace trantor
         Logger(SourceFile file, int line, LogLevel level,const char* func);
         ~Logger();
         std::stringstream & stream(){return logStream_;}
-        static void setOutputFunction(std::function<void (const char*,uint64_t)>outputFunc,std::function<void ()>flushFunc){
+        static void setOutputFunction(std::function<void (const std::stringstream &)>outputFunc,std::function<void ()>flushFunc){
             outputFunc_=outputFunc;
             flushFunc_=flushFunc;
         }
@@ -72,7 +72,7 @@ namespace trantor
     protected:
         void formatTime();
         static LogLevel logLevel_;
-        static std::function<void (const char *,uint64_t)>outputFunc_;
+        static std::function<void (const std::stringstream &)>outputFunc_;
         static std::function<void ()>flushFunc_;
         std::stringstream logStream_;
         Date date_=Date::date();

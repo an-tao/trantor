@@ -14,3 +14,6 @@ target_link_libraries(run_in_loop_test trantor)
 
 add_executable(logger_test LoggerTest.cc)
 target_link_libraries(logger_test trantor)
+
+add_executable(async_file_logger_test AsyncFileLoggerTest.cc)
+target_link_libraries(async_file_logger_test trantor)

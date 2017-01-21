@@ -21,7 +21,7 @@ namespace trantor
         LOG_TRACE<<"unconstract SerialTaskQueue('"<<queueName_<<"')";
     }
     void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task) {
-        std::unique_lock<std::mutex> lock(taskMutex_);
+        std::lock_guard<std::mutex> lock(taskMutex_);
         taskQueue_.push(task);
         taskCond_.notify_one();
     }
