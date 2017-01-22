@@ -25,14 +25,12 @@ int main()
 //    {
 //        LOG_SYSERR<<"syserr log!"<<7;
 //    }
-    std::thread thread1_([](){
+
         int i=0;
         while(i<1000000)
         {
             i++;
             LOG_INFO<<"this is "<<i<<"th log";
         }
-    });
- //   thread_.join();
-    thread1_.join();
+
 }

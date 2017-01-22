@@ -8,7 +8,7 @@ int main()
     trantor::Date begin=trantor::Date::date().roundSecond().after(2);
     loop.runAt(begin,[=,&loop](){
         LOG_DEBUG<<"test begin:";
-        srand(time(NULL));
+        srand((unsigned int)time(NULL));
         for(int i=0;i<10000;i++)
         {
             int aa=rand()%10000;

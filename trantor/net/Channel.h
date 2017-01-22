@@ -21,7 +21,7 @@ namespace trantor
 		};
 		int fd() const {return fd_;};
 		int events() const {return events_;};
-		int setRevents(int revt) { revents_=revt;};
+		int setRevents(int revt) { revents_=revt; return revt;};
 		bool isNoneEvent() const {return events_ == kNoneEvent;};
 		int index(){return index_;};
 		void setIndex(int index){ index_=index;};

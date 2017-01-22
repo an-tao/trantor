@@ -22,7 +22,15 @@ namespace trantor {
         }
         std::lock_guard<std::mutex> guard_(mutex_);
         if(logBufferPtr_->length()>0)
-            writeLogToFile(logBufferPtr_);
+        {
+            writeBuffers_.push(logBufferPtr_);
+        }
+        if(writeBuffers_.size()>0)
+        {
+            StringPtr tmpPtr=(StringPtr &&)writeBuffers_.front();
+            writeBuffers_.pop();
+            writeLogToFile(tmpPtr);
+        }
     }
     void AsyncFileLogger::output(const char *msg,const uint64_t len) {
         std::lock_guard<std::mutex> guard_(mutex_);
