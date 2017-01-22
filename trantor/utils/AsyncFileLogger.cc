@@ -3,11 +3,12 @@
 #include <string.h>
 #include <iostream>
 #define LOG_FLUSH_TIMEOUT 1
-#define MEM_BUFFER_SIZE 4096
+#define MEM_BUFFER_SIZE 1024*1024
 namespace trantor {
     AsyncFileLogger::AsyncFileLogger()
     {
-
+        logBuffer_.reserve(MEM_BUFFER_SIZE*3);
+        writeBuffer_.reserve(MEM_BUFFER_SIZE*3);
     }
     AsyncFileLogger::~AsyncFileLogger()
     {
@@ -64,9 +65,11 @@ namespace trantor {
             std::unique_lock<std::mutex> lock(mutex_);
             cond_.wait_for(lock, std::chrono::seconds(LOG_FLUSH_TIMEOUT), [=]() { return logBuffer_.length() > 0; });
             std::string tmpStr;
-            tmpStr.swap(logBuffer_);
+            writeBuffer_.clear();
+            //std::cout<<"writeBuffer.capacity:"<<writeBuffer_.capacity()<<std::endl;
+            writeBuffer_.swap(logBuffer_);
             lock.unlock();
-            writeLogToFile(tmpStr);
+            writeLogToFile(writeBuffer_);
         }
     }
     void AsyncFileLogger::startLogging() {

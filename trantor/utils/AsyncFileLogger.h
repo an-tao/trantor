@@ -35,6 +35,7 @@ namespace trantor
         std::mutex mutex_;
         std::condition_variable cond_;
         std::string logBuffer_;
+        std::string writeBuffer_;
         void writeLogToFile(const std::string &buf);
         std::unique_ptr<std::thread> threadPtr_;
         bool stopFlag_=false;
