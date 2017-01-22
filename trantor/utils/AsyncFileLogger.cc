@@ -2,17 +2,17 @@
 #include <unistd.h>
 #include <string.h>
 #include <iostream>
+#include <sys/prctl.h>
 #define LOG_FLUSH_TIMEOUT 1
-#define MEM_BUFFER_SIZE 1024*1024
+#define MEM_BUFFER_SIZE 3*1024*1024
 namespace trantor {
     AsyncFileLogger::AsyncFileLogger()
+    :logBufferPtr_(new std::string)
     {
-        logBuffer_.reserve(MEM_BUFFER_SIZE*3);
-        writeBuffer_.reserve(MEM_BUFFER_SIZE*3);
+        logBufferPtr_->reserve(MEM_BUFFER_SIZE);
     }
     AsyncFileLogger::~AsyncFileLogger()
     {
-        std::cout<<"~AsyncFileLogger:buffer len="<<logBuffer_.length()<<std::endl;
         stopFlag_=true;
         if(threadPtr_)
         {
@@ -21,35 +21,42 @@ namespace trantor {
             threadPtr_->join();
         }
         std::lock_guard<std::mutex> guard_(mutex_);
-        if(logBuffer_.length()>0)
-            writeLogToFile(logBuffer_);
+        if(logBufferPtr_->length()>0)
+            writeLogToFile(logBufferPtr_);
     }
-    void AsyncFileLogger::output(const std::stringstream &out) {
-
+    void AsyncFileLogger::output(const char *msg,const uint64_t len) {
         std::lock_guard<std::mutex> guard_(mutex_);
-        if(logBuffer_.length() > MEM_BUFFER_SIZE*2)
-        {
-            lostCounter_++;
+        if(len>MEM_BUFFER_SIZE)
             return;
-        }
-        if(lostCounter_>0)
+        if(!logBufferPtr_)
         {
-            char logErr[128];
-            sprintf(logErr,"%ld log information is lost\n",lostCounter_);
-            lostCounter_=0;
-            logBuffer_.append(logErr);
+            logBufferPtr_=std::make_shared<std::string>();
+            logBufferPtr_->reserve(MEM_BUFFER_SIZE);
         }
-        logBuffer_.append(out.str());
-        if (logBuffer_.length() > MEM_BUFFER_SIZE) {
+        if(logBufferPtr_->capacity()-logBufferPtr_->length() < len)
+        {
+            writeBuffers_.push(logBufferPtr_);
+            logBufferPtr_=std::make_shared<std::string>();
+            logBufferPtr_->reserve(MEM_BUFFER_SIZE);
             cond_.notify_one();
         }
+
+
+//        if(lostCounter_>0)
+//        {
+//            char logErr[128];
+//            sprintf(logErr,"%ld log information is lost\n",lostCounter_);
+//            lostCounter_=0;
+//            logBuffer_.append(logErr);
+//        }
+        logBufferPtr_->append(std::string(msg,len));
     }
     void AsyncFileLogger::flush() {
         std::lock_guard<std::mutex> guard_(mutex_);
-        if(logBuffer_.length()>0)
+        if(logBufferPtr_->length()>0)
             cond_.notify_one();
     }
-    void AsyncFileLogger::writeLogToFile(const std::string &buf) {
+    void AsyncFileLogger::writeLogToFile(const StringPtr buf) {
         if(!loggerFilePtr_)
         {
             loggerFilePtr_=std::unique_ptr<LoggerFile>(new LoggerFile(filePath_,fileBaseName_,fileExtName_));
@@ -61,15 +68,25 @@ namespace trantor {
         }
     }
     void AsyncFileLogger::logThreadFunc() {
+        prctl(PR_SET_NAME,"AsyncFileLogger");
         while (!stopFlag_) {
             std::unique_lock<std::mutex> lock(mutex_);
-            cond_.wait_for(lock, std::chrono::seconds(LOG_FLUSH_TIMEOUT), [=]() { return logBuffer_.length() > 0; });
+            cond_.wait_for(lock, std::chrono::seconds(LOG_FLUSH_TIMEOUT), [=]() { return logBufferPtr_->length() > 0||writeBuffers_.size()>0; });
             std::string tmpStr;
-            writeBuffer_.clear();
-            //std::cout<<"writeBuffer.capacity:"<<writeBuffer_.capacity()<<std::endl;
-            writeBuffer_.swap(logBuffer_);
-            lock.unlock();
-            writeLogToFile(writeBuffer_);
+            if(logBufferPtr_->length()>0)
+            {
+                writeBuffers_.push(logBufferPtr_);
+                logBufferPtr_=std::make_shared<std::string>();
+                logBufferPtr_->reserve(MEM_BUFFER_SIZE);
+            }
+            if(writeBuffers_.size()>0)
+            {
+                StringPtr tmpPtr=(StringPtr &&)writeBuffers_.front();
+                writeBuffers_.pop();
+                lock.unlock();
+                writeLogToFile(tmpPtr);
+                lock.lock();
+            }
         }
     }
     void AsyncFileLogger::startLogging() {
@@ -94,10 +111,11 @@ namespace trantor {
             std::cout<<strerror(errno)<<std::endl;
         }
     }
-    void AsyncFileLogger::LoggerFile::writeLog(const std::string &buf) {
+    uint64_t AsyncFileLogger::LoggerFile::fileSeq_=0;
+    void AsyncFileLogger::LoggerFile::writeLog(const StringPtr buf) {
         if(fp_)
         {
-            fwrite(buf.c_str(),1,buf.length(),fp_);
+            fwrite(buf->c_str(),1,buf->length(),fp_);
         }
     }
     uint64_t AsyncFileLogger::LoggerFile::getLength() {
@@ -110,7 +128,10 @@ namespace trantor {
         if(fp_)
         {
             fclose(fp_);
-            std::string newName=filePath_+fileBaseName_+"."+createDate_.toCustomedFormattedString("%y%m%d-%H%M%S")
+            char seq[10];
+            sprintf(seq,".%06ld",fileSeq_%1000000);
+            fileSeq_++;
+            std::string newName=filePath_+fileBaseName_+"."+createDate_.toCustomedFormattedString("%y%m%d-%H%M%S")+std::string(seq)
                                 +fileExtName_;
             rename(fileFullName_.c_str(),newName.c_str());
         }

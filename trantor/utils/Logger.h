@@ -2,9 +2,10 @@
 
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
+#include <trantor/utils/LogStream.h>
 #include <string.h>
 #include <functional>
-#include <sstream>
+#include <iostream>
 namespace trantor
 {
     class Logger:public NonCopyable
@@ -30,6 +31,7 @@ namespace trantor
                     : data_(arr),
                       size_(N-1)
             {
+               // std::cout<<data_<<std::endl;
                 const char* slash = strrchr(data_, '/'); // builtin function
                 if (slash)
                 {
@@ -57,8 +59,8 @@ namespace trantor
         Logger(SourceFile file, int line, bool isSysErr);
         Logger(SourceFile file, int line, LogLevel level,const char* func);
         ~Logger();
-        std::stringstream & stream(){return logStream_;}
-        static void setOutputFunction(std::function<void (const std::stringstream &)>outputFunc,std::function<void ()>flushFunc){
+        LogStream & stream();
+        static void setOutputFunction(std::function<void (const char *msg,const uint64_t len)>outputFunc,std::function<void ()>flushFunc){
             outputFunc_=outputFunc;
             flushFunc_=flushFunc;
         }
@@ -72,9 +74,9 @@ namespace trantor
     protected:
         void formatTime();
         static LogLevel logLevel_;
-        static std::function<void (const std::stringstream &)>outputFunc_;
+        static std::function<void (const char *msg,const uint64_t len)>outputFunc_;
         static std::function<void ()>flushFunc_;
-        std::stringstream logStream_;
+        LogStream logStream_;
         Date date_=Date::date();
         SourceFile sourceFile_;
         int fileLine_;

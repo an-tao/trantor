@@ -8,14 +8,16 @@
 #include <condition_variable>
 #include <sstream>
 #include <memory>
-
+#include <queue>
 namespace trantor
 {
+    typedef std::shared_ptr<std::string> StringPtr;
+    typedef std::queue<StringPtr> StringPtrQueue;
     class AsyncFileLogger:NonCopyable
     {
     public:
         //static AsyncFileLogger* getInstance();
-        void output(const std::stringstream &out);
+        void output(const char *msg,const uint64_t len);
         void flush();
         void startLogging();
         void setFileSizeLimit(uint64_t limit){sizeLimit_=limit;}
@@ -34,9 +36,9 @@ namespace trantor
     protected:
         std::mutex mutex_;
         std::condition_variable cond_;
-        std::string logBuffer_;
-        std::string writeBuffer_;
-        void writeLogToFile(const std::string &buf);
+        StringPtr logBufferPtr_;
+        StringPtrQueue writeBuffers_;
+        void writeLogToFile(const StringPtr buf);
         std::unique_ptr<std::thread> threadPtr_;
         bool stopFlag_=false;
         void logThreadFunc();
@@ -49,7 +51,7 @@ namespace trantor
         public:
             LoggerFile(const std::string &filePath,const std::string &fileBaseName,const std::string &fileExtName);
             ~LoggerFile();
-            void writeLog(const std::string &buf);
+            void writeLog(const StringPtr buf);
             uint64_t getLength();
             explicit operator bool() const { return fp_!=NULL; }
         protected:
@@ -59,6 +61,7 @@ namespace trantor
             std::string filePath_;
             std::string fileBaseName_;
             std::string fileExtName_;
+            static uint64_t fileSeq_;
         };
         std::unique_ptr<LoggerFile>loggerFilePtr_;
         uint64_t lostCounter_=0;

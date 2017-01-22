@@ -1,7 +1,7 @@
 #include "Date.h"
 #include <sys/time.h>
 #include <cstdlib>
-
+#include <iostream>
 namespace trantor
 {
     const Date Date::date()
@@ -31,6 +31,7 @@ namespace trantor
     }
     std::string Date::toFormattedString(bool showMicroseconds) const
     {
+      //  std::cout<<"toFormattedString"<<std::endl;
         char buf[32] = {0};
         time_t seconds = static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
         struct tm tm_time;
