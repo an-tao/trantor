@@ -6,6 +6,7 @@ int main()
 {
     trantor::AsyncFileLogger asyncFileLogger;
     asyncFileLogger.setFileName("async_test");
+    asyncFileLogger.startLogging();
     trantor::Logger::setOutputFunction([&](const std::stringstream &buf){
         asyncFileLogger.output(buf);
     },[](){});
@@ -24,5 +25,15 @@ int main()
     {
         LOG_SYSERR<<"syserr log!"<<7;
     }
+    std::thread thread1_([](){
+        int i=0;
+        while(i<1000000)
+        {
+            i++;
+            LOG_INFO<<"this is "<<i<<"th log";
+        }
+
+    });
     thread_.join();
+    thread1_.join();
 }

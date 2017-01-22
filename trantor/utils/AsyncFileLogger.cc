@@ -11,7 +11,7 @@ namespace trantor {
     }
     AsyncFileLogger::~AsyncFileLogger()
     {
-        //std::cout<<"~AsyncFileLogger:buffer len="<<logBuffer_.length()<<std::endl;
+        std::cout<<"~AsyncFileLogger:buffer len="<<logBuffer_.length()<<std::endl;
         stopFlag_=true;
         if(threadPtr_)
         {
@@ -26,10 +26,27 @@ namespace trantor {
     void AsyncFileLogger::output(const std::stringstream &out) {
 
         std::lock_guard<std::mutex> guard_(mutex_);
+        if(logBuffer_.length() > MEM_BUFFER_SIZE*2)
+        {
+            lostCounter_++;
+            return;
+        }
+        if(lostCounter_>0)
+        {
+            char logErr[128];
+            sprintf(logErr,"%ld log information is lost\n",lostCounter_);
+            lostCounter_=0;
+            logBuffer_.append(logErr);
+        }
         logBuffer_.append(out.str());
         if (logBuffer_.length() > MEM_BUFFER_SIZE) {
             cond_.notify_one();
         }
+    }
+    void AsyncFileLogger::flush() {
+        std::lock_guard<std::mutex> guard_(mutex_);
+        if(logBuffer_.length()>0)
+            cond_.notify_one();
     }
     void AsyncFileLogger::writeLogToFile(const std::string &buf) {
         if(!loggerFilePtr_)

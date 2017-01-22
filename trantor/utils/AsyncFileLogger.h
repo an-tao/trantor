@@ -16,6 +16,7 @@ namespace trantor
     public:
         //static AsyncFileLogger* getInstance();
         void output(const std::stringstream &out);
+        void flush();
         void startLogging();
         void setFileSizeLimit(uint64_t limit){sizeLimit_=limit;}
         void setFileName(const std::string &baseName,const std::string &extName=".log",const std::string &path="./")
@@ -59,5 +60,6 @@ namespace trantor
             std::string fileExtName_;
         };
         std::unique_ptr<LoggerFile>loggerFilePtr_;
+        uint64_t lostCounter_=0;
     };
 }
