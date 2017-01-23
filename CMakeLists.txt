@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 set(CXX_FLAGS
-        #-g
+        -g
         # -DVALGRIND
         # -DMUDUO_STD_STRING
         #-DCHECK_PTHREAD_RETURN_VALUE
         #-D_FILE_OFFSET_BITS=64
-        #-Wall
+        -Wall
         #-Wextra
         #-Werror
         #-Wconversion
@@ -19,10 +19,10 @@ set(CXX_FLAGS
         #-march=native
         # -MMD
         -std=c++11
-        -rdynamic
-        -O2
-        -finline-limit=1000
-        -DNDEBUG
+        #-rdynamic
+        #-O2
+        #-finline-limit=1000
+        #-DNDEBUG
         )
 
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")

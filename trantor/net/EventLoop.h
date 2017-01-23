@@ -57,11 +57,12 @@ namespace trantor
         void abortNotInLoopThread();
         bool looping_;
         const std::thread::id threadId_;
+        bool quit_;
         std::unique_ptr<Poller> poller_;
 
         ChannelList activeChannels_;
         Channel *currentActiveChannel_;
-        bool quit_;
+
         bool eventHandling_;
 
         std::mutex funcsMutex_;

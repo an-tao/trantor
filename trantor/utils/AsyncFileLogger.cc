@@ -47,17 +47,7 @@ void AsyncFileLogger::output(const char *msg,const uint64_t len) {
     }
     if(logBufferPtr_->capacity()-logBufferPtr_->length() < len)
     {
-        writeBuffers_.push(logBufferPtr_);
-        if(nextBufferPtr_)
-        {
-            logBufferPtr_=nextBufferPtr_;
-            nextBufferPtr_.reset();
-        }
-        else
-        {
-            logBufferPtr_=std::make_shared<std::string>();
-            logBufferPtr_->reserve(MEM_BUFFER_SIZE);
-        }
+        swapBuffer();
         cond_.notify_one();
     }
     if(writeBuffers_.size()>25)//100M bytes logs in buffer
@@ -78,7 +68,11 @@ void AsyncFileLogger::output(const char *msg,const uint64_t len) {
 void AsyncFileLogger::flush() {
     std::lock_guard<std::mutex> guard_(mutex_);
     if(logBufferPtr_->length()>0)
+    {
+        //std::cout<<"flush log buffer len:"<<logBufferPtr_->length()<<std::endl;
+        swapBuffer();
         cond_.notify_one();
+    }
 }
 void AsyncFileLogger::writeLogToFile(const StringPtr buf) {
     if(!loggerFilePtr_)
@@ -104,17 +98,7 @@ void AsyncFileLogger::logThreadFunc() {
                 {
                     if(logBufferPtr_->length()>0)
                     {
-                        writeBuffers_.push(logBufferPtr_);
-                        if(nextBufferPtr_)
-                        {
-                            logBufferPtr_=nextBufferPtr_;
-                            nextBufferPtr_.reset();
-                        }
-                        else
-                        {
-                            logBufferPtr_=std::make_shared<std::string>();
-                            logBufferPtr_->reserve(MEM_BUFFER_SIZE);
-                        }
+                        swapBuffer();
                     }
                     break;
                 }
@@ -128,7 +112,11 @@ void AsyncFileLogger::logThreadFunc() {
             tmpBuffers_.pop();
             writeLogToFile(tmpPtr);
             tmpPtr->clear();
-            nextBufferPtr_=tmpPtr;
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                nextBufferPtr_=tmpPtr;
+            }
+
         }
     }
 }
@@ -178,5 +166,20 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
         std::string newName=filePath_+fileBaseName_+"."+createDate_.toCustomedFormattedString("%y%m%d-%H%M%S")+std::string(seq)
                             +fileExtName_;
         rename(fileFullName_.c_str(),newName.c_str());
+    }
+}
+
+void AsyncFileLogger::swapBuffer() {
+    writeBuffers_.push(logBufferPtr_);
+    if(nextBufferPtr_)
+    {
+        logBufferPtr_=nextBufferPtr_;
+        nextBufferPtr_.reset();
+        logBufferPtr_->clear();
+    }
+    else
+    {
+        logBufferPtr_=std::make_shared<std::string>();
+        logBufferPtr_->reserve(MEM_BUFFER_SIZE);
     }
 }

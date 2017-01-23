@@ -27,10 +27,11 @@ namespace trantor
         void addTimer(const TimerCallback &cb,const Date &when,double interval);
         void addTimerInLoop(const TimerPtr &timer);
     protected:
-        std::priority_queue<TimerPtr,std::vector<TimerPtr>,comp> timers_;
+
         EventLoop* loop_;
         const int timerfd_;
         Channel timerfdChannel_;
+        std::priority_queue<TimerPtr,std::vector<TimerPtr>,comp> timers_;
         void handleRead();
         bool callingExpiredTimers_;
         bool insert(const TimerPtr &timePtr);

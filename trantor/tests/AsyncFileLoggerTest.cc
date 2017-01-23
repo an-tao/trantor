@@ -9,7 +9,10 @@ int main()
     asyncFileLogger.startLogging();
     trantor::Logger::setOutputFunction([&](const char *msg,const uint64_t len){
         asyncFileLogger.output(msg,len);
-    },[](){});
+    },[&](){
+        asyncFileLogger.flush();
+    });
+    asyncFileLogger.setFileSizeLimit(100000000);
 //    LOG_DEBUG<<"debug log!"<<1;
 //    LOG_TRACE<<"trace log!"<<2;
 //    LOG_INFO<<"info log!"<<3;
@@ -30,9 +33,15 @@ int main()
         while(i<1000000)
         {
             i++;
+            if(i%100==0)
+            {
+                LOG_ERROR<<"this is the "<<i<<"th log";
+                continue;
+            }
             LOG_INFO<<"this is the "<<i<<"th log";
             i++;
             LOG_DEBUG<<"this is the "<<i<<"th log";
+
         }
 
 }

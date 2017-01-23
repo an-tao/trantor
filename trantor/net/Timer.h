@@ -12,15 +12,7 @@ namespace trantor
     class Timer:public NonCopyable
     {
     public:
-        Timer(const TimerCallback &cb,const Date &when,double interval):
-                callback_(cb),
-                when_(when),
-                interval_(interval),
-                repeat_(interval>0.0),
-                timerSeq_(timersCreated_++)
-        {
-
-        }
+        Timer(const TimerCallback &cb,const Date &when,double interval);
         ~Timer(){
          //   std::cout<<"Timer unconstract!"<<std::endl;
         }
@@ -33,8 +25,8 @@ namespace trantor
     private:
         TimerCallback callback_;
         Date when_;
-        const bool repeat_;
         const double interval_;
+        const bool repeat_;
         const int64_t timerSeq_;
         static std::atomic<int64_t> timersCreated_;
     };

@@ -44,7 +44,7 @@ void defaultFlushFunction()
 {
     fflush(stdout);
 }
-static __thread time_t lastSecond_=0;
+static __thread uint64_t lastSecond_=0;
 static __thread char lastTimeString_[32]={0};
 static __thread pid_t threadId_ = 0;
 //   static __thread LogStream logStream_;

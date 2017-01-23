@@ -68,5 +68,6 @@ namespace trantor
         std::unique_ptr<LoggerFile>loggerFilePtr_;
 
         uint64_t lostCounter_=0;
+        void swapBuffer();
     };
 }

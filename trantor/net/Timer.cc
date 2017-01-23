@@ -2,6 +2,15 @@
 namespace trantor
 {
     std::atomic<int64_t> Timer::timersCreated_;
+    Timer::Timer(const TimerCallback &cb,const Date &when,double interval):
+            callback_(cb),
+            when_(when),
+            interval_(interval),
+            repeat_(interval>0.0),
+            timerSeq_(timersCreated_++)
+    {
+
+    }
     void Timer::run() const{
         callback_();
     }

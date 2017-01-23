@@ -1,6 +1,7 @@
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/Poller.h>
 #include <trantor/net/TimerQueue.h>
+#include <trantor/utils/Logger.h>
 #include <thread>
 #include <assert.h>
 #include <poll.h>
@@ -171,10 +172,16 @@ namespace trantor
     {
         uint64_t tmp=1;
         int ret=write(wakeupFd_,&tmp,sizeof(tmp));
+        if(ret<0)
+        {
+            LOG_SYSERR<<"wakeup error";
+        }
     }
     void EventLoop::wakeupRead()
     {
         uint64_t tmp;
-        read(wakeupFd_,&tmp,sizeof(tmp));
+        ssize_t ret=read(wakeupFd_,&tmp,sizeof(tmp));
+        if(ret<0)
+            LOG_SYSERR<<"wakeup read error";
     }
 }
