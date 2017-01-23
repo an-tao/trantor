@@ -37,7 +37,9 @@ namespace trantor
         std::mutex mutex_;
         std::condition_variable cond_;
         StringPtr logBufferPtr_;
+        StringPtr nextBufferPtr_;
         StringPtrQueue writeBuffers_;
+        StringPtrQueue tmpBuffers_;
         void writeLogToFile(const StringPtr buf);
         std::unique_ptr<std::thread> threadPtr_;
         bool stopFlag_=false;
@@ -64,6 +66,7 @@ namespace trantor
             static uint64_t fileSeq_;
         };
         std::unique_ptr<LoggerFile>loggerFilePtr_;
+
         uint64_t lostCounter_=0;
     };
 }

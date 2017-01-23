@@ -30,7 +30,9 @@ int main()
         while(i<1000000)
         {
             i++;
-            LOG_INFO<<"this is "<<i<<"th log";
+            LOG_INFO<<"this is the "<<i<<"th log";
+            i++;
+            LOG_DEBUG<<"this is the "<<i<<"th log";
         }
 
 }
