@@ -15,3 +15,6 @@ target_link_libraries(logger_test trantor)
 
 add_executable(async_file_logger_test AsyncFileLoggerTest.cc)
 target_link_libraries(async_file_logger_test trantor)
+
+add_executable(tcp_server_test TcpServerTest.cc)
+target_link_libraries(tcp_server_test trantor)

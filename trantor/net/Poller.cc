@@ -1,3 +1,4 @@
+#include <trantor/utils/Logger.h>
 #include "Poller.h"
 #include <poll.h>
 #include <sys/epoll.h>
@@ -48,12 +49,12 @@ namespace trantor
                 events_.resize(events_.size() * 2);
             }
         } else if (numEvents == 0) {
-            std::cout << "nothing happended" << std::endl;
+            //std::cout << "nothing happended" << std::endl;
         } else {
             // error happens, log uncommon ones
             if (savedErrno != EINTR) {
                 errno = savedErrno;
-                std::cout << "EPollPoller::poll()" << std::endl;
+                LOG_SYSERR << "EPollPoller::poll()";
             }
         }
         return;
