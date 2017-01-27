@@ -1,8 +1,7 @@
 #pragma once
 #include <trantor/utils/NonCopyable.h>
-#include <trantor/net/Channel.h>
-#include <trantor/net/EventLoop.h>
 #include <trantor/utils/Date.h>
+
 #include <thread>
 #include <memory>
 #include <vector>
@@ -12,6 +11,7 @@ namespace trantor
 {
     class Poller;
     class TimerQueue;
+    class Channel;
     typedef std::vector<Channel*> ChannelList;
     typedef std::function<void ()> Func;
     class EventLoop:NonCopyable

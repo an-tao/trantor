@@ -1,5 +1,6 @@
 #include <trantor/utils/Logger.h>
-#include "Poller.h"
+#include <trantor/net/Channel.h>
+#include <trantor/net/Poller.h>
 #include <poll.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -43,7 +44,7 @@ namespace trantor
         int savedErrno = errno;
         // Timestamp now(Timestamp::now());
         if (numEvents > 0) {
-            //std::cout << numEvents << " events happended" << std::endl;
+            //LOG_TRACE << numEvents << " events happended";
             fillActiveChannels(numEvents, activeChannels);
             if (static_cast<size_t>(numEvents) == events_.size()) {
                 events_.resize(events_.size() * 2);
@@ -75,6 +76,7 @@ namespace trantor
             channel->setRevents(events_[i].events);
             activeChannels->push_back(channel);
         }
+        //LOG_TRACE<<"active Channels num:"<<activeChannels->size();
     }
     void Poller::updateChannel(Channel* channel)
     {

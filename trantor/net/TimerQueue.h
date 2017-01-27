@@ -30,7 +30,7 @@ namespace trantor
 
         EventLoop* loop_;
         const int timerfd_;
-        Channel timerfdChannel_;
+        std::unique_ptr<Channel> timerfdChannelPtr_;
         std::priority_queue<TimerPtr,std::vector<TimerPtr>,comp> timers_;
         void handleRead();
         bool callingExpiredTimers_;

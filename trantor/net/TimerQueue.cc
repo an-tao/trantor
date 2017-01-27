@@ -65,20 +65,20 @@ void readTimerfd(int timerfd, const Date &now)
 TimerQueue::TimerQueue(EventLoop* loop)
         : loop_(loop),
           timerfd_(createTimerfd()),
-          timerfdChannel_(loop, timerfd_),
+          timerfdChannelPtr_(new Channel(loop, timerfd_)),
           timers_(),
           callingExpiredTimers_(false)
 {
-    timerfdChannel_.setReadCallback(
+    timerfdChannelPtr_->setReadCallback(
             std::bind(&TimerQueue::handleRead, this));
     // we are always reading the timerfd, we disarm it with timerfd_settime.
-    timerfdChannel_.enableReading();
+    timerfdChannelPtr_->enableReading();
 }
 
 TimerQueue::~TimerQueue()
 {
-    timerfdChannel_.disableAll();
-    timerfdChannel_.remove();
+    timerfdChannelPtr_->disableAll();
+    timerfdChannelPtr_->remove();
     ::close(timerfd_);
 }
 

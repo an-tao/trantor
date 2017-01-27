@@ -16,6 +16,7 @@ namespace trantor
 
         Acceptor(EventLoop* loop, const InetAddress& addr);
         ~Acceptor();
+        const InetAddress & addr() const {return addr_;}
         void setNewConnectionCallback(const NewConnectionCallback &cb){
             newConnectionCallback_=cb;
         };

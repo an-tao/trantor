@@ -47,3 +47,6 @@ void Socket::closeWrite() {
         LOG_SYSERR << "sockets::shutdownWrite";
     }
 }
+int Socket::read(char *buffer, uint64_t len) {
+    return ::read(sockFd_,buffer,len);
+}

@@ -27,6 +27,13 @@ TcpServer::~TcpServer() {
 }
 void TcpServer::newConnection(int sockfd, const InetAddress &peer) {
     LOG_TRACE<<"new connection:fd="<<sockfd<<" address="<<peer.toIpPort();
+    TcpConnectionPtr newPtr=std::make_shared<TcpConnection>(loop_,sockfd,acceptorPtr_->addr(),peer);
+    newPtr->setRecvMsgCallback([=](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
+        //LOG_TRACE<<"recv Msg "<<buffer->readableBytes()<<" bytes";
+        if(recvMessageCallback_)
+            recvMessageCallback_(connectionPtr,buffer);
+    });
+    connSet_.insert(newPtr);
 }
 void TcpServer::start() {
     loop_->runInLoop([=](){

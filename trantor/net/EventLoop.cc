@@ -2,6 +2,8 @@
 #include <trantor/net/Poller.h>
 #include <trantor/net/TimerQueue.h>
 #include <trantor/utils/Logger.h>
+#include <trantor/net/Channel.h>
+
 #include <thread>
 #include <assert.h>
 #include <poll.h>

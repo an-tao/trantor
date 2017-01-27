@@ -29,6 +29,7 @@ namespace trantor
 	}
 	void Channel::handleEvent()
 	{
+		//LOG_TRACE<<"revents_="<<revents_;
 		if(revents_ & POLLNVAL)
 		{
 
@@ -39,6 +40,7 @@ namespace trantor
 		}
 		if(revents_ & (POLLIN|POLLPRI|POLLRDHUP))
 		{
+			//LOG_TRACE<<"handle read";
 			if(readCallback_) readCallback_();
 		}
 		if(revents_ & POLLOUT)

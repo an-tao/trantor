@@ -35,6 +35,7 @@ namespace trantor
         void listen();
         int accept(InetAddress* peeraddr);
         void closeWrite();
+        int read(char *buffer,uint64_t len);
         int fd(){return sockFd_;}
     protected:
         int sockFd_;
