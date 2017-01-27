@@ -7,24 +7,28 @@ TcpConnection::TcpConnection(EventLoop *loop, int socketfd,const InetAddress& lo
                              const InetAddress& peerAddr):
         loop_(loop),
         ioChennelPtr_(new Channel(loop,socketfd)),
-        sockfd_(socketfd),
+        socketPtr_(new Socket(socketfd)),
         localAddr_(localAddr),
-        peerAddr_(peerAddr)
+        peerAddr_(peerAddr),
+        state_(Connecting)
 {
+    LOG_TRACE<<"new connection:"<<peerAddr.toIpPort()<<"->"<<localAddr.toIpPort();
     ioChennelPtr_->setReadCallback(std::bind(&TcpConnection::readCallback,this));
-    ioChennelPtr_->enableReading();
+}
+TcpConnection::~TcpConnection() {
+
 }
 void TcpConnection::readCallback() {
     //LOG_TRACE<<"read Callback";
     loop_->assertInLoopThread();
     int ret=0;
 
-    size_t n=buffer_.readFd(sockfd_,&ret);
+    size_t n=readBuffer_.readFd(socketPtr_->fd(),&ret);
     //LOG_TRACE<<"read "<<n<<" bytes from socket";
     if(n==0)
     {
         //socket closed by peer
-        //fixed me
+        handleClose();
     }
     else if(n<0)
     {
@@ -33,6 +37,43 @@ void TcpConnection::readCallback() {
 
     if(n>0&&recvMsgCallback_)
     {
-        recvMsgCallback_(shared_from_this(),&buffer_);
+        recvMsgCallback_(shared_from_this(),&readBuffer_);
     }
+}
+void TcpConnection::connectEstablished() {
+    loop_->assertInLoopThread();
+    assert(state_==Connecting);
+    ioChennelPtr_->tie(shared_from_this());
+    ioChennelPtr_->enableReading();
+    state_=Connected;
+    if(connectionCallback_)
+        connectionCallback_(shared_from_this());
+}
+void TcpConnection::handleClose() {
+    LOG_TRACE<<"connection closed";
+    loop_->assertInLoopThread();
+    state_=Disconnected;
+    ioChennelPtr_->disableAll();
+    auto guardThis=shared_from_this();
+    if(connectionCallback_)
+        connectionCallback_(guardThis);
+    if(closeCallback_)
+    {
+        LOG_TRACE<<"to call close callback";
+        closeCallback_(guardThis);
+    }
+
+}
+
+void TcpConnection::connectDestroyed()
+{
+    loop_->assertInLoopThread();
+    if (state_ == Connected)
+    {
+        state_=Disconnected;
+        ioChennelPtr_->disableAll();
+
+        connectionCallback_(shared_from_this());
+    }
+    ioChennelPtr_->remove();
 }

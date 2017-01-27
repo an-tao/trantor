@@ -50,3 +50,27 @@ void Socket::closeWrite() {
 int Socket::read(char *buffer, uint64_t len) {
     return ::read(sockFd_,buffer,len);
 }
+
+struct sockaddr_in6 Socket::getLocalAddr(int sockfd)
+{
+    struct sockaddr_in6 localaddr;
+    bzero(&localaddr, sizeof localaddr);
+    socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
+    if (::getsockname(sockfd, static_cast<struct sockaddr*>((void *)(&localaddr)), &addrlen) < 0)
+    {
+        LOG_SYSERR << "sockets::getLocalAddr";
+    }
+    return localaddr;
+}
+
+struct sockaddr_in6 Socket::getPeerAddr(int sockfd)
+{
+    struct sockaddr_in6 peeraddr;
+    bzero(&peeraddr, sizeof peeraddr);
+    socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
+    if (::getpeername(sockfd, static_cast<struct sockaddr*>((void *)(&peeraddr)), &addrlen) < 0)
+    {
+        LOG_SYSERR << "sockets::getPeerAddr";
+    }
+    return peeraddr;
+}

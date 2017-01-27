@@ -4,6 +4,7 @@
 #include <trantor/utils/NonCopyable.h>
 #include <functional>
 #include <assert.h>
+#include <memory>
 namespace trantor
 {
 	class EventLoop;
@@ -31,7 +32,10 @@ namespace trantor
 		void setIndex(int index){ index_=index;};
         void disableAll() { events_ = kNoneEvent; update(); }
         void remove();
-
+		void tie(const std::shared_ptr<void> &obj){
+			tie_=obj;
+			tied_=true;
+		}
 		EventLoop *ownerLoop(){return loop_;};
 
 		void enableReading(){events_|=kReadEvent;update();};
@@ -40,7 +44,7 @@ namespace trantor
 		static const int kNoneEvent;
 		static const int kReadEvent;
 		static const int kWriteEvent;
-
+		void handleEventSafely();
 		EventLoop *loop_;
 		const int fd_;
 		int events_;
@@ -51,5 +55,7 @@ namespace trantor
 		EventCallback writeCallback_;
 		EventCallback errorCallback_;
 
+		std::weak_ptr<void> tie_;
+		bool tied_;
 	};
 };

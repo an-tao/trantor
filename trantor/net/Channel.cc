@@ -12,7 +12,8 @@ namespace trantor
 			 fd_(fd),
 			 events_(0),
 			 revents_(0),
-			 index_(-1)
+			 index_(-1),
+			 tied_(false)
 	{
 
 	}
@@ -27,9 +28,18 @@ namespace trantor
 	{
 		loop_->updateChannel(this);
 	}
-	void Channel::handleEvent()
-	{
+	void Channel::handleEvent() {
 		//LOG_TRACE<<"revents_="<<revents_;
+		if (tied_) {
+			std::shared_ptr<void> guard = tie_.lock();
+			if (guard) {
+				handleEventSafely();
+			}
+		} else {
+			handleEventSafely();
+		}
+	}
+	void Channel::handleEventSafely() {
 		if(revents_ & POLLNVAL)
 		{
 

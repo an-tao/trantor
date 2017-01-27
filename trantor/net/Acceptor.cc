@@ -1,7 +1,7 @@
 #include <trantor/net/Acceptor.h>
 using namespace trantor;
 Acceptor::Acceptor(EventLoop* loop, const InetAddress& addr) :
-        sock_(addr.getSockAddr()->sa_family),
+        sock_(Socket::createNonblockingSocketOrDie(addr.getSockAddr()->sa_family)),
         addr_(addr),
         loop_(loop),
         acceptChannel_(loop,sock_.fd())

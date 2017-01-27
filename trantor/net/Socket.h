@@ -15,17 +15,22 @@ namespace trantor
     class Socket:NonCopyable
     {
     public:
-        Socket(int family)
+        static int createNonblockingSocketOrDie(int family)
         {
-            sockFd_ = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
-            if (sockFd_ < 0)
+            int sock = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
+            if (sock < 0)
             {
                 LOG_SYSERR << "sockets::createNonblockingOrDie";
                 exit(-1);
             }
+            return sock;
         }
+        explicit Socket(int sockfd):
+                sockFd_(sockfd)
+        {}
         ~Socket()
         {
+            LOG_TRACE<<"Socket deconstructed";
             if(sockFd_>=0)
                 close(sockFd_);
         }
@@ -37,6 +42,8 @@ namespace trantor
         void closeWrite();
         int read(char *buffer,uint64_t len);
         int fd(){return sockFd_;}
+        static struct sockaddr_in6 getLocalAddr(int sockfd);
+        static struct sockaddr_in6 getPeerAddr(int sockfd);
     protected:
         int sockFd_;
 

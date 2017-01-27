@@ -3,6 +3,7 @@
 #include <trantor/utils/NonCopyable.h>
 #include <vector>
 #include <stdio.h>
+#include <string>
 namespace trantor
 {
     class MsgBuffer
@@ -17,9 +18,11 @@ namespace trantor
         void ensureWritableBytes(size_t len);
         void append(const MsgBuffer &buf);
         void append(const char *buf,size_t len);
+        void append(const std::string &buf){append(buf.c_str(),buf.length());}
         void retrieveAll();
         void retrieve(size_t len);
         size_t readFd(int fd,int *retErrno);
+        void sendMessage(const char *buf,size_t len);
     private:
         size_t head_;
         std::vector<char> buffer_;

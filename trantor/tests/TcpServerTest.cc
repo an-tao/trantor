@@ -8,7 +8,7 @@ int main()
 {
     Logger::setLogLevel(Logger::TRACE);
     EventLoop loop;
-    InetAddress addr("127.0.0.1",8888);
+    InetAddress addr(8888);
     TcpServer server(&loop,addr,"test");
     server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
         //LOG_DEBUG<<"recv callback!";
