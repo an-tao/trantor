@@ -43,6 +43,9 @@ namespace trantor
 		void enableWriting() { events_ |= kWriteEvent; update(); }
 		void disableWriting() { events_ &= ~kWriteEvent; update(); }
 
+        bool isWriting() const { return events_ & kWriteEvent; }
+        bool isReading() const { return events_ & kReadEvent; }
+
 	private:
 		void update();
 		static const int kNoneEvent;

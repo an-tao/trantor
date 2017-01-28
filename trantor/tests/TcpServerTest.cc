@@ -15,6 +15,17 @@ int main()
         std::cout<<std::string(buffer->peek(),buffer->readableBytes());
         connectionPtr->send(buffer->peek(),buffer->readableBytes());
         buffer->retrieveAll();
+        connectionPtr->shutdown();
+    });
+    server.setConnectionCallback([](const TcpConnectionPtr& connPtr){
+        if(connPtr->connected())
+        {
+            LOG_DEBUG<<"New connection";
+        }
+        else if(connPtr->disconnected())
+        {
+            LOG_DEBUG<<"connection disconnected";
+        }
     });
     server.start();
     loop.loop();

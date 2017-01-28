@@ -15,14 +15,16 @@ namespace trantor
         void swap(MsgBuffer &buf);
         const size_t readableBytes() const {return tail_-head_;}
         const size_t writableBytes() const {return buffer_.size()-tail_;}
-        void ensureWritableBytes(size_t len);
+
         void append(const MsgBuffer &buf);
         void append(const char *buf,size_t len);
-        void append(const std::string &buf){append(buf.c_str(),buf.length());}
+        void append(const std::string &buf){
+            ensureWritableBytes(buf.length());
+            append(buf.c_str(),buf.length());}
         void retrieveAll();
         void retrieve(size_t len);
         size_t readFd(int fd,int *retErrno);
-        void sendMessage(const char *buf,size_t len);
+
     private:
         size_t head_;
         std::vector<char> buffer_;
@@ -30,5 +32,6 @@ namespace trantor
         size_t tail_;
         const char *begin() const {return &buffer_[0];}
         char *begin() {return &buffer_[0];}
+        void ensureWritableBytes(size_t len);
     };
 }

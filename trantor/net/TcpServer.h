@@ -19,7 +19,7 @@ namespace trantor
         ~TcpServer();
         void start();
         void setRecvMessageCallback(const RecvMessageCallback &cb){recvMessageCallback_=cb;}
-
+        void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
     protected:
         EventLoop *loop_;
         std::unique_ptr<Acceptor> acceptorPtr_;

@@ -18,7 +18,7 @@ namespace trantor
                       const InetAddress& peerAddr);
         ~TcpConnection();
         void send(const char *msg,uint64_t len);
-        void send(const std::string &&msg);
+        void send(const std::string &msg);
 
         void connectEstablished();
         bool connected() const { return state_ == Connected; }
@@ -30,6 +30,7 @@ namespace trantor
         void setCloseCallback(const CloseCallback& cb)
         { closeCallback_ = cb; }
         void connectDestroyed();
+        void shutdown();
     private:
         enum ConnState { Disconnected, Connecting, Connected, Disconnecting };
         EventLoop *loop_;
