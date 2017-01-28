@@ -2,6 +2,7 @@
 #include <trantor/net/Acceptor.h>
 #include <trantor/utils/Logger.h>
 #include <functional>
+#include <vector>
 using namespace trantor;
 using namespace std::placeholders;
 TcpServer::TcpServer(EventLoop *loop, const InetAddress &address, const std::string &name)
@@ -27,6 +28,13 @@ TcpServer::~TcpServer() {
 }
 void TcpServer::newConnection(int sockfd, const InetAddress &peer) {
     LOG_TRACE<<"new connection:fd="<<sockfd<<" address="<<peer.toIpPort();
+    //test code for blocking or nonblocking
+//    std::vector<char> str(1024*1024*100);
+//    for(int i=0;i<str.size();i++)
+//        str[i]='A';
+//    LOG_TRACE<<"vector size:"<<str.size();
+//    size_t n=write(sockfd,&str[0],str.size());
+//    LOG_TRACE<<"write "<<n<<" bytes";
     TcpConnectionPtr newPtr=std::make_shared<TcpConnection>(loop_,sockfd,InetAddress(Socket::getLocalAddr(sockfd)),peer);
     newPtr->setRecvMsgCallback([=](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
         //LOG_TRACE<<"recv Msg "<<buffer->readableBytes()<<" bytes";

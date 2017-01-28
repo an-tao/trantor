@@ -38,7 +38,11 @@ namespace trantor
 		}
 		EventLoop *ownerLoop(){return loop_;};
 
-		void enableReading(){events_|=kReadEvent;update();};
+		void enableReading() { events_ |= kReadEvent; update(); }
+		void disableReading() { events_ &= ~kReadEvent; update(); }
+		void enableWriting() { events_ |= kWriteEvent; update(); }
+		void disableWriting() { events_ &= ~kWriteEvent; update(); }
+
 	private:
 		void update();
 		static const int kNoneEvent;

@@ -13,6 +13,7 @@ int main()
     server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
         //LOG_DEBUG<<"recv callback!";
         std::cout<<std::string(buffer->peek(),buffer->readableBytes());
+        connectionPtr->send(buffer->peek(),buffer->readableBytes());
         buffer->retrieveAll();
     });
     server.start();

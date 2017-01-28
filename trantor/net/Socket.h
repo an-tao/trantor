@@ -9,6 +9,7 @@
 #include <trantor/utils/Logger.h>
 #include <string>
 #include <unistd.h>
+#include <fcntl.h>
 
 namespace trantor
 {
@@ -24,6 +25,23 @@ namespace trantor
                 exit(-1);
             }
             return sock;
+        }
+        //token from muduo
+        static void setNonBlockAndCloseOnExec(int sockfd)
+        {
+            // non-block
+            int flags = ::fcntl(sockfd, F_GETFL, 0);
+            flags |= O_NONBLOCK;
+            int ret = ::fcntl(sockfd, F_SETFL, flags);
+            // FIXME check
+
+            // close-on-exec
+            flags = ::fcntl(sockfd, F_GETFD, 0);
+            flags |= FD_CLOEXEC;
+            ret = ::fcntl(sockfd, F_SETFD, flags);
+            // FIXME check
+
+            (void)ret;
         }
         explicit Socket(int sockfd):
                 sockFd_(sockfd)

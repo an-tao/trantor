@@ -17,8 +17,8 @@ namespace trantor
         TcpConnection(EventLoop *loop,int socketfd,const InetAddress& localAddr,
                       const InetAddress& peerAddr);
         ~TcpConnection();
-        void send(const char *msg,uint64_t len){};
-        void send(const std::string &msg){};
+        void send(const char *msg,uint64_t len);
+        void send(const std::string &&msg);
 
         void connectEstablished();
         bool connected() const { return state_ == Connected; }
@@ -39,6 +39,7 @@ namespace trantor
         MsgBuffer writeBuffer_;
 
         void readCallback();
+        void writeCallback();
         InetAddress localAddr_,peerAddr_;
         ConnState state_;
         //callbacks
@@ -47,5 +48,6 @@ namespace trantor
         CloseCallback closeCallback_;
 
         void handleClose();
+        void sendInLoop(const std::string &msg);
     };
 }

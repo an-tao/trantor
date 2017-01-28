@@ -34,7 +34,9 @@ int Socket::accept(InetAddress *peeraddr)
     struct sockaddr_in6 addr6;
     bzero(&addr6, sizeof addr6);
     socklen_t size=sizeof(addr6);
-    int connfd = ::accept(sockFd_, (struct sockaddr *)&addr6,&size);
+    int connfd = ::accept4(sockFd_, (struct sockaddr *)&addr6,
+                           &size, SOCK_NONBLOCK | SOCK_CLOEXEC);
+   // int connfd = ::accept(sockFd_, (struct sockaddr *)&addr6,&size);
     if (connfd >= 0)
     {
         peeraddr->setSockAddrInet6(addr6);

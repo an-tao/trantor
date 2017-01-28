@@ -2,6 +2,7 @@
 #include <trantor/net/Socket.h>
 #include <trantor/net/Channel.h>
 #define FETCH_SIZE 2048;
+#define SEND_ORDER 1
 using namespace trantor;
 TcpConnection::TcpConnection(EventLoop *loop, int socketfd,const InetAddress& localAddr,
                              const InetAddress& peerAddr):
@@ -14,6 +15,7 @@ TcpConnection::TcpConnection(EventLoop *loop, int socketfd,const InetAddress& lo
 {
     LOG_TRACE<<"new connection:"<<peerAddr.toIpPort()<<"->"<<localAddr.toIpPort();
     ioChennelPtr_->setReadCallback(std::bind(&TcpConnection::readCallback,this));
+    ioChennelPtr_->setWriteCallback(std::bind(&TcpConnection::writeCallback,this));
 }
 TcpConnection::~TcpConnection() {
 
@@ -38,6 +40,19 @@ void TcpConnection::readCallback() {
     if(n>0&&recvMsgCallback_)
     {
         recvMsgCallback_(shared_from_this(),&readBuffer_);
+    }
+}
+void TcpConnection::writeCallback() {
+    if(writeBuffer_.readableBytes()<=0)
+    {
+        ioChennelPtr_->disableWriting();
+    }
+    else
+    {
+        size_t n=write(socketPtr_->fd(),writeBuffer_.peek(),writeBuffer_.readableBytes());
+        writeBuffer_.retrieve(n);
+        if(writeBuffer_.readableBytes()==0)
+            ioChennelPtr_->disableWriting();
     }
 }
 void TcpConnection::connectEstablished() {
@@ -76,4 +91,30 @@ void TcpConnection::connectDestroyed()
         connectionCallback_(shared_from_this());
     }
     ioChennelPtr_->remove();
+}
+void TcpConnection::sendInLoop(const std::string &msg)
+{
+    loop_->assertInLoopThread();
+    writeBuffer_.append(msg);
+    ioChennelPtr_->enableWriting();
+}
+void TcpConnection::send(const char *msg,uint64_t len){
+    send(std::string(msg,len));
+}
+void TcpConnection::send(const std::string &&msg){
+#if SEND_ORDER
+    loop_->runInLoop([=](){
+        sendInLoop(msg);
+    });
+#else
+    if(loop_->isInLoopThread())
+    {
+        sendInLoop(msg);
+    }
+    else{
+        loop_->runInLoop([=](){
+            sendInLoop(msg);
+        });
+    }
+#endif
 }
