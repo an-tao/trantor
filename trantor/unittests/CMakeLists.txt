@@ -1,0 +1,2 @@
+add_executable(msgbuffer_unittest MsgBufferUnittest.cc)
+target_link_libraries(msgbuffer_unittest trantor gtest)
