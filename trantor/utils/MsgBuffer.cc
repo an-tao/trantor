@@ -66,6 +66,22 @@ void MsgBuffer::appendInt64(const uint64_t l)
     append(static_cast<const char*>((void *)&ll),8);
 }
 
+void MsgBuffer::addInFrontInt16(const int16_t s)
+{
+    uint16_t ss=htons(s);
+    addInFront(static_cast<const char*>((void *)&ss),2);
+}
+void MsgBuffer::addInFrontInt32(const int32_t i)
+{
+    uint32_t ii=htonl(i);
+    addInFront(static_cast<const char*>((void *)&ii),4);
+}
+void MsgBuffer::addInFrontInt64(const int64_t l)
+{
+    uint64_t ll=hton64(l);
+    addInFront(static_cast<const char*>((void *)&ll),8);
+}
+
 const uint16_t MsgBuffer::peekInt16() const
 {
     assert(readableBytes()>=2);

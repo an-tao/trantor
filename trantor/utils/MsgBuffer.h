@@ -41,7 +41,10 @@ namespace trantor
         void appendInt64(const uint64_t l);
 //add in front
         void addInFront(const char *buf,size_t len);
-
+        void addInFrontInt8(const int8_t b){addInFront(static_cast<const char*>((void *)&b),1);}
+        void addInFrontInt16(const int16_t s);
+        void addInFrontInt32(const int32_t i);
+        void addInFrontInt64(const int64_t l);
         void retrieveAll();
         void retrieve(size_t len);
         size_t readFd(int fd,int *retErrno);
