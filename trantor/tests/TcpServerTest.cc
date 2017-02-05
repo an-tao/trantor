@@ -29,6 +29,7 @@ int main()
             LOG_DEBUG<<"connection disconnected";
         }
     });
+    server.setIoLoopNum(3);
     server.start();
     loopThread.wait();
 }
