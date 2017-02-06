@@ -184,6 +184,13 @@ void MsgBuffer::addInFront(const char *buf,size_t len)
         head_ -= len;
         return;
     }
+    if(len<=writableBytes())
+    {
+        std::copy(begin()+head_,begin()+tail_,begin()+head_+len);
+        memcpy(begin()+head_,buf,len);
+        tail_ += len;
+        return;
+    }
     size_t newLen;
     if(len+readableBytes()<initCap_)
         newLen=initCap_;
