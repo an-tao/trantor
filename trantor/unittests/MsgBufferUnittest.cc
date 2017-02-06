@@ -32,6 +32,22 @@ TEST(MsgBufferTest, writableTest)
     buffer.retrieveAll();
     EXPECT_EQ(216,buffer.writableBytes());
 }
+
+TEST(MsgBufferTest, addInFrontTest)
+{
+    MsgBuffer buffer(100);
+
+    EXPECT_EQ(100,buffer.writableBytes());
+    buffer.addInFrontInt8('a');
+    EXPECT_EQ(100,buffer.writableBytes());
+    buffer.addInFrontInt64(123);
+    EXPECT_EQ(91,buffer.writableBytes());
+    buffer.addInFrontInt64(100);
+    EXPECT_EQ(91,buffer.writableBytes());
+    buffer.addInFrontInt8(1);
+    EXPECT_EQ(82,buffer.writableBytes());
+}
+
 int main( int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
