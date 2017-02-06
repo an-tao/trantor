@@ -10,7 +10,7 @@ using namespace trantor;
 #define BUF_OFFSET 8
 MsgBuffer::MsgBuffer(size_t len)
         :head_(BUF_OFFSET),
-         initCap_(head_+len),
+         initCap_(len),
          buffer_(len+head_),
          tail_(head_)
 {
