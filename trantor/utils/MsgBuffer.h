@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <string>
 #include <assert.h>
+#include <algorithm>
 #define BUFFER_DEF_LENGTH 2048
+static const char CRLF[]="\r\n";
 namespace trantor
 {
     class MsgBuffer
@@ -14,6 +16,7 @@ namespace trantor
         MsgBuffer(size_t len=BUFFER_DEF_LENGTH);
         //peek
         const char *peek() const {return begin()+head_;}
+        const char *beginWrite() const {return begin()+tail_;}
         const uint8_t peekInt8() const {
             assert(readableBytes()>=1);
             return *(static_cast<const uint8_t*>((void *)peek()));}
@@ -48,9 +51,15 @@ namespace trantor
         void retrieveAll();
         void retrieve(size_t len);
         size_t readFd(int fd,int *retErrno);
-
+//find
+        const char* findCRLF() const
+        {
+            const char* crlf = std::search(peek(), beginWrite(), CRLF, CRLF+2);
+            return crlf == beginWrite() ? NULL : crlf;
+        }
     private:
         size_t head_;
+        size_t initCap_;
         std::vector<char> buffer_;
 
         size_t tail_;

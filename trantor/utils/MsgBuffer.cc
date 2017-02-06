@@ -10,6 +10,7 @@ using namespace trantor;
 #define BUF_OFFSET 8
 MsgBuffer::MsgBuffer(size_t len)
         :head_(BUF_OFFSET),
+         initCap_(head_+len),
          buffer_(len+head_),
          tail_(head_)
 {
@@ -39,6 +40,7 @@ void MsgBuffer::swap(MsgBuffer &buf) {
     buffer_.swap(buf.buffer_);
     std::swap(head_,buf.head_);
     std::swap(tail_,buf.tail_);
+    std::swap(initCap_,buf.initCap_);
 }
 void MsgBuffer::append(const MsgBuffer &buf) {
     ensureWritableBytes(buf.readableBytes());
@@ -110,6 +112,10 @@ void MsgBuffer::retrieve(size_t len) {
     head_+=len;
 }
 void MsgBuffer::retrieveAll() {
+    if(buffer_.size()>(initCap_*2))
+    {
+        buffer_.resize(initCap_);
+    }
     tail_=head_=BUF_OFFSET;
 }
 size_t MsgBuffer::readFd(int fd,int *retErrno){
@@ -179,8 +185,8 @@ void MsgBuffer::addInFront(const char *buf,size_t len)
         return;
     }
     size_t newLen;
-    if(len+readableBytes()<BUFFER_DEF_LENGTH)
-        newLen=BUFFER_DEF_LENGTH;
+    if(len+readableBytes()<initCap_)
+        newLen=initCap_;
     else
         newLen=len+readableBytes();
     MsgBuffer newBuf(newLen);
