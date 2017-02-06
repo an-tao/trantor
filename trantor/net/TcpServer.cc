@@ -6,9 +6,9 @@
 using namespace trantor;
 using namespace std::placeholders;
 TcpServer::TcpServer(EventLoop *loop, const InetAddress &address, const std::string &name)
-:loop_(loop),
- acceptorPtr_(new Acceptor(loop,address)),
- serverName_(name)
+        :loop_(loop),
+         acceptorPtr_(new Acceptor(loop,address)),
+         serverName_(name)
 {
     acceptorPtr_->setNewConnectionCallback(std::bind(&TcpServer::newConnection,this,_1,_2));
 }
@@ -35,7 +35,15 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer) {
 //    LOG_TRACE<<"vector size:"<<str.size();
 //    size_t n=write(sockfd,&str[0],str.size());
 //    LOG_TRACE<<"write "<<n<<" bytes";
-    TcpConnectionPtr newPtr=std::make_shared<TcpConnection>(loop_,sockfd,InetAddress(Socket::getLocalAddr(sockfd)),peer);
+    loop_->assertInLoopThread();
+    EventLoop *ioLoop=NULL;
+    if(loopPoolPtr_&&loopPoolPtr_->getLoopNum()>0)
+    {
+        ioLoop=loopPoolPtr_->getNextLoop();
+    }
+    if(ioLoop==NULL)
+        ioLoop=loop_;
+    TcpConnectionPtr newPtr=std::make_shared<TcpConnection>(ioLoop,sockfd,InetAddress(Socket::getLocalAddr(sockfd)),peer);
     newPtr->setRecvMsgCallback([=](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
         //LOG_TRACE<<"recv Msg "<<buffer->readableBytes()<<" bytes";
         if(recvMessageCallback_)
@@ -54,10 +62,22 @@ void TcpServer::start() {
         acceptorPtr_->listen();
     });
 }
+void TcpServer::setIoLoopNum(size_t num)
+{
+    assert(num>=0);
+    loop_->runInLoop([=](){
+        loopPoolPtr_=std::unique_ptr<EventLoopThreadPool>(new EventLoopThreadPool(num));
+        loopPoolPtr_->start();
+    });
+}
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr) {
     LOG_TRACE<<"connectionClosed";
-    loop_->assertInLoopThread();
-    size_t n=connSet_.erase(connectionPtr);
-    assert(n==1);
+    //loop_->assertInLoopThread();
+    loop_->runInLoop([=](){
+        size_t n=connSet_.erase(connectionPtr);
+        assert(n==1);
+    });
+
+
     connectionPtr->connectDestroyed();
 }

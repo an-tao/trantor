@@ -21,7 +21,7 @@ TcpConnection::~TcpConnection() {
 
 }
 void TcpConnection::readCallback() {
-    //LOG_TRACE<<"read Callback";
+    LOG_TRACE<<"read Callback";
     loop_->assertInLoopThread();
     int ret=0;
 
@@ -43,6 +43,7 @@ void TcpConnection::readCallback() {
     }
 }
 void TcpConnection::writeCallback() {
+    LOG_TRACE<<"write Callback";
     loop_->assertInLoopThread();
     if(ioChennelPtr_->isWriting())
     {
@@ -68,13 +69,17 @@ void TcpConnection::writeCallback() {
     }
 }
 void TcpConnection::connectEstablished() {
-    loop_->assertInLoopThread();
-    assert(state_==Connecting);
-    ioChennelPtr_->tie(shared_from_this());
-    ioChennelPtr_->enableReading();
-    state_=Connected;
-    if(connectionCallback_)
-        connectionCallback_(shared_from_this());
+    //loop_->assertInLoopThread();
+    loop_->runInLoop([=](){
+        LOG_TRACE<<"connectEstablished";
+        assert(state_==Connecting);
+        ioChennelPtr_->tie(shared_from_this());
+        ioChennelPtr_->enableReading();
+        state_=Connected;
+        if(connectionCallback_)
+            connectionCallback_(shared_from_this());
+    });
+
 }
 void TcpConnection::handleClose() {
     LOG_TRACE<<"connection closed";
@@ -118,6 +123,7 @@ void TcpConnection::shutdown() {
 }
 void TcpConnection::sendInLoop(const std::string &msg)
 {
+    LOG_TRACE<<"send in loop";
     loop_->assertInLoopThread();
     writeBuffer_.append(msg);
     if(!ioChennelPtr_->isWriting())
