@@ -41,11 +41,11 @@ TEST(MsgBufferTest, addInFrontTest)
     buffer.addInFrontInt8('a');
     EXPECT_EQ(100,buffer.writableBytes());
     buffer.addInFrontInt64(123);
-    EXPECT_EQ(91,buffer.writableBytes());
+    EXPECT_EQ(92,buffer.writableBytes());
     buffer.addInFrontInt64(100);
-    EXPECT_EQ(91,buffer.writableBytes());
+    EXPECT_EQ(84,buffer.writableBytes());
     buffer.addInFrontInt8(1);
-    EXPECT_EQ(82,buffer.writableBytes());
+    EXPECT_EQ(84,buffer.writableBytes());
 }
 
 int main( int argc, char **argv)
