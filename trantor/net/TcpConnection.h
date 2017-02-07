@@ -26,6 +26,11 @@ namespace trantor
         //set callbacks
         void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
+        void setWriteCompleteCallback(const WriteCompleteCallback &cb){writeCompleteCallback_=cb;}
+        void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,size_t markLen){
+            highWaterMarkCallback_=cb;
+            highWaterMarkLen_=markLen;
+        }
         /// Internal use only.
         void setCloseCallback(const CloseCallback& cb)
         { closeCallback_ = cb; }
@@ -47,8 +52,11 @@ namespace trantor
         RecvMessageCallback recvMsgCallback_;
         ConnectionCallback connectionCallback_;
         CloseCallback closeCallback_;
-
+        WriteCompleteCallback writeCompleteCallback_;
+        HighWaterMarkCallback highWaterMarkCallback_;
         void handleClose();
         void sendInLoop(const std::string &msg);
+
+        size_t highWaterMarkLen_;
     };
 }

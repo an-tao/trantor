@@ -50,7 +50,9 @@ void TcpConnection::writeCallback() {
         if(writeBuffer_.readableBytes()<=0)
         {
             ioChennelPtr_->disableWriting();
-            //add write complete callback here ,fix me
+            //
+            if(writeCompleteCallback_)
+                writeCompleteCallback_(shared_from_this());
             if(state_==Disconnecting)
             {
                 socketPtr_->closeWrite();
@@ -125,9 +127,25 @@ void TcpConnection::sendInLoop(const std::string &msg)
 {
     LOG_TRACE<<"send in loop";
     loop_->assertInLoopThread();
-    writeBuffer_.append(msg);
-    if(!ioChennelPtr_->isWriting())
-        ioChennelPtr_->enableWriting();
+    size_t remainLen=msg.length();
+    size_t sendLen=0;
+    if(!ioChennelPtr_->isWriting()&&writeBuffer_.readableBytes()==0)
+    {
+        //send directly
+        sendLen=write(socketPtr_->fd(),msg.c_str(),msg.length());
+        remainLen-=sendLen;
+    }
+    if(remainLen>0)
+    {
+        writeBuffer_.append(msg.c_str()+sendLen,remainLen);
+        if(!ioChennelPtr_->isWriting())
+            ioChennelPtr_->enableWriting();
+        if(highWaterMarkCallback_&&writeBuffer_.readableBytes()>highWaterMarkLen_)
+        {
+            highWaterMarkCallback_(shared_from_this(),writeBuffer_.readableBytes());
+        }
+    }
+
 }
 void TcpConnection::send(const char *msg,uint64_t len){
     send(std::string(msg,len));

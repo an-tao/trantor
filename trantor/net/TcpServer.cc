@@ -53,6 +53,10 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer) {
         if(connectionCallback_)
             connectionCallback_(connectionPtr);
     });
+    newPtr->setWriteCompleteCallback([=](const TcpConnectionPtr &connectionPtr){
+        if(writeCompleteCallback_)
+            writeCompleteCallback_(connectionPtr);
+    });
     newPtr->setCloseCallback(std::bind(&TcpServer::connectionClosed,this,_1));
     connSet_.insert(newPtr);
     newPtr->connectEstablished();

@@ -23,7 +23,7 @@ namespace trantor
         void setIoLoopNum(size_t num);
         void setRecvMessageCallback(const RecvMessageCallback &cb){recvMessageCallback_=cb;}
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
-
+        void setWriteCompleteCallback(const WriteCompleteCallback &cb){writeCompleteCallback_=cb;}
     private:
         EventLoop *loop_;
         std::unique_ptr<Acceptor> acceptorPtr_;
@@ -33,6 +33,8 @@ namespace trantor
 
         RecvMessageCallback recvMessageCallback_;
         ConnectionCallback connectionCallback_;
+        WriteCompleteCallback writeCompleteCallback_;
+
         void connectionClosed(const TcpConnectionPtr &connectionPtr);
         std::unique_ptr<EventLoopThreadPool> loopPoolPtr_;
 

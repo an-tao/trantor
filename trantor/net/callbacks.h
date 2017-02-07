@@ -13,4 +13,6 @@ namespace trantor{
                                 MsgBuffer*)> RecvMessageCallback;
     typedef std::function<void (const TcpConnectionPtr&)> ConnectionCallback;
     typedef std::function<void (const TcpConnectionPtr&)> CloseCallback;
+    typedef std::function<void (const TcpConnectionPtr&)> WriteCompleteCallback;
+    typedef std::function<void (const TcpConnectionPtr&,const size_t)> HighWaterMarkCallback;
 }
