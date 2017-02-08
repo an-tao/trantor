@@ -31,6 +31,9 @@ namespace trantor
             highWaterMarkCallback_=cb;
             highWaterMarkLen_=markLen;
         }
+
+        void setTcpNoDelay(bool on);
+
         /// Internal use only.
         void setCloseCallback(const CloseCallback& cb)
         { closeCallback_ = cb; }

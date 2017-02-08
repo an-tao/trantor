@@ -16,6 +16,8 @@ TcpConnection::TcpConnection(EventLoop *loop, int socketfd,const InetAddress& lo
     LOG_TRACE<<"new connection:"<<peerAddr.toIpPort()<<"->"<<localAddr.toIpPort();
     ioChennelPtr_->setReadCallback(std::bind(&TcpConnection::readCallback,this));
     ioChennelPtr_->setWriteCallback(std::bind(&TcpConnection::writeCallback,this));
+
+    socketPtr_->setKeepAlive(true);
 }
 TcpConnection::~TcpConnection() {
 
@@ -98,7 +100,10 @@ void TcpConnection::handleClose() {
     }
 
 }
-
+void TcpConnection::setTcpNoDelay(bool on)
+{
+    socketPtr_->setTcpNoDelay(on);
+}
 void TcpConnection::connectDestroyed()
 {
     loop_->assertInLoopThread();
