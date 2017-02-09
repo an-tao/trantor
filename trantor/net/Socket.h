@@ -82,7 +82,7 @@ namespace trantor
         /// Enable/disable SO_KEEPALIVE
         ///
         void setKeepAlive(bool on);
-
+        int getSocketError();
     protected:
         int sockFd_;
 

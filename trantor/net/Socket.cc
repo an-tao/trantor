@@ -119,3 +119,18 @@ void Socket::setKeepAlive(bool on)
                  &optval, static_cast<socklen_t>(sizeof optval));
     // FIXME CHECK
 }
+
+int Socket::getSocketError()
+{
+    int optval;
+    socklen_t optlen = static_cast<socklen_t>(sizeof optval);
+
+    if (::getsockopt(sockFd_, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+    {
+        return errno;
+    }
+    else
+    {
+        return optval;
+    }
+}

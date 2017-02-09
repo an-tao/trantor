@@ -44,6 +44,10 @@ namespace trantor
 		{
 
 		}
+		if ((revents_ & POLLHUP) && !(revents_ & POLLIN))
+		{
+			if (closeCallback_) closeCallback_();
+		}
 		if(revents_ & (POLLNVAL|POLLERR))
 		{
 			if(errorCallback_) errorCallback_();

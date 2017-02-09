@@ -16,8 +16,12 @@ TcpConnection::TcpConnection(EventLoop *loop, int socketfd,const InetAddress& lo
     LOG_TRACE<<"new connection:"<<peerAddr.toIpPort()<<"->"<<localAddr.toIpPort();
     ioChennelPtr_->setReadCallback(std::bind(&TcpConnection::readCallback,this));
     ioChennelPtr_->setWriteCallback(std::bind(&TcpConnection::writeCallback,this));
-
+    ioChennelPtr_->setCloseCallback(
+            std::bind(&TcpConnection::handleClose, this));
+    ioChennelPtr_->setErrorCallback(
+            std::bind(&TcpConnection::handleError, this));
     socketPtr_->setKeepAlive(true);
+    name_=localAddr.toIpPort()+"--"+peerAddr.toIpPort();
 }
 TcpConnection::~TcpConnection() {
 
@@ -99,6 +103,11 @@ void TcpConnection::handleClose() {
         closeCallback_(guardThis);
     }
 
+}
+void TcpConnection::handleError() {
+    int err = socketPtr_->getSocketError();
+    LOG_ERROR << "TcpConnection::handleError [" << name_
+              << "] - SO_ERROR = " << err << " " << strerror_tl(err);
 }
 void TcpConnection::setTcpNoDelay(bool on)
 {

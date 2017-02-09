@@ -58,8 +58,10 @@ namespace trantor
         WriteCompleteCallback writeCompleteCallback_;
         HighWaterMarkCallback highWaterMarkCallback_;
         void handleClose();
+        void handleError();
         void sendInLoop(const std::string &msg);
 
         size_t highWaterMarkLen_;
+        std::string name_;
     };
 }
