@@ -137,6 +137,19 @@ void TcpConnection::shutdown() {
         }
     });
 }
+
+void TcpConnection::forceClose()
+{
+    loop_->runInLoop([=](){
+        if (state_ == Connected || state_ == Disconnecting)
+        {
+            state_=Disconnecting;
+            handleClose();
+        }
+    });
+}
+
+
 void TcpConnection::sendInLoop(const std::string &msg)
 {
     LOG_TRACE<<"send in loop";

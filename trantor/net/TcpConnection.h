@@ -11,8 +11,10 @@ namespace trantor
 {
     class Channel;
     class Socket;
+    class TcpServer;
     class TcpConnection:public NonCopyable,public std::enable_shared_from_this<TcpConnection>
     {
+        friend class TcpServer;
     public:
         TcpConnection(EventLoop *loop,int socketfd,const InetAddress& localAddr,
                       const InetAddress& peerAddr);
@@ -20,25 +22,31 @@ namespace trantor
         void send(const char *msg,uint64_t len);
         void send(const std::string &msg);
 
-        void connectEstablished();
+
         bool connected() const { return state_ == Connected; }
         bool disconnected() const { return state_ == Disconnected; }
+
+        MsgBuffer* getSendBuffer() { return  &writeBuffer_;}
+        MsgBuffer* getRecvBuffer() { return &readBuffer_;}
         //set callbacks
-        void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}
-        void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
-        void setWriteCompleteCallback(const WriteCompleteCallback &cb){writeCompleteCallback_=cb;}
         void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,size_t markLen){
             highWaterMarkCallback_=cb;
             highWaterMarkLen_=markLen;
         }
 
         void setTcpNoDelay(bool on);
+        void shutdown();
+        void forceClose();
 
+    protected:
         /// Internal use only.
+        void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}
+        void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
+        void setWriteCompleteCallback(const WriteCompleteCallback &cb){writeCompleteCallback_=cb;}
         void setCloseCallback(const CloseCallback& cb)
         { closeCallback_ = cb; }
         void connectDestroyed();
-        void shutdown();
+        void connectEstablished();
     private:
         enum ConnState { Disconnected, Connecting, Connected, Disconnecting };
         EventLoop *loop_;
