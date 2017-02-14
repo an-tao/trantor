@@ -48,6 +48,32 @@ TEST(MsgBufferTest, addInFrontTest)
     EXPECT_EQ(84,buffer.writableBytes());
 }
 
+TEST(MsgBuffer,MoveContrustor)
+{
+
+    MsgBuffer buf1(100);
+    const char *bufptr1=buf1.peek();
+    MsgBuffer buffnew1=std::move(buf1);
+    EXPECT_EQ(bufptr1,buffnew1.peek());
+
+    MsgBuffer buf2(100);
+    const char *bufptr2=buf2.peek();
+    MsgBuffer buffnew2(std::move(buf2));
+    EXPECT_EQ(bufptr2,buffnew2.peek());
+
+}
+
+TEST(Msgbuffer, MoveAssignmentOperator)
+{
+    using namespace std;
+    MsgBuffer buf(100);
+    const char *bufptr=buf.peek();
+    size_t writable=buf.writableBytes();
+    MsgBuffer buffnew(1000);
+    buffnew=move(buf);
+    EXPECT_EQ(bufptr,buffnew.peek());
+    EXPECT_EQ(writable,buffnew.writableBytes());
+}
 int main( int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
