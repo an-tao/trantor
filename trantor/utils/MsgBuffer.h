@@ -14,6 +14,8 @@ namespace trantor
     {
     public:
         MsgBuffer(size_t len=BUFFER_DEF_LENGTH);
+        MsgBuffer(const MsgBuffer &buf);
+        MsgBuffer&operator = (const MsgBuffer &buf);
         MsgBuffer(MsgBuffer &&buf);
         MsgBuffer& operator = (MsgBuffer &&buf);
         //peek
