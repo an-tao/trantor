@@ -6,7 +6,11 @@ Acceptor::Acceptor(EventLoop* loop, const InetAddress& addr) :
         loop_(loop),
         acceptChannel_(loop,sock_.fd())
 {
+    sock_.setReuseAddr(true);
+    sock_.setReusePort(true);
+
     sock_.bindAddress(addr_);
+
     acceptChannel_.setReadCallback(std::bind(&Acceptor::readCallback,this));
 }
 Acceptor::~Acceptor() {

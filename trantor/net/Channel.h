@@ -22,6 +22,20 @@ namespace trantor
 		{
 			writeCallback_=cb;
 		};
+		void setCloseCallback(const EventCallback& cb)
+		{ closeCallback_ = cb; }
+		void setErrorCallback(const EventCallback& cb)
+		{ errorCallback_ = cb; }
+
+		void setReadCallback(EventCallback&& cb)
+		{ readCallback_ = std::move(cb); }
+		void setWriteCallback(EventCallback&& cb)
+		{ writeCallback_ = std::move(cb); }
+		void setCloseCallback(EventCallback&& cb)
+		{ closeCallback_ = std::move(cb); }
+		void setErrorCallback(EventCallback&& cb)
+		{ errorCallback_ = std::move(cb); }
+
 		int fd() const {return fd_;};
 		int events() const {return events_;};
 		int setRevents(int revt) {
@@ -61,7 +75,7 @@ namespace trantor
 		EventCallback readCallback_;
 		EventCallback writeCallback_;
 		EventCallback errorCallback_;
-
+		EventCallback closeCallback_;
 		std::weak_ptr<void> tie_;
 		bool tied_;
 	};

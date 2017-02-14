@@ -12,7 +12,7 @@
 #include <functional>
 #include <unistd.h>
 #include <algorithm>
-
+#include <signal.h>
 
 using namespace std;
 namespace trantor

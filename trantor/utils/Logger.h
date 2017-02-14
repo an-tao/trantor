@@ -94,4 +94,6 @@ namespace trantor
 #define LOG_ERROR trantor::Logger(__FILE__, __LINE__, trantor::Logger::ERROR).stream()
 #define LOG_FATAL trantor::Logger(__FILE__, __LINE__, trantor::Logger::FATAL).stream()
 #define LOG_SYSERR trantor::Logger(__FILE__, __LINE__, true).stream()
+
+    const char* strerror_tl(int savedErrno);
 }

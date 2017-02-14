@@ -2,14 +2,14 @@
 
 #include <trantor/net/callbacks.h>
 #include <trantor/utils/NonCopyable.h>
-
+#include <trantor/utils/Logger.h>
 #include <trantor/net/EventLoopThreadPool.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
 #include <string>
 #include <memory>
 #include <set>
-
+#include <signal.h>
 namespace trantor
 {
     class Acceptor;
@@ -24,6 +24,8 @@ namespace trantor
         void setRecvMessageCallback(const RecvMessageCallback &cb){recvMessageCallback_=cb;}
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
         void setWriteCompleteCallback(const WriteCompleteCallback &cb){writeCompleteCallback_=cb;}
+
+        
     private:
         EventLoop *loop_;
         std::unique_ptr<Acceptor> acceptorPtr_;
@@ -37,6 +39,16 @@ namespace trantor
 
         void connectionClosed(const TcpConnectionPtr &connectionPtr);
         std::unique_ptr<EventLoopThreadPool> loopPoolPtr_;
+        class IgnoreSigPipe
+        {
+        public:
+            IgnoreSigPipe()
+            {
+                ::signal(SIGPIPE, SIG_IGN);
+                LOG_TRACE << "Ignore SIGPIPE";
+            }
+        };
 
+        IgnoreSigPipe initObj;
     };
 }

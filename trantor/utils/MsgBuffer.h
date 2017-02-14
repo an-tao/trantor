@@ -14,6 +14,8 @@ namespace trantor
     {
     public:
         MsgBuffer(size_t len=BUFFER_DEF_LENGTH);
+        MsgBuffer(MsgBuffer &&buf);
+        MsgBuffer& operator = (MsgBuffer &&buf);
         //peek
         const char *peek() const {return begin()+head_;}
         const char *beginWrite() const {return begin()+tail_;}
@@ -63,6 +65,8 @@ namespace trantor
         std::vector<char> buffer_;
 
         size_t tail_;
+
+
         const char *begin() const {return &buffer_[0];}
         char *begin() {return &buffer_[0];}
         void ensureWritableBytes(size_t len);

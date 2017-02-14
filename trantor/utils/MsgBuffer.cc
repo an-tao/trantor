@@ -15,6 +15,21 @@ MsgBuffer::MsgBuffer(size_t len)
          tail_(head_)
 {
 }
+MsgBuffer::MsgBuffer(MsgBuffer &&buf)
+:head_(buf.head_),
+ initCap_(buf.initCap_),
+ buffer_(std::move(buf.buffer_)),
+ tail_(buf.tail_)
+{
+
+}
+MsgBuffer& MsgBuffer::operator = (MsgBuffer &&buf)
+{
+    head_=buf.head_;
+    initCap_=buf.initCap_;
+    buffer_=std::move(buf.buffer_);
+    tail_=buf.tail_;
+}
 void MsgBuffer::ensureWritableBytes(size_t len)
 {
     if(writableBytes()>=len)

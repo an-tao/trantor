@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 
 using namespace trantor;
 void Socket::bindAddress(const InetAddress &localaddr) {
@@ -75,4 +76,61 @@ struct sockaddr_in6 Socket::getPeerAddr(int sockfd)
         LOG_SYSERR << "sockets::getPeerAddr";
     }
     return peeraddr;
+}
+
+void Socket::setTcpNoDelay(bool on)
+{
+    int optval = on ? 1 : 0;
+    ::setsockopt(sockFd_, IPPROTO_TCP, TCP_NODELAY,
+                 &optval, static_cast<socklen_t>(sizeof optval));
+    // FIXME CHECK
+}
+
+void Socket::setReuseAddr(bool on)
+{
+    int optval = on ? 1 : 0;
+    ::setsockopt(sockFd_, SOL_SOCKET, SO_REUSEADDR,
+                 &optval, static_cast<socklen_t>(sizeof optval));
+    // FIXME CHECK
+}
+
+void Socket::setReusePort(bool on)
+{
+#ifdef SO_REUSEPORT
+    int optval = on ? 1 : 0;
+    int ret = ::setsockopt(sockFd_, SOL_SOCKET, SO_REUSEPORT,
+                           &optval, static_cast<socklen_t>(sizeof optval));
+    if (ret < 0 && on)
+    {
+        LOG_SYSERR << "SO_REUSEPORT failed.";
+    }
+#else
+    if (on)
+  {
+    LOG_ERROR << "SO_REUSEPORT is not supported.";
+  }
+#endif
+}
+
+void Socket::setKeepAlive(bool on)
+{
+    int optval = on ? 1 : 0;
+    ::setsockopt(sockFd_, SOL_SOCKET, SO_KEEPALIVE,
+                 &optval, static_cast<socklen_t>(sizeof optval));
+    // FIXME CHECK
+}
+
+int Socket::getSocketError()
+{
+    int optval;
+    socklen_t optlen = static_cast<socklen_t>(sizeof optval);
+
+    if (::getsockopt(sockFd_, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+    {
+        return errno;
+    }
+    else
+    {
+        return optval;
+    }
 }

@@ -62,6 +62,27 @@ namespace trantor
         int fd(){return sockFd_;}
         static struct sockaddr_in6 getLocalAddr(int sockfd);
         static struct sockaddr_in6 getPeerAddr(int sockfd);
+
+        ///
+        /// Enable/disable TCP_NODELAY (disable/enable Nagle's algorithm).
+        ///
+        void setTcpNoDelay(bool on);
+
+        ///
+        /// Enable/disable SO_REUSEADDR
+        ///
+        void setReuseAddr(bool on);
+
+        ///
+        /// Enable/disable SO_REUSEPORT
+        ///
+        void setReusePort(bool on);
+
+        ///
+        /// Enable/disable SO_KEEPALIVE
+        ///
+        void setKeepAlive(bool on);
+        int getSocketError();
     protected:
         int sockFd_;
 
