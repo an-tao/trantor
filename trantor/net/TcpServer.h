@@ -24,6 +24,8 @@ namespace trantor
         void setRecvMessageCallback(const RecvMessageCallback &cb){recvMessageCallback_=cb;}
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
         void setWriteCompleteCallback(const WriteCompleteCallback &cb){writeCompleteCallback_=cb;}
+
+        
     private:
         EventLoop *loop_;
         std::unique_ptr<Acceptor> acceptorPtr_;

@@ -38,6 +38,7 @@ namespace trantor
         void shutdown();
         void forceClose();
 
+
     protected:
         /// Internal use only.
         void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}

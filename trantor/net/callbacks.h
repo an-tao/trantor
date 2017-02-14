@@ -3,6 +3,10 @@
 #include <functional>
 #include <memory>
 namespace trantor{
+    enum TrantorError{
+        TrantorError_None,
+        TrantorError_UnkownError
+    };
     typedef std::function<void ()> TimerCallback;
 
 // the data has been read to (buf, len)
@@ -15,4 +19,6 @@ namespace trantor{
     typedef std::function<void (const TcpConnectionPtr&)> CloseCallback;
     typedef std::function<void (const TcpConnectionPtr&)> WriteCompleteCallback;
     typedef std::function<void (const TcpConnectionPtr&,const size_t)> HighWaterMarkCallback;
+
+    typedef std::function<void (const TrantorError)> OperationCompleteCallback;
 }
