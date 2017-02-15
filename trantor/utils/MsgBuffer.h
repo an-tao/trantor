@@ -14,10 +14,11 @@ namespace trantor
     {
     public:
         MsgBuffer(size_t len=BUFFER_DEF_LENGTH);
-        MsgBuffer(const MsgBuffer &buf);
-        MsgBuffer&operator = (const MsgBuffer &buf);
-        MsgBuffer(MsgBuffer &&buf) noexcept ;
-        MsgBuffer& operator = (MsgBuffer &&buf) noexcept ;
+        //default constructor and assignment operator can work;
+//        MsgBuffer(const MsgBuffer &buf);
+//        MsgBuffer&operator = (const MsgBuffer &buf);
+//        MsgBuffer(MsgBuffer &&buf) noexcept ;
+//        MsgBuffer& operator = (MsgBuffer &&buf) noexcept ;
         //peek
         const char *peek() const {return begin()+head_;}
         const char *beginWrite() const {return begin()+tail_;}

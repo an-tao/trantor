@@ -15,46 +15,46 @@ MsgBuffer::MsgBuffer(size_t len)
          tail_(head_)
 {
 }
-MsgBuffer::MsgBuffer(const MsgBuffer &buf)
-        :head_(buf.head_),
-         initCap_(buf.initCap_),
-         buffer_(buf.buffer_),
-         tail_(buf.tail_)
-{
-
-}
-MsgBuffer& MsgBuffer::operator = (const MsgBuffer &buf)
-{
-    if(this!=&buf)
-    {
-        head_=buf.head_;
-        initCap_=buf.initCap_;
-        buffer_=buf.buffer_;
-        tail_=buf.tail_;
-    }
-
-    return *this;
-}
-MsgBuffer::MsgBuffer(MsgBuffer &&buf) noexcept
-:head_(buf.head_),
- initCap_(buf.initCap_),
- buffer_(std::move(buf.buffer_)),
- tail_(buf.tail_)
-{
-
-}
-MsgBuffer& MsgBuffer::operator = (MsgBuffer &&buf) noexcept
-{
-    if(this!=&buf)
-    {
-        head_=buf.head_;
-        initCap_=buf.initCap_;
-        buffer_=std::move(buf.buffer_);
-        tail_=buf.tail_;
-    }
-
-    return *this;
-}
+//MsgBuffer::MsgBuffer(const MsgBuffer &buf)
+//        :head_(buf.head_),
+//         initCap_(buf.initCap_),
+//         buffer_(buf.buffer_),
+//         tail_(buf.tail_)
+//{
+//
+//}
+//MsgBuffer& MsgBuffer::operator = (const MsgBuffer &buf)
+//{
+//    if(this!=&buf)
+//    {
+//        head_=buf.head_;
+//        initCap_=buf.initCap_;
+//        buffer_=buf.buffer_;
+//        tail_=buf.tail_;
+//    }
+//
+//    return *this;
+//}
+//MsgBuffer::MsgBuffer(MsgBuffer &&buf) noexcept
+//:head_(buf.head_),
+// initCap_(buf.initCap_),
+// buffer_(std::move(buf.buffer_)),
+// tail_(buf.tail_)
+//{
+//
+//}
+//MsgBuffer& MsgBuffer::operator = (MsgBuffer &&buf) noexcept
+//{
+//    if(this!=&buf)
+//    {
+//        head_=buf.head_;
+//        initCap_=buf.initCap_;
+//        buffer_=std::move(buf.buffer_);
+//        tail_=buf.tail_;
+//    }
+//
+//    return *this;
+//}
 void MsgBuffer::ensureWritableBytes(size_t len)
 {
     if(writableBytes()>=len)
