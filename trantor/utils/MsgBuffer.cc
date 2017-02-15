@@ -35,7 +35,7 @@ MsgBuffer& MsgBuffer::operator = (const MsgBuffer &buf)
 
     return *this;
 }
-MsgBuffer::MsgBuffer(MsgBuffer &&buf)
+MsgBuffer::MsgBuffer(MsgBuffer &&buf) noexcept
 :head_(buf.head_),
  initCap_(buf.initCap_),
  buffer_(std::move(buf.buffer_)),
@@ -43,7 +43,7 @@ MsgBuffer::MsgBuffer(MsgBuffer &&buf)
 {
 
 }
-MsgBuffer& MsgBuffer::operator = (MsgBuffer &&buf)
+MsgBuffer& MsgBuffer::operator = (MsgBuffer &&buf) noexcept
 {
     if(this!=&buf)
     {
