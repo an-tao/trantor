@@ -65,12 +65,11 @@ TEST(MsgBuffer,MoveContrustor)
 
 TEST(Msgbuffer, MoveAssignmentOperator)
 {
-    using namespace std;
     MsgBuffer buf(100);
     const char *bufptr=buf.peek();
     size_t writable=buf.writableBytes();
     MsgBuffer buffnew(1000);
-    buffnew=move(buf);
+    buffnew=std::move(buf);
     EXPECT_EQ(bufptr,buffnew.peek());
     EXPECT_EQ(writable,buffnew.writableBytes());
 }
