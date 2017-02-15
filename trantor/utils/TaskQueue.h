@@ -9,6 +9,7 @@ namespace trantor
     {
     public:
         virtual  void runTaskInQueue(const std::function<void ()> &task)=0;
+        virtual  void runTaskInQueue(std::function<void ()> &&task)=0;
         virtual  std::string getName() const {return "";};
         void syncTaskInQueue(const std::function<void ()> &task)
         {

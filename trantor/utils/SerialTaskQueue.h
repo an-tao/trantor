@@ -11,6 +11,8 @@ namespace trantor
     {
     public:
         virtual  void runTaskInQueue(const std::function<void ()> &task);
+        virtual  void runTaskInQueue(std::function<void ()> &&task);
+
         virtual  std::string getName() const {return queueName_;};
         void waitAllTasksFinished();
         SerialTaskQueue()=delete;

@@ -16,11 +16,18 @@ stop_(false)
 }
 void ConcurrentTaskQueue::runTaskInQueue(const std::function<void ()> &task)
 {
+    LOG_TRACE<<"copy task into queue";
     std::lock_guard<std::mutex> lock(taskMutex_);
     taskQueue_.push(task);
     taskCond_.notify_one();
 }
-
+void ConcurrentTaskQueue::runTaskInQueue(std::function<void ()> &&task)
+{
+    LOG_TRACE<<"move task into queue";
+    std::lock_guard<std::mutex> lock(taskMutex_);
+    taskQueue_.push(std::move(task));
+    taskCond_.notify_one();
+}
 void ConcurrentTaskQueue::queueFunc(int queueNum) {
     char tmpName[32];
     snprintf(tmpName,sizeof(tmpName),"%s%d",queueName_.c_str(),queueNum);

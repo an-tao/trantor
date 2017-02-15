@@ -14,7 +14,7 @@ namespace trantor
         {
             queueName_="SerailTaskQueue";
         }
-        LOG_TRACE<<"constract SerialTaskQueue('"<<queueName_<<"')";
+        LOG_TRACE<<"construct SerialTaskQueue('"<<queueName_<<"')";
     }
     void SerialTaskQueue::stop() {
         stop_= true;
@@ -24,13 +24,23 @@ namespace trantor
     SerialTaskQueue::~SerialTaskQueue() {
         if(!stop_)
             stop();
-        LOG_TRACE<<"unconstract SerialTaskQueue('"<<queueName_<<"')";
+        LOG_TRACE<<"unconstruct SerialTaskQueue('"<<queueName_<<"')";
     }
-    void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task) {
+    void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task)
+    {
+        LOG_TRACE<<"copy task into queue";
         std::lock_guard<std::mutex> lock(taskMutex_);
         taskQueue_.push(task);
         taskCond_.notify_one();
     }
+    void SerialTaskQueue::runTaskInQueue(std::function<void ()> &&task)
+    {
+        LOG_TRACE<<"move task into queue";
+        std::lock_guard<std::mutex> lock(taskMutex_);
+        taskQueue_.push(std::move(task));
+        taskCond_.notify_one();
+    }
+
     void SerialTaskQueue::queueFunc() {
         ::prctl(PR_SET_NAME,queueName_.c_str());
         while(!stop_)
