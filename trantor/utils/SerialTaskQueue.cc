@@ -1,12 +1,14 @@
 #include <trantor/utils/SerialTaskQueue.h>
 #include <trantor/utils/Logger.h>
 #include <sys/prctl.h>
-#include <iostream>
+
 namespace trantor
 {
     SerialTaskQueue::SerialTaskQueue(const std::string &name)
     :queueName_(name),
-     thread_(std::bind(&SerialTaskQueue::queueFunc,this))
+     stop_(false),
+     thread_(std::bind(&SerialTaskQueue::queueFunc,this)),
+     isRunTask_(false)
     {
         if(name.empty())
         {
@@ -14,10 +16,14 @@ namespace trantor
         }
         LOG_TRACE<<"constract SerialTaskQueue('"<<queueName_<<"')";
     }
-    SerialTaskQueue::~SerialTaskQueue() {
+    void SerialTaskQueue::stop() {
         stop_= true;
         taskCond_.notify_all();
         thread_.join();
+    }
+    SerialTaskQueue::~SerialTaskQueue() {
+        if(!stop_)
+            stop();
         LOG_TRACE<<"unconstract SerialTaskQueue('"<<queueName_<<"')";
     }
     void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task) {
@@ -44,7 +50,9 @@ namespace trantor
                 else
                     continue;
             }
+            isRunTask_=true;
             r();
+            isRunTask_=false;
         }
     }
     void SerialTaskQueue::waitAllTasksFinished()
@@ -52,5 +60,10 @@ namespace trantor
         syncTaskInQueue([](){
 
         });
+    }
+    size_t SerialTaskQueue::getTaskCount()
+    {
+        std::lock_guard<std::mutex> guard(taskMutex_);
+        return taskQueue_.size();
     }
 };
