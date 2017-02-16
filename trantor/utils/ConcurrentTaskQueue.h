@@ -1,34 +1,36 @@
 #pragma once
 
-#include "TaskQueue.h"
-#include <string>
+#include <trantor/utils/TaskQueue.h>
+#include <list>
+#include <memory>
+#include <vector>
 #include <queue>
-#include <mutex>
-#include <atomic>
 namespace trantor
 {
-    class SerialTaskQueue:public TaskQueue
+    class ConcurrentTaskQueue:public TaskQueue
     {
     public:
+        ConcurrentTaskQueue(size_t threadNum,const std::string &name);
         virtual  void runTaskInQueue(const std::function<void ()> &task);
         virtual  void runTaskInQueue(std::function<void ()> &&task);
 
         virtual  std::string getName() const {return queueName_;};
-        void waitAllTasksFinished();
-        SerialTaskQueue()=delete;
-        SerialTaskQueue(const std::string &name=std::string());
-        ~SerialTaskQueue();
-        bool isRunTask(){return isRunTask_;}
         size_t getTaskCount();
         void stop();
-    protected:
+        ~ConcurrentTaskQueue();
+    private:
+
+        size_t queueCount_;
         std::string queueName_;
+
         std::queue<std::function<void ()> > taskQueue_;
+        std::vector<std::thread> threads_;
+
         std::mutex taskMutex_;
         std::condition_variable taskCond_;
         std::atomic_bool stop_;
-        void queueFunc();
-        std::thread thread_;
-        std::atomic_bool isRunTask_;
+        void queueFunc(int queueNum);
+
+
     };
-};
+}

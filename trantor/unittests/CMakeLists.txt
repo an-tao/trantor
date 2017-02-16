@@ -1,2 +1,2 @@
+link_libraries(trantor pthread gtest)
 add_executable(msgbuffer_unittest MsgBufferUnittest.cc)
-target_link_libraries(msgbuffer_unittest trantor gtest)

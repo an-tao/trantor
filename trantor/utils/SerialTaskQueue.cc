@@ -1,30 +1,46 @@
 #include <trantor/utils/SerialTaskQueue.h>
 #include <trantor/utils/Logger.h>
 #include <sys/prctl.h>
-#include <iostream>
+
 namespace trantor
 {
     SerialTaskQueue::SerialTaskQueue(const std::string &name)
     :queueName_(name),
-     thread_(std::bind(&SerialTaskQueue::queueFunc,this))
+     stop_(false),
+     thread_(std::bind(&SerialTaskQueue::queueFunc,this)),
+     isRunTask_(false)
     {
         if(name.empty())
         {
             queueName_="SerailTaskQueue";
         }
-        LOG_TRACE<<"constract SerialTaskQueue('"<<queueName_<<"')";
+        LOG_TRACE<<"construct SerialTaskQueue('"<<queueName_<<"')";
     }
-    SerialTaskQueue::~SerialTaskQueue() {
+    void SerialTaskQueue::stop() {
         stop_= true;
         taskCond_.notify_all();
         thread_.join();
-        LOG_TRACE<<"unconstract SerialTaskQueue('"<<queueName_<<"')";
     }
-    void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task) {
+    SerialTaskQueue::~SerialTaskQueue() {
+        if(!stop_)
+            stop();
+        LOG_TRACE<<"unconstruct SerialTaskQueue('"<<queueName_<<"')";
+    }
+    void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task)
+    {
+        LOG_TRACE<<"copy task into queue";
         std::lock_guard<std::mutex> lock(taskMutex_);
         taskQueue_.push(task);
         taskCond_.notify_one();
     }
+    void SerialTaskQueue::runTaskInQueue(std::function<void ()> &&task)
+    {
+        LOG_TRACE<<"move task into queue";
+        std::lock_guard<std::mutex> lock(taskMutex_);
+        taskQueue_.push(std::move(task));
+        taskCond_.notify_one();
+    }
+
     void SerialTaskQueue::queueFunc() {
         ::prctl(PR_SET_NAME,queueName_.c_str());
         while(!stop_)
@@ -44,7 +60,9 @@ namespace trantor
                 else
                     continue;
             }
+            isRunTask_=true;
             r();
+            isRunTask_=false;
         }
     }
     void SerialTaskQueue::waitAllTasksFinished()
@@ -52,5 +70,10 @@ namespace trantor
         syncTaskInQueue([](){
 
         });
+    }
+    size_t SerialTaskQueue::getTaskCount()
+    {
+        std::lock_guard<std::mutex> guard(taskMutex_);
+        return taskQueue_.size();
     }
 };
