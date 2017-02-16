@@ -58,3 +58,18 @@ size_t ConcurrentTaskQueue::getTaskCount()
     std::lock_guard<std::mutex> guard(taskMutex_);
     return taskQueue_.size();
 }
+
+void ConcurrentTaskQueue::stop()
+{
+    if(!stop_)
+    {
+        stop_=true;
+        taskCond_.notify_all();
+        for(auto &t : threads_)
+            t.join();
+    }
+}
+ConcurrentTaskQueue::~ConcurrentTaskQueue()
+{
+    stop();
+}

@@ -12,10 +12,12 @@ namespace trantor
     public:
         ConcurrentTaskQueue(size_t threadNum,const std::string &name);
         virtual  void runTaskInQueue(const std::function<void ()> &task);
-        virtual  void runTaskInQueue(std::function<void ()> &&task)=0;
+        virtual  void runTaskInQueue(std::function<void ()> &&task);
 
         virtual  std::string getName() const {return queueName_;};
         size_t getTaskCount();
+        void stop();
+        ~ConcurrentTaskQueue();
     private:
 
         size_t queueCount_;
@@ -28,7 +30,6 @@ namespace trantor
         std::condition_variable taskCond_;
         std::atomic_bool stop_;
         void queueFunc(int queueNum);
-        std::thread thread_;
 
 
     };
