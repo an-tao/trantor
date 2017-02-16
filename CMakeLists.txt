@@ -36,6 +36,7 @@ INCLUDE_DIRECTORIES(
   /usr/include
 )
 ADD_SUBDIRECTORY(trantor/tests)
+ADD_SUBDIRECTORY(trantor/net)
 # lib directories
 LINK_DIRECTORIES(
   ${PROJECT_BINARY_DIR}/lib
@@ -44,11 +45,15 @@ LINK_DIRECTORIES(
   /use/lib
 )
 
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-
 AUX_SOURCE_DIRECTORY(trantor/utils DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net DIR_SRC)
 ADD_LIBRARY(trantor ${DIR_SRC})
-target_link_libraries(trantor pthread rt)
+
+
+SET(CMAKE_INSTALL_PREFIX /usr/local)
+
+install(TARGETS trantor DESTINATION lib)
+
+install(DIRECTORY trantor/utils/ DESTINATION include/trantor/utils
+        FILES_MATCHING PATTERN "*.h")
 
