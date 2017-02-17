@@ -89,6 +89,13 @@ void TimerQueue::addTimer(const TimerCallback &cb, const Date &when, double inte
         addTimerInLoop(timerPtr);
     });
 }
+void TimerQueue::addTimer(TimerCallback &&cb, const Date &when, double interval) {
+    std::shared_ptr<Timer> timerPtr=std::make_shared<Timer>(std::move(cb),when,interval);
+    //timers_.push(timerPtr);
+    loop_->runInLoop([=](){
+        addTimerInLoop(timerPtr);
+    });
+}
 void TimerQueue::addTimerInLoop(const TimerPtr &timer) {
     loop_->assertInLoopThread();
     if(insert(timer))
@@ -97,6 +104,7 @@ void TimerQueue::addTimerInLoop(const TimerPtr &timer) {
         resetTimerfd(timerfd_,timer->when());
     }
 }
+
 bool TimerQueue::insert(const TimerPtr &timerPtr)
 {
     loop_->assertInLoopThread();
@@ -109,6 +117,7 @@ bool TimerQueue::insert(const TimerPtr &timerPtr)
     //std::cout<<"after push new timer:"<<timerPtr->when().microSecondsSinceEpoch()/1000000<<std::endl;
     return earliestChanged;
 }
+
 void TimerQueue::handleRead() {
     loop_->assertInLoopThread();
     const Date now=Date::date();

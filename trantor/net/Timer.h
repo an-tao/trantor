@@ -13,6 +13,7 @@ namespace trantor
     {
     public:
         Timer(const TimerCallback &cb,const Date &when,double interval);
+        Timer(TimerCallback &&cb,const Date &when,double interval);
         ~Timer(){
          //   std::cout<<"Timer unconstract!"<<std::endl;
         }

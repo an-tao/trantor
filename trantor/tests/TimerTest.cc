@@ -3,6 +3,7 @@
 #include <iostream>
 int main()
 {
+    trantor::Logger::setLogLevel(trantor::Logger::TRACE);
     trantor::EventLoop loop;
     loop.runEvery(3,[](){
         LOG_DEBUG<<" runEvery 3s";

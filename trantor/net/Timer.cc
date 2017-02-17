@@ -1,4 +1,5 @@
 #include <trantor/net/Timer.h>
+#include <trantor/utils/Logger.h>
 namespace trantor
 {
     std::atomic<int64_t> Timer::timersCreated_;
@@ -10,6 +11,15 @@ namespace trantor
             timerSeq_(timersCreated_++)
     {
 
+    }
+    Timer::Timer(TimerCallback &&cb,const Date &when,double interval):
+            callback_(std::move(cb)),
+            when_(when),
+            interval_(interval),
+            repeat_(interval>0.0),
+            timerSeq_(timersCreated_++)
+    {
+        LOG_TRACE<<"Timer move contrustor";
     }
     void Timer::run() const{
         callback_();
