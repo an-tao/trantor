@@ -25,6 +25,7 @@ namespace trantor
         TimerQueue(EventLoop *loop);
         ~TimerQueue();
         void addTimer(const TimerCallback &cb,const Date &when,double interval);
+        void addTimer(TimerCallback &&cb,const Date &when,double interval);
         void addTimerInLoop(const TimerPtr &timer);
     protected:
 

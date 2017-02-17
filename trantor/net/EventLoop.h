@@ -33,7 +33,9 @@ namespace trantor
         void updateChannel(Channel *chl);
         void removeChannel(Channel *chl);
         void runInLoop(const Func &f);
+        void runInLoop(Func &&f);
         void queueInLoop(const Func &f);
+        void queueInLoop(Func &&f);
         void wakeup();
         void wakeupRead();
         ///
@@ -41,16 +43,19 @@ namespace trantor
         /// Safe to call from other threads.
         ///
         void runAt(const Date& time, const Func& cb);
+        void runAt(const Date& time, Func&& cb);
         ///
         /// Runs callback after @c delay seconds.
         /// Safe to call from other threads.
         ///
         void runAfter(double delay, const Func& cb);
+        void runAfter(double delay, Func&& cb);
         ///
         /// Runs callback every @c interval seconds.
         /// Safe to call from other threads.
         ///
         void runEvery(double interval, const Func& cb);
+        void runEvery(double interval, Func&& cb);
         //int getAioEventFd();
         //io_context_t getAioContext() {return ctx_;};
     private:

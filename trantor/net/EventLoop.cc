@@ -130,7 +130,17 @@ namespace trantor
             queueInLoop(cb);
         }
     }
-
+    void EventLoop::runInLoop(Func&& cb)
+    {
+        if (isInLoopThread())
+        {
+            cb();
+        }
+        else
+        {
+            queueInLoop(std::move(cb));
+        }
+    }
     void EventLoop::queueInLoop(const Func& cb)
     {
         {
@@ -143,18 +153,36 @@ namespace trantor
             wakeup();
         }
     }
+    void EventLoop::queueInLoop(Func&& cb)
+    {
+        {
+            std::lock_guard<std::mutex> lock(funcsMutex_);
+            funcs_.push_back(std::move(cb));
+        }
 
+        if (!isInLoopThread() || callingFuncs_ ||!looping_)
+        {
+            wakeup();
+        }
+    }
 
     void EventLoop::runAt(const Date& time, const Func& cb){
         timerQueue_->addTimer(cb,time,0);
     }
-
+    void EventLoop::runAt(const Date& time, Func&& cb){
+        timerQueue_->addTimer(std::move(cb),time,0);
+    }
     void EventLoop::runAfter(double delay, const Func& cb){
         runAt(Date::date().after(delay),cb);
     }
-
+    void EventLoop::runAfter(double delay, Func&& cb){
+        runAt(Date::date().after(delay),std::move(cb));
+    }
     void EventLoop::runEvery(double interval, const Func& cb){
         timerQueue_->addTimer(cb,Date::date(),interval);
+    }
+    void EventLoop::runEvery(double interval, Func&& cb){
+        timerQueue_->addTimer(std::move(cb),Date::date(),interval);
     }
     void EventLoop::doRunInLoopFuncs()
     {
