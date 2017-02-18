@@ -1,4 +1,5 @@
-A NIO based TCP network library, using C++11
+A NIO based TCP network library, using C++11,
+Drawing on the design of Muduo Library
 
 Dependence:
 gcc 4.8.0 or newer;
