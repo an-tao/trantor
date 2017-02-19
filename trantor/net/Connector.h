@@ -1,10 +1,10 @@
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <atomic>
-
+#include <memory>
 namespace trantor
 {
-    class Connector:NonCopyable,public std::enable_shared_from_this<Connector>
+    class Connector:public NonCopyable,public std::enable_shared_from_this<Connector>
     {
     public:
         typedef std::function<void (int sockfd)> NewConnectionCallback;

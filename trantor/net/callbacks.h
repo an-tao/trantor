@@ -21,4 +21,9 @@ namespace trantor{
     typedef std::function<void (const TcpConnectionPtr&,const size_t)> HighWaterMarkCallback;
 
     typedef std::function<void (const TrantorError)> OperationCompleteCallback;
+
+    void defaultConnectionCallback(const TcpConnectionPtr& conn);
+    void defaultMessageCallback(const TcpConnectionPtr& conn,
+                                MsgBuffer* buffer);
+
 }

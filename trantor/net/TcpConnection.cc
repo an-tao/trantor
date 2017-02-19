@@ -4,6 +4,21 @@
 #define FETCH_SIZE 2048;
 #define SEND_ORDER 1
 using namespace trantor;
+
+void trantor::defaultConnectionCallback(const TcpConnectionPtr& conn)
+{
+    LOG_TRACE << conn->lobalAddr().toIpPort() << " -> "
+              << conn->peerAddr().toIpPort() << " is "
+              << (conn->connected() ? "UP" : "DOWN");
+    // do not call conn->forceClose(), because some users want to register message callback only.
+}
+
+void trantor::defaultMessageCallback(const TcpConnectionPtr&,
+                                        MsgBuffer* buf)
+{
+    buf->retrieveAll();
+}
+
 TcpConnection::TcpConnection(EventLoop *loop, int socketfd,const InetAddress& localAddr,
                              const InetAddress& peerAddr):
         loop_(loop),
