@@ -1,0 +1,45 @@
+#include <trantor/net/TcpClient.h>
+#include <trantor/utils/Logger.h>
+#include <trantor/net/EventLoopThread.h>
+#include <string>
+#include <iostream>
+#include <atomic>
+using namespace trantor;
+int main() {
+    trantor::Logger::setLogLevel(trantor::Logger::TRACE);
+    LOG_DEBUG<<"TcpClient class test!";
+    EventLoop loop;
+    InetAddress serverAddr("127.0.0.1",8888);
+    std::shared_ptr<trantor::TcpClient> client[10];
+    std::atomic_int connCount;
+    connCount=10;
+    for(int i=0;i<10;i++)
+    {
+        client[i]=std::make_shared<trantor::TcpClient>(&loop,serverAddr,"tcpclienttest");
+        client[i]->setConnectionCallback([=,&loop,&connCount](const TcpConnectionPtr& conn){
+            if(conn->connected())
+            {
+                LOG_DEBUG<<i<<" connected!";
+                char tmp[20];
+                sprintf(tmp,"%d client!!",i);
+                conn->send(tmp);
+            }
+            else
+            {
+                LOG_DEBUG<<i<<" disconnected";
+                connCount--;
+                if(connCount==0)
+                    loop.quit();
+            }
+        });
+        client[i]->setMessageCallback([=](const TcpConnectionPtr& conn,
+                                         MsgBuffer* buf) {
+            LOG_DEBUG<<buf->peek();
+            buf->retrieveAll();
+            conn->shutdown();
+
+        });
+        client[i]->connect();
+    }
+    loop.loop();
+}

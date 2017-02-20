@@ -182,7 +182,7 @@ void Connector::retry(int sockfd)
                  << " in " << retryInterval_ << " milliseconds. ";
         loop_->runAfter(retryInterval_/1000.0,
                         std::bind(&Connector::startInLoop, shared_from_this()));
-        retryInterval_ = std::min(retryInterval_ * 2, kMaxRetryDelayMs);
+        retryInterval_ = std::min(retryInterval_ * 2, maxRetryInterval_);
     }
     else
     {
