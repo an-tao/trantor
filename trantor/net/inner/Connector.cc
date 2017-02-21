@@ -1,6 +1,6 @@
-#include <trantor/net/Connector.h>
-#include <trantor/net/Channel.h>
-#include <trantor/net/Socket.h>
+#include "Connector.h"
+#include "Channel.h"
+#include "Socket.h"
 using namespace trantor;
 
 Connector::Connector(EventLoop *loop, const InetAddress &addr)

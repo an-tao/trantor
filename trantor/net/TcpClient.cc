@@ -10,10 +10,10 @@
 #include <trantor/net/TcpClient.h>
 
 #include <trantor/utils/Logger.h>
-#include <trantor/net/Channel.h>
-#include <trantor/net/Connector.h>
+//#include <trantor/net/Channel.h>
+#include "Connector.h"
 #include <trantor/net/EventLoop.h>
-#include <trantor/net/Socket.h>
+#include "Socket.h"
 
 #include <stdio.h>  // snprintf
 #include <functional>

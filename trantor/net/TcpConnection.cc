@@ -1,6 +1,6 @@
 #include <trantor/net/TcpConnection.h>
-#include <trantor/net/Socket.h>
-#include <trantor/net/Channel.h>
+#include "Socket.h"
+#include "Channel.h"
 #define FETCH_SIZE 2048;
 #define SEND_ORDER 1
 using namespace trantor;

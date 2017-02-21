@@ -27,7 +27,7 @@ namespace trantor
         enum States { kDisconnected, kConnecting, kConnected };
         static const int kMaxRetryDelayMs = 30*1000;
         static const int kInitRetryDelayMs = 500;
-        std::unique_ptr<Channel> channelPtr_;
+        std::shared_ptr<Channel> channelPtr_;
         EventLoop *loop_;
         InetAddress serverAddr_;
 
