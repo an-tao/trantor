@@ -2,9 +2,9 @@
 
 #include <trantor/net/EventLoop.h>
 #include <trantor/utils/NonCopyable.h>
-#include <trantor/net/Socket.h>
+#include "Socket.h"
 #include <trantor/net/InetAddress.h>
-#include <trantor/net/Channel.h>
+#include "Channel.h"
 #include <functional>
 
 namespace trantor

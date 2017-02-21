@@ -1,6 +1,6 @@
 #include <trantor/utils/Logger.h>
-#include <trantor/net/Channel.h>
-#include <trantor/net/Poller.h>
+#include "Channel.h"
+#include "Poller.h"
 #include <poll.h>
 #include <sys/epoll.h>
 #include <unistd.h>

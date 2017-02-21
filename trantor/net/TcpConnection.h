@@ -15,6 +15,8 @@ namespace trantor
     class TcpConnection:public NonCopyable,public std::enable_shared_from_this<TcpConnection>
     {
         friend class TcpServer;
+        friend class TcpClient;
+        friend void trantor::removeConnection(EventLoop* loop, const TcpConnectionPtr& conn);
     public:
         TcpConnection(EventLoop *loop,int socketfd,const InetAddress& localAddr,
                       const InetAddress& peerAddr);
@@ -22,6 +24,8 @@ namespace trantor
         void send(const char *msg,uint64_t len);
         void send(const std::string &msg);
 
+        const InetAddress& lobalAddr() const {return localAddr_;}
+        const InetAddress& peerAddr() const {return peerAddr_;}
 
         bool connected() const { return state_ == Connected; }
         bool disconnected() const { return state_ == Disconnected; }
@@ -37,6 +41,7 @@ namespace trantor
         void setTcpNoDelay(bool on);
         void shutdown();
         void forceClose();
+        EventLoop* getLoop(){return loop_;}
 
 
     protected:

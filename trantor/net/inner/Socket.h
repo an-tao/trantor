@@ -43,6 +43,49 @@ namespace trantor
 
             (void)ret;
         }
+
+        static int getSocketError(int sockfd)
+        {
+            int optval;
+            socklen_t optlen = static_cast<socklen_t>(sizeof optval);
+
+            if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+            {
+                return errno;
+            }
+            else
+            {
+                return optval;
+            }
+        }
+
+        static int connect(int sockfd, const struct sockaddr* addr)
+        {
+            return ::connect(sockfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6)));
+        }
+
+        static bool isSelfConnect(int sockfd)
+        {
+            struct sockaddr_in6 localaddr = getLocalAddr(sockfd);
+            struct sockaddr_in6 peeraddr = getPeerAddr(sockfd);
+            if (localaddr.sin6_family == AF_INET)
+            {
+                const struct sockaddr_in* laddr4 = reinterpret_cast<struct sockaddr_in*>(&localaddr);
+                const struct sockaddr_in* raddr4 = reinterpret_cast<struct sockaddr_in*>(&peeraddr);
+                return laddr4->sin_port == raddr4->sin_port
+                       && laddr4->sin_addr.s_addr == raddr4->sin_addr.s_addr;
+            }
+            else if (localaddr.sin6_family == AF_INET6)
+            {
+                return localaddr.sin6_port == peeraddr.sin6_port
+                       && memcmp(&localaddr.sin6_addr, &peeraddr.sin6_addr, sizeof localaddr.sin6_addr) == 0;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         explicit Socket(int sockfd):
                 sockFd_(sockfd)
         {}

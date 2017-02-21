@@ -1,7 +1,7 @@
-#include <trantor/net/Channel.h>
 #include <trantor/net/EventLoop.h>
-#include <trantor/net/Timer.h>
-#include <trantor/net/TimerQueue.h>
+
+#include "TimerQueue.h"
+#include "Channel.h"
 
 #include <sys/timerfd.h>
 #include <string.h>

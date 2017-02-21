@@ -28,27 +28,29 @@ set(CXX_FLAGS
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 # include directories
 INCLUDE_DIRECTORIES(
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/trantor/utils
-  ${PROJECT_SOURCE_DIR}/trantor/net
+        ${PROJECT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/trantor/utils
+        ${PROJECT_SOURCE_DIR}/trantor/net
+        ${PROJECT_SOURCE_DIR}/trantor/net/inner
 
-  /usr/local/include
-  /usr/include
+        /usr/local/include
+        /usr/include
+
 )
 ADD_SUBDIRECTORY(trantor/tests)
 ADD_SUBDIRECTORY(trantor/unittests)
-ADD_SUBDIRECTORY(trantor/net)
 
 # lib directories
 LINK_DIRECTORIES(
-  ${PROJECT_BINARY_DIR}/lib
+        ${PROJECT_BINARY_DIR}/lib
 
-  /usr/local/lib
-  /use/lib
+        /usr/local/lib
+        /use/lib
 )
 
 AUX_SOURCE_DIRECTORY(trantor/utils DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net DIR_SRC)
+AUX_SOURCE_DIRECTORY(trantor/net/inner DIR_SRC)
 
 ADD_LIBRARY(trantor ${DIR_SRC})
 
@@ -59,4 +61,7 @@ install(TARGETS trantor DESTINATION lib)
 
 install(DIRECTORY trantor/utils/ DESTINATION include/trantor/utils
         FILES_MATCHING PATTERN "*.h")
+
+file(GLOB trantor_net_headers "${CMAKE_CURRENT_SOURCE_DIR}/trantor/net/*.h")
+install(FILES ${trantor_net_headers} DESTINATION include/trantor/net)
 
