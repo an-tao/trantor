@@ -25,6 +25,9 @@ namespace trantor
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
         void setWriteCompleteCallback(const WriteCompleteCallback &cb){writeCompleteCallback_=cb;}
 
+        void setRecvMessageCallback(RecvMessageCallback &&cb){recvMessageCallback_=std::move(cb);}
+        void setConnectionCallback(ConnectionCallback &&cb){connectionCallback_=std::move(cb);}
+        void setWriteCompleteCallback(WriteCompleteCallback &&cb){writeCompleteCallback_=std::move(cb);}
         
     private:
         EventLoop *loop_;
