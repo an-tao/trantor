@@ -43,6 +43,7 @@ namespace trantor
         void forceClose();
         EventLoop* getLoop(){return loop_;}
 
+        mutable  void *context_= nullptr;
 
     protected:
         /// Internal use only.
