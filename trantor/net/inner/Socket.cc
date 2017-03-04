@@ -11,7 +11,7 @@
 using namespace trantor;
 void Socket::bindAddress(const InetAddress &localaddr) {
     assert(sockFd_>0);
-    int ret=bind(sockFd_,localaddr.getSockAddr(),sizeof(sockaddr));
+    int ret=bind(sockFd_,localaddr.getSockAddr(),sizeof(sockaddr_in6));
     if(ret==0)
         return;
     else
