@@ -116,8 +116,9 @@ void AsyncFileLogger::logThreadFunc() {
                 std::unique_lock<std::mutex> lock(mutex_);
                 nextBufferPtr_=tmpPtr;
             }
-
         }
+        if(loggerFilePtr_)
+            loggerFilePtr_->flush();
     }
 }
 void AsyncFileLogger::startLogging() {
@@ -148,6 +149,13 @@ void AsyncFileLogger::LoggerFile::writeLog(const StringPtr buf) {
     {
         //std::cout<<"write "<<buf->length()<<" bytes to file"<<std::endl;
         fwrite(buf->c_str(),1,buf->length(),fp_);
+    }
+}
+void AsyncFileLogger::LoggerFile::flush()
+{
+    if(fp_)
+    {
+        fflush(fp_);
     }
 }
 uint64_t AsyncFileLogger::LoggerFile::getLength() {
