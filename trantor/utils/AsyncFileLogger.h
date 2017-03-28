@@ -28,7 +28,7 @@ namespace trantor
             filePath_=path;
             if(filePath_.length()==0)
                 filePath_="./";
-            if(filePath_[filePath_.length()-1]=='/')
+            if(filePath_[filePath_.length()-1]!='/')
                 filePath_=filePath_+"/";
         }
         ~AsyncFileLogger();
@@ -56,6 +56,7 @@ namespace trantor
             void writeLog(const StringPtr buf);
             uint64_t getLength();
             explicit operator bool() const { return fp_!=NULL; }
+            void flush();
         protected:
             FILE *fp_=NULL;
             Date createDate_;
