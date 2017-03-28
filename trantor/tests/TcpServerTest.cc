@@ -4,13 +4,18 @@
 #include <string>
 #include <iostream>
 using namespace trantor;
+#define USE_IPV6 0
 int main()
 {
     LOG_DEBUG<<"test start";
     Logger::setLogLevel(Logger::TRACE);
     EventLoopThread loopThread;
     loopThread.run();
+#if USE_IPV6
+    InetAddress addr(8888,true,true);
+#else
     InetAddress addr(8888);
+#endif
     TcpServer server(loopThread.getLoop(),addr,"test");
     server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
         //LOG_DEBUG<<"recv callback!";
