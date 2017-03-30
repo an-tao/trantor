@@ -29,7 +29,7 @@ namespace trantor
         const uint32_t peekInt32() const;
         const uint64_t peekInt64() const;
         //read
-        std::string read(uint64_t len);
+        std::string read(size_t len);
         uint8_t readInt8();
         uint16_t readInt16();
         uint32_t readInt32();

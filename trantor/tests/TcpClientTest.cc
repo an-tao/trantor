@@ -5,11 +5,16 @@
 #include <iostream>
 #include <atomic>
 using namespace trantor;
+#define USE_IPV6 0
 int main() {
     trantor::Logger::setLogLevel(trantor::Logger::TRACE);
     LOG_DEBUG<<"TcpClient class test!";
     EventLoop loop;
+#if USE_IPV6
+    InetAddress serverAddr("::1",8888,true);
+#else
     InetAddress serverAddr("127.0.0.1",8888);
+#endif
     std::shared_ptr<trantor::TcpClient> client[10];
     std::atomic_int connCount;
     connCount=10;
