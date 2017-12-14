@@ -10,6 +10,13 @@
 //
 // This is a public header file, it must only include public header files.
 
+// Copyright 2016, Tao An.  All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license
+// that can be found in the License file.
+
+// Author: Tao An
+
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>

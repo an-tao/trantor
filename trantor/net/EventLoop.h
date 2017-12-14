@@ -1,3 +1,18 @@
+// Copyright 2010, Shuo Chen.  All rights reserved.
+// http://code.google.com/p/muduo/
+//
+// Use of this source code is governed by a BSD-style license
+// that can be found in the License file.
+
+// Author: Shuo Chen (chenshuo at chenshuo dot com)
+
+//Token from Muduo and modified
+// Copyright 2016, Tao An.  All rights reserved.
+//
+// Use of this source code is governed by a BSD-style license
+// that can be found in the License file.
+
+// Author: Tao An
 #pragma once
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>

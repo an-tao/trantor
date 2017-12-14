@@ -22,6 +22,7 @@ namespace trantor
         //peek
         const char *peek() const {return begin()+head_;}
         const char *beginWrite() const {return begin()+tail_;}
+        char* beginWrite() { return begin() + tail_; }
         const uint8_t peekInt8() const {
             assert(readableBytes()>=1);
             return *(static_cast<const uint8_t*>((void *)peek()));}
@@ -29,7 +30,7 @@ namespace trantor
         const uint32_t peekInt32() const;
         const uint64_t peekInt64() const;
         //read
-        std::string read(uint64_t len);
+        std::string read(size_t len);
         uint8_t readInt8();
         uint16_t readInt16();
         uint32_t readInt32();
@@ -62,6 +63,14 @@ namespace trantor
             const char* crlf = std::search(peek(), beginWrite(), CRLF, CRLF+2);
             return crlf == beginWrite() ? NULL : crlf;
         }
+
+        void ensureWritableBytes(size_t len);
+        void hasWritten(size_t len)
+        {
+            assert(len <= writableBytes());
+            tail_ += len;
+        }
+
     private:
         size_t head_;
         size_t initCap_;
@@ -72,6 +81,6 @@ namespace trantor
 
         const char *begin() const {return &buffer_[0];}
         char *begin() {return &buffer_[0];}
-        void ensureWritableBytes(size_t len);
+
     };
 }

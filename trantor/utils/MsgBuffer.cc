@@ -183,7 +183,7 @@ size_t MsgBuffer::readFd(int fd,int *retErrno){
     return n;
 }
 
-std::string MsgBuffer::read(uint64_t len)
+std::string MsgBuffer::read(size_t len)
 {
     if(len>readableBytes())
         len=readableBytes();
