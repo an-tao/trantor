@@ -1,8 +1,11 @@
 #include <trantor/utils/AsyncFileLogger.h>
+#ifndef __WINDOWS__
 #include <unistd.h>
+#include <sys/prctl.h>
+#endif
 #include <string.h>
 #include <iostream>
-#include <sys/prctl.h>
+
 #define LOG_FLUSH_TIMEOUT 1
 #define MEM_BUFFER_SIZE 4*1024*1024
 using namespace trantor;
@@ -86,8 +89,9 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf) {
     }
 }
 void AsyncFileLogger::logThreadFunc() {
+#ifndef __WINDOWS__
     prctl(PR_SET_NAME,"AsyncFileLogger");
-
+#endif
     while (!stopFlag_)
     {
         {
