@@ -22,6 +22,7 @@
 #include <vector>
 #include <mutex>
 #include <queue>
+#include <functional>
 namespace trantor
 {
     class Poller;
