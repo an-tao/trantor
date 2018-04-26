@@ -17,3 +17,5 @@ add_executable(tcp_server_test TcpServerTest.cc)
 add_executable(concurrent_task_queue_test ConcurrentTaskQueueTest.cc)
 
 add_executable(tcp_client_test TcpClientTest.cc)
+
+add_executable(async_file_logger_test1 AsyncFileLoggerTest1.cc)

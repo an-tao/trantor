@@ -5,6 +5,7 @@
 #endif
 #include <string.h>
 #include <iostream>
+#include <functional>
 
 #define LOG_FLUSH_TIMEOUT 1
 #define MEM_BUFFER_SIZE 4*1024*1024
