@@ -37,8 +37,9 @@ INCLUDE_DIRECTORIES(
         /usr/include
 
 )
+if (MAKETEST STREQUAL YES)
 ADD_SUBDIRECTORY(trantor/tests)
-
+endif ()
 # lib directories
 LINK_DIRECTORIES(
         ${PROJECT_BINARY_DIR}/lib
