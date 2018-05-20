@@ -42,7 +42,8 @@ namespace trantor
         void shutdown();
         void forceClose();
         EventLoop* getLoop(){return loop_;}
-
+        void setContext(void *p)const {context_=p;}
+        void* getContext()const {return context_;}
         mutable  void *context_= nullptr;
 
     protected:

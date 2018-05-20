@@ -190,6 +190,8 @@ void TcpConnection::sendInLoop(const std::string &msg)
 
 }
 void TcpConnection::send(const char *msg,uint64_t len){
+    //fix me!
+    //Need to be more efficient
     send(std::string(msg,len));
 }
 void TcpConnection::send(const std::string &msg){

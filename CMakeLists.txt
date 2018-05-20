@@ -39,7 +39,6 @@ INCLUDE_DIRECTORIES(
 )
 ADD_SUBDIRECTORY(trantor/tests)
 ADD_SUBDIRECTORY(trantor/unittests)
-
 # lib directories
 LINK_DIRECTORIES(
         ${PROJECT_BINARY_DIR}/lib
