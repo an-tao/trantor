@@ -1,5 +1,31 @@
 cmake_minimum_required(VERSION 3.2)
 project(trantor)
+
+EXEC_PROGRAM (gcc ARGS "--version | grep '^gcc'|awk '{print $3}' | sed s'/)//g'" OUTPUT_VARIABLE version)
+MESSAGE(STATUS "This is gcc version:: " ${version})
+if(version LESS 4.7.0)
+    MESSAGE(STATUS "gcc is too old")
+    stop()
+elseif (version LESS 6.1.0)
+    MESSAGE(STATUS "c++11")
+    set(CMAKE_CXX_STD_FLAGS c++11)
+elseif(version LESS 7.1.0)
+    set(CMAKE_CXX_STD_FLAGS c++14)
+    MESSAGE(STATUS "c++14")
+else()
+    set(CMAKE_CXX_STD_FLAGS c++17)
+    add_definitions(-DUSE_STD_ANY)
+    MESSAGE(STATUS "c++17")
+
+endif()
+
+find_package(Boost)
+if(Boost_FOUND)
+    add_definitions(-DUSE_BOOST)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
+
 set(CXX_FLAGS
         -g
         # -DVALGRIND
@@ -18,7 +44,7 @@ set(CXX_FLAGS
         #-Wwrite-strings
         #-march=native
         # -MMD
-        -std=c++11
+        -std=${CMAKE_CXX_STD_FLAGS}
         #-rdynamic
         #-O2
         #-finline-limit=1000
