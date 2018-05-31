@@ -28,7 +28,9 @@ namespace trantor
         void setRecvMessageCallback(RecvMessageCallback &&cb){recvMessageCallback_=std::move(cb);}
         void setConnectionCallback(ConnectionCallback &&cb){connectionCallback_=std::move(cb);}
         void setWriteCompleteCallback(WriteCompleteCallback &&cb){writeCompleteCallback_=std::move(cb);}
-        
+        const std::string name() const{return serverName_;}
+        const std::string ipPort() const;
+        EventLoop * getLoop()const {return loop_;}
     private:
         EventLoop *loop_;
         std::unique_ptr<Acceptor> acceptorPtr_;

@@ -7,8 +7,25 @@
 #include <trantor/net/callbacks.h>
 #include <memory>
 #include <functional>
+#ifdef USE_STD_ANY
+
+#include <any>
+typedef std::any Any;
+#define Any_cast std::any_cast
+
+#elif USE_BOOST
+#include <boost/any.hpp>
+typedef boost::any Any;
+#define Any_cast boost::any_cast
+
+#else
+#define NO_ANY 1
+#endif
+
 namespace trantor
 {
+
+
     class Channel;
     class Socket;
     class TcpServer;
@@ -43,9 +60,28 @@ namespace trantor
         void forceClose();
         EventLoop* getLoop(){return loop_;}
 
-        mutable  void *context_= nullptr;
+#ifdef NO_ANY
+        void setContext(void *p)const {context_=p;}
+        void* getContext()const {return context_;}
+#else
+        void setContext(const Any& context)
+        { context_ = context; }
+
+        const Any& getContext() const
+        { return context_; }
+
+        Any* getMutableContext()
+        { return &context_; }
+#endif
+
+
 
     protected:
+#ifdef NO_ANY
+        mutable  void *context_= nullptr;
+#else
+        Any context_;
+#endif
         /// Internal use only.
         void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
