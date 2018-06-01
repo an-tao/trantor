@@ -14,7 +14,7 @@ namespace trantor
 	class Poller :NonCopyable
 	{
 	public:
-		Poller(EventLoop *loop);
+		explicit Poller(EventLoop *loop);
 		~Poller();
 		void assertInLoopThread(){ownerLoop_->assertInLoopThread();}
 		void poll(int timeoutMs, ChannelList* activeChannels);

@@ -56,7 +56,7 @@ namespace trantor
         void addInFrontInt64(const int64_t l);
         void retrieveAll();
         void retrieve(size_t len);
-        size_t readFd(int fd,int *retErrno);
+        ssize_t readFd(int fd,int *retErrno);
         void retrieveUntil(const char* end)
         {
             assert(peek() <= end);
