@@ -71,7 +71,7 @@ void Logger::formatTime() {
     }
     logStream_<<T(lastTimeString_,17);
     char tmp[32];
-    sprintf(tmp,".%06ld UTC ",microSec);
+    sprintf(tmp,".%06lu UTC ",microSec);
     logStream_<<T(tmp,12);
     if(threadId_==0)
         threadId_=static_cast<pid_t>(::syscall(SYS_gettid));

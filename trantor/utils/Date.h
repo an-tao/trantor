@@ -33,7 +33,7 @@ class Date
     const Date roundDay() const;
 
   private:
-    Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
+    explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
     int64_t microSecondsSinceEpoch_ = 0;
 };
 };

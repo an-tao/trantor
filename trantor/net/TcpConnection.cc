@@ -46,7 +46,7 @@ void TcpConnection::readCallback() {
     loop_->assertInLoopThread();
     int ret=0;
 
-    size_t n=readBuffer_.readFd(socketPtr_->fd(),&ret);
+    ssize_t n=readBuffer_.readFd(socketPtr_->fd(),&ret);
     //LOG_TRACE<<"read "<<n<<" bytes from socket";
     if(n==0)
     {

@@ -22,7 +22,7 @@ namespace trantor
     class TimerQueue:NonCopyable
     {
     public:
-        TimerQueue(EventLoop *loop);
+        explicit TimerQueue(EventLoop *loop);
         ~TimerQueue();
         void addTimer(const TimerCallback &cb,const Date &when,double interval);
         void addTimer(TimerCallback &&cb,const Date &when,double interval);
