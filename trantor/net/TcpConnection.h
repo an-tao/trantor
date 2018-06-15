@@ -1,5 +1,6 @@
 #pragma once
 
+#include <trantor/utils/config.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/utils/NonCopyable.h>
