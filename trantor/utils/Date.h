@@ -40,7 +40,10 @@ class Date
     }
     const Date roundSecond() const;
     const Date roundDay() const;
-
+    void swap(Date &that)
+    {
+        std::swap(microSecondsSinceEpoch_,that.microSecondsSinceEpoch_);
+    }
   private:
     explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
     int64_t microSecondsSinceEpoch_ = 0;
