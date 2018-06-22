@@ -56,7 +56,13 @@ namespace trantor
         void addInFrontInt64(const int64_t l);
         void retrieveAll();
         void retrieve(size_t len);
-        size_t readFd(int fd,int *retErrno);
+        ssize_t readFd(int fd,int *retErrno);
+        void retrieveUntil(const char* end)
+        {
+            assert(peek() <= end);
+            assert(end <= beginWrite());
+            retrieve(end - peek());
+        }
 //find
         const char* findCRLF() const
         {
@@ -70,7 +76,12 @@ namespace trantor
             assert(len <= writableBytes());
             tail_ += len;
         }
-
+//cancel
+        void unwrite(size_t offset)
+        {
+            assert(readableBytes()>=offset);
+            tail_ -= offset;
+        }
     private:
         size_t head_;
         size_t initCap_;

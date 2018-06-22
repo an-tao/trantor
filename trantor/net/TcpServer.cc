@@ -76,3 +76,8 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr) {
 
     connectionPtr->connectDestroyed();
 }
+
+const std::string TcpServer::ipPort() const
+{
+    return acceptorPtr_->addr().toIpPort();
+}

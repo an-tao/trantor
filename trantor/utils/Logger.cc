@@ -53,7 +53,11 @@ static __thread uint64_t lastSecond_=0;
 static __thread char lastTimeString_[32]={0};
 static __thread pid_t threadId_ = 0;
 //   static __thread LogStream logStream_;
-Logger::LogLevel Logger::logLevel_=DEBUG;
+#ifdef RELEASE
+Logger::LogLevel Logger::logLevel_=LogLevel::INFO;
+#else
+Logger::LogLevel Logger::logLevel_=LogLevel::DEBUG;
+#endif
 std::function<void (const char *msg,const uint64_t len)> Logger::outputFunc_=defaultOutputFunction;
 std::function<void ()> Logger::flushFunc_=defaultFlushFunction;
 void Logger::formatTime() {
@@ -67,7 +71,7 @@ void Logger::formatTime() {
     }
     logStream_<<T(lastTimeString_,17);
     char tmp[32];
-    sprintf(tmp,".%06ld UTC ",microSec);
+    sprintf(tmp,".%06lu UTC ",microSec);
     logStream_<<T(tmp,12);
     if(threadId_==0)
         threadId_=static_cast<pid_t>(::syscall(SYS_gettid));
@@ -119,7 +123,10 @@ Logger::Logger(SourceFile file, int line, bool isSysErr)
 }
 Logger::~Logger() {
     logStream_<<T(" - ",3)<<sourceFile_<<':'<<fileLine_<<'\n';
-    Logger::outputFunc_(logStream_.buffer().data(),logStream_.buffer().length());
+    if(Logger::outputFunc_)
+        Logger::outputFunc_(logStream_.buffer().data(),logStream_.buffer().length());
+    else
+        defaultOutputFunction(logStream_.buffer().data(),logStream_.buffer().length());
     if(level_>=ERROR)
         Logger::flushFunc_();
     //logStream_.resetBuffer();

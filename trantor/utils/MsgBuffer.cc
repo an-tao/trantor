@@ -158,7 +158,7 @@ void MsgBuffer::retrieveAll() {
     }
     tail_=head_=BUF_OFFSET;
 }
-size_t MsgBuffer::readFd(int fd,int *retErrno){
+ssize_t MsgBuffer::readFd(int fd,int *retErrno){
     char extBuffer[65536];
     struct iovec vec[2];
     size_t writable=writableBytes();
