@@ -14,6 +14,14 @@ class Date
     ~Date(){};
     const Date after(double second) const;
     static const Date date();
+    bool operator==(const Date &date) const
+    {
+        return microSecondsSinceEpoch_==date.microSecondsSinceEpoch_;
+    }
+    bool operator!=(const Date &date) const
+    {
+        return microSecondsSinceEpoch_!=date.microSecondsSinceEpoch_;
+    }
     bool operator<(const Date &date) const
     {
         return microSecondsSinceEpoch_ < date.microSecondsSinceEpoch_;
@@ -23,6 +31,7 @@ class Date
         return microSecondsSinceEpoch_ > date.microSecondsSinceEpoch_;
     }
     int64_t microSecondsSinceEpoch() const { return microSecondsSinceEpoch_; }
+    struct tm tmStruct() const;
     std::string toFormattedString(bool showMicroseconds) const; //UTC
     std::string toCustomedFormattedString(const std::string &fmtStr) const;//UTC
     bool isSameSecond(const Date &date) const
@@ -31,7 +40,10 @@ class Date
     }
     const Date roundSecond() const;
     const Date roundDay() const;
-
+    void swap(Date &that)
+    {
+        std::swap(microSecondsSinceEpoch_,that.microSecondsSinceEpoch_);
+    }
   private:
     explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
     int64_t microSecondsSinceEpoch_ = 0;

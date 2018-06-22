@@ -14,14 +14,14 @@ elseif(version LESS 7.1.0)
     MESSAGE(STATUS "c++14")
 else()
     set(CMAKE_CXX_STD_FLAGS c++17)
-    add_definitions(-DUSE_STD_ANY)
+    SET(DEFS "USE_STD_ANY")
     MESSAGE(STATUS "c++17")
 
 endif()
 
 find_package(Boost)
 if(Boost_FOUND)
-    add_definitions(-DUSE_BOOST)
+    SET(DEFS "USE_BOOST;${DEFS}")
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
@@ -81,6 +81,12 @@ AUX_SOURCE_DIRECTORY(trantor/net/inner DIR_SRC)
 
 ADD_LIBRARY(trantor ${DIR_SRC})
 
+SET(CONFIG_HEADER "${PROJECT_SOURCE_DIR}/config.h")
+file(WRITE "${CONFIG_HEADER}" "#pragma once\n")
+foreach(loop_var ${DEFS})
+    file(APPEND "${CONFIG_HEADER}" "#define ${loop_var}\n")
+endforeach(loop_var)
+EXEC_PROGRAM(${PROJECT_SOURCE_DIR}/update_config.sh ARGS "${CONFIG_HEADER} ${PROJECT_SOURCE_DIR}/trantor/utils/config.h")
 
 SET(CMAKE_INSTALL_PREFIX /usr/local)
 

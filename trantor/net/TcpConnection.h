@@ -1,5 +1,6 @@
 #pragma once
 
+#include <trantor/utils/config.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/utils/NonCopyable.h>
@@ -10,13 +11,13 @@
 #ifdef USE_STD_ANY
 
 #include <any>
-typedef std::any Any;
-#define Any_cast std::any_cast
+using std::any;
+using std::any_cast;
 
 #elif USE_BOOST
 #include <boost/any.hpp>
-typedef boost::any Any;
-#define Any_cast boost::any_cast
+using boost::any;
+using boost::any_cast;
 
 #else
 #define NO_ANY 1
@@ -64,13 +65,13 @@ namespace trantor
         void setContext(void *p)const {context_=p;}
         void* getContext()const {return context_;}
 #else
-        void setContext(const Any& context)
+        void setContext(const any& context)
         { context_ = context; }
 
-        const Any& getContext() const
+        const any& getContext() const
         { return context_; }
 
-        Any* getMutableContext()
+        any* getMutableContext()
         { return &context_; }
 #endif
 
@@ -80,7 +81,7 @@ namespace trantor
 #ifdef NO_ANY
         mutable  void *context_= nullptr;
 #else
-        Any context_;
+        any context_;
 #endif
         /// Internal use only.
         void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}

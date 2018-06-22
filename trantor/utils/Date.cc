@@ -29,6 +29,13 @@ namespace trantor
         t->tm_sec=0;
         return Date(mktime(t)*MICRO_SECONDS_PRE_SEC);
     }
+    struct tm Date::tmStruct() const
+    {
+        time_t seconds = static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        struct tm tm_time;
+        gmtime_r(&seconds, &tm_time);
+        return tm_time;
+    }
     std::string Date::toFormattedString(bool showMicroseconds) const
     {
       //  std::cout<<"toFormattedString"<<std::endl;
