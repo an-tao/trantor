@@ -34,6 +34,7 @@ namespace trantor
     class Channel;
     class Socket;
     class TcpServer;
+    void removeConnection(EventLoop* loop, const TcpConnectionPtr& conn);
     class TcpConnection:public NonCopyable,public std::enable_shared_from_this<TcpConnection>
     {
         friend class TcpServer;
