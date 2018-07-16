@@ -1,6 +1,6 @@
 #include <trantor/utils/Logger.h>
 #include "Channel.h"
-#include "Poller.h"
+#include "EpollPoller.h"
 #include <poll.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -25,17 +25,17 @@ namespace trantor
     }
 
 
-    Poller::Poller(EventLoop *loop)
-        : ownerLoop_(loop),
+    EpollPoller::EpollPoller(EventLoop *loop)
+        : Poller(loop),
           epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
           events_(kInitEventListSize)
     {}
-    Poller::~Poller()
+    EpollPoller::~EpollPoller()
     {
         close(epollfd_);
 
     }
-    void Poller::poll(int timeoutMs, ChannelList* activeChannels)
+    void EpollPoller::poll(int timeoutMs, ChannelList* activeChannels)
     {
         int numEvents = ::epoll_wait(epollfd_,
                                      &*events_.begin(),
@@ -55,13 +55,13 @@ namespace trantor
             // error happens, log uncommon ones
             if (savedErrno != EINTR) {
                 errno = savedErrno;
-                LOG_SYSERR << "EPollPoller::poll()";
+                LOG_SYSERR << "EPollEpollPoller::poll()";
             }
         }
         return;
 
     }
-    void Poller::fillActiveChannels(int numEvents,
+    void EpollPoller::fillActiveChannels(int numEvents,
                                        ChannelList* activeChannels) const
     {
         assert(static_cast<size_t>(numEvents) <= events_.size());
@@ -78,7 +78,7 @@ namespace trantor
         }
         //LOG_TRACE<<"active Channels num:"<<activeChannels->size();
     }
-    void Poller::updateChannel(Channel* channel)
+    void EpollPoller::updateChannel(Channel* channel)
     {
         assertInLoopThread();
         const int index = channel->index();
@@ -112,9 +112,9 @@ namespace trantor
             }
         }
     }
-    void Poller::removeChannel(Channel* channel)
+    void EpollPoller::removeChannel(Channel* channel)
     {
-        Poller::assertInLoopThread();
+        EpollPoller::assertInLoopThread();
         int fd = channel->fd();
         assert(channels_.find(fd) != channels_.end());
         assert(channels_[fd] == channel);
@@ -131,7 +131,7 @@ namespace trantor
         }
         channel->setIndex(kNew);
     }
-    void Poller::update(int operation, Channel* channel)
+    void EpollPoller::update(int operation, Channel* channel)
     {
         struct epoll_event event;
         bzero(&event, sizeof event);
