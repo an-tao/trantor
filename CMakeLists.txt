@@ -68,8 +68,12 @@ INCLUDE_DIRECTORIES(
 )
 
 ADD_SUBDIRECTORY(trantor/tests)
-ADD_SUBDIRECTORY(trantor/unittests)
-
+find_package(GTest)
+if(GTest_FOUND)
+    include_directories(GTEST_INCLUDE_DIR)
+    link_directories(GTEST_LIBRARY_DIR)
+    ADD_SUBDIRECTORY(trantor/unittests)
+endif()
 # lib directories
 LINK_DIRECTORIES(
         ${PROJECT_BINARY_DIR}/lib
