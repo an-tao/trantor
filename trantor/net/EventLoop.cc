@@ -31,9 +31,10 @@ namespace trantor
 
         return evtfd;
     }
+    const int kPollTimeMs = 10000;
 #endif
     __thread EventLoop * t_loopInThisThread = 0;
-    const int kPollTimeMs = 10000;
+
     EventLoop::EventLoop()
             : looping_(false),
               threadId_(std::this_thread::get_id()),

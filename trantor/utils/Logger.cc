@@ -50,7 +50,9 @@ void defaultFlushFunction()
 }
 static __thread uint64_t lastSecond_=0;
 static __thread char lastTimeString_[32]={0};
+#ifdef __linux__
 static __thread pid_t threadId_ = 0;
+#endif
 //   static __thread LogStream logStream_;
 #ifdef RELEASE
 Logger::LogLevel Logger::logLevel_=LogLevel::INFO;
@@ -70,11 +72,19 @@ void Logger::formatTime() {
     }
     logStream_<<T(lastTimeString_,17);
     char tmp[32];
+#ifdef __linux__
     sprintf(tmp,".%06lu UTC ",microSec);
+#else
+    sprintf(tmp,".%06llu UTC ",microSec);
+#endif
     logStream_<<T(tmp,12);
+#ifdef __linux__
     if(threadId_==0)
         threadId_=static_cast<pid_t>(::syscall(SYS_gettid));
     logStream_<<threadId_;
+#else
+    //logStream_<<std::this_thread::get_id();
+#endif
 }
 static const char* logLevelStr[Logger::LogLevel::NUM_LOG_LEVELS]={
         " TRACE ",
