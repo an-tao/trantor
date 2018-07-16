@@ -1,7 +1,8 @@
 #include <trantor/utils/SerialTaskQueue.h>
 #include <trantor/utils/Logger.h>
+#ifdef __linux__
 #include <sys/prctl.h>
-
+#endif
 namespace trantor
 {
     SerialTaskQueue::SerialTaskQueue(const std::string &name)
@@ -42,7 +43,9 @@ namespace trantor
     }
 
     void SerialTaskQueue::queueFunc() {
+#ifdef __linux__
         ::prctl(PR_SET_NAME,queueName_.c_str());
+#endif
         while(!stop_)
         {
             std::function<void ()> r;

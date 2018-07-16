@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <queue>
+#include <string>
 namespace trantor
 {
     class ConcurrentTaskQueue:public TaskQueue

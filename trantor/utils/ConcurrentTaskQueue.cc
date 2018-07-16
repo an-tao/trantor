@@ -1,7 +1,9 @@
 #include <trantor/utils/ConcurrentTaskQueue.h>
 #include <trantor/utils/Logger.h>
 #include <assert.h>
+#ifdef __linux__
 #include <sys/prctl.h>
+#endif
 using namespace trantor;
 ConcurrentTaskQueue::ConcurrentTaskQueue(size_t threadNum,const std::string &name):
 queueCount_(threadNum),
@@ -31,7 +33,9 @@ void ConcurrentTaskQueue::runTaskInQueue(std::function<void ()> &&task)
 void ConcurrentTaskQueue::queueFunc(int queueNum) {
     char tmpName[32];
     snprintf(tmpName,sizeof(tmpName),"%s%d",queueName_.c_str(),queueNum);
+#ifdef __linux__
     ::prctl(PR_SET_NAME,tmpName);
+#endif
     while(!stop_)
     {
         std::function<void ()> r;

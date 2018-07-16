@@ -10,6 +10,12 @@
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
+#ifndef SOCK_NONBLOCK
+# define SOCK_NONBLOCK O_NONBLOCK
+#endif
+#ifndef SOCK_CLOEXEC
+# define SOCK_CLOEXEC O_CLOEXEC
+#endif
 
 namespace trantor
 {

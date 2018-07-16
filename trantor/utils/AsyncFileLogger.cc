@@ -1,7 +1,9 @@
 #include <trantor/utils/AsyncFileLogger.h>
 #ifndef __WINDOWS__
 #include <unistd.h>
+#ifdef __linux__
 #include <sys/prctl.h>
+#endif
 #endif
 #include <string.h>
 #include <iostream>
@@ -90,7 +92,7 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf) {
     }
 }
 void AsyncFileLogger::logThreadFunc() {
-#ifndef __WINDOWS__
+#ifdef __linux__
     prctl(PR_SET_NAME,"AsyncFileLogger");
 #endif
     while (!stopFlag_)

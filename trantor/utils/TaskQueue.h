@@ -3,6 +3,7 @@
 #include "NonCopyable.h"
 #include <functional>
 #include <future>
+#include <string>
 namespace trantor
 {
     class TaskQueue:public NonCopyable

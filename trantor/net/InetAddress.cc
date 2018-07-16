@@ -51,9 +51,10 @@ static_assert(sizeof(InetAddress) == sizeof(struct sockaddr_in6),"");
 //static_assert(offsetof(sockaddr_in6, sin6_family) == 0,"");
 //static_assert(offsetof(sockaddr_in, sin_port) == 2,"");
 //static_assert(offsetof(sockaddr_in6, sin6_port) == 2,"");
-
+#ifdef __linux__
 #if !(__GNUC_PREREQ (4,6))
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#endif
 #endif
 InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
 {
@@ -138,6 +139,7 @@ static __thread char t_resolveBuffer[64 * 1024];
 bool InetAddress::resolve(const std::string & hostname, InetAddress* out)
 {
     assert(out != NULL);
+#ifdef __linux__
     struct hostent hent;
     struct hostent* he = NULL;
     int herrno = 0;
@@ -145,6 +147,11 @@ bool InetAddress::resolve(const std::string & hostname, InetAddress* out)
 
     int ret = gethostbyname_r(hostname.c_str(), &hent, t_resolveBuffer, sizeof t_resolveBuffer, &he, &herrno);
     if (ret == 0 && he != NULL)
+#else
+        ///FIXME multi-threads safety
+    auto he=gethostbyname(hostname.c_str());
+    if(he!=NULL)
+#endif
     {
         assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
         out->addr_.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
@@ -152,7 +159,7 @@ bool InetAddress::resolve(const std::string & hostname, InetAddress* out)
     }
     else
     {
-        if (ret)
+//        if (ret)
         {
             LOG_SYSERR << "InetAddress::resolve";
         }

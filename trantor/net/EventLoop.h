@@ -91,7 +91,11 @@ namespace trantor
         std::vector<Func> funcs_;
         std::unique_ptr<TimerQueue> timerQueue_;
         bool callingFuncs_=false;
+#ifdef __linux__
         int wakeupFd_;
+#else
+        int wakeupFd_[2];
+#endif
         std::unique_ptr<Channel> wakeupChannelPtr_;
 
         void doRunInLoopFuncs();
