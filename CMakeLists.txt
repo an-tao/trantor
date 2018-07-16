@@ -28,19 +28,6 @@ if(Boost_FOUND)
 endif()
 
 
-IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    ADD_LIBRARY(easypq ${DIR_SRCS} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/EpollPoller.cc)
-    MESSAGE(STATUS "current platform: Linux ")
-ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    MESSAGE(STATUS "current platform: Windows")
-ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    MESSAGE(STATUS "current platform: FreeBSD")
-ELSEIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    ADD_LIBRARY(easypq ${DIR_SRCS} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/PollPoller.cc)
-    MESSAGE(STATUS "current platform: MacOS")
-ELSE ()
-    MESSAGE(STATUS "other platform: ${CMAKE_SYSTEM_NAME}")
-ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 set(CXX_FLAGS
         -g
@@ -79,9 +66,10 @@ INCLUDE_DIRECTORIES(
         /usr/include
 
 )
-if (MAKETEST STREQUAL YES)
+
 ADD_SUBDIRECTORY(trantor/tests)
-endif ()
+ADD_SUBDIRECTORY(trantor/unittests)
+
 # lib directories
 LINK_DIRECTORIES(
         ${PROJECT_BINARY_DIR}/lib
@@ -93,7 +81,22 @@ LINK_DIRECTORIES(
 AUX_SOURCE_DIRECTORY(trantor/utils DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net/inner DIR_SRC)
-ADD_LIBRARY(trantor ${DIR_SRC})
+
+
+IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    ADD_LIBRARY(trantor ${DIR_SRC} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/EpollPoller.cc)
+    MESSAGE(STATUS "current platform: Linux ")
+ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    MESSAGE(STATUS "current platform: Windows")
+ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+    MESSAGE(STATUS "current platform: FreeBSD")
+ELSEIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    ADD_LIBRARY(trantor ${DIR_SRC} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/PollPoller.cc)
+    MESSAGE(STATUS "current platform: MacOS")
+ELSE ()
+    MESSAGE(STATUS "other platform: ${CMAKE_SYSTEM_NAME}")
+ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+
 
 SET(CONFIG_HEADER "${PROJECT_SOURCE_DIR}/config.h")
 file(WRITE "${CONFIG_HEADER}" "#pragma once\n")

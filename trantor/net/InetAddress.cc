@@ -46,17 +46,13 @@ static const in_addr_t kInaddrLoopback = INADDR_LOOPBACK;
 
 using namespace trantor;
 
-static_assert(sizeof(InetAddress) == sizeof(struct sockaddr_in6),"");
-//static_assert(offsetof(sockaddr_in, sin_family) == 0,"");
-//static_assert(offsetof(sockaddr_in6, sin6_family) == 0,"");
-//static_assert(offsetof(sockaddr_in, sin_port) == 2,"");
-//static_assert(offsetof(sockaddr_in6, sin6_port) == 2,"");
 #ifdef __linux__
 #if !(__GNUC_PREREQ (4,6))
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 #endif
 #endif
 InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
+:_isIpV6(ipv6)
 {
     if (ipv6)
     {
@@ -76,7 +72,8 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
     }
 }
 
-InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
+InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6):
+_isIpV6(ipv6)
 {
     if (ipv6)
     {
@@ -133,9 +130,9 @@ uint16_t InetAddress::toPort() const
 {
     return ntohs(portNetEndian());
 }
-
+#ifdef __linux__
 static __thread char t_resolveBuffer[64 * 1024];
-
+#endif
 bool InetAddress::resolve(const std::string & hostname, InetAddress* out)
 {
     assert(out != NULL);

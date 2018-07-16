@@ -56,7 +56,7 @@ void Connector::startInLoop()
 void Connector::connect()
 {
     int sockfd = Socket::createNonblockingSocketOrDie(serverAddr_.family());
-    int ret = Socket::connect(sockfd, serverAddr_.getSockAddr());
+    int ret = Socket::connect(sockfd, serverAddr_);
     int savedErrno = (ret == 0) ? 0 : errno;
     switch (savedErrno)
     {

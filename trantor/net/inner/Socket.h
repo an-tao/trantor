@@ -10,12 +10,7 @@
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
-#ifndef SOCK_NONBLOCK
-# define SOCK_NONBLOCK O_NONBLOCK
-#endif
-#ifndef SOCK_CLOEXEC
-# define SOCK_CLOEXEC O_CLOEXEC
-#endif
+
 
 namespace trantor
 {
@@ -24,7 +19,12 @@ namespace trantor
     public:
         static int createNonblockingSocketOrDie(int family)
         {
+#ifdef __linux__
             int sock = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
+#else
+            int sock = ::socket(family,SOCK_STREAM,IPPROTO_TCP);
+            setNonBlockAndCloseOnExec(sock);
+#endif
             if (sock < 0)
             {
                 LOG_SYSERR << "sockets::createNonblockingOrDie";
@@ -32,23 +32,7 @@ namespace trantor
             }
             return sock;
         }
-        //token from muduo
-        static void setNonBlockAndCloseOnExec(int sockfd)
-        {
-            // non-block
-            int flags = ::fcntl(sockfd, F_GETFL, 0);
-            flags |= O_NONBLOCK;
-            int ret = ::fcntl(sockfd, F_SETFL, flags);
-            // FIXME check
 
-            // close-on-exec
-            flags = ::fcntl(sockfd, F_GETFD, 0);
-            flags |= FD_CLOEXEC;
-            ret = ::fcntl(sockfd, F_SETFD, flags);
-            // FIXME check
-
-            (void)ret;
-        }
 
         static int getSocketError(int sockfd)
         {
@@ -65,9 +49,13 @@ namespace trantor
             }
         }
 
-        static int connect(int sockfd, const struct sockaddr* addr)
+        static int connect(int sockfd, const InetAddress &addr)
         {
-            return ::connect(sockfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6)));
+            if(addr.isIpV6())
+                return ::connect(sockfd, addr.getSockAddr(), static_cast<socklen_t>(sizeof(struct sockaddr_in6)));
+            else
+                return ::connect(sockfd, addr.getSockAddr(), static_cast<socklen_t>(sizeof(struct sockaddr_in)));
+
         }
 
         static bool isSelfConnect(int sockfd)
@@ -134,7 +122,23 @@ namespace trantor
         int getSocketError();
     protected:
         int sockFd_;
+        //token from muduo
+        static void setNonBlockAndCloseOnExec(int sockfd)
+        {
+            // non-block
+            int flags = ::fcntl(sockfd, F_GETFL, 0);
+            flags |= O_NONBLOCK;
+            int ret = ::fcntl(sockfd, F_SETFL, flags);
+            // FIXME check
 
+            // close-on-exec
+            flags = ::fcntl(sockfd, F_GETFD, 0);
+            flags |= FD_CLOEXEC;
+            ret = ::fcntl(sockfd, F_SETFD, flags);
+            // FIXME check
+
+            (void)ret;
+        }
     };
 }
 
