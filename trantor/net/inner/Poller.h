@@ -1,36 +1,26 @@
 #pragma once
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/net/EventLoop.h>
+#include "NonCopyable.h"
+#include "EventLoop.h"
 
 #include <memory>
 #include <map>
-typedef std::vector<struct epoll_event> EventList;
 
 namespace trantor
 {
 	class Channel;
 
-
 	class Poller :NonCopyable
 	{
 	public:
-		explicit Poller(EventLoop *loop);
-		~Poller();
-		void assertInLoopThread(){ownerLoop_->assertInLoopThread();}
-		void poll(int timeoutMs, ChannelList* activeChannels);
-		void updateChannel(Channel* channel);
-		void removeChannel(Channel* channel);
+		explicit Poller(EventLoop *loop):ownerLoop_(loop){};
+		virtual ~Poller(){};
+		void assertInLoopThread()  {ownerLoop_->assertInLoopThread();}
+		virtual void poll(int timeoutMs, ChannelList* activeChannels)=0;
+		virtual void updateChannel(Channel* channel)=0;
+		virtual void removeChannel(Channel* channel)=0;
+		static Poller* newPoller(EventLoop *loop);
+
 	private:
-
-		EventLoop* ownerLoop_;
-		static const int kInitEventListSize = 16;
-		int epollfd_;
-		EventList events_;
-		void update(int operation, Channel* channel);
-		typedef std::map<int, Channel*> ChannelMap;
-		ChannelMap channels_;
-		void fillActiveChannels(int numEvents,
-								ChannelList* activeChannels) const;
-
+		EventLoop *ownerLoop_;
 	};
 }

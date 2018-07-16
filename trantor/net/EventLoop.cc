@@ -9,7 +9,9 @@
 #include <assert.h>
 #include <poll.h>
 #include <iostream>
+#ifdef __linux__
 #include <sys/eventfd.h>
+#endif
 #include <functional>
 #include <unistd.h>
 #include <algorithm>
@@ -18,6 +20,7 @@
 using namespace std;
 namespace trantor
 {
+#ifdef __linux__
     int createEventfd()
     {
         int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
@@ -28,23 +31,32 @@ namespace trantor
 
         return evtfd;
     }
-
+#endif
     __thread EventLoop * t_loopInThisThread = 0;
     const int kPollTimeMs = 10000;
     EventLoop::EventLoop()
             : looping_(false),
               threadId_(std::this_thread::get_id()),
               quit_(false),
-              poller_(new Poller(this)),
+              poller_(Poller::newPoller(this)),
               currentActiveChannel_(NULL),
               eventHandling_(false),
-              timerQueue_(new TimerQueue(this)),
+              timerQueue_(new TimerQueue(this))
+#ifdef __linux__
+            ,
               wakeupFd_(createEventfd()),
               wakeupChannelPtr_(new Channel(this,wakeupFd_))
+#endif
     {
         assert(t_loopInThisThread == 0);
         t_loopInThisThread = this;
+#ifdef __linux__
+#else
+        assert(!pipe(wakeupFd_));
 
+        wakeupChannelPtr_=std::unique_ptr<Channel>(new Channel(this,wakeupFd_[0]));
+
+#endif
         wakeupChannelPtr_->setReadCallback(
                 std::bind(&EventLoop::wakeupRead, this));
         wakeupChannelPtr_->enableReading();
@@ -57,6 +69,12 @@ namespace trantor
     {
         assert(!looping_);
         t_loopInThisThread = NULL;
+#ifdef __linux__
+        close(wakeupFd_);
+#else
+        close(wakeupFd_[0]);
+        close(wakeupFd_[1]);
+#endif
     }
     EventLoop* EventLoop::getEventLoopOfCurrentThread()
     {
@@ -99,8 +117,12 @@ namespace trantor
 
         while (!quit_) {
             activeChannels_.clear();
+#ifdef __linux__
             poller_->poll(kPollTimeMs, &activeChannels_);
-
+#else
+            poller_->poll(timerQueue_->getTimeout(),&activeChannels_);
+            timerQueue_->processTimers();
+#endif
             // TODO sort channel by priority
             //std::cout<<"after ->poll()"<<std::endl;
             eventHandling_ = true;
@@ -202,7 +224,11 @@ namespace trantor
     void EventLoop::wakeup()
     {
         uint64_t tmp=1;
+#ifdef __linux__
         int ret=write(wakeupFd_,&tmp,sizeof(tmp));
+#else
+        int ret=write(wakeupFd_[1],&tmp,sizeof(tmp));
+#endif
         if(ret<0)
         {
             LOG_SYSERR<<"wakeup error";
@@ -211,7 +237,11 @@ namespace trantor
     void EventLoop::wakeupRead()
     {
         uint64_t tmp;
+#ifdef __linux__
         ssize_t ret=read(wakeupFd_,&tmp,sizeof(tmp));
+#else
+        ssize_t ret=read(wakeupFd_[0],&tmp,sizeof(tmp));
+#endif
         if(ret<0)
             LOG_SYSERR<<"wakeup read error";
     }

@@ -8,19 +8,23 @@
 #include <trantor/net/callbacks.h>
 #include <memory>
 #include <functional>
+
 #ifdef USE_STD_ANY
 
-#include <any>
-using std::any;
-using std::any_cast;
+  #include <any>
+  using std::any;
+  using std::any_cast;
 
-#elif USE_BOOST
-#include <boost/any.hpp>
-using boost::any;
-using boost::any_cast;
+#else 
+  #ifdef USE_BOOST
 
-#else
-#define NO_ANY 1
+    #include <boost/any.hpp>
+    using boost::any;
+    using boost::any_cast;
+
+  #else
+    #error,must use c++17 or boost
+  #endif
 #endif
 
 namespace trantor
@@ -30,6 +34,7 @@ namespace trantor
     class Channel;
     class Socket;
     class TcpServer;
+    void removeConnection(EventLoop* loop, const TcpConnectionPtr& conn);
     class TcpConnection:public NonCopyable,public std::enable_shared_from_this<TcpConnection>
     {
         friend class TcpServer;

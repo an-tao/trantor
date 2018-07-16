@@ -52,7 +52,11 @@ namespace trantor
 		{
 			if(errorCallback_) errorCallback_();
 		}
+#ifdef __linux__
 		if(revents_ & (POLLIN|POLLPRI|POLLRDHUP))
+#else
+		if(revents_ & (POLLIN|POLLPRI))
+#endif
 		{
 			//LOG_TRACE<<"handle read";
 			if(readCallback_) readCallback_();
