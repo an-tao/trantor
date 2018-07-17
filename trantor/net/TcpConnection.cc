@@ -169,12 +169,32 @@ void TcpConnection::sendInLoop(const std::string &msg)
 {
     LOG_TRACE<<"send in loop";
     loop_->assertInLoopThread();
+    if(state_!=Connected)
+    {
+        LOG_WARN<<"Connection is not connected,give up sending";
+        return;
+    }
     size_t remainLen=msg.length();
-    size_t sendLen=0;
+    ssize_t sendLen=0;
     if(!ioChennelPtr_->isWriting()&&writeBuffer_.readableBytes()==0)
     {
         //send directly
         sendLen=write(socketPtr_->fd(),msg.c_str(),msg.length());
+        if(sendLen<0)
+        {
+            //error
+            if (errno != EWOULDBLOCK)
+            {
+                LOG_SYSERR << "TcpConnection::sendInLoop";
+                if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
+                {
+                    return;
+                }
+                LOG_SYSERR<< "Unexpected error("<<errno<<")";
+                return;
+            }
+            sendLen = 0;
+        }
         remainLen-=sendLen;
     }
     if(remainLen>0)
