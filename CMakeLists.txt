@@ -80,7 +80,13 @@ LINK_DIRECTORIES(
 AUX_SOURCE_DIRECTORY(trantor/utils DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net/inner DIR_SRC)
-
+find_package (OpenSSL)
+if(OpenSSL_FOUND)
+    #add_definitions(-DUSE_OPENSSL)
+    set(DEFS "USE_OPENSSL;${DEFS}")
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    AUX_SOURCE_DIRECTORY(trantor/net/ssl DIR_SRC)
+endif()
 
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
     ADD_LIBRARY(trantor ${DIR_SRC} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/EpollPoller.cc)
