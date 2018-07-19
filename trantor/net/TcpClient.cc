@@ -12,6 +12,7 @@
 #include <trantor/utils/Logger.h>
 //#include <trantor/net/Channel.h>
 #include "Connector.h"
+#include "inner/TcpConnectionImpl.h"
 #include <trantor/net/EventLoop.h>
 #include "Socket.h"
 
@@ -37,7 +38,8 @@ namespace trantor
 
     void removeConnection(EventLoop* loop, const TcpConnectionPtr& conn)
     {
-        loop->queueInLoop(std::bind(&TcpConnection::connectDestroyed, conn));
+        loop->queueInLoop(std::bind(&TcpConnectionImpl::connectDestroyed,
+                                    std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
     }
 
     void removeConnector(const ConnectorPtr& connector)
@@ -83,7 +85,8 @@ TcpClient::~TcpClient()
         // FIXME: not 100% safe, if we are in different thread
         CloseCallback cb = std::bind(&trantor::removeConnection, loop_, _1);
         loop_->runInLoop(
-                std::bind(&TcpConnection::setCloseCallback, conn, cb));
+                std::bind(&TcpConnectionImpl::setCloseCallback,
+                          std::dynamic_pointer_cast<TcpConnectionImpl>(conn), cb));
         if (unique)
         {
             conn->forceClose();
@@ -139,10 +142,10 @@ void TcpClient::newConnection(int sockfd)
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
     // FIXME poll with zero timeout to double confirm the new connection
     // FIXME use make_shared if necessary
-    TcpConnectionPtr conn(new TcpConnection(loop_,
+    auto conn=std::make_shared<TcpConnectionImpl>(loop_,
                                             sockfd,
                                             localAddr,
-                                            peerAddr));
+                                            peerAddr);
 
     conn->setConnectionCallback(connectionCallback_);
     conn->setRecvMsgCallback(messageCallback_);
@@ -167,7 +170,8 @@ void TcpClient::removeConnection(const TcpConnectionPtr& conn)
         connection_.reset();
     }
 
-    loop_->queueInLoop(std::bind(&TcpConnection::connectDestroyed, conn));
+    loop_->queueInLoop(std::bind(&TcpConnectionImpl::connectDestroyed,
+                                 std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
     if (retry_ && connect_)
     {
         LOG_INFO << "TcpClient::connect[" << name_ << "] - Reconnecting to "
