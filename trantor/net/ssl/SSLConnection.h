@@ -6,34 +6,39 @@
 // Author: Tao An
 #pragma once
 #include <openssl/ssl.h>
-
+#include "../inner/TcpConnectionImpl.h"
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/TcpConnection.h>
 #include <memory>
 namespace trantor
 {
     enum class SSLStatus{
-        Init,
+        Handshaking,
         Connecting,
         Connected,
         DisConnecting,
         DisConnected
     };
-    class SSLConnection:public NonCopyable{
+    class SSLConnection: public TcpConnectionImpl{
     public:
-        SSLConnection(const TcpConnectionPtr &,const std::shared_ptr<SSL_CTX> &ctxPtr);
-        ~SSLConnection(){}
-        void send(const char *msg,uint64_t len);
-        void send(const std::string &msg);
+        SSLConnection(EventLoop *loop,int socketfd,const InetAddress& localAddr,
+                      const InetAddress& peerAddr,
+                      const std::shared_ptr<SSL_CTX> &ctxPtr,
+                      bool isServer=true);
+        virtual ~SSLConnection(){}
 
-        const InetAddress& lobalAddr() const {return _tcpConn->lobalAddr();}
-        const InetAddress& peerAddr() const {return _tcpConn->peerAddr();}
     private:
-        TcpConnectionPtr _tcpConn;
-        SSLStatus _status=SSLStatus::Init;
+        void doHandshaking();
+        SSLStatus _status=SSLStatus::Handshaking;
     private:
         //OpenSSL
         std::shared_ptr<SSL> _sslPtr;
+        bool _isServer;
+    protected:
+        virtual void readCallback() override ;
+        virtual void writeCallback() override ;
+        virtual void connectEstablished() override;
+        virtual void sendInLoop(const std::string &msg) override;
     };
     typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
 

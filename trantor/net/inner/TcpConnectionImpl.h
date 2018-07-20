@@ -70,8 +70,9 @@ namespace trantor
         void setCloseCallback(const CloseCallback& cb)
         { closeCallback_ = cb; }
         void connectDestroyed();
-        void connectEstablished();
-    private:
+        virtual void connectEstablished();
+
+    protected:
         enum ConnState { Disconnected, Connecting, Connected, Disconnecting };
         EventLoop *loop_;
         std::unique_ptr<Channel> ioChennelPtr_;
@@ -79,8 +80,8 @@ namespace trantor
         MsgBuffer readBuffer_;
         MsgBuffer writeBuffer_;
 
-        void readCallback();
-        void writeCallback();
+        virtual void readCallback();
+        virtual void writeCallback();
         InetAddress localAddr_,peerAddr_;
         ConnState state_;
         //callbacks
@@ -91,7 +92,7 @@ namespace trantor
         HighWaterMarkCallback highWaterMarkCallback_;
         void handleClose();
         void handleError();
-        void sendInLoop(const std::string &msg);
+        virtual void sendInLoop(const std::string &msg);
 
         size_t highWaterMarkLen_;
         std::string name_;

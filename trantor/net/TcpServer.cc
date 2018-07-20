@@ -4,6 +4,9 @@
 #include <trantor/utils/Logger.h>
 #include <functional>
 #include <vector>
+#ifdef USE_OPENSSL
+#include <trantor/net/ssl/SSLConnection.h>
+#endif
 using namespace trantor;
 using namespace std::placeholders;
 TcpServer::TcpServer(EventLoop *loop, const InetAddress &address, const std::string &name)
@@ -39,7 +42,26 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer) {
     }
     if(ioLoop==NULL)
         ioLoop=loop_;
+#ifdef USE_OPENSSL
+    std::shared_ptr<TcpConnectionImpl> newPtr;
+    if(_sslCtxPtr)
+    {
+        newPtr=std::make_shared<SSLConnection>(ioLoop,
+                                               sockfd,
+                                               InetAddress(Socket::getLocalAddr(sockfd)),
+                                               peer,
+                                               _sslCtxPtr);
+
+    } else{
+        newPtr=std::make_shared<TcpConnectionImpl>(ioLoop,
+                                                   sockfd,
+                                                   InetAddress(Socket::getLocalAddr(sockfd)),
+                                                   peer);
+    }
+#else
     auto newPtr=std::make_shared<TcpConnectionImpl>(ioLoop,sockfd,InetAddress(Socket::getLocalAddr(sockfd)),peer);
+#endif
+
     newPtr->setRecvMsgCallback(recvMessageCallback_);
     newPtr->setConnectionCallback([=](const TcpConnectionPtr &connectionPtr){
         if(connectionCallback_)
@@ -103,9 +125,24 @@ void TcpServer::enableSSL(const std::string &certPath, const std::string &keyPat
                 SSL_CTX_free(ctx);
             });
     assert(_sslCtxPtr);
-    
+
     auto r = SSL_CTX_use_certificate_file(_sslCtxPtr.get(), certPath.c_str(), SSL_FILETYPE_PEM);
+    if(!r)
+    {
+        LOG_FATAL<<strerror(errno);
+        abort();
+    }
     r = SSL_CTX_use_PrivateKey_file(_sslCtxPtr.get(), keyPath.c_str(), SSL_FILETYPE_PEM);
+    if(!r)
+    {
+        LOG_FATAL<<strerror(errno);
+        abort();
+    }
     r = SSL_CTX_check_private_key(_sslCtxPtr.get());
+    if(!r)
+    {
+        LOG_FATAL<<strerror(errno);
+        abort();
+    }
 }
 #endif

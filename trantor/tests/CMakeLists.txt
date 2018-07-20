@@ -1,5 +1,9 @@
 link_libraries(trantor pthread)
-
+if(OpenSSL_FOUND)
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    link_directories(ssl crypto)
+    add_executable(ssl_server_test SSLServerTest.cc)
+endif()
 add_executable(serial_task_queue_test SerialTaskQueueTest.cc)
 
 add_executable(timer_test TimerTest.cc)
@@ -19,3 +23,5 @@ add_executable(concurrent_task_queue_test ConcurrentTaskQueueTest.cc)
 add_executable(tcp_client_test TcpClientTest.cc)
 
 add_executable(async_file_logger_test1 AsyncFileLoggerTest1.cc)
+
+
