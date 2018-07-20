@@ -16,13 +16,17 @@
 // that can be found in the License file.
 
 // Author: Tao An
-
+#include <trantor/utils/config.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
 #include <functional>
 #include <thread>
 #include <atomic>
+#ifdef USE_OPENSSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
 namespace trantor
 {
     class Connector;
@@ -77,7 +81,9 @@ namespace trantor
         { messageCallback_ = std::move(cb); }
         void setWriteCompleteCallback(WriteCompleteCallback&& cb)
         { writeCompleteCallback_ = std::move(cb); }
-
+#ifdef USE_OPENSSL
+        void enableSSL();
+#endif
 
     private:
         /// Not thread safe, but in loop
@@ -97,6 +103,9 @@ namespace trantor
         int nextConnId_;
         mutable std::mutex mutex_;
         TcpConnectionPtr connection_; // @GuardedBy mutex_
+#ifdef USE_OPENSSL
+        std::shared_ptr<SSL_CTX> _sslCtxPtr;
+#endif
 
     };
 }

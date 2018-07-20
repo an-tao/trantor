@@ -17,7 +17,7 @@ int main()
     InetAddress addr(8888);
 #endif
     TcpServer server(loopThread.getLoop(),addr,"test");
-    server.enableSSL("cert.pem","key.pem");
+    server.enableSSL("server.pem","server.pem");
     server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
         //LOG_DEBUG<<"recv callback!";
         std::cout<<std::string(buffer->peek(),buffer->readableBytes());
@@ -29,6 +29,7 @@ int main()
         if(connPtr->connected())
         {
             LOG_DEBUG<<"New connection";
+            connPtr->send("Hello world\r\n");
         }
         else if(connPtr->disconnected())
         {

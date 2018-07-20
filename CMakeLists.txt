@@ -66,15 +66,12 @@ INCLUDE_DIRECTORIES(
         /usr/include
 
 )
-if (MAKETEST STREQUAL YES)
-ADD_SUBDIRECTORY(trantor/tests)
-endif ()
+
 # lib directories
 LINK_DIRECTORIES(
-        ${PROJECT_BINARY_DIR}/lib
-
+        ${PROJECT_BINARY_DIR}/
         /usr/local/lib
-        /use/lib
+        /usr/lib
 )
 
 AUX_SOURCE_DIRECTORY(trantor/utils DIR_SRC)
@@ -110,6 +107,11 @@ foreach(loop_var ${DEFS})
 endforeach(loop_var)
 EXEC_PROGRAM(${PROJECT_SOURCE_DIR}/update_config.sh ARGS "${CONFIG_HEADER} ${PROJECT_SOURCE_DIR}/trantor/utils/config.h")
 
+if (MAKETEST STREQUAL YES)
+    ADD_SUBDIRECTORY(trantor/tests)
+endif ()
+
+#install
 SET(CMAKE_INSTALL_PREFIX /usr/local)
 
 install(TARGETS trantor DESTINATION lib)
@@ -119,4 +121,6 @@ install(DIRECTORY trantor/utils/ DESTINATION include/trantor/utils
 
 file(GLOB trantor_net_headers "${CMAKE_CURRENT_SOURCE_DIR}/trantor/net/*.h")
 install(FILES ${trantor_net_headers} DESTINATION include/trantor/net)
+
+
 

@@ -33,9 +33,11 @@ void SSLConnection::readCallback() {
         do{
 
             rd = SSL_read(_sslPtr.get(), buf, sizeof(buf));
+            LOG_TRACE<<"ssl read:"<<rd<<" bytes";
             int sslerr = SSL_get_error(_sslPtr.get(), rd);
-            if (rd < 0 && sslerr != SSL_ERROR_WANT_READ) {
+            if (rd <= 0 && sslerr != SSL_ERROR_WANT_READ) {
                 LOG_ERROR<<"ssl read err:"<<sslerr;
+                ioChennelPtr_->disableAll();
                 _status=SSLStatus::DisConnected;
                 return;
             }
@@ -80,9 +82,10 @@ void SSLConnection::writeCallback() {
             {
                 int wd = SSL_write(_sslPtr.get(), writeBuffer_.peek(),writeBuffer_.readableBytes());
                 int sslerr = SSL_get_error(_sslPtr.get(), wd);
-                if (wd < 0 && sslerr != SSL_ERROR_WANT_WRITE)
+                if (wd <= 0 && sslerr != SSL_ERROR_WANT_WRITE)
                 {
                     LOG_ERROR<<"ssl write error:"<<sslerr;
+                    ioChennelPtr_->disableAll();
                     _status=SSLStatus::DisConnected;
                     return;
                 }
@@ -111,6 +114,7 @@ void SSLConnection::connectEstablished()
             SSL_set_accept_state(_sslPtr.get());
         }
         else{
+            ioChennelPtr_->enableWriting();
             SSL_set_connect_state(_sslPtr.get());
         }
     });
@@ -133,6 +137,7 @@ void SSLConnection::doHandshaking() {
     } else { //错误
         //ERR_print_errors(err);
         LOG_FATAL<<"SSL handshake err";
+        ioChennelPtr_->disableAll();
         _status=SSLStatus::DisConnected;
     }
 }
@@ -156,24 +161,6 @@ void SSLConnection::sendInLoop(const std::string &msg)
     if(!ioChennelPtr_->isWriting()&&writeBuffer_.readableBytes()==0)
     {
         //send directly
-        sendLen=write(socketPtr_->fd(),msg.c_str(),msg.length());
-        if(sendLen<0)
-        {
-            //error
-            if (errno != EWOULDBLOCK)
-            {
-                LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
-                {
-                    return;
-                }
-                LOG_SYSERR<< "Unexpected error("<<errno<<")";
-                return;
-            }
-            sendLen = 0;
-        }
-        remainLen-=sendLen;
-
         sendLen = SSL_write(_sslPtr.get(), msg.c_str(),msg.length());
         int sslerr = SSL_get_error(_sslPtr.get(), sendLen);
         if (sendLen < 0 && sslerr != SSL_ERROR_WANT_WRITE)

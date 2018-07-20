@@ -5,7 +5,7 @@
 #include <functional>
 #include <vector>
 #ifdef USE_OPENSSL
-#include <trantor/net/ssl/SSLConnection.h>
+#include "ssl/SSLConnection.h"
 #endif
 using namespace trantor;
 using namespace std::placeholders;
@@ -111,11 +111,14 @@ void TcpServer::enableSSL(const std::string &certPath, const std::string &keyPat
     //init OpenSSL
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
 	(defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
-    // Initialize OpenSSL
-    SSL_library_init();
-    ERR_load_crypto_strings();
-    SSL_load_error_strings();
-    OpenSSL_add_all_algorithms();
+    // Initialize OpenSSL once;
+    static std::once_flag once;
+	std::call_once(once,[](){
+        SSL_library_init();
+        ERR_load_crypto_strings();
+        SSL_load_error_strings();
+        OpenSSL_add_all_algorithms();
+	});
 #endif
 
     /* Create a new OpenSSL context */
