@@ -1,5 +1,6 @@
 #include <trantor/net/TcpServer.h>
 #include "Acceptor.h"
+#include "inner/TcpConnectionImpl.h"
 #include <trantor/utils/Logger.h>
 #include <functional>
 #include <vector>
@@ -38,7 +39,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer) {
     }
     if(ioLoop==NULL)
         ioLoop=loop_;
-    TcpConnectionPtr newPtr=std::make_shared<TcpConnection>(ioLoop,sockfd,InetAddress(Socket::getLocalAddr(sockfd)),peer);
+    auto newPtr=std::make_shared<TcpConnectionImpl>(ioLoop,sockfd,InetAddress(Socket::getLocalAddr(sockfd)),peer);
     newPtr->setRecvMsgCallback(recvMessageCallback_);
     newPtr->setConnectionCallback([=](const TcpConnectionPtr &connectionPtr){
         if(connectionCallback_)
@@ -74,7 +75,7 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr) {
     });
 
 
-    connectionPtr->connectDestroyed();
+    std::dynamic_pointer_cast<TcpConnectionImpl>(connectionPtr)->connectDestroyed();
 }
 
 const std::string TcpServer::ipPort() const

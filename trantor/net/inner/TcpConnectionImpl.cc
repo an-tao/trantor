@@ -1,4 +1,4 @@
-#include <trantor/net/TcpConnection.h>
+#include "TcpConnectionImpl.h"
 #include "Socket.h"
 #include "Channel.h"
 #define FETCH_SIZE 2048;
@@ -19,7 +19,7 @@ void trantor::defaultMessageCallback(const TcpConnectionPtr&,
     buf->retrieveAll();
 }
 
-TcpConnection::TcpConnection(EventLoop *loop, int socketfd,const InetAddress& localAddr,
+TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop, int socketfd,const InetAddress& localAddr,
                              const InetAddress& peerAddr):
         loop_(loop),
         ioChennelPtr_(new Channel(loop,socketfd)),
@@ -29,19 +29,19 @@ TcpConnection::TcpConnection(EventLoop *loop, int socketfd,const InetAddress& lo
         state_(Connecting)
 {
     LOG_TRACE<<"new connection:"<<peerAddr.toIpPort()<<"->"<<localAddr.toIpPort();
-    ioChennelPtr_->setReadCallback(std::bind(&TcpConnection::readCallback,this));
-    ioChennelPtr_->setWriteCallback(std::bind(&TcpConnection::writeCallback,this));
+    ioChennelPtr_->setReadCallback(std::bind(&TcpConnectionImpl::readCallback,this));
+    ioChennelPtr_->setWriteCallback(std::bind(&TcpConnectionImpl::writeCallback,this));
     ioChennelPtr_->setCloseCallback(
-            std::bind(&TcpConnection::handleClose, this));
+            std::bind(&TcpConnectionImpl::handleClose, this));
     ioChennelPtr_->setErrorCallback(
-            std::bind(&TcpConnection::handleError, this));
+            std::bind(&TcpConnectionImpl::handleError, this));
     socketPtr_->setKeepAlive(true);
     name_=localAddr.toIpPort()+"--"+peerAddr.toIpPort();
 }
-TcpConnection::~TcpConnection() {
+TcpConnectionImpl::~TcpConnectionImpl() {
 
 }
-void TcpConnection::readCallback() {
+void TcpConnectionImpl::readCallback() {
     LOG_TRACE<<"read Callback";
     loop_->assertInLoopThread();
     int ret=0;
@@ -63,7 +63,7 @@ void TcpConnection::readCallback() {
         recvMsgCallback_(shared_from_this(),&readBuffer_);
     }
 }
-void TcpConnection::writeCallback() {
+void TcpConnectionImpl::writeCallback() {
     LOG_TRACE<<"write Callback";
     loop_->assertInLoopThread();
     if(ioChennelPtr_->isWriting())
@@ -91,7 +91,7 @@ void TcpConnection::writeCallback() {
         LOG_SYSERR<<"no writing but call write callback";
     }
 }
-void TcpConnection::connectEstablished() {
+void TcpConnectionImpl::connectEstablished() {
     //loop_->assertInLoopThread();
     loop_->runInLoop([=](){
         LOG_TRACE<<"connectEstablished";
@@ -104,7 +104,7 @@ void TcpConnection::connectEstablished() {
     });
 
 }
-void TcpConnection::handleClose() {
+void TcpConnectionImpl::handleClose() {
     LOG_TRACE<<"connection closed";
     loop_->assertInLoopThread();
     state_=Disconnected;
@@ -119,16 +119,16 @@ void TcpConnection::handleClose() {
     }
 
 }
-void TcpConnection::handleError() {
+void TcpConnectionImpl::handleError() {
     int err = socketPtr_->getSocketError();
-    LOG_ERROR << "TcpConnection::handleError [" << name_
+    LOG_ERROR << "TcpConnectionImpl::handleError [" << name_
               << "] - SO_ERROR = " << err << " " << strerror_tl(err);
 }
-void TcpConnection::setTcpNoDelay(bool on)
+void TcpConnectionImpl::setTcpNoDelay(bool on)
 {
     socketPtr_->setTcpNoDelay(on);
 }
-void TcpConnection::connectDestroyed()
+void TcpConnectionImpl::connectDestroyed()
 {
     loop_->assertInLoopThread();
     if (state_ == Connected)
@@ -140,7 +140,7 @@ void TcpConnection::connectDestroyed()
     }
     ioChennelPtr_->remove();
 }
-void TcpConnection::shutdown() {
+void TcpConnectionImpl::shutdown() {
     loop_->runInLoop([=](){
         if(state_==Connected)
         {
@@ -153,7 +153,7 @@ void TcpConnection::shutdown() {
     });
 }
 
-void TcpConnection::forceClose()
+void TcpConnectionImpl::forceClose()
 {
     loop_->runInLoop([=](){
         if (state_ == Connected || state_ == Disconnecting)
@@ -165,7 +165,7 @@ void TcpConnection::forceClose()
 }
 
 
-void TcpConnection::sendInLoop(const std::string &msg)
+void TcpConnectionImpl::sendInLoop(const std::string &msg)
 {
     LOG_TRACE<<"send in loop";
     loop_->assertInLoopThread();
@@ -185,7 +185,7 @@ void TcpConnection::sendInLoop(const std::string &msg)
             //error
             if (errno != EWOULDBLOCK)
             {
-                LOG_SYSERR << "TcpConnection::sendInLoop";
+                LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
                 if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
                 {
                     return;
@@ -209,12 +209,12 @@ void TcpConnection::sendInLoop(const std::string &msg)
     }
 
 }
-void TcpConnection::send(const char *msg,uint64_t len){
+void TcpConnectionImpl::send(const char *msg,uint64_t len){
     //fix me!
     //Need to be more efficient
     send(std::string(msg,len));
 }
-void TcpConnection::send(const std::string &msg){
+void TcpConnectionImpl::send(const std::string &msg){
 #if SEND_ORDER
     loop_->runInLoop([=](){
         sendInLoop(msg);
