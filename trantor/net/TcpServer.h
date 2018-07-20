@@ -1,5 +1,5 @@
 #pragma once
-
+#include <trantor/utils/config.h>
 #include <trantor/net/callbacks.h>
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Logger.h>
@@ -10,6 +10,12 @@
 #include <memory>
 #include <set>
 #include <signal.h>
+#ifdef USE_OPENSSL
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+#endif
 namespace trantor
 {
     class Acceptor;
@@ -31,6 +37,10 @@ namespace trantor
         const std::string &name() const{return serverName_;}
         const std::string ipPort() const;
         EventLoop * getLoop()const {return loop_;}
+
+#ifdef USE_OPENSSL
+        void enableSSL(const std::string &certPath,const std::string &keyPath);
+#endif
     private:
         EventLoop *loop_;
         std::unique_ptr<Acceptor> acceptorPtr_;
@@ -55,5 +65,9 @@ namespace trantor
         };
 
         IgnoreSigPipe initObj;
+#ifdef USE_OPENSSL
+        //OpenSSL SSL context Object;
+        std::shared_ptr<SSL_CTX> _sslCtxPtr;
+#endif
     };
 }

@@ -82,3 +82,30 @@ const std::string TcpServer::ipPort() const
 {
     return acceptorPtr_->addr().toIpPort();
 }
+
+#ifdef USE_OPENSSL
+void TcpServer::enableSSL(const std::string &certPath, const std::string &keyPath)
+{
+    //init OpenSSL
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+	(defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
+    // Initialize OpenSSL
+    SSL_library_init();
+    ERR_load_crypto_strings();
+    SSL_load_error_strings();
+    OpenSSL_add_all_algorithms();
+#endif
+
+    /* Create a new OpenSSL context */
+    _sslCtxPtr=std::shared_ptr<SSL_CTX>(
+            SSL_CTX_new(SSLv23_method()),
+            [](SSL_CTX *ctx){
+                SSL_CTX_free(ctx);
+            });
+    assert(_sslCtxPtr);
+    
+    auto r = SSL_CTX_use_certificate_file(_sslCtxPtr.get(), certPath.c_str(), SSL_FILETYPE_PEM);
+    r = SSL_CTX_use_PrivateKey_file(_sslCtxPtr.get(), keyPath.c_str(), SSL_FILETYPE_PEM);
+    r = SSL_CTX_check_private_key(_sslCtxPtr.get());
+}
+#endif
