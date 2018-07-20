@@ -5,7 +5,8 @@
 
 // Author: Tao An
 #pragma once
-
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #include <trantor/net/callbacks.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/TcpServer.h>
@@ -32,6 +33,7 @@ namespace trantor
         const std::string & name() const{return _tcpServer->name();}
         const std::string ipPort() const{return _tcpServer->ipPort();}
 
+        void loadCertAndKey(const std::string &certPath,const std::string &keyPath);
         EventLoop * getLoop()const {return _loop;}
     private:
         EventLoop *_loop;
@@ -45,5 +47,9 @@ namespace trantor
                               MsgBuffer*);
         void onTcpWriteComplete(const TcpConnectionPtr&);
         std::unordered_map<TcpConnectionPtr,SSLConnectionPtr> _connMap;
+    private:
+        //OpenSSL SSL context Object;
+        std::shared_ptr<SSL_CTX> _sslCtxPtr;
+
     };
 }

@@ -1,7 +1,8 @@
 #include <trantor/net/ssl/SSLConnection.h>
 using namespace trantor;
-SSLConnection::SSLConnection(const trantor::TcpConnectionPtr &conn):
-_tcpConn(conn)
+SSLConnection::SSLConnection(const trantor::TcpConnectionPtr &conn,const std::shared_ptr<SSL_CTX> &ctxPtr):
+_tcpConn(conn),
+_sslPtr(std::shared_ptr<SSL>(SSL_new(ctxPtr.get()),[](SSL *ssl){SSL_free(ssl);}))
 {
 
 }
