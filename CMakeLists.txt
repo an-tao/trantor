@@ -67,25 +67,23 @@ INCLUDE_DIRECTORIES(
 
 )
 
-ADD_SUBDIRECTORY(trantor/tests)
-find_package(GTest)
-if(GTest_FOUND)
-    include_directories(GTEST_INCLUDE_DIR)
-    link_directories(GTEST_LIBRARY_DIR)
-    ADD_SUBDIRECTORY(trantor/unittests)
-endif()
 # lib directories
 LINK_DIRECTORIES(
-        ${PROJECT_BINARY_DIR}/lib
-
+        ${PROJECT_BINARY_DIR}/
         /usr/local/lib
-        /use/lib
+        /usr/lib
 )
 
 AUX_SOURCE_DIRECTORY(trantor/utils DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net DIR_SRC)
 AUX_SOURCE_DIRECTORY(trantor/net/inner DIR_SRC)
-
+find_package (OpenSSL)
+if(OpenSSL_FOUND)
+    #add_definitions(-DUSE_OPENSSL)
+    set(DEFS "USE_OPENSSL;${DEFS}")
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    AUX_SOURCE_DIRECTORY(trantor/net/ssl DIR_SRC)
+endif()
 
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
     ADD_LIBRARY(trantor ${DIR_SRC} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/EpollPoller.cc)
@@ -109,6 +107,15 @@ foreach(loop_var ${DEFS})
 endforeach(loop_var)
 EXEC_PROGRAM(${PROJECT_SOURCE_DIR}/update_config.sh ARGS "${CONFIG_HEADER} ${PROJECT_SOURCE_DIR}/trantor/utils/config.h")
 
+ADD_SUBDIRECTORY(trantor/tests)
+find_package(GTest)
+if(GTest_FOUND)
+    include_directories(GTEST_INCLUDE_DIR)
+    link_directories(GTEST_LIBRARY_DIR)
+    ADD_SUBDIRECTORY(trantor/unittests)
+endif()
+
+#install
 SET(CMAKE_INSTALL_PREFIX /usr/local)
 
 install(TARGETS trantor DESTINATION lib)

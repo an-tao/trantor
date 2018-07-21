@@ -1,4 +1,5 @@
 #pragma once
+#include "../Poller.h"
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/EventLoop.h>
 
@@ -11,18 +12,16 @@ namespace trantor
 	class Channel;
 
 
-	class Poller :NonCopyable
+	class EpollPoller : public Poller
 	{
 	public:
-		explicit Poller(EventLoop *loop);
-		~Poller();
-		void assertInLoopThread(){ownerLoop_->assertInLoopThread();}
-		void poll(int timeoutMs, ChannelList* activeChannels);
-		void updateChannel(Channel* channel);
-		void removeChannel(Channel* channel);
+		explicit EpollPoller(EventLoop *loop);
+		virtual ~EpollPoller();
+		virtual void poll(int timeoutMs, ChannelList* activeChannels) override;
+		virtual void updateChannel(Channel* channel) override;
+		virtual void removeChannel(Channel* channel) override;
 	private:
 
-		EventLoop* ownerLoop_;
 		static const int kInitEventListSize = 16;
 		int epollfd_;
 		EventList events_;

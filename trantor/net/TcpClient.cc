@@ -10,13 +10,17 @@
 #include <trantor/net/TcpClient.h>
 
 #include <trantor/utils/Logger.h>
-//#include <trantor/net/Channel.h>
+#ifdef USE_OPENSSL
+#include "ssl/SSLConnection.h"
+#endif
 #include "Connector.h"
+#include "inner/TcpConnectionImpl.h"
 #include <trantor/net/EventLoop.h>
 #include "Socket.h"
 
 #include <stdio.h>  // snprintf
 #include <functional>
+
 using namespace trantor;
 using namespace std::placeholders;
 
@@ -37,7 +41,8 @@ namespace trantor
 
     void removeConnection(EventLoop* loop, const TcpConnectionPtr& conn)
     {
-        loop->queueInLoop(std::bind(&TcpConnection::connectDestroyed, conn));
+        loop->queueInLoop(std::bind(&TcpConnectionImpl::connectDestroyed,
+                                    std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
     }
 
     void removeConnector(const ConnectorPtr& connector)
@@ -83,7 +88,8 @@ TcpClient::~TcpClient()
         // FIXME: not 100% safe, if we are in different thread
         CloseCallback cb = std::bind(&trantor::removeConnection, loop_, _1);
         loop_->runInLoop(
-                std::bind(&TcpConnection::setCloseCallback, conn, cb));
+                std::bind(&TcpConnectionImpl::setCloseCallback,
+                          std::dynamic_pointer_cast<TcpConnectionImpl>(conn), cb));
         if (unique)
         {
             conn->forceClose();
@@ -139,11 +145,30 @@ void TcpClient::newConnection(int sockfd)
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
     // FIXME poll with zero timeout to double confirm the new connection
     // FIXME use make_shared if necessary
-    TcpConnectionPtr conn(new TcpConnection(loop_,
+#ifdef USE_OPENSSL
+    std::shared_ptr<TcpConnectionImpl> conn;
+    if(_sslCtxPtr)
+    {
+        conn=std::make_shared<SSLConnection>(loop_,
+                                             sockfd,
+                                             localAddr,
+                                             peerAddr,
+                                             _sslCtxPtr,
+                                             false);
+    }
+    else
+    {
+        conn=std::make_shared<TcpConnectionImpl>(loop_,
+                                                 sockfd,
+                                                 localAddr,
+                                                 peerAddr);
+    }
+#else
+    auto conn=std::make_shared<TcpConnectionImpl>(loop_,
                                             sockfd,
                                             localAddr,
-                                            peerAddr));
-
+                                            peerAddr);
+#endif
     conn->setConnectionCallback(connectionCallback_);
     conn->setRecvMsgCallback(messageCallback_);
     conn->setWriteCompleteCallback(writeCompleteCallback_);
@@ -167,7 +192,8 @@ void TcpClient::removeConnection(const TcpConnectionPtr& conn)
         connection_.reset();
     }
 
-    loop_->queueInLoop(std::bind(&TcpConnection::connectDestroyed, conn));
+    loop_->queueInLoop(std::bind(&TcpConnectionImpl::connectDestroyed,
+                                 std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
     if (retry_ && connect_)
     {
         LOG_INFO << "TcpClient::connect[" << name_ << "] - Reconnecting to "
@@ -176,3 +202,27 @@ void TcpClient::removeConnection(const TcpConnectionPtr& conn)
     }
 }
 
+#ifdef USE_OPENSSL
+void TcpClient::enableSSL()
+{
+    //init OpenSSL
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+	(defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
+    // Initialize OpenSSL once;
+    static std::once_flag once;
+    std::call_once(once,[](){
+        SSL_library_init();
+        ERR_load_crypto_strings();
+        SSL_load_error_strings();
+        OpenSSL_add_all_algorithms();
+    });
+#endif
+    /* Create a new OpenSSL context */
+    _sslCtxPtr=std::shared_ptr<SSL_CTX>(
+            SSL_CTX_new(SSLv23_method()),
+            [](SSL_CTX *ctx){
+                SSL_CTX_free(ctx);
+            });
+    assert(_sslCtxPtr);
+}
+#endif
