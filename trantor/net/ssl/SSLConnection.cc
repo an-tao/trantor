@@ -37,8 +37,8 @@ void SSLConnection::readCallback() {
             int sslerr = SSL_get_error(_sslPtr.get(), rd);
             if (rd <= 0 && sslerr != SSL_ERROR_WANT_READ) {
                 LOG_ERROR<<"ssl read err:"<<sslerr;
-                ioChennelPtr_->disableAll();
                 _status=SSLStatus::DisConnected;
+                handleClose();
                 return;
             }
             if(rd>0)
@@ -85,7 +85,7 @@ void SSLConnection::writeCallback() {
                 if (wd <= 0 && sslerr != SSL_ERROR_WANT_WRITE)
                 {
                     LOG_ERROR<<"ssl write error:"<<sslerr;
-                    ioChennelPtr_->disableAll();
+                    ioChennelPtr_->disableReading();
                     _status=SSLStatus::DisConnected;
                     return;
                 }
@@ -137,7 +137,7 @@ void SSLConnection::doHandshaking() {
     } else { //错误
         //ERR_print_errors(err);
         LOG_FATAL<<"SSL handshake err";
-        ioChennelPtr_->disableAll();
+        ioChennelPtr_->disableReading();
         _status=SSLStatus::DisConnected;
     }
 }
