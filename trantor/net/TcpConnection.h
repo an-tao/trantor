@@ -23,7 +23,7 @@
     using boost::any_cast;
 
   #else
-    #error,must use c++17 or boost
+    #error,must use c++17 or boost to support any
   #endif
 #endif
 
@@ -53,15 +53,11 @@ namespace trantor
         virtual void forceClose()=0;
         virtual EventLoop* getLoop()=0;
 
-#ifdef NO_ANY
-        virtual void setContext(void *p)const=0;
-        virtual void* getContext()const=0;
-#else
         virtual void setContext(const any& context)=0;
 
         virtual const any& getContext() const=0;
 
         virtual any* getMutableContext()=0;
-#endif
+
     };
 }

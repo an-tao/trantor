@@ -41,10 +41,7 @@ namespace trantor
         virtual void forceClose() override;
         virtual EventLoop* getLoop() override{return loop_;}
 
-#ifdef NO_ANY
-        virtual void setContext(void *p)const override{context_=p;}
-        virtual void* getContext()const override{return context_;}
-#else
+
         virtual void setContext(const any& context) override
         { context_ = context; }
 
@@ -53,16 +50,13 @@ namespace trantor
 
         virtual any* getMutableContext() override
         { return &context_; }
-#endif
+
 
 
 
     protected:
-#ifdef NO_ANY
-        mutable  void *context_= nullptr;
-#else
+
         any context_;
-#endif
         /// Internal use only.
         void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
