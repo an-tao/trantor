@@ -37,7 +37,7 @@ namespace trantor
         virtual void send(const char *msg,uint64_t len)=0;
         virtual void send(const std::string &msg)=0;
 
-        virtual const InetAddress& lobalAddr() const=0;
+        virtual const InetAddress& localAddr() const=0;
         virtual const InetAddress& peerAddr() const=0;
 
         virtual bool connected() const =0;

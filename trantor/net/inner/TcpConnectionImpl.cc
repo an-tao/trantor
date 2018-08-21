@@ -7,7 +7,7 @@ using namespace trantor;
 
 void trantor::defaultConnectionCallback(const TcpConnectionPtr& conn)
 {
-    LOG_TRACE << conn->lobalAddr().toIpPort() << " -> "
+    LOG_TRACE << conn->localAddr().toIpPort() << " -> "
               << conn->peerAddr().toIpPort() << " is "
               << (conn->connected() ? "UP" : "DOWN");
     // do not call conn->forceClose(), because some users want to register message callback only.

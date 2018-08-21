@@ -22,7 +22,7 @@ namespace trantor
         virtual void send(const char *msg,uint64_t len) override ;
         virtual void send(const std::string &msg) override;
 
-        virtual const InetAddress& lobalAddr() const override{return localAddr_;}
+        virtual const InetAddress& localAddr() const override{return localAddr_;}
         virtual const InetAddress& peerAddr() const override{return peerAddr_;}
 
         virtual bool connected() const override{ return state_ == Connected; }
