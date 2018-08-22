@@ -82,6 +82,16 @@ namespace trantor
             assert(readableBytes()>=offset);
             tail_ -= offset;
         }
+        const char operator[](size_t offset)const
+        {
+            assert(readableBytes()>=offset);
+            return peek()[offset];
+        }
+        char &operator[](size_t offset)
+        {
+            assert(readableBytes()>=offset);
+            return begin()[head_+offset];
+        }
     private:
         size_t head_;
         size_t initCap_;
