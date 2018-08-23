@@ -52,6 +52,8 @@ static __thread uint64_t lastSecond_=0;
 static __thread char lastTimeString_[32]={0};
 #ifdef __linux__
 static __thread pid_t threadId_ = 0;
+#else
+static __thread uint64_t threadId_=0;
 #endif
 //   static __thread LogStream logStream_;
 #ifdef RELEASE
@@ -83,7 +85,11 @@ void Logger::formatTime() {
         threadId_=static_cast<pid_t>(::syscall(SYS_gettid));
     logStream_<<threadId_;
 #else
-    //logStream_<<std::this_thread::get_id();
+    if(threadId_==0)
+    {
+        pthread_threadid_np(NULL,&threadId_);
+    }
+    logStream_<<threadId_;
 #endif
 }
 static const char* logLevelStr[Logger::LogLevel::NUM_LOG_LEVELS]={
