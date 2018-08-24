@@ -163,23 +163,20 @@ void TcpConnectionImpl::forceClose()
         }
     });
 }
-
-
-void TcpConnectionImpl::sendInLoop(const std::string &msg)
+void TcpConnectionImpl::sendInLoop(const char *buffer,size_t length)
 {
-    LOG_TRACE<<"send in loop";
     loop_->assertInLoopThread();
     if(state_!=Connected)
     {
         LOG_WARN<<"Connection is not connected,give up sending";
         return;
     }
-    size_t remainLen=msg.length();
+    size_t remainLen=length;
     ssize_t sendLen=0;
     if(!ioChennelPtr_->isWriting()&&writeBuffer_.readableBytes()==0)
     {
         //send directly
-        sendLen=write(socketPtr_->fd(),msg.c_str(),msg.length());
+        sendLen=write(socketPtr_->fd(),buffer,length);
         if(sendLen<0)
         {
             //error
@@ -199,7 +196,7 @@ void TcpConnectionImpl::sendInLoop(const std::string &msg)
     }
     if(remainLen>0)
     {
-        writeBuffer_.append(msg.c_str()+sendLen,remainLen);
+        writeBuffer_.append(buffer+sendLen,remainLen);
         if(!ioChennelPtr_->isWriting())
             ioChennelPtr_->enableWriting();
         if(highWaterMarkCallback_&&writeBuffer_.readableBytes()>highWaterMarkLen_)
@@ -207,27 +204,25 @@ void TcpConnectionImpl::sendInLoop(const std::string &msg)
             highWaterMarkCallback_(shared_from_this(),writeBuffer_.readableBytes());
         }
     }
+}
 
-}
 void TcpConnectionImpl::send(const char *msg,uint64_t len){
-    //fix me!
-    //Need to be more efficient
-    send(std::string(msg,len));
-}
-void TcpConnectionImpl::send(const std::string &msg){
 #if SEND_ORDER
     loop_->runInLoop([=](){
-        sendInLoop(msg);
+        sendInLoop(msg,len);
     });
 #else
     if(loop_->isInLoopThread())
     {
-        sendInLoop(msg);
+        sendInLoop(msg,len);
     }
     else{
         loop_->runInLoop([=](){
-            sendInLoop(msg);
+            sendInLoop(msg,len);
         });
     }
 #endif
+}
+void TcpConnectionImpl::send(const std::string &msg){
+    send(msg.data(),msg.length());
 }

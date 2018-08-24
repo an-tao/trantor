@@ -86,8 +86,8 @@ namespace trantor
         HighWaterMarkCallback highWaterMarkCallback_;
         void handleClose();
         void handleError();
-        virtual void sendInLoop(const std::string &msg);
-
+        //virtual void sendInLoop(const std::string &msg);
+        virtual void sendInLoop(const char *buffer,size_t length);
         size_t highWaterMarkLen_;
         std::string name_;
     };

@@ -142,7 +142,7 @@ void SSLConnection::doHandshaking() {
     }
 }
 
-void SSLConnection::sendInLoop(const std::string &msg)
+void SSLConnection::sendInLoop(const char *buffer,size_t length)
 {
     LOG_TRACE<<"send in loop";
     loop_->assertInLoopThread();
@@ -156,12 +156,12 @@ void SSLConnection::sendInLoop(const std::string &msg)
         LOG_WARN<<"SSL is not connected,give up sending";
         return;
     }
-    size_t remainLen=msg.length();
+    size_t remainLen=length;
     ssize_t sendLen=0;
     if(!ioChennelPtr_->isWriting()&&writeBuffer_.readableBytes()==0)
     {
         //send directly
-        sendLen = SSL_write(_sslPtr.get(), msg.c_str(),msg.length());
+        sendLen = SSL_write(_sslPtr.get(), buffer,length);
         int sslerr = SSL_get_error(_sslPtr.get(), sendLen);
         if (sendLen < 0 && sslerr != SSL_ERROR_WANT_WRITE)
         {
@@ -172,7 +172,7 @@ void SSLConnection::sendInLoop(const std::string &msg)
     }
     if(remainLen>0)
     {
-        writeBuffer_.append(msg.c_str()+sendLen,remainLen);
+        writeBuffer_.append(buffer+sendLen,remainLen);
         if(!ioChennelPtr_->isWriting())
             ioChennelPtr_->enableWriting();
         if(highWaterMarkCallback_&&writeBuffer_.readableBytes()>highWaterMarkLen_)
