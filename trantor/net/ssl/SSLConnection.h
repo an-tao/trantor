@@ -39,6 +39,7 @@ namespace trantor
         virtual void writeCallback() override ;
         virtual void connectEstablished() override;
         virtual void sendInLoop(const char *buffer,size_t length) override;
+        virtual void sendInLoop(const std::string &msg) override;
     };
     typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
 
