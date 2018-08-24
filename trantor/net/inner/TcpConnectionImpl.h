@@ -91,7 +91,6 @@ namespace trantor
         void handleError();
         //virtual void sendInLoop(const std::string &msg);
         virtual void sendInLoop(const char *buffer,size_t length);
-        virtual void sendInLoop(const std::string &msg);
         size_t highWaterMarkLen_;
         std::string name_;
 

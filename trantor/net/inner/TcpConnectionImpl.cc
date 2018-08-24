@@ -162,50 +162,7 @@ void TcpConnectionImpl::forceClose()
         }
     });
 }
-void TcpConnectionImpl::sendInLoop(const std::string &msg)
-{
-    LOG_TRACE<<"send in loop";
-    loop_->assertInLoopThread();
-    if(state_!=Connected)
-    {
-        LOG_WARN<<"Connection is not connected,give up sending";
-        return;
-    }
-    size_t remainLen=msg.length();
-    ssize_t sendLen=0;
-    if(!ioChennelPtr_->isWriting()&&writeBuffer_.readableBytes()==0)
-    {
-        //send directly
-        sendLen=write(socketPtr_->fd(),msg.c_str(),msg.length());
-        if(sendLen<0)
-        {
-            //error
-            if (errno != EWOULDBLOCK)
-            {
-                LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
-                {
-                    return;
-                }
-                LOG_SYSERR<< "Unexpected error("<<errno<<")";
-                return;
-            }
-            sendLen = 0;
-        }
-        remainLen-=sendLen;
-    }
-    if(remainLen>0)
-    {
-        writeBuffer_.append(msg.c_str()+sendLen,remainLen);
-        if(!ioChennelPtr_->isWriting())
-            ioChennelPtr_->enableWriting();
-        if(highWaterMarkCallback_&&writeBuffer_.readableBytes()>highWaterMarkLen_)
-        {
-            highWaterMarkCallback_(shared_from_this(),writeBuffer_.readableBytes());
-        }
-    }
 
-}
 void TcpConnectionImpl::sendInLoop(const char *buffer,size_t length)
 {
     loop_->assertInLoopThread();
@@ -263,7 +220,7 @@ void TcpConnectionImpl::send(const char *msg,uint64_t len){
             _sendNum++;
             auto buffer=std::make_shared<std::string>(msg,len);
             loop_->queueInLoop([=](){
-                sendInLoop(*buffer);
+                sendInLoop(buffer->data(),buffer->length());
                 std::lock_guard<std::mutex> guard1(_sendNumMutex);
                 _sendNum--;
             });
@@ -274,7 +231,7 @@ void TcpConnectionImpl::send(const char *msg,uint64_t len){
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
         loop_->queueInLoop([=](){
-            sendInLoop(*buffer);
+            sendInLoop(buffer->data(),buffer->length());
             std::lock_guard<std::mutex> guard1(_sendNumMutex);
             _sendNum--;
         });
@@ -287,13 +244,13 @@ void TcpConnectionImpl::send(const std::string &msg){
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         if(_sendNum==0)
         {
-            sendInLoop(msg);
+            sendInLoop(msg.data(),msg.length());
         }
         else
         {
             _sendNum++;
             loop_->queueInLoop([=](){
-                sendInLoop(msg);
+                sendInLoop(msg.data(),msg.length());
                 std::lock_guard<std::mutex> guard1(_sendNumMutex);
                 _sendNum--;
             });
@@ -303,7 +260,7 @@ void TcpConnectionImpl::send(const std::string &msg){
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
         loop_->queueInLoop([=](){
-            sendInLoop(msg);
+            sendInLoop(msg.data(),msg.length());
             std::lock_guard<std::mutex> guard1(_sendNumMutex);
             _sendNum--;
         });
@@ -315,7 +272,7 @@ void TcpConnectionImpl::send(std::string &&msg){
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         if(_sendNum==0)
         {
-            sendInLoop(msg);
+            sendInLoop(msg.data(),msg.length());
         }
         else
         {
@@ -323,7 +280,7 @@ void TcpConnectionImpl::send(std::string &&msg){
             std::shared_ptr<std::string> msgPtr=
                     std::make_shared<std::string>(std::move(msg));
             loop_->queueInLoop([=](){
-                sendInLoop(*msgPtr);
+                sendInLoop(msgPtr->data(),msgPtr->length());
                 std::lock_guard<std::mutex> guard1(_sendNumMutex);
                 _sendNum--;
             });
@@ -335,7 +292,7 @@ void TcpConnectionImpl::send(std::string &&msg){
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
         loop_->queueInLoop([=](){
-            sendInLoop(*msgPtr);
+            sendInLoop(msgPtr->data(),msgPtr->length());
             std::lock_guard<std::mutex> guard1(_sendNumMutex);
             _sendNum--;
         });
