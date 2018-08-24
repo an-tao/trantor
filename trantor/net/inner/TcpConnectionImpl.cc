@@ -2,7 +2,6 @@
 #include "Socket.h"
 #include "Channel.h"
 #define FETCH_SIZE 2048;
-#define SEND_ORDER 1
 using namespace trantor;
 
 void trantor::defaultConnectionCallback(const TcpConnectionPtr& conn)
@@ -262,20 +261,20 @@ void TcpConnectionImpl::send(const char *msg,uint64_t len){
         else
         {
             _sendNum++;
-            auto buffer=std::string(msg,len);
+            auto buffer=std::make_shared<std::string>(msg,len);
             loop_->queueInLoop([=](){
-                sendInLoop(buffer);
+                sendInLoop(*buffer);
                 std::lock_guard<std::mutex> guard1(_sendNumMutex);
                 _sendNum--;
             });
         }
     }
     else{
-        auto buffer=std::string(msg,len);
+        auto buffer=std::make_shared<std::string>(msg,len);
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
         loop_->queueInLoop([=](){
-            sendInLoop(buffer);
+            sendInLoop(*buffer);
             std::lock_guard<std::mutex> guard1(_sendNumMutex);
             _sendNum--;
         });
