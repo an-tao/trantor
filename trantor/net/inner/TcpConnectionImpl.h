@@ -21,6 +21,9 @@ namespace trantor
         virtual ~TcpConnectionImpl();
         virtual void send(const char *msg,uint64_t len) override ;
         virtual void send(const std::string &msg) override;
+        virtual void send(std::string &&msg) override;
+        virtual void send(const MsgBuffer &buffer) override;
+        virtual void send(MsgBuffer &&buffer) override;
 
         virtual const InetAddress& localAddr() const override{return localAddr_;}
         virtual const InetAddress& peerAddr() const override{return peerAddr_;}
