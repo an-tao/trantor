@@ -139,9 +139,9 @@ Logger::Logger(SourceFile file, int line, bool isSysErr)
 Logger::~Logger() {
     logStream_<<T(" - ",3)<<sourceFile_<<':'<<fileLine_<<'\n';
     if(Logger::outputFunc_)
-        Logger::outputFunc_(logStream_.buffer().data(),logStream_.buffer().length());
+        Logger::outputFunc_(logStream_.bufferData(),logStream_.bufferLength());
     else
-        defaultOutputFunction(logStream_.buffer().data(),logStream_.buffer().length());
+        defaultOutputFunction(logStream_.bufferData(),logStream_.bufferLength());
     if(level_>=ERROR)
         Logger::flushFunc_();
     //logStream_.resetBuffer();
