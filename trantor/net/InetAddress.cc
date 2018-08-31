@@ -111,8 +111,8 @@ bool InetAddress::isInnerIp() const
         uint32_t ip_addr=ntohl(addr_.sin_addr.s_addr);
         if ((ip_addr >= 0x0A000000 && ip_addr <= 0x0AFFFFFF ) ||
             (ip_addr >= 0xAC100000 && ip_addr <= 0xAC1FFFFF ) ||
-            (ip_addr >= 0xC0A80000 && ip_addr <= 0xC0A8FFFF )
-                )
+            (ip_addr >= 0xC0A80000 && ip_addr <= 0xC0A8FFFF ) ||
+            ip_addr==0x7f000001)
 
         {
             return true;
