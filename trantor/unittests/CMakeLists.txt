@@ -1,2 +1,3 @@
 link_libraries(trantor pthread gtest)
 add_executable(msgbuffer_unittest MsgBufferUnittest.cc)
+add_executable(inetaddress_unittest InetAddressUnittest.cc)
