@@ -30,6 +30,14 @@ class Date
     {
         return microSecondsSinceEpoch_ > date.microSecondsSinceEpoch_;
     }
+    bool operator>=(const Date &date) const
+    {
+        return microSecondsSinceEpoch_ >= date.microSecondsSinceEpoch_;
+    }
+    bool operator<=(const Date &date) const
+    {
+        return microSecondsSinceEpoch_ <= date.microSecondsSinceEpoch_;
+    }
     int64_t microSecondsSinceEpoch() const { return microSecondsSinceEpoch_; }
     struct tm tmStruct() const;
     std::string toFormattedString(bool showMicroseconds) const; //UTC

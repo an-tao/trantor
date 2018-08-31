@@ -105,6 +105,24 @@ file(WRITE "${CONFIG_HEADER}" "#pragma once\n")
 foreach(loop_var ${DEFS})
     file(APPEND "${CONFIG_HEADER}" "#define ${loop_var}\n")
 endforeach(loop_var)
+file(APPEND "${CONFIG_HEADER}" "#ifdef USE_STD_ANY\n")
+
+file(APPEND "${CONFIG_HEADER}" "#include <any>\n")
+file(APPEND "${CONFIG_HEADER}" "using std::any;\n")
+file(APPEND "${CONFIG_HEADER}" "using std::any_cast;\n")
+
+file(APPEND "${CONFIG_HEADER}" "#else \n")
+file(APPEND "${CONFIG_HEADER}" "#ifdef USE_BOOST\n")
+
+file(APPEND "${CONFIG_HEADER}" "#include <boost/any.hpp>\n")
+file(APPEND "${CONFIG_HEADER}" "using boost::any;\n")
+file(APPEND "${CONFIG_HEADER}" "using boost::any_cast;\n")
+
+file(APPEND "${CONFIG_HEADER}" "#else\n")
+file(APPEND "${CONFIG_HEADER}" "#error,must use c++17 or boost to support any\n")
+file(APPEND "${CONFIG_HEADER}" "#endif\n")
+file(APPEND "${CONFIG_HEADER}" "#endif\n")
+
 EXEC_PROGRAM(${PROJECT_SOURCE_DIR}/update_config.sh ARGS "${CONFIG_HEADER} ${PROJECT_SOURCE_DIR}/trantor/utils/config.h")
 
 ADD_SUBDIRECTORY(trantor/tests)

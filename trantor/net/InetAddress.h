@@ -56,6 +56,7 @@ class InetAddress
   bool isIpV6() const {return _isIpV6;}
   // default copy/assignment are Okay
 
+    bool isInnerIp() const;
   const struct sockaddr* getSockAddr() const {
       return static_cast<const struct sockaddr*>((void *)(&addr6_));
   }

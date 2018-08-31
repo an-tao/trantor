@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <iostream>
 
 using namespace trantor;
 using namespace trantor::detail;
@@ -97,11 +98,23 @@ void LogStream::staticCheck()
 template<typename T>
 void LogStream::formatInteger(T v)
 {
-  if (buffer_.avail() >= kMaxNumericSize)
+  if(_exBuffer.empty())
   {
-    size_t len = convert(buffer_.current(), v);
-    buffer_.add(len);
+    if (buffer_.avail() >= kMaxNumericSize)
+    {
+      size_t len = convert(buffer_.current(), v);
+      buffer_.add(len);
+      return;
+    }
+    else
+    {
+      _exBuffer.append(buffer_.data(),buffer_.length());
+    }
   }
+  auto oldLen=_exBuffer.length();
+  _exBuffer.resize(oldLen+kMaxNumericSize);
+  size_t len=convert(&_exBuffer[oldLen],v);
+  _exBuffer.resize(oldLen+len);
 }
 
 LogStream& LogStream::operator<<(short v)
@@ -155,25 +168,52 @@ LogStream& LogStream::operator<<(unsigned long long v)
 LogStream& LogStream::operator<<(const void* p)
 {
   uintptr_t v = reinterpret_cast<uintptr_t>(p);
-  if (buffer_.avail() >= kMaxNumericSize)
+  if(_exBuffer.empty())
   {
-    char* buf = buffer_.current();
-    buf[0] = '0';
-    buf[1] = 'x';
-    size_t len = convertHex(buf+2, v);
-    buffer_.add(len+2);
+    if (buffer_.avail() >= kMaxNumericSize)
+    {
+      char* buf = buffer_.current();
+      buf[0] = '0';
+      buf[1] = 'x';
+      size_t len = convertHex(buf+2, v);
+      buffer_.add(len+2);
+      return *this;
+    }
+    else
+    {
+      _exBuffer.append(buffer_.data(),buffer_.length());
+    }
   }
+  auto oldLen=_exBuffer.length();
+  _exBuffer.resize(oldLen+kMaxNumericSize);
+  char* buf=&_exBuffer[oldLen];
+  buf[0] = '0';
+  buf[1] = 'x';
+  size_t len = convertHex(buf+2, v);
+  _exBuffer.resize(oldLen+len+2);
   return *this;
 }
 
 // FIXME: replace this with Grisu3 by Florian Loitsch.
 LogStream& LogStream::operator<<(double v)
 {
-  if (buffer_.avail() >= kMaxNumericSize)
+  if(_exBuffer.empty())
   {
-    int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12g", v);
-    buffer_.add(len);
+    if (buffer_.avail() >= kMaxNumericSize)
+    {
+      int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12g", v);
+      buffer_.add(len);
+      return *this;
+    }
+    else
+    {
+      _exBuffer.append(buffer_.data(),buffer_.length());
+    }
   }
+  auto oldLen=_exBuffer.length();
+  _exBuffer.resize(oldLen+kMaxNumericSize);
+  int len=snprintf(&(_exBuffer[oldLen]),kMaxNumericSize,"%.12g",v);
+  _exBuffer.resize(oldLen+len);
   return *this;
 }
 

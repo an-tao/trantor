@@ -21,8 +21,11 @@ namespace trantor
         virtual ~TcpConnectionImpl();
         virtual void send(const char *msg,uint64_t len) override ;
         virtual void send(const std::string &msg) override;
+        virtual void send(std::string &&msg) override;
+        virtual void send(const MsgBuffer &buffer) override;
+        virtual void send(MsgBuffer &&buffer) override;
 
-        virtual const InetAddress& lobalAddr() const override{return localAddr_;}
+        virtual const InetAddress& localAddr() const override{return localAddr_;}
         virtual const InetAddress& peerAddr() const override{return peerAddr_;}
 
         virtual bool connected() const override{ return state_ == Connected; }
@@ -41,10 +44,7 @@ namespace trantor
         virtual void forceClose() override;
         virtual EventLoop* getLoop() override{return loop_;}
 
-#ifdef NO_ANY
-        virtual void setContext(void *p)const override{context_=p;}
-        virtual void* getContext()const override{return context_;}
-#else
+
         virtual void setContext(const any& context) override
         { context_ = context; }
 
@@ -53,16 +53,13 @@ namespace trantor
 
         virtual any* getMutableContext() override
         { return &context_; }
-#endif
+
 
 
 
     protected:
-#ifdef NO_ANY
-        mutable  void *context_= nullptr;
-#else
+
         any context_;
-#endif
         /// Internal use only.
         void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
@@ -92,9 +89,12 @@ namespace trantor
         HighWaterMarkCallback highWaterMarkCallback_;
         void handleClose();
         void handleError();
-        virtual void sendInLoop(const std::string &msg);
-
+        //virtual void sendInLoop(const std::string &msg);
+        virtual void sendInLoop(const char *buffer,size_t length);
         size_t highWaterMarkLen_;
         std::string name_;
+
+        uint64_t _sendNum=0;
+        std::mutex _sendNumMutex;
     };
 }

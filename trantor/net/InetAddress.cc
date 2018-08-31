@@ -60,15 +60,15 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
         addr6_.sin6_family = AF_INET6;
         in6_addr ip = loopbackOnly ? in6addr_loopback : in6addr_any;
         addr6_.sin6_addr = ip;
-        addr6_.sin6_port = ntohs(port);
+        addr6_.sin6_port = htons(port);
     }
     else
     {
         bzero(&addr_, sizeof addr_);
         addr_.sin_family = AF_INET;
         in_addr_t ip = loopbackOnly ? kInaddrLoopback : kInaddrAny;
-        addr_.sin_addr.s_addr = ntohl(ip);
-        addr_.sin_port = ntohs(port);
+        addr_.sin_addr.s_addr = htonl(ip);
+        addr_.sin_port = htons(port);
     }
 }
 
@@ -104,7 +104,22 @@ std::string InetAddress::toIpPort() const
     sprintf(buf, ":%u", port);
     return toIp()+std::string(buf);
 }
+bool InetAddress::isInnerIp() const
+{
+    if (addr_.sin_family == AF_INET)
+    {
+        uint32_t ip_addr=ntohl(addr_.sin_addr.s_addr);
+        if ((ip_addr >= 0x0A000000 && ip_addr <= 0x0AFFFFFF ) ||
+            (ip_addr >= 0xAC100000 && ip_addr <= 0xAC1FFFFF ) ||
+            (ip_addr >= 0xC0A80000 && ip_addr <= 0xC0A8FFFF )
+                )
 
+        {
+            return true;
+        }
+    }
+    return false;
+}
 std::string InetAddress::toIp() const
 {
     char buf[64];

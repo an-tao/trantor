@@ -52,6 +52,8 @@ static __thread uint64_t lastSecond_=0;
 static __thread char lastTimeString_[32]={0};
 #ifdef __linux__
 static __thread pid_t threadId_ = 0;
+#else
+static __thread uint64_t threadId_=0;
 #endif
 //   static __thread LogStream logStream_;
 #ifdef RELEASE
@@ -83,7 +85,11 @@ void Logger::formatTime() {
         threadId_=static_cast<pid_t>(::syscall(SYS_gettid));
     logStream_<<threadId_;
 #else
-    //logStream_<<std::this_thread::get_id();
+    if(threadId_==0)
+    {
+        pthread_threadid_np(NULL,&threadId_);
+    }
+    logStream_<<threadId_;
 #endif
 }
 static const char* logLevelStr[Logger::LogLevel::NUM_LOG_LEVELS]={
@@ -133,9 +139,9 @@ Logger::Logger(SourceFile file, int line, bool isSysErr)
 Logger::~Logger() {
     logStream_<<T(" - ",3)<<sourceFile_<<':'<<fileLine_<<'\n';
     if(Logger::outputFunc_)
-        Logger::outputFunc_(logStream_.buffer().data(),logStream_.buffer().length());
+        Logger::outputFunc_(logStream_.bufferData(),logStream_.bufferLength());
     else
-        defaultOutputFunction(logStream_.buffer().data(),logStream_.buffer().length());
+        defaultOutputFunction(logStream_.bufferData(),logStream_.bufferLength());
     if(level_>=ERROR)
         Logger::flushFunc_();
     //logStream_.resetBuffer();
