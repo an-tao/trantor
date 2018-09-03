@@ -67,13 +67,13 @@ TcpClient::TcpClient(EventLoop* loop,
     connector_->setNewConnectionCallback(
             std::bind(&TcpClient::newConnection, this, _1));
     // FIXME setConnectFailedCallback
-    LOG_INFO << "TcpClient::TcpClient[" << name_
+    LOG_TRACE << "TcpClient::TcpClient[" << name_
              << "] - connector " ;
 }
 
 TcpClient::~TcpClient()
 {
-    LOG_INFO << "TcpClient::~TcpClient[" << name_
+    LOG_TRACE << "TcpClient::~TcpClient[" << name_
              << "] - connector " ;
     TcpConnectionPtr conn;
     bool unique = false;
@@ -108,7 +108,7 @@ TcpClient::~TcpClient()
 void TcpClient::connect()
 {
     // FIXME: check state
-    LOG_INFO << "TcpClient::connect[" << name_ << "] - connecting to "
+    LOG_TRACE << "TcpClient::connect[" << name_ << "] - connecting to "
              << connector_->serverAddress().toIpPort();
     connect_ = true;
     connector_->start();
@@ -196,7 +196,7 @@ void TcpClient::removeConnection(const TcpConnectionPtr& conn)
                                  std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
     if (retry_ && connect_)
     {
-        LOG_INFO << "TcpClient::connect[" << name_ << "] - Reconnecting to "
+        LOG_TRACE << "TcpClient::connect[" << name_ << "] - Reconnecting to "
                  << connector_->serverAddress().toIpPort();
         connector_->restart();
     }
