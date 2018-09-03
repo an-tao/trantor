@@ -27,33 +27,19 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
-
-
-set(CXX_FLAGS
-        -g
-        # -DVALGRIND
-        # -DMUDUO_STD_STRING
-        #-DCHECK_PTHREAD_RETURN_VALUE
-        #-D_FILE_OFFSET_BITS=64
-        -Wall
-        #-Wextra
-        #-Werror
-        #-Wconversion
-        #-Wno-unused-parameter
-        #-Wold-style-cast
-        #-Woverloaded-virtual
-        #-Wpointer-arith
-        #-Wshadow
-        #-Wwrite-strings
-        #-march=native
-        # -MMD
-        -std=${CMAKE_CXX_STD_FLAGS}
-        #-rdynamic
-        #-O2
-        #-finline-limit=1000
-        #-DNDEBUG
-        )
-
+if (RELEASE STREQUAL YES)
+    set(CXX_FLAGS
+            -O2
+            -Wall
+            -std=${CMAKE_CXX_STD_FLAGS}
+            )
+else()
+    set(CXX_FLAGS
+            -g
+            -Wall
+            -std=${CMAKE_CXX_STD_FLAGS}
+            )
+endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 # include directories
 INCLUDE_DIRECTORIES(
