@@ -4,19 +4,6 @@
 #define FETCH_SIZE 2048;
 using namespace trantor;
 
-void trantor::defaultConnectionCallback(const TcpConnectionPtr& conn)
-{
-    LOG_TRACE << conn->localAddr().toIpPort() << " -> "
-              << conn->peerAddr().toIpPort() << " is "
-              << (conn->connected() ? "UP" : "DOWN");
-    // do not call conn->forceClose(), because some users want to register message callback only.
-}
-
-void trantor::defaultMessageCallback(const TcpConnectionPtr&,
-                                        MsgBuffer* buf)
-{
-    buf->retrieveAll();
-}
 
 TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop, int socketfd,const InetAddress& localAddr,
                              const InetAddress& peerAddr):

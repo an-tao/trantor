@@ -49,6 +49,20 @@ namespace trantor
     {
         //connector->
     }
+    static void defaultConnectionCallback(const TcpConnectionPtr& conn)
+    {
+        LOG_TRACE << conn->localAddr().toIpPort() << " -> "
+                  << conn->peerAddr().toIpPort() << " is "
+                  << (conn->connected() ? "UP" : "DOWN");
+        // do not call conn->forceClose(), because some users want to register message callback only.
+    }
+
+    static void defaultMessageCallback(const TcpConnectionPtr&,
+                                       MsgBuffer* buf)
+    {
+        buf->retrieveAll();
+    }
+
 
 }
 
