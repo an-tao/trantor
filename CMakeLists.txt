@@ -27,15 +27,15 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
-if (RELEASE STREQUAL YES)
+if (DEBUG STREQUAL YES)
     set(CXX_FLAGS
-            -O2
+            -g
             -Wall
             -std=${CMAKE_CXX_STD_FLAGS}
             )
 else()
     set(CXX_FLAGS
-            -g
+            -O2
             -Wall
             -std=${CMAKE_CXX_STD_FLAGS}
             )
