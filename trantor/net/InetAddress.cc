@@ -148,9 +148,26 @@ uint16_t InetAddress::toPort() const
 #ifdef __linux__
 static __thread char t_resolveBuffer[64 * 1024];
 #endif
-bool InetAddress::resolve(const std::string & hostname, InetAddress* out)
+std::mutex InetAddress::_dnsMutex;
+std::unordered_map<std::string,std::pair<struct in_addr,trantor::Date>> InetAddress::_dnsCache;
+bool InetAddress::resolve(const std::string & hostname, InetAddress* out,size_t timeout)
 {
     assert(out != NULL);
+    {
+        std::lock_guard<std::mutex> guard(_dnsMutex);
+        if(_dnsCache.find(hostname)!=_dnsCache.end())
+        {
+            auto &addr=_dnsCache[hostname];
+            if(timeout==0||(timeout>0&&
+                           (addr.second.after(timeout)>trantor::Date::date())))
+            {
+                LOG_TRACE<<"dns:Hit cache";
+                out->addr_.sin_addr = addr.first;
+                return true;
+            }
+        }
+
+    }
 #ifdef __linux__
     struct hostent hent;
     struct hostent* he = NULL;
@@ -167,6 +184,11 @@ bool InetAddress::resolve(const std::string & hostname, InetAddress* out)
     {
         assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
         out->addr_.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
+        {
+            std::lock_guard<std::mutex> guard(_dnsMutex);
+            _dnsCache[hostname].first=out->addr_.sin_addr;
+            _dnsCache[hostname].second=trantor::Date::date();
+        }
         return true;
     }
     else

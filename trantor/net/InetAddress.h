@@ -12,10 +12,14 @@
 #define MUDUO_NET_INETADDRESS_H
 
 
+#include <trantor/utils/Date.h>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <string>
+#include <unordered_map>
+#include <mutex>
 namespace trantor
 {
 //namespace sockets
@@ -68,7 +72,7 @@ class InetAddress
   // resolve hostname to IP address, not changing port or sin_family
   // return true on success.
   // thread safe
-  static bool resolve(const std::string &hostname, InetAddress* result);
+  static bool resolve(const std::string &hostname, InetAddress* result,size_t timeout=3600);
   // static std::vector<InetAddress> resolveAll(const char* hostname, uint16_t port = 0);
 
  private:
@@ -78,6 +82,8 @@ class InetAddress
     struct sockaddr_in6 addr6_;
   };
   bool _isIpV6=false;
+  static std::unordered_map<std::string,std::pair<struct in_addr,trantor::Date>> _dnsCache;
+  static std::mutex _dnsMutex;
 };
 
 }
