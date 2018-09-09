@@ -8,8 +8,9 @@ namespace trantor
     {
     public:
         typedef std::function<void (int sockfd)> NewConnectionCallback;
-        Connector(EventLoop *loop,const InetAddress &addr);
-        Connector(EventLoop *loop,InetAddress &&addr);
+        typedef std::function<void()> ConnectionErrorCallback;
+        Connector(EventLoop *loop,const InetAddress &addr,bool retry=true);
+        Connector(EventLoop *loop,InetAddress &&addr,bool retry=true);
         void setNewConnectionCallback(const NewConnectionCallback &cb)
         {
             newConnectionCallback_=cb;
@@ -18,12 +19,21 @@ namespace trantor
         {
             newConnectionCallback_=std::move(cb);
         }
+        void setErrorCallback(const ConnectionErrorCallback& cb)
+        {
+            _errorCallback=cb;
+        }
+        void setErrorCallback(ConnectionErrorCallback &&cb)
+        {
+            _errorCallback=std::move(cb);
+        }
         const InetAddress& serverAddress() const { return serverAddr_; }
         void start();
         void restart();
         void stop();
     private:
         NewConnectionCallback newConnectionCallback_;
+        ConnectionErrorCallback _errorCallback;
         enum States { kDisconnected, kConnecting, kConnected };
         static const int kMaxRetryDelayMs = 30*1000;
         static const int kInitRetryDelayMs = 500;
@@ -36,6 +46,8 @@ namespace trantor
 
         int retryInterval_;
         int maxRetryInterval_;
+
+        bool _retry;
 
         void startInLoop();
         void connect();

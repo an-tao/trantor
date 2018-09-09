@@ -3,23 +3,25 @@
 #include "Socket.h"
 using namespace trantor;
 
-Connector::Connector(EventLoop *loop, const InetAddress &addr)
+Connector::Connector(EventLoop *loop, const InetAddress &addr,bool retry)
         :loop_(loop),
          serverAddr_(addr),
          connect_(false),
          state_(kDisconnected),
          retryInterval_(kInitRetryDelayMs),
-         maxRetryInterval_(kMaxRetryDelayMs)
+         maxRetryInterval_(kMaxRetryDelayMs),
+         _retry(retry)
 {
 
 }
-Connector::Connector(EventLoop *loop, InetAddress &&addr)
+Connector::Connector(EventLoop *loop, InetAddress &&addr,bool retry)
         :loop_(loop),
          serverAddr_(std::move(addr)),
          connect_(false),
          state_(kDisconnected),
          retryInterval_(kInitRetryDelayMs),
-         maxRetryInterval_(kMaxRetryDelayMs)
+         maxRetryInterval_(kMaxRetryDelayMs),
+         _retry(retry)
 {
 
 }
@@ -64,6 +66,7 @@ void Connector::connect()
         case EINPROGRESS:
         case EINTR:
         case EISCONN:
+            LOG_TRACE<<"connecting";
             connecting(sockfd);
             break;
 
@@ -100,9 +103,11 @@ void Connector::connecting(int sockfd)
     assert(!channelPtr_);
     channelPtr_.reset(new Channel(loop_, sockfd));
     channelPtr_->setWriteCallback(
-            std::bind(&Connector::handleWrite, this)); // FIXME: unsafe
+            std::bind(&Connector::handleWrite, shared_from_this())); // FIXME: unsafe
     channelPtr_->setErrorCallback(
-            std::bind(&Connector::handleError, this)); // FIXME: unsafe
+            std::bind(&Connector::handleError, shared_from_this())); // FIXME: unsafe
+    channelPtr_->setCloseCallback(
+            std::bind(&Connector::handleError,shared_from_this()));
 
     channelPtr_->enableWriting();
 }
@@ -168,12 +173,20 @@ void Connector::handleError()
         int sockfd = removeAndResetChannel();
         int err = Socket::getSocketError(sockfd);
         LOG_TRACE << "SO_ERROR = " << err << " " << strerror_tl(err);
-        retry(sockfd);
+        if(_retry)
+        {
+            retry(sockfd);
+        }
+        if(_errorCallback)
+        {
+            _errorCallback();
+        }
     }
 }
 
 void Connector::retry(int sockfd)
 {
+    assert(_retry);
     ::close(sockfd);
     state_=kDisconnected;
     if (connect_)

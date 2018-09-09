@@ -70,7 +70,7 @@ TcpClient::TcpClient(EventLoop* loop,
                      const InetAddress& serverAddr,
                      const std::string& nameArg)
         : loop_(loop),
-          connector_(new Connector(loop, serverAddr)),
+          connector_(new Connector(loop, serverAddr, false)),
           name_(nameArg),
           connectionCallback_(defaultConnectionCallback),
           messageCallback_(defaultMessageCallback),
@@ -80,7 +80,12 @@ TcpClient::TcpClient(EventLoop* loop,
 {
     connector_->setNewConnectionCallback(
             std::bind(&TcpClient::newConnection, this, _1));
-    // FIXME setConnectFailedCallback
+    connector_->setErrorCallback([=](){
+        if(_connectionErrorCallback)
+        {
+            _connectionErrorCallback();
+        }
+    });
     LOG_TRACE << "TcpClient::TcpClient[" << name_
              << "] - connector " ;
 }

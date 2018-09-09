@@ -30,7 +30,7 @@
 namespace trantor
 {
     class Connector;
-    typedef std::unique_ptr<Connector> ConnectorPtr;
+    typedef std::shared_ptr<Connector> ConnectorPtr;
 
     class TcpClient:NonCopyable
     {
@@ -63,7 +63,8 @@ namespace trantor
         /// Not thread safe.
         void setConnectionCallback(const ConnectionCallback& cb)
         { connectionCallback_ = cb; }
-
+        void setConnectionErrorCallback(const ConnectionErrorCallback& cb)
+        { _connectionErrorCallback = cb; }
         /// Set message callback.
         /// Not thread safe.
         void setMessageCallback(const RecvMessageCallback& cb)
@@ -95,6 +96,7 @@ namespace trantor
         ConnectorPtr connector_; // avoid revealing Connector
         const std::string name_;
         ConnectionCallback connectionCallback_;
+        ConnectionErrorCallback _connectionErrorCallback;
         RecvMessageCallback messageCallback_;
         WriteCompleteCallback writeCompleteCallback_;
         std::atomic_bool retry_;   // atomic

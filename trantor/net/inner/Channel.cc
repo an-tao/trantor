@@ -40,16 +40,19 @@ namespace trantor
 		}
 	}
 	void Channel::handleEventSafely() {
+		//LOG_TRACE<<"handle event revents_="<<revents_;
 		if(revents_ & POLLNVAL)
 		{
 
 		}
 		if ((revents_ & POLLHUP) && !(revents_ & POLLIN))
 		{
+			//LOG_TRACE<<"handle close";
 			if (closeCallback_) closeCallback_();
 		}
 		if(revents_ & (POLLNVAL|POLLERR))
 		{
+			//LOG_TRACE<<"handle error";
 			if(errorCallback_) errorCallback_();
 		}
 #ifdef __linux__
@@ -63,6 +66,7 @@ namespace trantor
 		}
 		if(revents_ & POLLOUT)
 		{
+			//LOG_TRACE<<"handle write";
 			if(writeCallback_) writeCallback_();
 		}
 	}
