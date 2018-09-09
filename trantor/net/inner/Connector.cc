@@ -170,12 +170,17 @@ void Connector::handleError()
     LOG_ERROR << "Connector::handleError state=" << state_;
     if (state_ == kConnecting)
     {
+        state_=kDisconnected;
         int sockfd = removeAndResetChannel();
         int err = Socket::getSocketError(sockfd);
         LOG_TRACE << "SO_ERROR = " << err << " " << strerror_tl(err);
         if(_retry)
         {
             retry(sockfd);
+        }
+        else
+        {
+            ::close(sockfd);
         }
         if(_errorCallback)
         {
