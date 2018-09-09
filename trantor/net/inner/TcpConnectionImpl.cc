@@ -79,14 +79,15 @@ void TcpConnectionImpl::writeCallback() {
 }
 void TcpConnectionImpl::connectEstablished() {
     //loop_->assertInLoopThread();
-    loop_->runInLoop([=](){
+    auto thisPtr=shared_from_this();
+    loop_->runInLoop([thisPtr](){
         LOG_TRACE<<"connectEstablished";
-        assert(state_==Connecting);
-        ioChennelPtr_->tie(shared_from_this());
-        ioChennelPtr_->enableReading();
-        state_=Connected;
-        if(connectionCallback_)
-            connectionCallback_(shared_from_this());
+        assert(thisPtr->state_==Connecting);
+        thisPtr->ioChennelPtr_->tie(thisPtr);
+        thisPtr->ioChennelPtr_->enableReading();
+        thisPtr->state_=Connected;
+        if(thisPtr->connectionCallback_)
+            thisPtr->connectionCallback_(thisPtr);
     });
 
 }
@@ -127,13 +128,14 @@ void TcpConnectionImpl::connectDestroyed()
     ioChennelPtr_->remove();
 }
 void TcpConnectionImpl::shutdown() {
-    loop_->runInLoop([=](){
-        if(state_==Connected)
+    auto thisPtr=shared_from_this();
+    loop_->runInLoop([thisPtr](){
+        if(thisPtr->state_==Connected)
         {
-            state_=Disconnecting;
-            if(!ioChennelPtr_->isWriting())
+            thisPtr->state_=Disconnecting;
+            if(!thisPtr->ioChennelPtr_->isWriting())
             {
-                socketPtr_->closeWrite();
+                thisPtr->socketPtr_->closeWrite();
             }
         }
     });
@@ -141,11 +143,12 @@ void TcpConnectionImpl::shutdown() {
 
 void TcpConnectionImpl::forceClose()
 {
-    loop_->runInLoop([=](){
-        if (state_ == Connected || state_ == Disconnecting)
+    auto thisPtr=shared_from_this();
+    loop_->runInLoop([thisPtr](){
+        if (thisPtr->state_ == Connected || thisPtr->state_ == Disconnecting)
         {
-            state_=Disconnecting;
-            handleClose();
+            thisPtr->state_=Disconnecting;
+            thisPtr->handleClose();
         }
     });
 }
@@ -207,7 +210,7 @@ void TcpConnectionImpl::send(const char *msg,uint64_t len){
             _sendNum++;
             auto buffer=std::make_shared<std::string>(msg,len);
             auto thisPtr=shared_from_this();
-            loop_->queueInLoop([=](){
+            loop_->queueInLoop([thisPtr,buffer](){
                 thisPtr->sendInLoop(buffer->data(),buffer->length());
                 std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
                 thisPtr->_sendNum--;
@@ -219,7 +222,7 @@ void TcpConnectionImpl::send(const char *msg,uint64_t len){
         auto thisPtr=shared_from_this();
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
-        loop_->queueInLoop([=](){
+        loop_->queueInLoop([thisPtr,buffer](){
             thisPtr->sendInLoop(buffer->data(),buffer->length());
             std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
             thisPtr->_sendNum--;
@@ -239,7 +242,7 @@ void TcpConnectionImpl::send(const std::string &msg){
         {
             _sendNum++;
             auto thisPtr=shared_from_this();
-            loop_->queueInLoop([=](){
+            loop_->queueInLoop([thisPtr,msg](){
                 thisPtr->sendInLoop(msg.data(),msg.length());
                 std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
                 thisPtr->_sendNum--;
@@ -250,7 +253,7 @@ void TcpConnectionImpl::send(const std::string &msg){
         auto thisPtr=shared_from_this();
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
-        loop_->queueInLoop([=](){
+        loop_->queueInLoop([thisPtr,msg](){
             thisPtr->sendInLoop(msg.data(),msg.length());
             std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
             thisPtr->_sendNum--;
@@ -271,7 +274,7 @@ void TcpConnectionImpl::send(std::string &&msg){
             _sendNum++;
             std::shared_ptr<std::string> msgPtr=
                     std::make_shared<std::string>(std::move(msg));
-            loop_->queueInLoop([=](){
+            loop_->queueInLoop([thisPtr,msgPtr](){
                 thisPtr->sendInLoop(msgPtr->data(),msgPtr->length());
                 std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
                 thisPtr->_sendNum--;
@@ -284,7 +287,7 @@ void TcpConnectionImpl::send(std::string &&msg){
         auto thisPtr=shared_from_this();
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
-        loop_->queueInLoop([=](){
+        loop_->queueInLoop([thisPtr,msgPtr](){
             thisPtr->sendInLoop(msgPtr->data(),msgPtr->length());
             std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
             thisPtr->_sendNum--;
@@ -304,7 +307,7 @@ void TcpConnectionImpl::send(const MsgBuffer &buffer){
         {
             _sendNum++;
             auto thisPtr=shared_from_this();
-            loop_->queueInLoop([=](){
+            loop_->queueInLoop([thisPtr,buffer](){
                 thisPtr->sendInLoop(buffer.peek(),buffer.readableBytes());
                 std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
                 thisPtr->_sendNum--;
@@ -315,7 +318,7 @@ void TcpConnectionImpl::send(const MsgBuffer &buffer){
         auto thisPtr=shared_from_this();
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
-        loop_->queueInLoop([=](){
+        loop_->queueInLoop([thisPtr,buffer](){
             thisPtr->sendInLoop(buffer.peek(),buffer.readableBytes());
             std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
             thisPtr->_sendNum--;
@@ -336,7 +339,7 @@ void TcpConnectionImpl::send(MsgBuffer &&buffer){
             _sendNum++;
             auto thisPtr=shared_from_this();
             auto bufferPtr=std::make_shared<MsgBuffer>(std::move(buffer));
-            loop_->queueInLoop([=](){
+            loop_->queueInLoop([thisPtr,bufferPtr](){
                 thisPtr->sendInLoop(bufferPtr->peek(),bufferPtr->readableBytes());
                 std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
                 thisPtr->_sendNum--;
@@ -348,7 +351,7 @@ void TcpConnectionImpl::send(MsgBuffer &&buffer){
         auto bufferPtr=std::make_shared<MsgBuffer>(std::move(buffer));
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
-        loop_->queueInLoop([=](){
+        loop_->queueInLoop([thisPtr,bufferPtr](){
             thisPtr->sendInLoop(bufferPtr->peek(),bufferPtr->readableBytes());
             std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
             thisPtr->_sendNum--;
