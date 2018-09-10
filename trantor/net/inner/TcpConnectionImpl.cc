@@ -28,7 +28,7 @@ TcpConnectionImpl::~TcpConnectionImpl() {
 
 }
 void TcpConnectionImpl::readCallback() {
-    LOG_TRACE<<"read Callback";
+    //LOG_TRACE<<"read Callback";
     loop_->assertInLoopThread();
     int ret=0;
 
