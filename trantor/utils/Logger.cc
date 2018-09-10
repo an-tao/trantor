@@ -70,7 +70,7 @@ void Logger::formatTime() {
     if(now!=lastSecond_)
     {
         lastSecond_=now;
-        strncpy(lastTimeString_,date_.toFormattedString(false).c_str(),sizeof(lastTimeString_));
+        strncpy(lastTimeString_,date_.toFormattedString(false).c_str(),sizeof(lastTimeString_)-1);
     }
     logStream_<<T(lastTimeString_,17);
     char tmp[32];
