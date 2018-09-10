@@ -18,6 +18,7 @@ namespace trantor{
     //tcp server and connection callback
     typedef std::function<void (const TcpConnectionPtr&,
                                 MsgBuffer*)> RecvMessageCallback;
+    typedef std::function<void ()> ConnectionErrorCallback;
     typedef std::function<void (const TcpConnectionPtr&)> ConnectionCallback;
     typedef std::function<void (const TcpConnectionPtr&)> CloseCallback;
     typedef std::function<void (const TcpConnectionPtr&)> WriteCompleteCallback;
@@ -32,9 +33,5 @@ namespace trantor{
 
 
     typedef std::function<void (const TrantorError)> OperationCompleteCallback;
-
-    void defaultConnectionCallback(const TcpConnectionPtr& conn);
-    void defaultMessageCallback(const TcpConnectionPtr& conn,
-                                MsgBuffer* buffer);
 
 }

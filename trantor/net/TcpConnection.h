@@ -39,7 +39,7 @@ namespace trantor
         virtual EventLoop* getLoop()=0;
 
         virtual void setContext(const any& context)=0;
-
+        virtual void setContext(any&& context)=0;
         virtual const any& getContext() const=0;
 
         virtual any* getMutableContext()=0;

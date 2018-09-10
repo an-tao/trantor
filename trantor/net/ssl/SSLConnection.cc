@@ -36,7 +36,7 @@ void SSLConnection::readCallback() {
             LOG_TRACE<<"ssl read:"<<rd<<" bytes";
             int sslerr = SSL_get_error(_sslPtr.get(), rd);
             if (rd <= 0 && sslerr != SSL_ERROR_WANT_READ) {
-                LOG_ERROR<<"ssl read err:"<<sslerr;
+                LOG_TRACE<<"ssl read err:"<<sslerr;
                 _status=SSLStatus::DisConnected;
                 handleClose();
                 return;
@@ -84,7 +84,7 @@ void SSLConnection::writeCallback() {
                 int sslerr = SSL_get_error(_sslPtr.get(), wd);
                 if (wd <= 0 && sslerr != SSL_ERROR_WANT_WRITE)
                 {
-                    LOG_ERROR<<"ssl write error:"<<sslerr;
+                    LOG_TRACE<<"ssl write error:"<<sslerr;
                     ioChennelPtr_->disableReading();
                     _status=SSLStatus::DisConnected;
                     return;

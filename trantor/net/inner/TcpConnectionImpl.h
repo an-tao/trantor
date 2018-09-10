@@ -47,7 +47,10 @@ namespace trantor
 
         virtual void setContext(const any& context) override
         { context_ = context; }
-
+        virtual void setContext(any&& context) override
+        {
+            context_=std::move(context);
+        }
         virtual const any& getContext() const override
         { return context_; }
 

@@ -49,6 +49,20 @@ namespace trantor
     {
         //connector->
     }
+    static void defaultConnectionCallback(const TcpConnectionPtr& conn)
+    {
+        LOG_TRACE << conn->localAddr().toIpPort() << " -> "
+                  << conn->peerAddr().toIpPort() << " is "
+                  << (conn->connected() ? "UP" : "DOWN");
+        // do not call conn->forceClose(), because some users want to register message callback only.
+    }
+
+    static void defaultMessageCallback(const TcpConnectionPtr&,
+                                       MsgBuffer* buf)
+    {
+        buf->retrieveAll();
+    }
+
 
 }
 
@@ -56,7 +70,7 @@ TcpClient::TcpClient(EventLoop* loop,
                      const InetAddress& serverAddr,
                      const std::string& nameArg)
         : loop_(loop),
-          connector_(new Connector(loop, serverAddr)),
+          connector_(new Connector(loop, serverAddr, false)),
           name_(nameArg),
           connectionCallback_(defaultConnectionCallback),
           messageCallback_(defaultMessageCallback),
@@ -66,14 +80,19 @@ TcpClient::TcpClient(EventLoop* loop,
 {
     connector_->setNewConnectionCallback(
             std::bind(&TcpClient::newConnection, this, _1));
-    // FIXME setConnectFailedCallback
-    LOG_INFO << "TcpClient::TcpClient[" << name_
+    connector_->setErrorCallback([=](){
+        if(_connectionErrorCallback)
+        {
+            _connectionErrorCallback();
+        }
+    });
+    LOG_TRACE << "TcpClient::TcpClient[" << name_
              << "] - connector " ;
 }
 
 TcpClient::~TcpClient()
 {
-    LOG_INFO << "TcpClient::~TcpClient[" << name_
+    LOG_TRACE << "TcpClient::~TcpClient[" << name_
              << "] - connector " ;
     TcpConnectionPtr conn;
     bool unique = false;
@@ -108,7 +127,7 @@ TcpClient::~TcpClient()
 void TcpClient::connect()
 {
     // FIXME: check state
-    LOG_INFO << "TcpClient::connect[" << name_ << "] - connecting to "
+    LOG_TRACE << "TcpClient::connect[" << name_ << "] - connecting to "
              << connector_->serverAddress().toIpPort();
     connect_ = true;
     connector_->start();
@@ -196,7 +215,7 @@ void TcpClient::removeConnection(const TcpConnectionPtr& conn)
                                  std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
     if (retry_ && connect_)
     {
-        LOG_INFO << "TcpClient::connect[" << name_ << "] - Reconnecting to "
+        LOG_TRACE << "TcpClient::connect[" << name_ << "] - Reconnecting to "
                  << connector_->serverAddress().toIpPort();
         connector_->restart();
     }
