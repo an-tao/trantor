@@ -93,6 +93,7 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr) {
     //loop_->assertInLoopThread();
     loop_->runInLoop([=](){
         size_t n=connSet_.erase(connectionPtr);
+        (void)n;
         assert(n==1);
     });
 

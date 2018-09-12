@@ -27,19 +27,14 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
-if (DEBUG STREQUAL YES)
-    set(CXX_FLAGS
-            -g
-            -Wall
-            -std=${CMAKE_CXX_STD_FLAGS}
-            )
-else()
-    set(CXX_FLAGS
-            -O2
-            -Wall
-            -std=${CMAKE_CXX_STD_FLAGS}
-            )
+if(CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE Release)
 endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -std=${CMAKE_CXX_STD_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -std=${CMAKE_CXX_STD_FLAGS}")
+
+
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 # include directories
 INCLUDE_DIRECTORIES(
