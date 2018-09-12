@@ -83,9 +83,13 @@ namespace trantor
         LogLevel level_;
 
     };
-
+#ifdef NDEBUG
+    #define LOG_TRACE if(0) \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRACE, __func__).stream()
+#else
 #define LOG_TRACE if (trantor::Logger::logLevel() <= trantor::Logger::TRACE) \
   trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRACE, __func__).stream()
+#endif
 #define LOG_DEBUG if (trantor::Logger::logLevel() <= trantor::Logger::DEBUG) \
   trantor::Logger(__FILE__, __LINE__, trantor::Logger::DEBUG, __func__).stream()
 #define LOG_INFO if (trantor::Logger::logLevel() <= trantor::Logger::INFO) \

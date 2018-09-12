@@ -53,7 +53,9 @@ namespace trantor
         t_loopInThisThread = this;
 #ifdef __linux__
 #else
-        assert(!pipe(wakeupFd_));
+        auto r=pipe(wakeupFd_);
+        (void)r;
+        assert(!r);
 
         wakeupChannelPtr_=std::unique_ptr<Channel>(new Channel(this,wakeupFd_[0]));
 
