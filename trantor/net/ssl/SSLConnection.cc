@@ -14,6 +14,7 @@ _isServer(isServer)
 {
     assert(_sslPtr);
     auto r=SSL_set_fd(_sslPtr.get(),socketfd);
+    (void)r;
     assert(r);
 }
 
