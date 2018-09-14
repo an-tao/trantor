@@ -34,18 +34,14 @@ endif()
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -std=${CMAKE_CXX_STD_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -std=${CMAKE_CXX_STD_FLAGS}")
 
-
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 # include directories
 INCLUDE_DIRECTORIES(
         ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/trantor/utils
         ${PROJECT_SOURCE_DIR}/trantor/net
         ${PROJECT_SOURCE_DIR}/trantor/net/inner
-
         /usr/local/include
         /usr/include
-
 )
 
 # lib directories

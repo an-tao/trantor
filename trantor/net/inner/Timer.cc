@@ -3,23 +3,32 @@
 namespace trantor
 {
     std::atomic<int64_t> Timer::timersCreated_;
-    Timer::Timer(const TimerCallback &cb,const Date &when,double interval):
+    Timer::Timer(const TimerCallback &cb,
+                 const Date &when,
+                 double interval,
+                 TimerId id):
             callback_(cb),
             when_(when),
             interval_(interval),
             repeat_(interval>0.0),
-            timerSeq_(timersCreated_++)
+            timerSeq_(timersCreated_++),
+            _id(id)
+
     {
 
     }
-    Timer::Timer(TimerCallback &&cb,const Date &when,double interval):
+    Timer::Timer(TimerCallback &&cb,
+                 const Date &when,
+                 double interval,
+                 TimerId id):
             callback_(std::move(cb)),
             when_(when),
             interval_(interval),
             repeat_(interval>0.0),
-            timerSeq_(timersCreated_++)
+            timerSeq_(timersCreated_++),
+            _id(id)
     {
-        LOG_TRACE<<"Timer move contrustor";
+        //LOG_TRACE<<"Timer move contrustor";
     }
     void Timer::run() const{
         callback_();

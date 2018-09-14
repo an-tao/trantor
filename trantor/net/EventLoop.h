@@ -30,6 +30,7 @@ namespace trantor
     class Channel;
     typedef std::vector<Channel*> ChannelList;
     typedef std::function<void ()> Func;
+    typedef uint64_t TimerId;
     class EventLoop:NonCopyable
     {
     public:
@@ -58,22 +59,23 @@ namespace trantor
         /// Runs callback at 'time'.
         /// Safe to call from other threads.
         ///
-        void runAt(const Date& time, const Func& cb);
-        void runAt(const Date& time, Func&& cb);
+        TimerId runAt(const Date& time, const Func& cb);
+        TimerId runAt(const Date& time, Func&& cb);
         ///
         /// Runs callback after @c delay seconds.
         /// Safe to call from other threads.
         ///
-        void runAfter(double delay, const Func& cb);
-        void runAfter(double delay, Func&& cb);
+        TimerId runAfter(double delay, const Func& cb);
+        TimerId runAfter(double delay, Func&& cb);
         ///
         /// Runs callback every @c interval seconds.
         /// Safe to call from other threads.
         ///
-        void runEvery(double interval, const Func& cb);
-        void runEvery(double interval, Func&& cb);
+        TimerId runEvery(double interval, const Func& cb);
+        TimerId runEvery(double interval, Func&& cb);
         //int getAioEventFd();
         //io_context_t getAioContext() {return ctx_;};
+        void invalidateTimer(TimerId id);
     private:
         void abortNotInLoopThread();
         bool looping_;
