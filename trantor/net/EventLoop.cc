@@ -53,7 +53,9 @@ namespace trantor
         t_loopInThisThread = this;
 #ifdef __linux__
 #else
-        assert(!pipe(wakeupFd_));
+        auto r=pipe(wakeupFd_);
+        (void)r;
+        assert(!r);
 
         wakeupChannelPtr_=std::unique_ptr<Channel>(new Channel(this,wakeupFd_[0]));
 
@@ -190,23 +192,27 @@ namespace trantor
         }
     }
 
-    void EventLoop::runAt(const Date& time, const Func& cb){
-        timerQueue_->addTimer(cb,time,0);
+    TimerId EventLoop::runAt(const Date& time, const Func& cb){
+        return timerQueue_->addTimer(cb,time,0);
     }
-    void EventLoop::runAt(const Date& time, Func&& cb){
-        timerQueue_->addTimer(std::move(cb),time,0);
+    TimerId EventLoop::runAt(const Date& time, Func&& cb){
+        return timerQueue_->addTimer(std::move(cb),time,0);
     }
-    void EventLoop::runAfter(double delay, const Func& cb){
-        runAt(Date::date().after(delay),cb);
+    TimerId EventLoop::runAfter(double delay, const Func& cb){
+        return runAt(Date::date().after(delay),cb);
     }
-    void EventLoop::runAfter(double delay, Func&& cb){
-        runAt(Date::date().after(delay),std::move(cb));
+    TimerId EventLoop::runAfter(double delay, Func&& cb){
+        return runAt(Date::date().after(delay),std::move(cb));
     }
-    void EventLoop::runEvery(double interval, const Func& cb){
-        timerQueue_->addTimer(cb,Date::date(),interval);
+    TimerId EventLoop::runEvery(double interval, const Func& cb){
+        return timerQueue_->addTimer(cb,Date::date(),interval);
     }
-    void EventLoop::runEvery(double interval, Func&& cb){
-        timerQueue_->addTimer(std::move(cb),Date::date(),interval);
+    TimerId EventLoop::runEvery(double interval, Func&& cb){
+        return timerQueue_->addTimer(std::move(cb),Date::date(),interval);
+    }
+    void EventLoop::invalidateTimer(TimerId id)
+    {
+        timerQueue_->invalidateTimer(id);
     }
     void EventLoop::doRunInLoopFuncs()
     {
