@@ -212,7 +212,8 @@ namespace trantor
     }
     void EventLoop::invalidateTimer(TimerId id)
     {
-        timerQueue_->invalidateTimer(id);
+	if(timerQueue_)
+            timerQueue_->invalidateTimer(id);
     }
     void EventLoop::doRunInLoopFuncs()
     {
