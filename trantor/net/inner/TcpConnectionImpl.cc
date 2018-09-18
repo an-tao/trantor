@@ -547,8 +547,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             }
             return;
         }
-        if (bytesSent<size) {
-            if (bytes_sent==0 ) {
+        if (bytesSent<filePtr->_fileBytesToSend) {
+            if (bytesSent == 0) {
                 LOG_SYSERR << "TcpConnectionImpl::sendFileInLoop";
                 return;
             }

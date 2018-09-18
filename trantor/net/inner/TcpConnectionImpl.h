@@ -77,7 +77,7 @@ namespace trantor
     protected:
         struct BufferNode{
             int _sendFd=-1;
-            size_t _fileBytesToSend;
+            ssize_t _fileBytesToSend;
             std::shared_ptr<MsgBuffer> _msgBuffer;
             ~BufferNode(){
                 if(_sendFd)
