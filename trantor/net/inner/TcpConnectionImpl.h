@@ -2,6 +2,7 @@
 
 #include <trantor/net/TcpConnection.h>
 #include <list>
+#include <unistd.h>
 namespace trantor
 {
 
