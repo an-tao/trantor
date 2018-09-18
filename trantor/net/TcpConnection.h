@@ -22,13 +22,15 @@ namespace trantor
         virtual void send(const MsgBuffer &buffer)=0;
         virtual void send(MsgBuffer &&buffer)=0;
 
+        virtual void sendFile(int sfd,size_t offset=0,size_t length=0)=0;
+
         virtual const InetAddress& localAddr() const=0;
         virtual const InetAddress& peerAddr() const=0;
 
         virtual bool connected() const =0;
         virtual bool disconnected() const =0;
 
-        virtual MsgBuffer* getSendBuffer() =0;
+        //virtual MsgBuffer* getSendBuffer() =0;
         virtual MsgBuffer* getRecvBuffer() =0;
         //set callbacks
         virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,size_t markLen)=0;

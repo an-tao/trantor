@@ -1,7 +1,7 @@
 #pragma once
 
 #include <trantor/net/TcpConnection.h>
-
+#include <list>
 namespace trantor
 {
 
@@ -25,13 +25,15 @@ namespace trantor
         virtual void send(const MsgBuffer &buffer) override;
         virtual void send(MsgBuffer &&buffer) override;
 
+        virtual void sendFile(int sfd,size_t offset=0,size_t length=0) override ;
+
         virtual const InetAddress& localAddr() const override{return localAddr_;}
         virtual const InetAddress& peerAddr() const override{return peerAddr_;}
 
         virtual bool connected() const override{ return state_ == Connected; }
         virtual bool disconnected() const override{ return state_ == Disconnected; }
 
-        virtual MsgBuffer* getSendBuffer() override{ return  &writeBuffer_;}
+        //virtual MsgBuffer* getSendBuffer() override{ return  &writeBuffer_;}
         virtual MsgBuffer* getRecvBuffer() override{ return &readBuffer_;}
         //set callbacks
         virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,size_t markLen)override{
@@ -71,17 +73,27 @@ namespace trantor
         { closeCallback_ = cb; }
         void connectDestroyed();
         virtual void connectEstablished();
-
+        bool _isSSLConn=false;
     protected:
+        struct BufferNode{
+            int _sendFd=-1;
+            size_t _fileBytesToSend;
+            std::shared_ptr<MsgBuffer> _msgBuffer;
+            ~BufferNode(){
+                if(_sendFd)
+                    close(_sendFd);
+            }
+        };
+        typedef std::shared_ptr<BufferNode> BufferNodePtr;
         enum ConnState { Disconnected, Connecting, Connected, Disconnecting };
         EventLoop *loop_;
         std::unique_ptr<Channel> ioChennelPtr_;
         std::unique_ptr<Socket> socketPtr_;
         MsgBuffer readBuffer_;
-        MsgBuffer writeBuffer_;
-
+        //MsgBuffer writeBuffer_;
+        std::list< BufferNodePtr > _writeBufferList;
         virtual void readCallback();
-        virtual void writeCallback();
+        void writeCallback();
         InetAddress localAddr_,peerAddr_;
         ConnState state_;
         //callbacks
@@ -93,7 +105,11 @@ namespace trantor
         void handleClose();
         void handleError();
         //virtual void sendInLoop(const std::string &msg);
-        virtual void sendInLoop(const char *buffer,size_t length);
+        void sendInLoop(const char *buffer,size_t length);
+
+        void sendFileInLoop(const BufferNodePtr &file);
+
+        virtual ssize_t  writeInLoop(const char *buffer,size_t length);
         size_t highWaterMarkLen_;
         std::string name_;
 
