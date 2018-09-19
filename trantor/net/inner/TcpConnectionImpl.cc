@@ -517,6 +517,7 @@ void TcpConnectionImpl::sendFile(int sfd,size_t offset,size_t length)
         std::lock_guard<std::mutex> guard(_sendNumMutex);
         _sendNum++;
         loop_->queueInLoop([thisPtr,node](){
+            LOG_TRACE<<"Push sendfile to list";
             thisPtr->_writeBufferList.push_back(node);
 
             {
@@ -532,7 +533,7 @@ void TcpConnectionImpl::sendFile(int sfd,size_t offset,size_t length)
     }
 }
 
-void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
+void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
 {
     loop_->assertInLoopThread();
     assert(filePtr->_sendFd>=0);
