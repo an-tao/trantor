@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define FETCH_SIZE 2048;
 using namespace trantor;
 
 

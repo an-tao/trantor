@@ -48,20 +48,31 @@ int main(int argc, char* argv[])
     server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
         //LOG_DEBUG<<"recv callback!";
     });
-    server.setConnectionCallback([=](const TcpConnectionPtr& connPtr){
+    int counter=0;
+    server.setConnectionCallback([=,&counter](const TcpConnectionPtr& connPtr){
         if(connPtr->connected())
         {
             LOG_DEBUG<<"New connection";
-            std::thread t([=](){
+            std::thread t([=,&counter](){
                 for(int i=0;i<5;i++)
                 {
                     connPtr->sendFile(argv[1]);
                     char str[64];
-                    sprintf(str,"\n%d files sent!\n",i+1);
+                    counter++;
+                    sprintf(str,"\n%d files sent!\n",counter);
                     connPtr->send(str,strlen(str));
                 }
             });
             t.detach();
+
+            for(int i=0;i<3;i++){
+                connPtr->sendFile(argv[1]);
+                char str[64];
+                counter++;
+                sprintf(str,"\n%d files sent!\n",counter);
+                connPtr->send(str,strlen(str));
+            }
+
         }
         else if(connPtr->disconnected())
         {
