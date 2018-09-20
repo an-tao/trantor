@@ -6,6 +6,7 @@
 #include <thread>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 using namespace trantor;
 #define USE_IPV6 0

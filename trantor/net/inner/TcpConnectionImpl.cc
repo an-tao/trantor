@@ -163,9 +163,6 @@ void TcpConnectionImpl::writeCallback() {
             }
             else
             {
-                //resume to sendfile
-                //LOG_TRACE<<"sendfile,fd="<<writeBuffer_->_sendFd<<" len="<<writeBuffer_->_fileBytesToSend
-		//	<<" pos="<<lseek(writeBuffer_->_sendFd,SEEK_CUR,0);
                 sendFileInLoop(writeBuffer_);
             }
         }
@@ -499,7 +496,7 @@ void TcpConnectionImpl::sendFile(int sfd,size_t offset,size_t length)
     assert(length>0);
     assert(sfd>=0);
     auto newfd=dup(sfd);
-    lseek(newfd,SEEK_SET,offset);
+    lseek(newfd,offset,SEEK_SET);
     BufferNodePtr node(new BufferNode);
     node->_sendFd=newfd;
     node->_offset=offset;
@@ -601,7 +598,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
                 if(nSend<n)
                 {
                     //
-                    lseek(filePtr->_sendFd,SEEK_CUR,(nSend-n));
+                    lseek(filePtr->_sendFd,(nSend-n),SEEK_CUR);
                     if(!ioChennelPtr_->isWriting())
                     {
                         ioChennelPtr_->enableWriting();
