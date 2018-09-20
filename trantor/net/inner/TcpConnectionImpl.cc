@@ -473,6 +473,7 @@ void TcpConnectionImpl::sendFile(int sfd,size_t offset,size_t length)
     assert(length>0);
     assert(sfd>=0);
     auto newfd=dup(sfd);
+    lseek(newfd,SEEK_SET,offset);
     BufferNodePtr node(new BufferNode);
     node->_sendFd=newfd;
     node->_offset=offset;
@@ -563,6 +564,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
     {
         char buf[1024*1024];
         auto n=read(filePtr->_sendFd,buf,sizeof(buf));
+	LOG_TRACE<<"read "<<n<<" bytes";
+	LOG_TRACE<<"bytes to send="<<filePtr->_fileBytesToSend<<" bytes";
         if(n>0)
         {
             auto nSend=writeInLoop(buf,n);
@@ -603,8 +606,12 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
         if(n<0)
         {
             LOG_SYSERR<<"sendFileInLoop";
+	    return;
         }
-
+	if(n==0)
+	{
+	    break;
+	}
     }
     if(!ioChennelPtr_->isWriting())
     {
