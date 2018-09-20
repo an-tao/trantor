@@ -37,9 +37,9 @@ int main(int argc, char* argv[])
     loopThread.run();
 
 #if USE_IPV6
-    InetAddress addr(8888,true,true);
+    InetAddress addr(1207,true,true);
 #else
-    InetAddress addr(8888);
+    InetAddress addr(1207);
 #endif
     TcpServer server(loopThread.getLoop(),addr,"test");
     server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
         {
             LOG_DEBUG<<"New connection";
             std::thread t([=](){
-                for(int i=0;i<1;i++)
+                for(int i=0;i<5;i++)
                 {
                     connPtr->sendFile(fd,0,filestat.st_size);
                     char str[64];

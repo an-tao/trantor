@@ -56,7 +56,6 @@ void TcpConnectionImpl::readCallback() {
     }
 }
 void TcpConnectionImpl::writeCallback() {
-    LOG_TRACE<<"write Callback";
     loop_->assertInLoopThread();
     if(ioChennelPtr_->isWriting())
     {
@@ -135,7 +134,7 @@ void TcpConnectionImpl::writeCallback() {
                         _writeBufferList.front()->_msgBuffer->retrieve(n);
                         if(n>=0)
                         {
-                            writeBuffer_->_msgBuffer->retrieve(n);
+                            _writeBufferList.front()->_msgBuffer->retrieve(n);
                         }
                         else
                         {
@@ -158,13 +157,13 @@ void TcpConnectionImpl::writeCallback() {
                         sendFileInLoop(_writeBufferList.front());
 
                     }
-
-
                 }
             }
             else
             {
                 //resume to sendfile
+                //LOG_TRACE<<"sendfile,fd="<<writeBuffer_->_sendFd<<" len="<<writeBuffer_->_fileBytesToSend
+		//	<<" pos="<<lseek(writeBuffer_->_sendFd,SEEK_CUR,0);
                 sendFileInLoop(writeBuffer_);
             }
         }
@@ -474,12 +473,9 @@ void TcpConnectionImpl::sendFile(int sfd,size_t offset,size_t length)
     assert(length>0);
     assert(sfd>=0);
     auto newfd=dup(sfd);
-    if(offset>0)
-    {
-        lseek(newfd,SEEK_SET,offset);
-    }
     BufferNodePtr node(new BufferNode);
     node->_sendFd=newfd;
+    node->_offset=offset;
     node->_fileBytesToSend=length;
     if(loop_->isInLoopThread())
     {
@@ -540,7 +536,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
 #ifdef __linux__
     if(!_isSSLConn)
     {
-        auto bytesSent=sendfile(socketPtr_->fd(),filePtr->_sendFd, NULL, filePtr->_fileBytesToSend);
+        auto bytesSent=sendfile(socketPtr_->fd(),filePtr->_sendFd, &filePtr->_offset, filePtr->_fileBytesToSend);
         if (bytesSent<0) {
             if (errno!=EAGAIN)
             {
@@ -554,6 +550,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
                 return;
             }
         }
+	LOG_TRACE<<"sendfile() "<<bytesSent<<" bytes sent";
         filePtr->_fileBytesToSend -= bytesSent;
         if(!ioChennelPtr_->isWriting())
         {
