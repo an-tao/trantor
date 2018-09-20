@@ -472,6 +472,7 @@ void TcpConnectionImpl::sendFile(char *fileName,size_t offset,size_t length)
 
 
     int fd=open(fileName,O_RDONLY);
+
     if(fd<0)
     {
         LOG_SYSERR<<fileName<<" open error";
@@ -495,10 +496,9 @@ void TcpConnectionImpl::sendFile(int sfd,size_t offset,size_t length)
 {
     assert(length>0);
     assert(sfd>=0);
-    auto newfd=dup(sfd);
-    lseek(newfd,offset,SEEK_SET);
+
     BufferNodePtr node(new BufferNode);
-    node->_sendFd=newfd;
+    node->_sendFd=sfd;
     node->_offset=offset;
     node->_fileBytesToSend=length;
     if(loop_->isInLoopThread())
@@ -583,22 +583,20 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
         return;
     }
 #endif
+    lseek(filePtr->_sendFd,filePtr->_offset,SEEK_SET);
     while(filePtr->_fileBytesToSend>0)
     {
-        char buf[1024*1024];
-        auto n=read(filePtr->_sendFd,buf,sizeof(buf));
-	LOG_TRACE<<"read "<<n<<" bytes";
-	LOG_TRACE<<"bytes to send="<<filePtr->_fileBytesToSend<<" bytes";
+        std::vector<char> buf(1024*1024);
+        auto n=read(filePtr->_sendFd,&buf[0],buf.size());
         if(n>0)
         {
-            auto nSend=writeInLoop(buf,n);
+            auto nSend=writeInLoop(&buf[0],n);
             if(nSend>0)
             {
-                filePtr->_fileBytesToSend-=nSend;
+                filePtr->_fileBytesToSend -= nSend;
+                filePtr->_offset += nSend;
                 if(nSend<n)
                 {
-                    //
-                    lseek(filePtr->_sendFd,(nSend-n),SEEK_CUR);
                     if(!ioChennelPtr_->isWriting())
                     {
                         ioChennelPtr_->enableWriting();
@@ -629,12 +627,13 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
         if(n<0)
         {
             LOG_SYSERR<<"sendFileInLoop";
-	    return;
+            return;
         }
-	if(n==0)
-	{
-	    break;
-	}
+        if(n==0)
+        {
+            LOG_SYSERR<<"read";
+            break;
+        }
     }
     if(!ioChennelPtr_->isWriting())
     {
