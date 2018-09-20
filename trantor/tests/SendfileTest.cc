@@ -30,6 +30,8 @@ int main(int argc, char* argv[])
         perror("");
         exit(1);
     }
+    close(fd);
+
     LOG_DEBUG<<"test start";
 
     Logger::setLogLevel(Logger::TRACE);
@@ -52,9 +54,9 @@ int main(int argc, char* argv[])
             std::thread t([=](){
                 for(int i=0;i<5;i++)
                 {
-                    connPtr->sendFile(fd,0,filestat.st_size);
+                    connPtr->sendFile(argv[1]);
                     char str[64];
-                    sprintf(str,"%d files sent!\n",i+1);
+                    sprintf(str,"\n%d files sent!\n",i+1);
                     connPtr->send(str,strlen(str));
                 }
             });

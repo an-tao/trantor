@@ -25,8 +25,9 @@ namespace trantor
         virtual void send(std::string &&msg) override;
         virtual void send(const MsgBuffer &buffer) override;
         virtual void send(MsgBuffer &&buffer) override;
+        virtual void sendFile(char *fileName,size_t offset=0,size_t length=0) override ;
 
-        virtual void sendFile(int sfd,size_t offset=0,size_t length=0) override ;
+
 
         virtual const InetAddress& localAddr() const override{return localAddr_;}
         virtual const InetAddress& peerAddr() const override{return peerAddr_;}
@@ -67,6 +68,7 @@ namespace trantor
 
         any context_;
         /// Internal use only.
+        void sendFile(int sfd,size_t offset=0,size_t length=0);
         void setRecvMsgCallback(const RecvMessageCallback &cb){recvMsgCallback_=cb;}
         void setConnectionCallback(const ConnectionCallback &cb){connectionCallback_=cb;}
         void setWriteCompleteCallback(const WriteCompleteCallback &cb){writeCompleteCallback_=cb;}

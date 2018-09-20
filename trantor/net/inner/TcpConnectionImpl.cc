@@ -6,6 +6,8 @@
 #endif
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define FETCH_SIZE 2048;
 using namespace trantor;
@@ -467,7 +469,31 @@ void TcpConnectionImpl::send(MsgBuffer &&buffer){
         });
     }
 }
+void TcpConnectionImpl::sendFile(char *fileName,size_t offset,size_t length)
+{
+    assert(fileName);
 
+
+    int fd=open(fileName,O_RDONLY);
+    if(fd<0)
+    {
+        LOG_SYSERR<<fileName<<" open error";
+        return;
+    }
+
+    if(length==0)
+    {
+        struct stat filestat;
+        if(stat(fileName, &filestat)<0)
+        {
+            LOG_SYSERR<<fileName<<" stat error";
+            return;
+        }
+        length=filestat.st_size;
+    }
+
+    sendFile(fd,offset,length);
+}
 void TcpConnectionImpl::sendFile(int sfd,size_t offset,size_t length)
 {
     assert(length>0);
