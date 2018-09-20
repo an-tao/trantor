@@ -626,7 +626,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
         }
         if(n<0)
         {
-            LOG_SYSERR<<"sendFileInLoop";
+            LOG_SYSERR<<"read error";
+            if(ioChennelPtr_->isWriting())
+                ioChennelPtr_->disableWriting();
             return;
         }
         if(n==0)
