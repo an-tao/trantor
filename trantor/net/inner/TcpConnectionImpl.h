@@ -25,7 +25,7 @@ namespace trantor
         virtual void send(std::string &&msg) override;
         virtual void send(const MsgBuffer &buffer) override;
         virtual void send(MsgBuffer &&buffer) override;
-        virtual void sendFile(char *fileName,size_t offset=0,size_t length=0) override ;
+        virtual void sendFile(const char *fileName,size_t offset=0,size_t length=0) override ;
 
 
 

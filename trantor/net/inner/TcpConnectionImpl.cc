@@ -465,7 +465,7 @@ void TcpConnectionImpl::send(MsgBuffer &&buffer){
         });
     }
 }
-void TcpConnectionImpl::sendFile(char *fileName,size_t offset,size_t length)
+void TcpConnectionImpl::sendFile(const char *fileName,size_t offset,size_t length)
 {
     assert(fileName);
 

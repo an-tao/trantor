@@ -22,7 +22,7 @@ namespace trantor
         virtual void send(const MsgBuffer &buffer)=0;
         virtual void send(MsgBuffer &&buffer)=0;
 
-        virtual void sendFile(char *fileName,size_t offset=0,size_t length=0)=0;
+        virtual void sendFile(const char *fileName,size_t offset=0,size_t length=0)=0;
 
         virtual const InetAddress& localAddr() const=0;
         virtual const InetAddress& peerAddr() const=0;
