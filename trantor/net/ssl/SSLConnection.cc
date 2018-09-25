@@ -16,6 +16,7 @@ _isServer(isServer)
     auto r=SSL_set_fd(_sslPtr.get(),socketfd);
     (void)r;
     assert(r);
+    _isSSLConn=true;
 }
 
 void SSLConnection::readCallback() {
@@ -56,51 +57,7 @@ void SSLConnection::readCallback() {
         }
     }
 }
-void SSLConnection::writeCallback() {
-    LOG_TRACE<<"write Callback";
-    loop_->assertInLoopThread();
-    if(_status==SSLStatus::Handshaking)
-    {
-        doHandshaking();
-        return;
-    }
-    else if(_status==SSLStatus::Connected)
-    {
-        if(ioChennelPtr_->isWriting())
-        {
-            if(writeBuffer_.readableBytes()<=0)
-            {
-                ioChennelPtr_->disableWriting();
-                //
-                if(writeCompleteCallback_)
-                    writeCompleteCallback_(shared_from_this());
-                if(state_==Disconnecting)
-                {
-                    socketPtr_->closeWrite();
-                }
-            }
-            else
-            {
-                int wd = SSL_write(_sslPtr.get(), writeBuffer_.peek(),writeBuffer_.readableBytes());
-                int sslerr = SSL_get_error(_sslPtr.get(), wd);
-                if (wd <= 0 && sslerr != SSL_ERROR_WANT_WRITE)
-                {
-                    LOG_TRACE<<"ssl write error:"<<sslerr;
-                    ioChennelPtr_->disableReading();
-                    _status=SSLStatus::DisConnected;
-                    return;
-                }
-                if(wd>0)
-                    writeBuffer_.retrieve(wd);
-            }
-        }
-        else
-        {
-            LOG_SYSERR<<"no writing but call write callback";
-        }
 
-    }
-}
 
 void SSLConnection::connectEstablished()
 {
@@ -143,44 +100,31 @@ void SSLConnection::doHandshaking() {
     }
 }
 
-void SSLConnection::sendInLoop(const char *buffer,size_t length)
+ssize_t SSLConnection::writeInLoop(const char *buffer,size_t length)
 {
     LOG_TRACE<<"send in loop";
     loop_->assertInLoopThread();
     if(state_!=Connected)
     {
         LOG_WARN<<"Connection is not connected,give up sending";
-        return;
+        return -1;
     }
     if(_status!=SSLStatus::Connected)
     {
         LOG_WARN<<"SSL is not connected,give up sending";
-        return;
+        return -1;
     }
-    size_t remainLen=length;
-    ssize_t sendLen=0;
-    if(!ioChennelPtr_->isWriting()&&writeBuffer_.readableBytes()==0)
+
+    //send directly
+    auto sendLen = SSL_write(_sslPtr.get(), buffer,length);
+    int sslerr = SSL_get_error(_sslPtr.get(), sendLen);
+    if (sendLen < 0 && sslerr != SSL_ERROR_WANT_WRITE)
     {
-        //send directly
-        sendLen = SSL_write(_sslPtr.get(), buffer,length);
-        int sslerr = SSL_get_error(_sslPtr.get(), sendLen);
-        if (sendLen < 0 && sslerr != SSL_ERROR_WANT_WRITE)
-        {
-            LOG_ERROR<<"ssl write error:"<<sslerr;
-            return;
-        }
-        remainLen-=sendLen;
+        LOG_ERROR<<"ssl write error:"<<sslerr;
+        return -1;
     }
-    if(remainLen>0)
-    {
-        writeBuffer_.append(buffer+sendLen,remainLen);
-        if(!ioChennelPtr_->isWriting())
-            ioChennelPtr_->enableWriting();
-        if(highWaterMarkCallback_&&writeBuffer_.readableBytes()>highWaterMarkLen_)
-        {
-            highWaterMarkCallback_(shared_from_this(),writeBuffer_.readableBytes());
-        }
-    }
+    return sendLen;
+
 }
 
 

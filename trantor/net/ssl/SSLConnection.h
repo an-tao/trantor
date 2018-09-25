@@ -36,9 +36,8 @@ namespace trantor
         bool _isServer;
     protected:
         virtual void readCallback() override ;
-        virtual void writeCallback() override ;
         virtual void connectEstablished() override;
-        virtual void sendInLoop(const char *buffer,size_t length) override;
+        virtual ssize_t writeInLoop(const char *buffer,size_t length) override;
     };
     typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
 
