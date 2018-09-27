@@ -2,49 +2,45 @@
 #include <trantor/utils/Logger.h>
 namespace trantor
 {
-    std::atomic<int64_t> Timer::timersCreated_;
+    std::atomic<TimerId> Timer::_timersCreated=ATOMIC_VAR_INIT(0);
     Timer::Timer(const TimerCallback &cb,
                  const Date &when,
-                 double interval,
-                 TimerId id):
-            callback_(cb),
-            when_(when),
-            interval_(interval),
-            repeat_(interval>0.0),
-            timerSeq_(timersCreated_++),
-            _id(id)
+                 double interval):
+            _callback(cb),
+            _when(when),
+            _interval(interval),
+            _repeat(interval>0.0),
+            _id(_timersCreated++)
 
     {
 
     }
     Timer::Timer(TimerCallback &&cb,
                  const Date &when,
-                 double interval,
-                 TimerId id):
-            callback_(std::move(cb)),
-            when_(when),
-            interval_(interval),
-            repeat_(interval>0.0),
-            timerSeq_(timersCreated_++),
-            _id(id)
+                 double interval):
+            _callback(std::move(cb)),
+            _when(when),
+            _interval(interval),
+            _repeat(interval>0.0),
+            _id(_timersCreated++)
     {
         //LOG_TRACE<<"Timer move contrustor";
     }
     void Timer::run() const{
-        callback_();
+        _callback();
     }
     void Timer::restart(const Date& now) {
-        if(repeat_)
+        if(_repeat)
         {
-            when_=now.after(interval_);
+            _when=now.after(_interval);
         }
         else
-            when_=Date();
+            _when=Date();
     }
     bool Timer::operator<(const Timer &t) const {
-        return when_<t.when_;
+        return _when<t._when;
     }
     bool Timer::operator>(const Timer &t) const {
-        return when_>t.when_;
+        return _when>t._when;
     }
 };
