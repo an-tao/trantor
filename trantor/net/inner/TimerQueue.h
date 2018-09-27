@@ -36,22 +36,21 @@ namespace trantor
 #endif
     protected:
 
-        EventLoop* loop_;
+        EventLoop* _loop;
 #ifdef __linux__
-        const int timerfd_;
-        std::unique_ptr<Channel> timerfdChannelPtr_;
+        const int _timerfd;
+        std::unique_ptr<Channel> _timerfdChannelPtr;
         void handleRead();
 #endif
-        std::priority_queue<TimerPtr,std::vector<TimerPtr>,comp> timers_;
+        std::priority_queue<TimerPtr,std::vector<TimerPtr>,comp> _timers;
 
-        bool callingExpiredTimers_;
+        bool _callingExpiredTimers;
         bool insert(const TimerPtr &timePtr);
         std::vector<TimerPtr> getExpired();
         void reset(const std::vector<TimerPtr>& expired,const Date &now);
         std::vector<TimerPtr> getExpired(const Date &now);
 
     private:
-        std::atomic<uint64_t> _timerIdGenarator=ATOMIC_VAR_INIT(0);
         std::unordered_set<uint64_t> _timerIdSet;
     };
 };
