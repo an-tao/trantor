@@ -38,7 +38,7 @@ namespace trantor
 
         EventLoop* _loop;
 #ifdef __linux__
-        const int timerfd_;
+        const int _timerfd;
         std::unique_ptr<Channel> _timerfdChannelPtr;
         void handleRead();
 #endif

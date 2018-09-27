@@ -65,18 +65,18 @@ void readTimerfd(int timerfd, const Date &now)
 void TimerQueue::handleRead() {
     _loop->assertInLoopThread();
     const Date now=Date::date();
-    readTimerfd(timerfd_, now);
+    readTimerfd(_timerfd, now);
 
     std::vector<TimerPtr> expired = getExpired(now);
 
-    callingExpiredTimers_ = true;
+    _callingExpiredTimers = true;
     //cancelingTimers_.clear();
     // safe to callback outside critical section
     for (auto timerPtr:expired)
     {
         timerPtr->run();
     }
-    callingExpiredTimers_ = false;
+    _callingExpiredTimers = false;
 
     reset(expired, now);
 }
@@ -116,13 +116,13 @@ TimerQueue::TimerQueue(EventLoop* loop)
         : _loop(loop),
 #ifdef __linux__
           _timerfd(createTimerfd()),
-          timerfdChannelPtr_(new Channel(loop, _timerfd)),
+          _timerfdChannelPtr(new Channel(loop, _timerfd)),
 #endif
           _timers(),
           _callingExpiredTimers(false)
 {
 #ifdef __linux__
-    timerfdChannelPtr_->setReadCallback(
+    _timerfdChannelPtr->setReadCallback(
             std::bind(&TimerQueue::handleRead, this));
     // we are always reading the timerfd, we disarm it with timerfd_settime.
     _timerfdChannelPtr->enableReading();
@@ -142,7 +142,6 @@ TimerId TimerQueue::addTimer(const TimerCallback &cb, const Date &when, double i
 
     std::shared_ptr<Timer> timerPtr=std::make_shared<Timer>(cb,when,interval);
 
-    //timers_.push(timerPtr);
     _loop->runInLoop([=](){
         addTimerInLoop(timerPtr);
     });
@@ -152,7 +151,6 @@ TimerId TimerQueue::addTimer(TimerCallback &&cb, const Date &when, double interv
 
     std::shared_ptr<Timer> timerPtr=std::make_shared<Timer>(std::move(cb),when,interval);
 
-    //timers_.push(timerPtr);
     _loop->runInLoop([=](){
         addTimerInLoop(timerPtr);
     });
@@ -232,7 +230,7 @@ void TimerQueue::reset(const std::vector<TimerPtr>& expired,const Date &now)
         }
     }
 #ifdef __linux__
-    if (!timers_.empty())
+    if (!_timers.empty())
     {
         const Date nextExpire = _timers.top()->when();
         resetTimerfd(_timerfd, nextExpire);
