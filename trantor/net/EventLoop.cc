@@ -106,10 +106,10 @@ namespace trantor
         // There is a chance that loop() just executes while(!quit_) and exits,
         // then EventLoop destructs, then we are accessing an invalid object.
         // Can be fixed using mutex_ in both places.
-        // if (!isInLoopThread())
-        // {
-        //   wakeup();
-        // }
+        if (!isInLoopThread())
+        {
+            wakeup();
+        }
     }
     void EventLoop::loop()
     {
@@ -231,6 +231,8 @@ namespace trantor
     }
     void EventLoop::wakeup()
     {
+        if(!looping_)
+            return;
         uint64_t tmp=1;
 #ifdef __linux__
         int ret=write(wakeupFd_,&tmp,sizeof(tmp));

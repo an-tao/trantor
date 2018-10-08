@@ -12,7 +12,7 @@ namespace trantor
         EventLoopThread();
         ~EventLoopThread();
         void run();
-        void stop();
+        //void stop();
         void wait();
         EventLoop * getLoop(){return loop_;}
 

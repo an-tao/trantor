@@ -10,7 +10,7 @@ namespace trantor
         EventLoopThreadPool()= delete;
         EventLoopThreadPool(size_t threadNum);
         void start();
-        void stop();
+        //void stop();
         void wait();
         size_t getLoopNum(){return loopThreadVector_.size();}
         EventLoop *getNextLoop();
