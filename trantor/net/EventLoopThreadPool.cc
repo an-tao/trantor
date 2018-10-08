@@ -12,12 +12,12 @@ void EventLoopThreadPool::start(){
         loopThreadVector_[i].run();
     }
 }
-void EventLoopThreadPool::stop(){
-    for(unsigned int i=0;i<loopThreadVector_.size();i++)
-    {
-        loopThreadVector_[i].stop();
-    }
-}
+//void EventLoopThreadPool::stop(){
+//    for(unsigned int i=0;i<loopThreadVector_.size();i++)
+//    {
+//        loopThreadVector_[i].stop();
+//    }
+//}
 void EventLoopThreadPool::wait() {
     for(unsigned int i=0;i<loopThreadVector_.size();i++)
     {
