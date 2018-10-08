@@ -25,7 +25,7 @@ namespace trantor
     SerialTaskQueue::~SerialTaskQueue() {
         if(!stop_)
             stop();
-        LOG_TRACE<<"unconstruct SerialTaskQueue('"<<queueName_<<"')";
+        LOG_TRACE<<"destruct SerialTaskQueue('"<<queueName_<<"')";
     }
     void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task)
     {
