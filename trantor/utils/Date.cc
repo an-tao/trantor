@@ -69,4 +69,12 @@ namespace trantor
         strftime (buf,sizeof(buf),fmtStr.c_str(),&tm_time);
         return std::string(buf);
     }
+    void Date::toCustomedFormattedString(const std::string &fmtStr,char *str,size_t len) const
+    {
+        //not safe
+        time_t seconds = static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        struct tm tm_time;
+        gmtime_r(&seconds, &tm_time);
+        strftime (str,len,fmtStr.c_str(),&tm_time);
+    }
 };

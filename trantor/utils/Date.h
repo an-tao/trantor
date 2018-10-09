@@ -42,6 +42,7 @@ class Date
     struct tm tmStruct() const;
     std::string toFormattedString(bool showMicroseconds) const; //UTC
     std::string toCustomedFormattedString(const std::string &fmtStr) const;//UTC
+    void toCustomedFormattedString(const std::string &fmtStr,char *str,size_t len) const;//UTC
     bool isSameSecond(const Date &date) const
     {
         return microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC == date.microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC;
