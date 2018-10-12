@@ -66,7 +66,37 @@ namespace trantor
 
     }
 
+    void EventLoop::reset()
+    {
+        assertInLoopThread();
+        assert(!looping_);
+        quit_=false;
+        poller_=std::unique_ptr<Poller>(Poller::newPoller(this));
+        currentActiveChannel_=NULL;
+        eventHandling_=false;
+        timerQueue_=std::unique_ptr<TimerQueue>(new TimerQueue(this));
+#ifdef __linux__
+        if(wakeupFd_)
+        {
+            close(wakeupFd_);
+        }
+        wakeupFd_=createEventfd();
+        wakeupChannelPtr_=std::unique_ptr<Channel>(new Channel(this,wakeupFd_));
+#else
+        close(wakeupFd_[0]);
+        close(wakeupFd_[1]);
+        auto r=pipe(wakeupFd_);
+        (void)r;
+        assert(!r);
 
+        wakeupChannelPtr_=std::unique_ptr<Channel>(new Channel(this,wakeupFd_[0]));
+
+#endif
+        wakeupChannelPtr_->setReadCallback(
+                std::bind(&EventLoop::wakeupRead, this));
+        wakeupChannelPtr_->enableReading();
+
+    }
 
     EventLoop::~EventLoop()
     {
