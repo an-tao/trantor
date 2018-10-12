@@ -45,7 +45,7 @@ namespace trantor
                 abortNotInLoopThread();
             }
         };
-        void reset();
+        void resetTimerQueue();
         bool isInLoopThread() const { return threadId_ == std::this_thread::get_id();};
         static EventLoop* getEventLoopOfCurrentThread();
         void updateChannel(Channel *chl);

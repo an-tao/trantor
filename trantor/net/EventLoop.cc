@@ -66,15 +66,11 @@ namespace trantor
 
     }
 
-    void EventLoop::reset()
+    void EventLoop::resetTimerQueue()
     {
         assertInLoopThread();
         assert(!looping_);
-        quit_=false;
         timerQueue_=std::unique_ptr<TimerQueue>(new TimerQueue(this));
-        currentActiveChannel_=NULL;
-        eventHandling_=false;
-	return;
     }
 
     EventLoop::~EventLoop()
