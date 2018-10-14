@@ -7,31 +7,31 @@ using namespace trantor;
 #define USE_IPV6 0
 int main()
 {
-    LOG_DEBUG<<"test start";
+    LOG_DEBUG << "test start";
     Logger::setLogLevel(Logger::TRACE);
     EventLoopThread loopThread;
     loopThread.run();
 #if USE_IPV6
-    InetAddress addr(8888,true,true);
+    InetAddress addr(8888, true, true);
 #else
     InetAddress addr(8888);
 #endif
-    TcpServer server(loopThread.getLoop(),addr,"test");
-    server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr,MsgBuffer *buffer){
+    TcpServer server(loopThread.getLoop(), addr, "test");
+    server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
         //LOG_DEBUG<<"recv callback!";
-        std::cout<<std::string(buffer->peek(),buffer->readableBytes());
-        connectionPtr->send(buffer->peek(),buffer->readableBytes());
+        std::cout << std::string(buffer->peek(), buffer->readableBytes());
+        connectionPtr->send(buffer->peek(), buffer->readableBytes());
         buffer->retrieveAll();
         connectionPtr->forceClose();
     });
-    server.setConnectionCallback([](const TcpConnectionPtr& connPtr){
-        if(connPtr->connected())
+    server.setConnectionCallback([](const TcpConnectionPtr &connPtr) {
+        if (connPtr->connected())
         {
-            LOG_DEBUG<<"New connection";
+            LOG_DEBUG << "New connection";
         }
-        else if(connPtr->disconnected())
+        else if (connPtr->disconnected())
         {
-            LOG_DEBUG<<"connection disconnected";
+            LOG_DEBUG << "connection disconnected";
         }
     });
     server.setIoLoopNum(3);

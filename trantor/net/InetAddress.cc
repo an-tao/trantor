@@ -11,9 +11,8 @@
 #include <trantor/utils/Logger.h>
 //#include <muduo/net/Endian.h>
 
-
 #include <netdb.h>
-#include <strings.h>  // bzero
+#include <strings.h> // bzero
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
@@ -47,12 +46,12 @@ static const in_addr_t kInaddrLoopback = INADDR_LOOPBACK;
 using namespace trantor;
 
 #ifdef __linux__
-#if !(__GNUC_PREREQ (4,6))
+#if !(__GNUC_PREREQ(4, 6))
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 #endif
 #endif
 InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
-:_isIpV6(ipv6)
+    : _isIpV6(ipv6)
 {
     if (ipv6)
     {
@@ -72,8 +71,7 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
     }
 }
 
-InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6):
-_isIpV6(ipv6)
+InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isIpV6(ipv6)
 {
     if (ipv6)
     {
@@ -102,17 +100,17 @@ std::string InetAddress::toIpPort() const
     char buf[64] = "";
     uint16_t port = ntohs(addr_.sin_port);
     sprintf(buf, ":%u", port);
-    return toIp()+std::string(buf);
+    return toIp() + std::string(buf);
 }
 bool InetAddress::isInnerIp() const
 {
     if (addr_.sin_family == AF_INET)
     {
-        uint32_t ip_addr=ntohl(addr_.sin_addr.s_addr);
-        if ((ip_addr >= 0x0A000000 && ip_addr <= 0x0AFFFFFF ) ||
-            (ip_addr >= 0xAC100000 && ip_addr <= 0xAC1FFFFF ) ||
-            (ip_addr >= 0xC0A80000 && ip_addr <= 0xC0A8FFFF ) ||
-            ip_addr==0x7f000001)
+        uint32_t ip_addr = ntohl(addr_.sin_addr.s_addr);
+        if ((ip_addr >= 0x0A000000 && ip_addr <= 0x0AFFFFFF) ||
+            (ip_addr >= 0xAC100000 && ip_addr <= 0xAC1FFFFF) ||
+            (ip_addr >= 0xC0A80000 && ip_addr <= 0xC0A8FFFF) ||
+            ip_addr == 0x7f000001)
 
         {
             return true;
@@ -149,51 +147,50 @@ uint16_t InetAddress::toPort() const
 static __thread char t_resolveBuffer[64 * 1024];
 #endif
 std::mutex InetAddress::_dnsMutex;
-std::unordered_map<std::string,std::pair<struct in_addr,trantor::Date>> InetAddress::_dnsCache;
-bool InetAddress::resolve(const std::string & hostname, InetAddress* out,size_t timeout)
+std::unordered_map<std::string, std::pair<struct in_addr, trantor::Date>> InetAddress::_dnsCache;
+bool InetAddress::resolve(const std::string &hostname, InetAddress *out, size_t timeout)
 {
     assert(out != NULL);
     {
         std::lock_guard<std::mutex> guard(_dnsMutex);
-        if(_dnsCache.find(hostname)!=_dnsCache.end())
+        if (_dnsCache.find(hostname) != _dnsCache.end())
         {
-            auto &addr=_dnsCache[hostname];
-            if(timeout==0||(timeout>0&&
-                           (addr.second.after(timeout)>trantor::Date::date())))
+            auto &addr = _dnsCache[hostname];
+            if (timeout == 0 || (timeout > 0 &&
+                                 (addr.second.after(timeout) > trantor::Date::date())))
             {
-                LOG_TRACE<<"dns:Hit cache";
+                LOG_TRACE << "dns:Hit cache";
                 out->addr_.sin_addr = addr.first;
                 return true;
             }
         }
-
     }
 #ifdef __linux__
     struct hostent hent;
-    struct hostent* he = NULL;
+    struct hostent *he = NULL;
     int herrno = 0;
     bzero(&hent, sizeof(hent));
 
     int ret = gethostbyname_r(hostname.c_str(), &hent, t_resolveBuffer, sizeof t_resolveBuffer, &he, &herrno);
     if (ret == 0 && he != NULL)
 #else
-        ///FIXME multi-threads safety
-    auto he=gethostbyname(hostname.c_str());
-    if(he!=NULL)
+    ///FIXME multi-threads safety
+    auto he = gethostbyname(hostname.c_str());
+    if (he != NULL)
 #endif
     {
         assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
-        out->addr_.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
+        out->addr_.sin_addr = *reinterpret_cast<struct in_addr *>(he->h_addr);
         {
             std::lock_guard<std::mutex> guard(_dnsMutex);
-            _dnsCache[hostname].first=out->addr_.sin_addr;
-            _dnsCache[hostname].second=trantor::Date::date();
+            _dnsCache[hostname].first = out->addr_.sin_addr;
+            _dnsCache[hostname].second = trantor::Date::date();
         }
         return true;
     }
     else
     {
-//        if (ret)
+        //        if (ret)
         {
             LOG_SYSERR << "InetAddress::resolve";
         }

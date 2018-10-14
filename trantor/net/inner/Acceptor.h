@@ -9,24 +9,25 @@
 
 namespace trantor
 {
-    typedef std::function<void (int fd,const InetAddress &)> NewConnectionCallback;
-    class Acceptor:NonCopyable
+typedef std::function<void(int fd, const InetAddress &)> NewConnectionCallback;
+class Acceptor : NonCopyable
+{
+  public:
+    Acceptor(EventLoop *loop, const InetAddress &addr);
+    ~Acceptor();
+    const InetAddress &addr() const { return addr_; }
+    void setNewConnectionCallback(const NewConnectionCallback &cb)
     {
-    public:
-
-        Acceptor(EventLoop* loop, const InetAddress& addr);
-        ~Acceptor();
-        const InetAddress & addr() const {return addr_;}
-        void setNewConnectionCallback(const NewConnectionCallback &cb){
-            newConnectionCallback_=cb;
-        };
-        void listen();
-    protected:
-        Socket sock_;
-        InetAddress addr_;
-        EventLoop *loop_;
-        NewConnectionCallback newConnectionCallback_;
-        Channel acceptChannel_;
-        void readCallback();
+        newConnectionCallback_ = cb;
     };
-}
+    void listen();
+
+  protected:
+    Socket sock_;
+    InetAddress addr_;
+    EventLoop *loop_;
+    NewConnectionCallback newConnectionCallback_;
+    Channel acceptChannel_;
+    void readCallback();
+};
+} // namespace trantor

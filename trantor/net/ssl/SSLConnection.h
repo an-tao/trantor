@@ -12,33 +12,37 @@
 #include <memory>
 namespace trantor
 {
-    enum class SSLStatus{
-        Handshaking,
-        Connecting,
-        Connected,
-        DisConnecting,
-        DisConnected
-    };
-    class SSLConnection: public TcpConnectionImpl{
-    public:
-        SSLConnection(EventLoop *loop,int socketfd,const InetAddress& localAddr,
-                      const InetAddress& peerAddr,
-                      const std::shared_ptr<SSL_CTX> &ctxPtr,
-                      bool isServer=true);
-        virtual ~SSLConnection(){}
+enum class SSLStatus
+{
+    Handshaking,
+    Connecting,
+    Connected,
+    DisConnecting,
+    DisConnected
+};
+class SSLConnection : public TcpConnectionImpl
+{
+  public:
+    SSLConnection(EventLoop *loop, int socketfd, const InetAddress &localAddr,
+                  const InetAddress &peerAddr,
+                  const std::shared_ptr<SSL_CTX> &ctxPtr,
+                  bool isServer = true);
+    virtual ~SSLConnection() {}
 
-    private:
-        void doHandshaking();
-        SSLStatus _status=SSLStatus::Handshaking;
-    private:
-        //OpenSSL
-        std::shared_ptr<SSL> _sslPtr;
-        bool _isServer;
-    protected:
-        virtual void readCallback() override ;
-        virtual void connectEstablished() override;
-        virtual ssize_t writeInLoop(const char *buffer,size_t length) override;
-    };
-    typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
+  private:
+    void doHandshaking();
+    SSLStatus _status = SSLStatus::Handshaking;
 
-}
+  private:
+    //OpenSSL
+    std::shared_ptr<SSL> _sslPtr;
+    bool _isServer;
+
+  protected:
+    virtual void readCallback() override;
+    virtual void connectEstablished() override;
+    virtual ssize_t writeInLoop(const char *buffer, size_t length) override;
+};
+typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
+
+} // namespace trantor

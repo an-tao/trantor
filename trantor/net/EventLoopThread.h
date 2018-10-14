@@ -6,21 +6,21 @@
 #include <mutex>
 namespace trantor
 {
-    class EventLoopThread:NonCopyable
-    {
-    public:
-        EventLoopThread();
-        ~EventLoopThread();
-        void run();
-        //void stop();
-        void wait();
-        EventLoop * getLoop(){return loop_;}
+class EventLoopThread : NonCopyable
+{
+  public:
+    EventLoopThread();
+    ~EventLoopThread();
+    void run();
+    //void stop();
+    void wait();
+    EventLoop *getLoop() { return loop_; }
 
-    private:
-        EventLoop *loop_;
-        SerialTaskQueue loopQueue_;
-        void loopFuncs();
-        std::condition_variable cond_;
-        std::mutex mutex_;
-    };
-}
+  private:
+    EventLoop *loop_;
+    SerialTaskQueue loopQueue_;
+    void loopFuncs();
+    std::condition_variable cond_;
+    std::mutex mutex_;
+};
+} // namespace trantor
