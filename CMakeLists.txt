@@ -89,8 +89,8 @@ file(APPEND "${CONFIG_HEADER}" "using std::any_cast;\n\n")
 else()
 
 file(APPEND "${CONFIG_HEADER}" "#include <experimental/any>\n")
-file(APPEND "${CONFIG_HEADER}" "using experimental::any;\n")
-file(APPEND "${CONFIG_HEADER}" "using experimental::any_cast;\n\n")
+file(APPEND "${CONFIG_HEADER}" "using std::experimental::any;\n")
+file(APPEND "${CONFIG_HEADER}" "using std::experimental::any_cast;\n\n")
 
 endif()
 
