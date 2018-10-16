@@ -4,22 +4,22 @@ project(trantor)
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
     EXEC_PROGRAM (gcc ARGS "--version | grep '^gcc'|awk '{print $3}' | sed s'/)//g' | sed s'/-.*//g'" OUTPUT_VARIABLE version)
     MESSAGE(STATUS "This is gcc version:: " ${version})
-    if(version LESS 4.9.0)
+    if(version LESS 5.4.0)
         MESSAGE(STATUS "gcc is too old")
         stop()
-    elseif (version LESS 6.1.0)
-        MESSAGE(STATUS "c++11")
-        set(CMAKE_CXX_STD_FLAGS c++11)
     elseif(version LESS 7.1.0)
         set(CMAKE_CXX_STD_FLAGS c++14)
         MESSAGE(STATUS "c++14")
     else()
         set(CMAKE_CXX_STD_FLAGS c++17)
         set(DEFS "USE_STD_ANY")
+        set(USE_STD_ANY 1)
         MESSAGE(STATUS "c++17")
     endif()
 else()
-    set(CMAKE_CXX_STD_FLAGS c++11)
+    set(DEFS "USE_STD_ANY")
+    set(USE_STD_ANY 1)
+    set(CMAKE_CXX_STD_FLAGS c++17)
 endif()
 
 # include directories
@@ -31,12 +31,6 @@ INCLUDE_DIRECTORIES(
         /usr/local/include
         /usr/include
 )
-
-find_package(Boost)
-if(Boost_FOUND)
-    SET(DEFS "USE_BOOST;${DEFS}")
-    include_directories(${Boost_INCLUDE_DIRS})
-endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE Release)
@@ -84,23 +78,21 @@ file(WRITE "${CONFIG_HEADER}" "#pragma once\n")
 foreach(loop_var ${DEFS})
     file(APPEND "${CONFIG_HEADER}" "#define ${loop_var}\n")
 endforeach(loop_var)
-file(APPEND "${CONFIG_HEADER}" "#ifdef USE_STD_ANY\n")
+file(APPEND "${CONFIG_HEADER}" "\n")
+
+if(DEFINED USE_STD_ANY)
 
 file(APPEND "${CONFIG_HEADER}" "#include <any>\n")
 file(APPEND "${CONFIG_HEADER}" "using std::any;\n")
-file(APPEND "${CONFIG_HEADER}" "using std::any_cast;\n")
+file(APPEND "${CONFIG_HEADER}" "using std::any_cast;\n\n")
 
-file(APPEND "${CONFIG_HEADER}" "#else \n")
-file(APPEND "${CONFIG_HEADER}" "#ifdef USE_BOOST\n")
+else()
 
-file(APPEND "${CONFIG_HEADER}" "#include <boost/any.hpp>\n")
-file(APPEND "${CONFIG_HEADER}" "using boost::any;\n")
-file(APPEND "${CONFIG_HEADER}" "using boost::any_cast;\n")
+file(APPEND "${CONFIG_HEADER}" "#include <experimental/any>\n")
+file(APPEND "${CONFIG_HEADER}" "using experimental::any;\n")
+file(APPEND "${CONFIG_HEADER}" "using experimental::any_cast;\n\n")
 
-file(APPEND "${CONFIG_HEADER}" "#else\n")
-file(APPEND "${CONFIG_HEADER}" "#error,must use c++17 or boost to support any\n")
-file(APPEND "${CONFIG_HEADER}" "#endif\n")
-file(APPEND "${CONFIG_HEADER}" "#endif\n")
+endif()
 
 EXEC_PROGRAM(${PROJECT_SOURCE_DIR}/update_config.sh ARGS "${CONFIG_HEADER} ${PROJECT_SOURCE_DIR}/trantor/utils/config.h")
 
