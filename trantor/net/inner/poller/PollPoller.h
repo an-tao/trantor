@@ -22,25 +22,23 @@ namespace trantor
 ///
 /// IO Multiplexing with poll(2).
 ///
-    class PollPoller : public Poller
-    {
-    public:
+class PollPoller : public Poller
+{
+  public:
+    explicit PollPoller(EventLoop *loop);
+    virtual ~PollPoller();
+    virtual void poll(int timeoutMs, ChannelList *activeChannels) override;
+    virtual void updateChannel(Channel *channel) override;
+    virtual void removeChannel(Channel *channel) override;
 
-        explicit PollPoller(EventLoop* loop);
-        virtual ~PollPoller();
-        virtual void poll(int timeoutMs, ChannelList* activeChannels) override ;
-        virtual void updateChannel(Channel* channel) override ;
-        virtual void removeChannel(Channel* channel) override ;
+  private:
+    void fillActiveChannels(int numEvents,
+                            ChannelList *activeChannels) const;
 
-    private:
-        void fillActiveChannels(int numEvents,
-                                ChannelList* activeChannels) const;
+    typedef std::vector<struct pollfd> PollFdList;
+    PollFdList pollfds_;
+    typedef std::map<int, Channel *> ChannelMap;
+    ChannelMap channels_;
+};
 
-        typedef std::vector<struct pollfd> PollFdList;
-        PollFdList pollfds_;
-        typedef std::map<int, Channel*> ChannelMap;
-        ChannelMap channels_;
-    };
-
-
-}
+} // namespace trantor

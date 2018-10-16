@@ -5,7 +5,7 @@
 #include "poller/PollPoller.h"
 #endif
 using namespace trantor;
-Poller* Poller::newPoller(EventLoop *loop)
+Poller *Poller::newPoller(EventLoop *loop)
 {
 #ifdef __linux__
     return new EpollPoller(loop);
