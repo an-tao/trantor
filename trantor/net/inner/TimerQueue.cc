@@ -74,7 +74,11 @@ void TimerQueue::handleRead() {
     // safe to callback outside critical section
     for (auto timerPtr:expired)
     {
-        timerPtr->run();
+        if(_timerIdSet.find(timerPtr->id())!=_timerIdSet.end())
+        {
+            timerPtr->run();
+        }
+
     }
     _callingExpiredTimers = false;
 
