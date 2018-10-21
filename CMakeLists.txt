@@ -55,6 +55,7 @@ if(OpenSSL_FOUND)
     #add_definitions(-DUSE_OPENSSL)
     set(DEFS "USE_OPENSSL;${DEFS}")
     include_directories(${OPENSSL_INCLUDE_DIR})
+    link_libraries(${OPENSSL_LIBRARIES})
     AUX_SOURCE_DIRECTORY(trantor/net/ssl DIR_SRC)
 endif()
 
