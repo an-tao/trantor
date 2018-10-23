@@ -27,4 +27,6 @@ add_executable(async_file_logger_test1 AsyncFileLoggerTest1.cc)
 
 add_executable(sendfile_test SendfileTest.cc)
 
+add_executable(timing_wheel_test TimingWheelTest.cc)
+
 
