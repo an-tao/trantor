@@ -62,6 +62,10 @@ void TcpConnectionImpl::extendLife()
 {
     if (_idleTimeout > 0)
     {
+        auto now = Date::date();
+        if(now < _lastTimingWheelUpdateTime.after(1.0))
+            return;
+        _lastTimingWheelUpdateTime = now;
         auto entry = _kickoffEntry.lock();
         if (entry)
         {

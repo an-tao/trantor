@@ -106,6 +106,7 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     std::weak_ptr<KickoffEntry> _kickoffEntry;
     std::shared_ptr<TimingWheel> _timingWheelPtr;
     size_t _idleTimeout = 0;
+    Date _lastTimingWheelUpdateTime;
 
     void enableKickingOff(size_t timeout, const std::shared_ptr<TimingWheel> &timingWheel)
     {
