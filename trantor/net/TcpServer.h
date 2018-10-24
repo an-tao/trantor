@@ -43,6 +43,7 @@ class TcpServer : NonCopyable
     {
         _idleTimeout = timeout;
     }
+    void keepAliveConnection(const TcpConnectionPtr &conn);
 #ifdef USE_OPENSSL
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 #endif
@@ -69,23 +70,6 @@ class TcpServer : NonCopyable
             ::signal(SIGPIPE, SIG_IGN);
             LOG_TRACE << "Ignore SIGPIPE";
         }
-    };
-
-    class KickoffEntry
-    {
-      public:
-        KickoffEntry(const std::weak_ptr<TcpConnection> &conn) : _conn(conn) {}
-        ~KickoffEntry()
-        {
-            auto conn = _conn.lock();
-            if (conn)
-            {
-                conn->forceClose();
-            }
-        }
-
-      private:
-        std::weak_ptr<TcpConnection> _conn;
     };
 
     IgnoreSigPipe initObj;

@@ -3,6 +3,8 @@
 #include <trantor/net/TcpConnection.h>
 #include <list>
 #include <unistd.h>
+#include <thread>
+
 namespace trantor
 {
 
@@ -17,6 +19,27 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     friend void trantor::removeConnection(EventLoop *loop, const TcpConnectionPtr &conn);
 
   public:
+    class KickoffEntry
+    {
+      public:
+        KickoffEntry(const std::weak_ptr<TcpConnection> &conn) : _conn(conn) {}
+        void reset()
+        {
+            _conn.reset();
+        }
+        ~KickoffEntry()
+        {
+            auto conn = _conn.lock();
+            if (conn)
+            {
+                conn->forceClose();
+            }
+        }
+
+      private:
+        std::weak_ptr<TcpConnection> _conn;
+    };
+
     TcpConnectionImpl(EventLoop *loop, int socketfd, const InetAddress &localAddr,
                       const InetAddress &peerAddr);
     virtual ~TcpConnectionImpl();
@@ -42,6 +65,16 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
         highWaterMarkLen_ = markLen;
     }
 
+    virtual void keepAlive() override
+    {
+        _keepAlive = true;
+        auto entry = _kickoffEntry.lock();
+        if (entry)
+        {
+            entry->reset();
+        }
+    }
+    virtual bool isKeepAlive() override { return _keepAlive; }
     virtual void setTcpNoDelay(bool on) override;
     virtual void shutdown() override;
     virtual void forceClose() override;
@@ -68,9 +101,17 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
   protected:
     any context_;
     /// Internal use only.
-    void setKickoffEntry(const std::weak_ptr<void> &entry) { _kickoffEntry = entry; }
-    std::weak_ptr<void> _kickoffEntry;
-    std::weak_ptr<void> kickoffEntry() { return _kickoffEntry; }
+    std::weak_ptr<KickoffEntry> _kickoffEntry;
+    std::once_flag _kickoffEntryFlag;
+    std::shared_ptr<KickoffEntry> kickoffEntry()
+    {
+        std::shared_ptr<KickoffEntry> entry;
+        std::call_once(_kickoffEntryFlag, [=, &entry]() {
+            entry = std::make_shared<KickoffEntry>(shared_from_this());
+            _kickoffEntry = entry;
+        });
+        return _kickoffEntry.lock();
+    }
     void sendFile(int sfd, size_t offset = 0, size_t length = 0);
     void setRecvMsgCallback(const RecvMessageCallback &cb) { recvMsgCallback_ = cb; }
     void setConnectionCallback(const ConnectionCallback &cb) { connectionCallback_ = cb; }
@@ -133,5 +174,6 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
 
     uint64_t _sendNum = 0;
     std::mutex _sendNumMutex;
+    bool _keepAlive = false;
 };
 } // namespace trantor

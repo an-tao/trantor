@@ -69,29 +69,19 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 
     if (_idleTimeout > 0)
     {
-        auto entryPtr = std::make_shared<KickoffEntry>(newPtr);
-        if (ioLoop->isInLoopThread())
-        {
-            _timeingWheelMap[ioLoop]->insertEntry(_idleTimeout, entryPtr);
-            newPtr->setKickoffEntry(entryPtr);
-        }
-        else
-        {
-            ioLoop->runInLoop([=]() {
-                _timeingWheelMap[ioLoop]->insertEntry(_idleTimeout, entryPtr);
-                newPtr->setKickoffEntry(entryPtr);
-            });
-        }
+        auto entryPtr = newPtr->kickoffEntry();
+        assert(_timeingWheelMap[ioLoop]);
+        _timeingWheelMap[ioLoop]->insertEntry(_idleTimeout, entryPtr);
     }
     newPtr->setRecvMsgCallback(
         [=](const TcpConnectionPtr &connPtr,
             MsgBuffer *msgBuffer) {
-            if (_idleTimeout > 0)
+            if (_idleTimeout > 0 && !connPtr->isKeepAlive())
             {
-                auto entryPtr = std::dynamic_pointer_cast<TcpConnectionImpl>(connPtr)->kickoffEntry().lock();
+                auto entryPtr = std::dynamic_pointer_cast<TcpConnectionImpl>(connPtr)->kickoffEntry();
                 if (entryPtr)
                 {
-                    _timeingWheelMap[ioLoop]->insertEntry(_idleTimeout, entryPtr);
+                    _timeingWheelMap[connPtr->getLoop()]->insertEntry(_idleTimeout, entryPtr);
                 }
             }
             recvMessageCallback_(connPtr, msgBuffer);
@@ -114,15 +104,20 @@ void TcpServer::start()
 {
     if (_idleTimeout > 0)
     {
-        _timeingWheelMap[loop_] = std::make_shared<TimingWheel>(loop_, _idleTimeout, 0.1);
+        _timeingWheelMap[loop_] = std::make_shared<TimingWheel>(loop_,
+                                                                _idleTimeout,
+                                                                1,
+                                                                _idleTimeout < 500 ? _idleTimeout + 1 : 100);
         auto loopNum = loopPoolPtr_->getLoopNum();
-        if (loopNum > 0)
+        while (loopNum > 0)
         {
+            LOG_DEBUG << "new Wheel loopNum=" << loopNum;
             auto poolLoop = loopPoolPtr_->getNextLoop();
-            _timeingWheelMap[poolLoop] = std::make_shared<TimingWheel>(poolLoop, _idleTimeout, 0.1);
+            _timeingWheelMap[poolLoop] = std::make_shared<TimingWheel>(poolLoop, _idleTimeout, 1);
             loopNum--;
         }
     }
+    LOG_DEBUG << "map size=" << _timeingWheelMap.size();
     loop_->runInLoop([=]() {
         acceptorPtr_->listen();
     });

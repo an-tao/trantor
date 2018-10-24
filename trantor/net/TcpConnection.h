@@ -8,6 +8,7 @@
 #include <trantor/net/callbacks.h>
 #include <memory>
 #include <functional>
+#include <string>
 
 namespace trantor
 {
@@ -45,5 +46,7 @@ class TcpConnection
     virtual const any &getContext() const = 0;
 
     virtual any *getMutableContext() = 0;
+    virtual void keepAlive() = 0;
+    virtual bool isKeepAlive() = 0;
 };
 } // namespace trantor

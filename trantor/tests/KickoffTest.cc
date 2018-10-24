@@ -23,9 +23,15 @@ int main()
         connectionPtr->send(buffer->peek(), buffer->readableBytes());
         buffer->retrieveAll();
     });
-    server.setConnectionCallback([](const TcpConnectionPtr &connPtr) {
+    int n=0;
+    server.setConnectionCallback([&n](const TcpConnectionPtr &connPtr) {
         if (connPtr->connected())
         {
+            n++;
+            if(n%2==0)
+            {
+                connPtr->keepAlive();
+            }
             LOG_DEBUG << "New connection";
         }
         else if (connPtr->disconnected())

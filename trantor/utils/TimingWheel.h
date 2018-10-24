@@ -123,14 +123,29 @@ class TimingWheel
 
     //If timeout>0,the value will be erased
     //within the 'timeout' seconds after the last access
-
     void insertEntry(size_t delay, EntryPtr entryPtr)
     {
-        //protected by bucketMutex;
         if (delay <= 0)
             return;
         if (!entryPtr)
             return;
+        if (_loop->isInLoopThread())
+        {
+            insertEntryInloop(delay, entryPtr);
+        }
+        else
+        {
+            _loop->runInLoop([=]() {
+                insertEntryInloop(delay, entryPtr);
+            });
+        }
+    }
+
+    void insertEntryInloop(size_t delay, EntryPtr entryPtr)
+    {
+        //protected by bucketMutex;
+        _loop->assertInLoopThread();
+
         delay = delay / _tickInterval + 1;
         size_t t = _ticksCounter;
         for (size_t i = 0; i < _wheelsNum; i++)
