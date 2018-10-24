@@ -46,6 +46,9 @@ class TcpConnection
     virtual const any &getContext() const = 0;
 
     virtual any *getMutableContext() = 0;
+
+    //Call this method to avoid being kicked off by TcpServer, refer to 
+    //the kickoffIdleConnections method in the TcpServer class. 
     virtual void keepAlive() = 0;
     virtual bool isKeepAlive() = 0;
 };

@@ -52,15 +52,27 @@ void TcpConnectionImpl::readCallback()
     {
         LOG_SYSERR << "read socket error";
     }
-
+    extendLife();
     if (n > 0 && recvMsgCallback_)
     {
         recvMsgCallback_(shared_from_this(), &readBuffer_);
     }
 }
+void TcpConnectionImpl::extendLife()
+{
+    if (_idleTimeout > 0)
+    {
+        auto entry = _kickoffEntry.lock();
+        if (entry)
+        {
+            _timingWheelPtr->insertEntry(_idleTimeout, entry);
+        }
+    }
+}
 void TcpConnectionImpl::writeCallback()
 {
     loop_->assertInLoopThread();
+    extendLife();
     if (ioChennelPtr_->isWriting())
     {
         auto writeBuffer_ = _writeBufferList.front();
@@ -258,6 +270,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         LOG_WARN << "Connection is not connected,give up sending";
         return;
     }
+    extendLife();
     size_t remainLen = length;
     ssize_t sendLen = 0;
     if (!ioChennelPtr_->isWriting() && _writeBufferList.size() == 0)

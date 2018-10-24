@@ -1,6 +1,7 @@
 #pragma once
 
 #include <trantor/net/TcpConnection.h>
+#include <trantor/utils/TimingWheel.h>
 #include <list>
 #include <unistd.h>
 #include <thread>
@@ -67,14 +68,14 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
 
     virtual void keepAlive() override
     {
-        _keepAlive = true;
+        _idleTimeout = 0;
         auto entry = _kickoffEntry.lock();
         if (entry)
         {
             entry->reset();
         }
     }
-    virtual bool isKeepAlive() override { return _keepAlive; }
+    virtual bool isKeepAlive() override { return _idleTimeout == 0; }
     virtual void setTcpNoDelay(bool on) override;
     virtual void shutdown() override;
     virtual void forceClose() override;
@@ -101,17 +102,23 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
   protected:
     any context_;
     /// Internal use only.
+
     std::weak_ptr<KickoffEntry> _kickoffEntry;
-    std::once_flag _kickoffEntryFlag;
-    std::shared_ptr<KickoffEntry> kickoffEntry()
+    std::shared_ptr<TimingWheel> _timingWheelPtr;
+    size_t _idleTimeout = 0;
+
+    void enableKickingOff(size_t timeout, const std::shared_ptr<TimingWheel> &timingWheel)
     {
-        std::shared_ptr<KickoffEntry> entry;
-        std::call_once(_kickoffEntryFlag, [=, &entry]() {
-            entry = std::make_shared<KickoffEntry>(shared_from_this());
-            _kickoffEntry = entry;
-        });
-        return _kickoffEntry.lock();
+        assert(timingWheel);
+        assert(timingWheel->getLoop() == loop_);
+        assert(timeout > 0);
+        auto entry = std::make_shared<KickoffEntry>(shared_from_this());
+        _kickoffEntry = entry;
+        _timingWheelPtr = timingWheel;
+        _idleTimeout = timeout;
+        _timingWheelPtr->insertEntry(timeout, entry);
     }
+    void extendLife();
     void sendFile(int sfd, size_t offset = 0, size_t length = 0);
     void setRecvMsgCallback(const RecvMessageCallback &cb) { recvMsgCallback_ = cb; }
     void setConnectionCallback(const ConnectionCallback &cb) { connectionCallback_ = cb; }
@@ -174,6 +181,5 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
 
     uint64_t _sendNum = 0;
     std::mutex _sendNumMutex;
-    bool _keepAlive = false;
 };
 } // namespace trantor

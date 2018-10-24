@@ -1,14 +1,14 @@
 /**
  *
- *  @file
- *  @author An Tao
- *  @section LICENSE
+ *  TimingWheel.h
+ *  An Tao
  *
+ *  Public header file in trantor lib.
+ * 
  *  Copyright 2018, An Tao.  All rights reserved.
- *  Use of this source code is governed by a MIT license
+ *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
  *
- *  @section DESCRIPTION
  *
  */
 
@@ -26,8 +26,8 @@
 #include <atomic>
 #include <assert.h>
 
-#define BUCKET_NUM_PER_WHEEL 100
-#define TICK_INTERVAL 1.0
+#define TIMING_BUCKET_NUM_PER_WHEEL 100
+#define TIMING_TICK_INTERVAL 1.0
 
 //Four wheels with 200 buckets per wheel means the cache map can work with
 //a timeout up to 200^4 seconds,about 50 years;
@@ -69,8 +69,8 @@ class TimingWheel
 
     TimingWheel(trantor::EventLoop *loop,
                 size_t maxTimeout,
-                float tickInterval = TICK_INTERVAL,
-                size_t bucketsNumPerWheel = BUCKET_NUM_PER_WHEEL)
+                float tickInterval = TIMING_TICK_INTERVAL,
+                size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL)
         : _loop(loop),
           _tickInterval(tickInterval),
           _bucketsNumPerWheel(bucketsNumPerWheel)
@@ -173,6 +173,8 @@ class TimingWheel
             t = t / _bucketsNumPerWheel;
         }
     }
+
+    EventLoop *getLoop() { return _loop; }
 
   private:
     std::vector<BucketQueue> _wheels;

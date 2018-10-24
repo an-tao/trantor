@@ -118,7 +118,7 @@ class Socket : NonCopyable
 
   protected:
     int sockFd_;
-    //token from muduo
+    //taken from muduo
     static void setNonBlockAndCloseOnExec(int sockfd)
     {
         // non-block

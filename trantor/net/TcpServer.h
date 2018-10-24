@@ -39,11 +39,13 @@ class TcpServer : NonCopyable
     const std::string ipPort() const;
     EventLoop *getLoop() const { return loop_; }
 
+    //An idle connection is a connection that has no read or write,
+    //kick off it after timeout ;
     void kickoffIdleConnections(size_t timeout)
     {
         _idleTimeout = timeout;
     }
-    void keepAliveConnection(const TcpConnectionPtr &conn);
+    
 #ifdef USE_OPENSSL
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 #endif
