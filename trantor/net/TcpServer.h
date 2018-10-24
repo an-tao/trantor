@@ -43,9 +43,12 @@ class TcpServer : NonCopyable
     //kick off it after timeout ;
     void kickoffIdleConnections(size_t timeout)
     {
-        _idleTimeout = timeout;
+        loop_->runInLoop([=]() {
+            assert(!_started);
+            _idleTimeout = timeout;
+        });
     }
-    
+
 #ifdef USE_OPENSSL
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 #endif
@@ -75,6 +78,9 @@ class TcpServer : NonCopyable
     };
 
     IgnoreSigPipe initObj;
+
+    bool _started = false;
+
 #ifdef USE_OPENSSL
     //OpenSSL SSL context Object;
     std::shared_ptr<SSL_CTX> _sslCtxPtr;

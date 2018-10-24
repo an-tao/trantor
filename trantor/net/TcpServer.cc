@@ -88,29 +88,33 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 }
 void TcpServer::start()
 {
-    if (_idleTimeout > 0)
-    {
-        _timeingWheelMap[loop_] = std::make_shared<TimingWheel>(loop_,
-                                                                _idleTimeout,
-                                                                1,
-                                                                _idleTimeout < 500 ? _idleTimeout + 1 : 100);
-        if (loopPoolPtr_)
+    loop_->runInLoop([=]() {
+        assert(!_started);
+        _started = true;
+        if (_idleTimeout > 0)
         {
-            auto loopNum = loopPoolPtr_->getLoopNum();
-            while (loopNum > 0)
+            _timeingWheelMap[loop_] =
+                std::make_shared<TimingWheel>(loop_,
+                                              _idleTimeout,
+                                              1,
+                                              _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+            if (loopPoolPtr_)
             {
-                LOG_TRACE << "new Wheel loopNum=" << loopNum;
-                auto poolLoop = loopPoolPtr_->getNextLoop();
-                _timeingWheelMap[poolLoop] = std::make_shared<TimingWheel>(poolLoop,
-                                                                           _idleTimeout,
-                                                                           1,
-                                                                           _idleTimeout < 500 ? _idleTimeout + 1 : 100);
-                loopNum--;
+                auto loopNum = loopPoolPtr_->getLoopNum();
+                while (loopNum > 0)
+                {
+                    LOG_TRACE << "new Wheel loopNum=" << loopNum;
+                    auto poolLoop = loopPoolPtr_->getNextLoop();
+                    _timeingWheelMap[poolLoop] =
+                        std::make_shared<TimingWheel>(poolLoop,
+                                                      _idleTimeout,
+                                                      1,
+                                                      _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+                    loopNum--;
+                }
             }
         }
-    }
-    LOG_TRACE << "map size=" << _timeingWheelMap.size();
-    loop_->runInLoop([=]() {
+        LOG_TRACE << "map size=" << _timeingWheelMap.size();
         acceptorPtr_->listen();
     });
 }
@@ -118,6 +122,7 @@ void TcpServer::setIoLoopNum(size_t num)
 {
     assert(num >= 0);
     loop_->runInLoop([=]() {
+        assert(!_started);
         loopPoolPtr_ = std::unique_ptr<EventLoopThreadPool>(new EventLoopThreadPool(num));
         loopPoolPtr_->start();
     });
