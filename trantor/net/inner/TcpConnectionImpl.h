@@ -68,6 +68,9 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
   protected:
     any context_;
     /// Internal use only.
+    void setKickoffEntry(const std::weak_ptr<void> &entry) { _kickoffEntry = entry; }
+    std::weak_ptr<void> _kickoffEntry;
+    std::weak_ptr<void> kickoffEntry() { return _kickoffEntry; }
     void sendFile(int sfd, size_t offset = 0, size_t length = 0);
     void setRecvMsgCallback(const RecvMessageCallback &cb) { recvMsgCallback_ = cb; }
     void setConnectionCallback(const ConnectionCallback &cb) { connectionCallback_ = cb; }

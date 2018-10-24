@@ -6,6 +6,7 @@
 #include <trantor/net/EventLoopThreadPool.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
+#include <trantor/utils/TimingWheel.h>
 #include <string>
 #include <memory>
 #include <set>
@@ -38,6 +39,10 @@ class TcpServer : NonCopyable
     const std::string ipPort() const;
     EventLoop *getLoop() const { return loop_; }
 
+    void kickoffIdleConnections(size_t timeout)
+    {
+        _idleTimeout = timeout;
+    }
 #ifdef USE_OPENSSL
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 #endif
@@ -52,6 +57,8 @@ class TcpServer : NonCopyable
     ConnectionCallback connectionCallback_;
     WriteCompleteCallback writeCompleteCallback_;
 
+    size_t _idleTimeout = 0;
+    std::map<EventLoop *, std::shared_ptr<TimingWheel>> _timeingWheelMap;
     void connectionClosed(const TcpConnectionPtr &connectionPtr);
     std::unique_ptr<EventLoopThreadPool> loopPoolPtr_;
     class IgnoreSigPipe
@@ -62,6 +69,23 @@ class TcpServer : NonCopyable
             ::signal(SIGPIPE, SIG_IGN);
             LOG_TRACE << "Ignore SIGPIPE";
         }
+    };
+
+    class KickoffEntry
+    {
+      public:
+        KickoffEntry(const std::weak_ptr<TcpConnection> &conn) : _conn(conn) {}
+        ~KickoffEntry()
+        {
+            auto conn = _conn.lock();
+            if (conn)
+            {
+                conn->forceClose();
+            }
+        }
+
+      private:
+        std::weak_ptr<TcpConnection> _conn;
     };
 
     IgnoreSigPipe initObj;
