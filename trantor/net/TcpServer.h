@@ -6,6 +6,7 @@
 #include <trantor/net/EventLoopThreadPool.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
+#include <trantor/utils/TimingWheel.h>
 #include <string>
 #include <memory>
 #include <set>
@@ -38,6 +39,13 @@ class TcpServer : NonCopyable
     const std::string ipPort() const;
     EventLoop *getLoop() const { return loop_; }
 
+    //An idle connection is a connection that has no read or write,
+    //kick off it after timeout ;
+    void kickoffIdleConnections(size_t timeout)
+    {
+        _idleTimeout = timeout;
+    }
+    
 #ifdef USE_OPENSSL
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 #endif
@@ -52,6 +60,8 @@ class TcpServer : NonCopyable
     ConnectionCallback connectionCallback_;
     WriteCompleteCallback writeCompleteCallback_;
 
+    size_t _idleTimeout = 0;
+    std::map<EventLoop *, std::shared_ptr<TimingWheel>> _timeingWheelMap;
     void connectionClosed(const TcpConnectionPtr &connectionPtr);
     std::unique_ptr<EventLoopThreadPool> loopPoolPtr_;
     class IgnoreSigPipe

@@ -9,6 +9,7 @@
 #endif
 using namespace trantor;
 using namespace std::placeholders;
+
 TcpServer::TcpServer(EventLoop *loop,
                      const InetAddress &address,
                      const std::string &name)
@@ -66,7 +67,13 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     auto newPtr = std::make_shared<TcpConnectionImpl>(ioLoop, sockfd, InetAddress(Socket::getLocalAddr(sockfd)), peer);
 #endif
 
+    if (_idleTimeout > 0)
+    {
+        assert(_timeingWheelMap[ioLoop]);
+        newPtr->enableKickingOff(_idleTimeout, _timeingWheelMap[ioLoop]);
+    }
     newPtr->setRecvMsgCallback(recvMessageCallback_);
+
     newPtr->setConnectionCallback([=](const TcpConnectionPtr &connectionPtr) {
         if (connectionCallback_)
             connectionCallback_(connectionPtr);
@@ -81,6 +88,28 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 }
 void TcpServer::start()
 {
+    if (_idleTimeout > 0)
+    {
+        _timeingWheelMap[loop_] = std::make_shared<TimingWheel>(loop_,
+                                                                _idleTimeout,
+                                                                1,
+                                                                _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+        if (loopPoolPtr_)
+        {
+            auto loopNum = loopPoolPtr_->getLoopNum();
+            while (loopNum > 0)
+            {
+                LOG_TRACE << "new Wheel loopNum=" << loopNum;
+                auto poolLoop = loopPoolPtr_->getNextLoop();
+                _timeingWheelMap[poolLoop] = std::make_shared<TimingWheel>(poolLoop,
+                                                                           _idleTimeout,
+                                                                           1,
+                                                                           _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+                loopNum--;
+            }
+        }
+    }
+    LOG_TRACE << "map size=" << _timeingWheelMap.size();
     loop_->runInLoop([=]() {
         acceptorPtr_->listen();
     });

@@ -1,8 +1,11 @@
 #pragma once
 
 #include <trantor/net/TcpConnection.h>
+#include <trantor/utils/TimingWheel.h>
 #include <list>
 #include <unistd.h>
+#include <thread>
+
 namespace trantor
 {
 
@@ -17,6 +20,27 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     friend void trantor::removeConnection(EventLoop *loop, const TcpConnectionPtr &conn);
 
   public:
+    class KickoffEntry
+    {
+      public:
+        KickoffEntry(const std::weak_ptr<TcpConnection> &conn) : _conn(conn) {}
+        void reset()
+        {
+            _conn.reset();
+        }
+        ~KickoffEntry()
+        {
+            auto conn = _conn.lock();
+            if (conn)
+            {
+                conn->forceClose();
+            }
+        }
+
+      private:
+        std::weak_ptr<TcpConnection> _conn;
+    };
+
     TcpConnectionImpl(EventLoop *loop, int socketfd, const InetAddress &localAddr,
                       const InetAddress &peerAddr);
     virtual ~TcpConnectionImpl();
@@ -42,6 +66,16 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
         highWaterMarkLen_ = markLen;
     }
 
+    virtual void keepAlive() override
+    {
+        _idleTimeout = 0;
+        auto entry = _kickoffEntry.lock();
+        if (entry)
+        {
+            entry->reset();
+        }
+    }
+    virtual bool isKeepAlive() override { return _idleTimeout == 0; }
     virtual void setTcpNoDelay(bool on) override;
     virtual void shutdown() override;
     virtual void forceClose() override;
@@ -68,6 +102,23 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
   protected:
     any context_;
     /// Internal use only.
+
+    std::weak_ptr<KickoffEntry> _kickoffEntry;
+    std::shared_ptr<TimingWheel> _timingWheelPtr;
+    size_t _idleTimeout = 0;
+
+    void enableKickingOff(size_t timeout, const std::shared_ptr<TimingWheel> &timingWheel)
+    {
+        assert(timingWheel);
+        assert(timingWheel->getLoop() == loop_);
+        assert(timeout > 0);
+        auto entry = std::make_shared<KickoffEntry>(shared_from_this());
+        _kickoffEntry = entry;
+        _timingWheelPtr = timingWheel;
+        _idleTimeout = timeout;
+        _timingWheelPtr->insertEntry(timeout, entry);
+    }
+    void extendLife();
     void sendFile(int sfd, size_t offset = 0, size_t length = 0);
     void setRecvMsgCallback(const RecvMessageCallback &cb) { recvMsgCallback_ = cb; }
     void setConnectionCallback(const ConnectionCallback &cb) { connectionCallback_ = cb; }

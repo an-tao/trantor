@@ -217,11 +217,11 @@ TimerId EventLoop::runAfter(double delay, Func &&cb)
 }
 TimerId EventLoop::runEvery(double interval, const Func &cb)
 {
-    return timerQueue_->addTimer(cb, Date::date(), interval);
+    return timerQueue_->addTimer(cb, Date::date().after(interval), interval);
 }
 TimerId EventLoop::runEvery(double interval, Func &&cb)
 {
-    return timerQueue_->addTimer(std::move(cb), Date::date(), interval);
+    return timerQueue_->addTimer(std::move(cb), Date::date().after(interval), interval);
 }
 void EventLoop::invalidateTimer(TimerId id)
 {

@@ -7,6 +7,9 @@
 // Author: Shuo Chen (chenshuo at chenshuo dot com)
 //
 
+// Taken from muduo and modified by an tao
+
+
 #include <trantor/net/TcpClient.h>
 
 #include <trantor/utils/Logger.h>
