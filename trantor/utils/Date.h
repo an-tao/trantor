@@ -42,6 +42,10 @@ class Date
     struct tm tmStruct() const;
     std::string toFormattedString(bool showMicroseconds) const;                             //UTC
     std::string toCustomedFormattedString(const std::string &fmtStr) const;                 //UTC
+
+    std::string toFormattedStringLocal(bool showMicroseconds) const;                             //Local time zone
+    std::string toCustomedFormattedStringLocal(const std::string &fmtStr) const;                 //Local time zone
+
     void toCustomedFormattedString(const std::string &fmtStr, char *str, size_t len) const; //UTC
     bool isSameSecond(const Date &date) const
     {
@@ -54,8 +58,9 @@ class Date
         std::swap(microSecondsSinceEpoch_, that.microSecondsSinceEpoch_);
     }
 
-  private:
     explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
+
+  private:
     int64_t microSecondsSinceEpoch_ = 0;
 };
 }; // namespace trantor
