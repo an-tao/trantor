@@ -40,11 +40,11 @@ class Date
     }
     int64_t microSecondsSinceEpoch() const { return microSecondsSinceEpoch_; }
     struct tm tmStruct() const;
-    std::string toFormattedString(bool showMicroseconds) const;                             //UTC
-    std::string toCustomedFormattedString(const std::string &fmtStr) const;                 //UTC
+    std::string toFormattedString(bool showMicroseconds) const;                                            //UTC
+    std::string toCustomedFormattedString(const std::string &fmtStr, bool showMicroseconds = false) const; //UTC
 
-    std::string toFormattedStringLocal(bool showMicroseconds) const;                             //Local time zone
-    std::string toCustomedFormattedStringLocal(const std::string &fmtStr) const;                 //Local time zone
+    std::string toFormattedStringLocal(bool showMicroseconds) const;                                            //Local time zone
+    std::string toCustomedFormattedStringLocal(const std::string &fmtStr, bool showMicroseconds = false) const; //Local time zone
 
     void toCustomedFormattedString(const std::string &fmtStr, char *str, size_t len) const; //UTC
     bool isSameSecond(const Date &date) const

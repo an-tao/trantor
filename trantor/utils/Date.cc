@@ -60,14 +60,19 @@ std::string Date::toFormattedString(bool showMicroseconds) const
     }
     return buf;
 }
-std::string Date::toCustomedFormattedString(const std::string &fmtStr) const
+std::string Date::toCustomedFormattedString(const std::string &fmtStr, bool showMicroseconds) const
 {
     char buf[256] = {0};
     time_t seconds = static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
     gmtime_r(&seconds, &tm_time);
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
-    return std::string(buf);
+    if(!showMicroseconds)
+        return std::string(buf);
+    char decimals[10] = {0};
+    int microseconds = static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
+    sprintf(decimals, ".%06d", microseconds);
+    return std::string(buf) + decimals;
 }
 void Date::toCustomedFormattedString(const std::string &fmtStr, char *str, size_t len) const
 {
@@ -101,13 +106,18 @@ std::string Date::toFormattedStringLocal(bool showMicroseconds) const
     }
     return buf;
 }
-std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr) const
+std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr, bool showMicroseconds) const
 {
     char buf[256] = {0};
     time_t seconds = static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
     localtime_r(&seconds, &tm_time);
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
-    return std::string(buf);
+    if (!showMicroseconds)
+        return std::string(buf);
+    char decimals[10] = {0};
+    int microseconds = static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
+    sprintf(decimals, ".%06d", microseconds);
+    return std::string(buf) + decimals;
 }
 }; // namespace trantor
