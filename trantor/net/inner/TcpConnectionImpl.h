@@ -160,7 +160,7 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     //MsgBuffer writeBuffer_;
     std::list<BufferNodePtr> _writeBufferList;
     virtual void readCallback();
-    void writeCallback();
+    virtual void writeCallback();
     InetAddress localAddr_, peerAddr_;
     ConnState state_;
     //callbacks

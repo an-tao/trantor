@@ -79,6 +79,7 @@ void TcpConnectionImpl::writeCallback()
     extendLife();
     if (ioChennelPtr_->isWriting())
     {
+        assert(_writeBufferList.size()>0);
         auto writeBuffer_ = _writeBufferList.front();
         if (writeBuffer_->_sendFd < 0)
         {

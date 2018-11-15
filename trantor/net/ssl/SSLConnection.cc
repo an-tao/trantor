@@ -19,6 +19,21 @@ SSLConnection::SSLConnection(EventLoop *loop, int socketfd, const InetAddress &l
     _isSSLConn = true;
 }
 
+void SSLConnection::writeCallback()
+{
+    LOG_TRACE << "write Callback";
+    loop_->assertInLoopThread();
+    if (_status == SSLStatus::Handshaking)
+    {
+        doHandshaking();
+        return;
+    }
+    else if (_status == SSLStatus::Connected)
+    {
+        TcpConnectionImpl::writeCallback();
+    }
+}
+
 void SSLConnection::readCallback()
 {
     LOG_TRACE << "read Callback";
