@@ -78,6 +78,8 @@ class EventLoop : NonCopyable
     //io_context_t getAioContext() {return ctx_;};
     void invalidateTimer(TimerId id);
 
+    bool isRunning() { return looping_ && (!quit_); }
+
   private:
     void abortNotInLoopThread();
     bool looping_;
