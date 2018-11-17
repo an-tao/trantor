@@ -67,7 +67,7 @@ std::string Date::toCustomedFormattedString(const std::string &fmtStr, bool show
     struct tm tm_time;
     gmtime_r(&seconds, &tm_time);
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
-    if(!showMicroseconds)
+    if (!showMicroseconds)
         return std::string(buf);
     char decimals[10] = {0};
     int microseconds = static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
@@ -119,5 +119,24 @@ std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr, bool
     int microseconds = static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
     sprintf(decimals, ".%06d", microseconds);
     return std::string(buf) + decimals;
+}
+Date::Date(unsigned int year,
+           unsigned int month,
+           unsigned int day,
+           unsigned int hour,
+           unsigned int minute,
+           unsigned int second,
+           unsigned int microSecond)
+{
+    struct tm tm;
+    time_t epoch;
+    tm.tm_year = year - 1900;
+    tm.tm_mon = month - 1;
+    tm.tm_mday = day;
+    tm.tm_hour = hour;
+    tm.tm_min = minute;
+    tm.tm_sec = second;
+    epoch = mktime(&tm);
+    microSecondsSinceEpoch_ = epoch * MICRO_SECONDS_PRE_SEC + microSecond;
 }
 }; // namespace trantor

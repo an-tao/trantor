@@ -59,6 +59,13 @@ class Date
     }
 
     explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
+    Date(unsigned int year,
+         unsigned int month,
+         unsigned int day,
+         unsigned int hour = 0,
+         unsigned int minute = 0,
+         unsigned int second = 0,
+         unsigned int microSecond = 0);
 
   private:
     int64_t microSecondsSinceEpoch_ = 0;
