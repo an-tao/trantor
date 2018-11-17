@@ -129,6 +129,7 @@ Date::Date(unsigned int year,
            unsigned int microSecond)
 {
     struct tm tm;
+    memset(&tm, 0, sizeof(tm));
     time_t epoch;
     tm.tm_year = year - 1900;
     tm.tm_mon = month - 1;
