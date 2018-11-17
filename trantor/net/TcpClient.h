@@ -1,5 +1,4 @@
-#pragma once
-//token from muduo
+// taken from muduo
 // Copyright 2010, Shuo Chen.  All rights reserved.
 // http://code.google.com/p/muduo/
 //
@@ -16,6 +15,8 @@
 // that can be found in the License file.
 
 // Author: Tao An
+
+#pragma once
 #include <trantor/utils/config.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>

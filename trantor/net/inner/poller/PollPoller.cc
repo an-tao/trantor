@@ -6,7 +6,7 @@
 
 // Author: Shuo Chen (chenshuo at chenshuo dot com)
 
-//token from muduo and modified
+// taken from muduo and modified
 
 #include "PollPoller.h"
 

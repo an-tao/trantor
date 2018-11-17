@@ -40,6 +40,7 @@ class SSLConnection : public TcpConnectionImpl
 
   protected:
     virtual void readCallback() override;
+    virtual void writeCallback() override;
     virtual void connectEstablished() override;
     virtual ssize_t writeInLoop(const char *buffer, size_t length) override;
 };

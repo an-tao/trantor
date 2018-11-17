@@ -6,7 +6,7 @@
 
 // Author: Shuo Chen (chenshuo at chenshuo dot com)
 
-//Token from Muduo and modified
+// Taken from Muduo and modified
 // Copyright 2016, Tao An.  All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license
@@ -77,6 +77,8 @@ class EventLoop : NonCopyable
     //int getAioEventFd();
     //io_context_t getAioContext() {return ctx_;};
     void invalidateTimer(TimerId id);
+
+    bool isRunning() { return looping_ && (!quit_); }
 
   private:
     void abortNotInLoopThread();
