@@ -2,6 +2,8 @@
 #include <sys/time.h>
 #include <cstdlib>
 #include <iostream>
+#include <string.h>
+
 namespace trantor
 {
 const Date Date::date()
