@@ -1,0 +1,42 @@
+os:
+  - linux
+  - osx
+sudo: false
+dist: trusty
+
+branches:
+  except:
+  - /.*appveyor.*/
+
+git:
+  quiet: true
+
+language: c++
+compiler:
+  - gcc
+  - clang
+
+before_install:
+
+addons:
+  apt:
+    sources:
+    - xenial
+    - sourceline: 'deb http://archive.ubuntu.com/ubuntu xenial main'
+    packages:
+    - openssl
+    - libssl-dev
+    - build-essential
+    - cmake
+  homebrew:
+    packages:
+    - openssl
+    - cmake
+    - libtool
+
+
+script:
+  -  ./build.sh
+
+after_script:
+
