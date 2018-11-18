@@ -136,9 +136,13 @@ TimerQueue::TimerQueue(EventLoop *loop)
 TimerQueue::~TimerQueue()
 {
 #ifdef __linux__
-    _timerfdChannelPtr->disableAll();
-    _timerfdChannelPtr->remove();
-    ::close(_timerfd);
+    auto chlPtr = _timerfdChannelPtr;
+    auto fd = _timerfd;
+    _loop->runInLoop([chlPtr, fd]() {
+        chlPtr->disableAll();
+        chlPtr->remove();
+        ::close(fd);
+    });
 #endif
 }
 

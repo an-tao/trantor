@@ -39,7 +39,7 @@ class TimerQueue : NonCopyable
     EventLoop *_loop;
 #ifdef __linux__
     const int _timerfd;
-    std::unique_ptr<Channel> _timerfdChannelPtr;
+    std::shared_ptr<Channel> _timerfdChannelPtr;
     void handleRead();
 #endif
     std::priority_queue<TimerPtr, std::vector<TimerPtr>, comp> _timers;
