@@ -1,22 +1,13 @@
 os:
   - linux
   - osx
-sudo: false
+sudo: required
 dist: trusty
 
-branches:
-  except:
-  - /.*appveyor.*/
-
-git:
-  quiet: true
-
-language: c++
+language: cpp
 compiler:
   - gcc
   - clang
-
-before_install:
 
 addons:
   apt:
@@ -34,9 +25,7 @@ addons:
     - cmake
     - libtool
 
-
 script:
-  -  ./build.sh
+  - ./build.sh
 
-after_script:
 
