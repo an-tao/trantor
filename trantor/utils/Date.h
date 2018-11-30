@@ -14,6 +14,7 @@ class Date
     ~Date(){};
     const Date after(double second) const;
     static const Date date();
+    static const Date now() { return Date::date(); }
     bool operator==(const Date &date) const
     {
         return microSecondsSinceEpoch_ == date.microSecondsSinceEpoch_;
