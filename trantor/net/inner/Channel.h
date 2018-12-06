@@ -16,85 +16,94 @@ class Channel : NonCopyable
 	void handleEvent();
 	void setReadCallback(const EventCallback &cb)
 	{
-		readCallback_ = cb;
+		_readCallback = cb;
 	};
 	void setWriteCallback(const EventCallback &cb)
 	{
-		writeCallback_ = cb;
+		_writeCallback = cb;
 	};
 	void setCloseCallback(const EventCallback &cb)
 	{
-		closeCallback_ = cb;
+		_closeCallback = cb;
 	}
 	void setErrorCallback(const EventCallback &cb)
 	{
-		errorCallback_ = cb;
+		_errorCallback = cb;
+	}
+	void setEventCallback(const EventCallback &cb)
+	{
+		_eventCallback = cb;
 	}
 
 	void setReadCallback(EventCallback &&cb)
 	{
-		readCallback_ = std::move(cb);
+		_readCallback = std::move(cb);
 	}
 	void setWriteCallback(EventCallback &&cb)
 	{
-		writeCallback_ = std::move(cb);
+		_writeCallback = std::move(cb);
 	}
 	void setCloseCallback(EventCallback &&cb)
 	{
-		closeCallback_ = std::move(cb);
+		_closeCallback = std::move(cb);
 	}
 	void setErrorCallback(EventCallback &&cb)
 	{
-		errorCallback_ = std::move(cb);
+		_errorCallback = std::move(cb);
+	}
+	void setEventCallback(EventCallback &&cb)
+	{
+		_eventCallback = std::move(cb);
 	}
 
-	int fd() const { return fd_; };
-	int events() const { return events_; };
+	int fd() const { return _fd; }
+	int events() const { return _events; }
+	int revents() const { return _revents; }
 	int setRevents(int revt)
 	{
 		//LOG_TRACE<<"revents="<<revt;
-		revents_ = revt;
+		_revents = revt;
 		return revt;
 	};
-	bool isNoneEvent() const { return events_ == kNoneEvent; };
-	int index() { return index_; };
-	void setIndex(int index) { index_ = index; };
+	bool isNoneEvent() const { return _events == kNoneEvent; };
+	int index() { return _index; };
+	void setIndex(int index) { _index = index; };
 	void disableAll()
 	{
-		events_ = kNoneEvent;
+		_events = kNoneEvent;
 		update();
 	}
 	void remove();
 	void tie(const std::shared_ptr<void> &obj)
 	{
-		tie_ = obj;
-		tied_ = true;
+		_tie = obj;
+		_tied = true;
 	}
-	EventLoop *ownerLoop() { return loop_; };
+	EventLoop *ownerLoop() { return _loop; };
 
 	void enableReading()
 	{
-		events_ |= kReadEvent;
+		_events |= kReadEvent;
 		update();
 	}
 	void disableReading()
 	{
-		events_ &= ~kReadEvent;
+		_events &= ~kReadEvent;
 		update();
 	}
 	void enableWriting()
 	{
-		events_ |= kWriteEvent;
+		_events |= kWriteEvent;
 		update();
 	}
 	void disableWriting()
 	{
-		events_ &= ~kWriteEvent;
+		_events &= ~kWriteEvent;
 		update();
 	}
 
-	bool isWriting() const { return events_ & kWriteEvent; }
-	bool isReading() const { return events_ & kReadEvent; }
+	bool isWriting() const { return _events & kWriteEvent; }
+	bool isReading() const { return _events & kReadEvent; }
 
   private:
 	void update();
@@ -102,17 +111,18 @@ class Channel : NonCopyable
 	static const int kReadEvent;
 	static const int kWriteEvent;
 	void handleEventSafely();
-	EventLoop *loop_;
-	const int fd_;
-	int events_;
-	int revents_;
-	int index_;
-	bool addedToLoop_ = false;
-	EventCallback readCallback_;
-	EventCallback writeCallback_;
-	EventCallback errorCallback_;
-	EventCallback closeCallback_;
-	std::weak_ptr<void> tie_;
-	bool tied_;
+	EventLoop *_loop;
+	const int _fd;
+	int _events;
+	int _revents;
+	int _index;
+	bool _addedToLoop = false;
+	EventCallback _readCallback;
+	EventCallback _writeCallback;
+	EventCallback _errorCallback;
+	EventCallback _closeCallback;
+	EventCallback _eventCallback;
+	std::weak_ptr<void> _tie;
+	bool _tied;
 };
 }; // namespace trantor

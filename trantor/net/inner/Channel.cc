@@ -8,31 +8,31 @@ const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = POLLIN | POLLPRI;
 const int Channel::kWriteEvent = POLLOUT;
 Channel::Channel(EventLoop *loop, int fd)
-	: loop_(loop),
-	  fd_(fd),
-	  events_(0),
-	  revents_(0),
-	  index_(-1),
-	  tied_(false)
+	: _loop(loop),
+	  _fd(fd),
+	  _events(0),
+	  _revents(0),
+	  _index(-1),
+	  _tied(false)
 {
 }
 void Channel::remove()
 {
-	assert(events_ == kNoneEvent);
-	addedToLoop_ = false;
-	loop_->removeChannel(this);
+	assert(_events == kNoneEvent);
+	_addedToLoop = false;
+	_loop->removeChannel(this);
 }
 
 void Channel::update()
 {
-	loop_->updateChannel(this);
+	_loop->updateChannel(this);
 }
 void Channel::handleEvent()
 {
-	//LOG_TRACE<<"revents_="<<revents_;
-	if (tied_)
+	//LOG_TRACE<<"_revents="<<_revents;
+	if (_tied)
 	{
-		std::shared_ptr<void> guard = tie_.lock();
+		std::shared_ptr<void> guard = _tie.lock();
 		if (guard)
 		{
 			handleEventSafely();
@@ -45,37 +45,39 @@ void Channel::handleEvent()
 }
 void Channel::handleEventSafely()
 {
-	//LOG_TRACE<<"handle event revents_="<<revents_;
-	if (revents_ & POLLNVAL)
+	//LOG_TRACE<<"handle event _revents="<<_revents;
+	if(_eventCallback)
+		_eventCallback();
+	if (_revents & POLLNVAL)
 	{
 	}
-	if ((revents_ & POLLHUP) && !(revents_ & POLLIN))
+	if ((_revents & POLLHUP) && !(_revents & POLLIN))
 	{
 		//LOG_TRACE<<"handle close";
-		if (closeCallback_)
-			closeCallback_();
+		if (_closeCallback)
+			_closeCallback();
 	}
-	if (revents_ & (POLLNVAL | POLLERR))
+	if (_revents & (POLLNVAL | POLLERR))
 	{
 		//LOG_TRACE<<"handle error";
-		if (errorCallback_)
-			errorCallback_();
+		if (_errorCallback)
+			_errorCallback();
 	}
 #ifdef __linux__
-	if (revents_ & (POLLIN | POLLPRI | POLLRDHUP))
+	if (_revents & (POLLIN | POLLPRI | POLLRDHUP))
 #else
-	if (revents_ & (POLLIN | POLLPRI))
+	if (_revents & (POLLIN | POLLPRI))
 #endif
 	{
 		//LOG_TRACE<<"handle read";
-		if (readCallback_)
-			readCallback_();
+		if (_readCallback)
+			_readCallback();
 	}
-	if (revents_ & POLLOUT)
+	if (_revents & POLLOUT)
 	{
 		//LOG_TRACE<<"handle write";
-		if (writeCallback_)
-			writeCallback_();
+		if (_writeCallback)
+			_writeCallback();
 	}
 }
 } // namespace trantor

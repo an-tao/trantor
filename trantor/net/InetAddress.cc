@@ -174,8 +174,20 @@ bool InetAddress::resolve(const std::string &hostname, InetAddress *out, size_t 
     int ret = gethostbyname_r(hostname.c_str(), &hent, t_resolveBuffer, sizeof t_resolveBuffer, &he, &herrno);
     if (ret == 0 && he != NULL)
 #else
-    ///FIXME multi-threads safety
-    auto he = gethostbyname(hostname.c_str());
+    /// Multi-threads safety
+    static std::mutex _mutex;
+    struct hostent *he = NULL;
+    struct hostent hent;
+    {
+        std::lock_guard<std::mutex> guard(_mutex);
+        auto result = gethostbyname(hostname.c_str());
+        if (result != NULL)
+        {
+            memcpy(&hent, result, sizeof(hent));
+            he = &hent;
+        }
+    }
+
     if (he != NULL)
 #endif
     {
