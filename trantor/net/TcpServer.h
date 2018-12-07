@@ -1,3 +1,16 @@
+/**
+ *
+ *  TcpServer.h
+ *  An Tao
+ *
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  https://github.com/an-tao/trantor
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *  Trantor
+ *
+ */
 #pragma once
 #include <trantor/utils/config.h>
 #include <trantor/net/callbacks.h>

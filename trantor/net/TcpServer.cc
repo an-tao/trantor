@@ -1,3 +1,16 @@
+/**
+ *
+ *  TcpServer.cc
+ *  An Tao
+ *
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  https://github.com/an-tao/trantor
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *  Trantor
+ *
+ */
 #include <trantor/net/TcpServer.h>
 #include "Acceptor.h"
 #include "inner/TcpConnectionImpl.h"
@@ -93,23 +106,21 @@ void TcpServer::start()
         _started = true;
         if (_idleTimeout > 0)
         {
-            _timeingWheelMap[loop_] =
-                std::make_shared<TimingWheel>(loop_,
-                                              _idleTimeout,
-                                              1,
-                                              _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+            _timeingWheelMap[loop_] = std::make_shared<TimingWheel>(loop_,
+                                                                    _idleTimeout,
+                                                                    1,
+                                                                    _idleTimeout < 500 ? _idleTimeout + 1 : 100);
             if (loopPoolPtr_)
             {
                 auto loopNum = loopPoolPtr_->getLoopNum();
                 while (loopNum > 0)
                 {
-                    LOG_TRACE << "new Wheel loopNum=" << loopNum;
+                    //LOG_TRACE << "new Wheel loopNum=" << loopNum;
                     auto poolLoop = loopPoolPtr_->getNextLoop();
-                    _timeingWheelMap[poolLoop] =
-                        std::make_shared<TimingWheel>(poolLoop,
-                                                      _idleTimeout,
-                                                      1,
-                                                      _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+                    _timeingWheelMap[poolLoop] = std::make_shared<TimingWheel>(poolLoop,
+                                                                               _idleTimeout,
+                                                                               1,
+                                                                               _idleTimeout < 500 ? _idleTimeout + 1 : 100);
                     loopNum--;
                 }
             }
