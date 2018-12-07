@@ -8,6 +8,7 @@
 
 // Taken from Muduo and modified
 // Copyright 2016, Tao An.  All rights reserved.
+// https://github.com/an-tao/trantor
 //
 // Use of this source code is governed by a BSD-style license
 // that can be found in the License file.
