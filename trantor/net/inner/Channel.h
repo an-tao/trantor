@@ -105,11 +105,12 @@ class Channel : NonCopyable
 	bool isWriting() const { return _events & kWriteEvent; }
 	bool isReading() const { return _events & kReadEvent; }
 
-  private:
-	void update();
 	static const int kNoneEvent;
 	static const int kReadEvent;
 	static const int kWriteEvent;
+
+  private:
+	void update();
 	void handleEventSafely();
 	EventLoop *_loop;
 	const int _fd;
