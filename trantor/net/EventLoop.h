@@ -49,9 +49,10 @@ class EventLoop : NonCopyable
 #ifdef __linux__
     void resetTimerQueue();
 #endif
+    void resetAfterFork();
     bool isInLoopThread() const
     {
-        return threadId_ == std::this_thread::get_id();
+        return _threadId == std::this_thread::get_id();
     };
     static EventLoop *getEventLoopOfCurrentThread();
     void updateChannel(Channel *chl);
@@ -84,31 +85,31 @@ class EventLoop : NonCopyable
     //io_context_t getAioContext() {return ctx_;};
     void invalidateTimer(TimerId id);
 
-    bool isRunning() { return looping_ && (!quit_); }
+    bool isRunning() { return _looping && (!_quit); }
 
   private:
     void abortNotInLoopThread();
-    bool looping_;
-    const std::thread::id threadId_;
-    bool quit_;
-    std::unique_ptr<Poller> poller_;
+    bool _looping;
+    const std::thread::id _threadId;
+    bool _quit;
+    std::unique_ptr<Poller> _poller;
 
-    ChannelList activeChannels_;
-    Channel *currentActiveChannel_;
+    ChannelList _activeChannels;
+    Channel *_currentActiveChannel;
 
-    bool eventHandling_;
+    bool _eventHandling;
 
-    std::mutex funcsMutex_;
+    std::mutex _funcsMutex;
 
-    std::vector<Func> funcs_;
-    std::unique_ptr<TimerQueue> timerQueue_;
-    bool callingFuncs_ = false;
+    std::vector<Func> _funcs;
+    std::unique_ptr<TimerQueue> _timerQueue;
+    bool _callingFuncs = false;
 #ifdef __linux__
-    int wakeupFd_;
+    int _wakeupFd;
 #else
-    int wakeupFd_[2];
+    int _wakeupFd[2];
 #endif
-    std::unique_ptr<Channel> wakeupChannelPtr_;
+    std::unique_ptr<Channel> _wakeupChannelPtr;
 
     void doRunInLoopFuncs();
 };
