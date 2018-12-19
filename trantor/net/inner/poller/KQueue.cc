@@ -83,11 +83,7 @@ void KQueue::fillActiveChannels(int numEvents,
     for (int i = 0; i < numEvents; ++i)
     {
         Channel *channel = static_cast<Channel *>(_events[i].udata);
-#ifndef NDEBUG
-        int fd = channel->fd();
-        ChannelMap::const_iterator it = _channels.find(fd);
-        assert(it != _channels.end());
-#endif
+        assert(_channels.find(channel->fd()) != _channels.end());
         int events = _events[i].filter;
         if (events == EVFILT_READ)
         {
@@ -104,19 +100,25 @@ void KQueue::fillActiveChannels(int numEvents,
         }
         activeChannels->push_back(channel);
     }
-    //LOG_TRACE<<"active Channels num:"<<activeChannels->size();
 }
 
 void KQueue::updateChannel(Channel *channel)
 {
     assertInLoopThread();
     const int index = channel->index();
-    //LOG_TRACE << "fd = " << channel->fd()
-    //  << " events = " << channel->events() << " index = " << index;
+    // LOG_TRACE << "fd = " << channel->fd()
+    //           << " events = " << channel->events() << " index = " << index;
     if (index == kNew || index == kDeleted)
     {
-        // a new one
-        assert(_channels.find(channel->fd()) == _channels.end());
+        if (index == kNew)
+        {
+            assert(_channels.find(channel->fd()) == _channels.end());
+        }
+        else
+        { // index == kDeleted
+            assert(_channels.find(channel->fd()) != _channels.end());
+            assert(_channels[channel->fd()].second == channel);
+        }
         update(channel);
         channel->setIndex(kAdded);
     }
@@ -170,7 +172,6 @@ void KQueue::update(Channel *channel)
     }
 
     auto fd = channel->fd();
-
     _channels[fd] = {events, channel};
 
     if ((events & Channel::kReadEvent) && (!(oldEvents & Channel::kReadEvent)))
