@@ -46,8 +46,13 @@ class EventLoop : NonCopyable
             abortNotInLoopThread();
         }
     };
+#ifdef __linux__
     void resetTimerQueue();
-    bool isInLoopThread() const { return threadId_ == std::this_thread::get_id(); };
+#endif
+    bool isInLoopThread() const
+    {
+        return threadId_ == std::this_thread::get_id();
+    };
     static EventLoop *getEventLoopOfCurrentThread();
     void updateChannel(Channel *chl);
     void removeChannel(Channel *chl);

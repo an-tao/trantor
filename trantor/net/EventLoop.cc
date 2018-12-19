@@ -65,14 +65,14 @@ EventLoop::EventLoop()
         std::bind(&EventLoop::wakeupRead, this));
     wakeupChannelPtr_->enableReading();
 }
-
+#ifdef __linux__
 void EventLoop::resetTimerQueue()
 {
     assertInLoopThread();
     assert(!looping_);
-    timerQueue_ = std::unique_ptr<TimerQueue>(new TimerQueue(this));
+    timerQueue_->reset();
 }
-
+#endif
 EventLoop::~EventLoop()
 {
     assert(!looping_);

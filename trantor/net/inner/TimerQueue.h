@@ -31,14 +31,16 @@ class TimerQueue : NonCopyable
     TimerId addTimer(TimerCallback &&cb, const Date &when, double interval);
     void addTimerInLoop(const TimerPtr &timer);
     void invalidateTimer(TimerId id);
-#ifndef __linux__
+#ifdef __linux__
+    void reset();
+#else
     int getTimeout() const;
     void processTimers();
 #endif
   protected:
     EventLoop *_loop;
 #ifdef __linux__
-    const int _timerfd;
+    int _timerfd;
     std::shared_ptr<Channel> _timerfdChannelPtr;
     void handleRead();
 #endif
