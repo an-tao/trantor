@@ -37,51 +37,55 @@ const int kPollTimeMs = 10000;
 __thread EventLoop *t_loopInThisThread = 0;
 
 EventLoop::EventLoop()
-    : looping_(false),
-      threadId_(std::this_thread::get_id()),
-      quit_(false),
-      poller_(Poller::newPoller(this)),
-      currentActiveChannel_(NULL),
-      eventHandling_(false),
-      timerQueue_(new TimerQueue(this))
+    : _looping(false),
+      _threadId(std::this_thread::get_id()),
+      _quit(false),
+      _poller(Poller::newPoller(this)),
+      _currentActiveChannel(NULL),
+      _eventHandling(false),
+      _timerQueue(new TimerQueue(this))
 #ifdef __linux__
       ,
-      wakeupFd_(createEventfd()),
-      wakeupChannelPtr_(new Channel(this, wakeupFd_))
+      _wakeupFd(createEventfd()),
+      _wakeupChannelPtr(new Channel(this, _wakeupFd))
 #endif
 {
     assert(t_loopInThisThread == 0);
     t_loopInThisThread = this;
 #ifdef __linux__
 #else
-    auto r = pipe(wakeupFd_);
+    auto r = pipe(_wakeupFd);
     (void)r;
     assert(!r);
 
-    wakeupChannelPtr_ = std::unique_ptr<Channel>(new Channel(this, wakeupFd_[0]));
+    _wakeupChannelPtr = std::unique_ptr<Channel>(new Channel(this, _wakeupFd[0]));
 
 #endif
-    wakeupChannelPtr_->setReadCallback(
+    _wakeupChannelPtr->setReadCallback(
         std::bind(&EventLoop::wakeupRead, this));
-    wakeupChannelPtr_->enableReading();
+    _wakeupChannelPtr->enableReading();
 }
 #ifdef __linux__
 void EventLoop::resetTimerQueue()
 {
     assertInLoopThread();
-    assert(!looping_);
-    timerQueue_->reset();
+    assert(!_looping);
+    _timerQueue->reset();
 }
 #endif
+void EventLoop::resetAfterFork()
+{
+    _poller->resetAfterFork();
+}
 EventLoop::~EventLoop()
 {
-    assert(!looping_);
+    assert(!_looping);
     t_loopInThisThread = NULL;
 #ifdef __linux__
-    close(wakeupFd_);
+    close(_wakeupFd);
 #else
-    close(wakeupFd_[0]);
-    close(wakeupFd_[1]);
+    close(_wakeupFd[0]);
+    close(_wakeupFd[1]);
 #endif
 }
 EventLoop *EventLoop::getEventLoopOfCurrentThread()
@@ -92,23 +96,23 @@ void EventLoop::updateChannel(Channel *channel)
 {
     assert(channel->ownerLoop() == this);
     assertInLoopThread();
-    poller_->updateChannel(channel);
+    _poller->updateChannel(channel);
 }
 void EventLoop::removeChannel(Channel *channel)
 {
     assert(channel->ownerLoop() == this);
     assertInLoopThread();
-    if (eventHandling_)
+    if (_eventHandling)
     {
-        assert(currentActiveChannel_ == channel ||
-               std::find(activeChannels_.begin(), activeChannels_.end(), channel) == activeChannels_.end());
+        assert(_currentActiveChannel == channel ||
+               std::find(_activeChannels.begin(), _activeChannels.end(), channel) == _activeChannels.end());
     }
-    poller_->removeChannel(channel);
+    _poller->removeChannel(channel);
 }
 void EventLoop::quit()
 {
-    quit_ = true;
-    // There is a chance that loop() just executes while(!quit_) and exits,
+    _quit = true;
+    // There is a chance that loop() just executes while(!_quit) and exits,
     // then EventLoop destructs, then we are accessing an invalid object.
     // Can be fixed using mutex_ in both places.
     if (!isInLoopThread())
@@ -118,35 +122,35 @@ void EventLoop::quit()
 }
 void EventLoop::loop()
 {
-    assert(!looping_);
+    assert(!_looping);
     assertInLoopThread();
-    looping_ = true;
-    quit_ = false;
+    _looping = true;
+    _quit = false;
 
-    while (!quit_)
+    while (!_quit)
     {
-        activeChannels_.clear();
+        _activeChannels.clear();
 #ifdef __linux__
-        poller_->poll(kPollTimeMs, &activeChannels_);
+        _poller->poll(kPollTimeMs, &_activeChannels);
 #else
-        poller_->poll(timerQueue_->getTimeout(), &activeChannels_);
-        timerQueue_->processTimers();
+        _poller->poll(_timerQueue->getTimeout(), &_activeChannels);
+        _timerQueue->processTimers();
 #endif
         // TODO sort channel by priority
         //std::cout<<"after ->poll()"<<std::endl;
-        eventHandling_ = true;
-        for (auto it = activeChannels_.begin();
-             it != activeChannels_.end(); ++it)
+        _eventHandling = true;
+        for (auto it = _activeChannels.begin();
+             it != _activeChannels.end(); ++it)
         {
-            currentActiveChannel_ = *it;
-            currentActiveChannel_->handleEvent();
+            _currentActiveChannel = *it;
+            _currentActiveChannel->handleEvent();
         }
-        currentActiveChannel_ = NULL;
-        eventHandling_ = false;
+        _currentActiveChannel = NULL;
+        _eventHandling = false;
         //std::cout << "looping" << endl;
         doRunInLoopFuncs();
     }
-    looping_ = false;
+    _looping = false;
 }
 void EventLoop::abortNotInLoopThread()
 {
@@ -178,11 +182,11 @@ void EventLoop::runInLoop(Func &&cb)
 void EventLoop::queueInLoop(const Func &cb)
 {
     {
-        std::lock_guard<std::mutex> lock(funcsMutex_);
-        funcs_.push_back(cb);
+        std::lock_guard<std::mutex> lock(_funcsMutex);
+        _funcs.push_back(cb);
     }
 
-    if (!isInLoopThread() || callingFuncs_ || !looping_)
+    if (!isInLoopThread() || _callingFuncs || !_looping)
     {
         wakeup();
     }
@@ -190,11 +194,11 @@ void EventLoop::queueInLoop(const Func &cb)
 void EventLoop::queueInLoop(Func &&cb)
 {
     {
-        std::lock_guard<std::mutex> lock(funcsMutex_);
-        funcs_.push_back(std::move(cb));
+        std::lock_guard<std::mutex> lock(_funcsMutex);
+        _funcs.push_back(std::move(cb));
     }
 
-    if (!isInLoopThread() || callingFuncs_ || !looping_)
+    if (!isInLoopThread() || _callingFuncs || !_looping)
     {
         wakeup();
     }
@@ -202,11 +206,11 @@ void EventLoop::queueInLoop(Func &&cb)
 
 TimerId EventLoop::runAt(const Date &time, const Func &cb)
 {
-    return timerQueue_->addTimer(cb, time, 0);
+    return _timerQueue->addTimer(cb, time, 0);
 }
 TimerId EventLoop::runAt(const Date &time, Func &&cb)
 {
-    return timerQueue_->addTimer(std::move(cb), time, 0);
+    return _timerQueue->addTimer(std::move(cb), time, 0);
 }
 TimerId EventLoop::runAfter(double delay, const Func &cb)
 {
@@ -218,40 +222,40 @@ TimerId EventLoop::runAfter(double delay, Func &&cb)
 }
 TimerId EventLoop::runEvery(double interval, const Func &cb)
 {
-    return timerQueue_->addTimer(cb, Date::date().after(interval), interval);
+    return _timerQueue->addTimer(cb, Date::date().after(interval), interval);
 }
 TimerId EventLoop::runEvery(double interval, Func &&cb)
 {
-    return timerQueue_->addTimer(std::move(cb), Date::date().after(interval), interval);
+    return _timerQueue->addTimer(std::move(cb), Date::date().after(interval), interval);
 }
 void EventLoop::invalidateTimer(TimerId id)
 {
-    if (timerQueue_)
-        timerQueue_->invalidateTimer(id);
+    if (_timerQueue)
+        _timerQueue->invalidateTimer(id);
 }
 void EventLoop::doRunInLoopFuncs()
 {
-    callingFuncs_ = true;
+    _callingFuncs = true;
     std::vector<Func> tmpFuncs;
     {
-        std::lock_guard<std::mutex> lock(funcsMutex_);
-        tmpFuncs.swap(funcs_);
+        std::lock_guard<std::mutex> lock(_funcsMutex);
+        tmpFuncs.swap(_funcs);
     }
     for (auto funcs : tmpFuncs)
     {
         funcs();
     }
-    callingFuncs_ = false;
+    _callingFuncs = false;
 }
 void EventLoop::wakeup()
 {
-    if (!looping_)
+    if (!_looping)
         return;
     uint64_t tmp = 1;
 #ifdef __linux__
-    int ret = write(wakeupFd_, &tmp, sizeof(tmp));
+    int ret = write(_wakeupFd, &tmp, sizeof(tmp));
 #else
-    int ret = write(wakeupFd_[1], &tmp, sizeof(tmp));
+    int ret = write(_wakeupFd[1], &tmp, sizeof(tmp));
 #endif
     if (ret < 0)
     {
@@ -262,9 +266,9 @@ void EventLoop::wakeupRead()
 {
     uint64_t tmp;
 #ifdef __linux__
-    ssize_t ret = read(wakeupFd_, &tmp, sizeof(tmp));
+    ssize_t ret = read(_wakeupFd, &tmp, sizeof(tmp));
 #else
-    ssize_t ret = read(wakeupFd_[0], &tmp, sizeof(tmp));
+    ssize_t ret = read(_wakeupFd[0], &tmp, sizeof(tmp));
 #endif
     if (ret < 0)
         LOG_SYSERR << "wakeup read error";

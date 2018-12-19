@@ -35,12 +35,13 @@ class KQueue : public Poller
     virtual void poll(int timeoutMs, ChannelList *activeChannels) override;
     virtual void updateChannel(Channel *channel) override;
     virtual void removeChannel(Channel *channel) override;
+    virtual void resetAfterFork() override;
 
   private:
     static const int kInitEventListSize = 16;
     int _kqfd;
     EventList _events;
-    typedef std::unordered_map<int, int> ChannelMap;
+    typedef std::unordered_map<int, std::pair<int,Channel*>> ChannelMap;
     ChannelMap _channels;
 
     void fillActiveChannels(int numEvents, ChannelList *activeChannels) const;

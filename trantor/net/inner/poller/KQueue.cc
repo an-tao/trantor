@@ -28,6 +28,20 @@ KQueue::~KQueue()
     close(_kqfd);
 }
 
+void KQueue::resetAfterFork()
+{
+    close(_kqfd);
+    _kqfd = kqueue();
+    for (auto &ch : _channels)
+    {
+        ch.second.first = 0;
+        if (ch.second.second->isReading() || ch.second.second->isReading())
+        {
+            update(ch.second.second);
+        }
+    }
+}
+
 void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
 {
     struct timespec timeout;
@@ -86,7 +100,7 @@ void KQueue::fillActiveChannels(int numEvents,
         else
         {
             LOG_ERROR << "events=" << events;
-            return;
+            continue;
         }
         activeChannels->push_back(channel);
     }
@@ -132,14 +146,15 @@ void KQueue::removeChannel(Channel *channel)
     assert(channel->isNoneEvent());
     int index = channel->index();
     assert(index == kAdded || index == kDeleted);
-    size_t n = _channels.erase(fd);
-    (void)n;
-    assert(n == 1);
 
     if (index == kAdded)
     {
         update(channel);
     }
+
+    size_t n = _channels.erase(fd);
+    (void)n;
+    assert(n == 1);
     channel->setIndex(kNew);
 }
 
@@ -148,12 +163,15 @@ void KQueue::update(Channel *channel)
     struct kevent ev[2];
     int n = 0;
     auto events = channel->events();
-    auto oldEvents = _channels[channel->fd()];
+    int oldEvents = 0;
+    if (_channels.find(channel->fd()) != _channels.end())
+    {
+        oldEvents = _channels[channel->fd()].first;
+    }
 
     auto fd = channel->fd();
 
-    _channels[fd] = events;
-    
+    _channels[fd] = {events, channel};
 
     if ((events & Channel::kReadEvent) && (!(oldEvents & Channel::kReadEvent)))
     {
@@ -174,4 +192,3 @@ void KQueue::update(Channel *channel)
     kevent(_kqfd, ev, n, NULL, 0, NULL);
 }
 } // namespace trantor
-
