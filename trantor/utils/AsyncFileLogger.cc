@@ -21,14 +21,14 @@ AsyncFileLogger::AsyncFileLogger()
 }
 AsyncFileLogger::~AsyncFileLogger()
 {
-    std::cout << "~AsyncFileLogger" << std::endl;
+    //std::cout << "~AsyncFileLogger" << std::endl;
     stopFlag_ = true;
     if (threadPtr_)
     {
         cond_.notify_all();
         threadPtr_->join();
     }
-    std::cout << "thread exit" << std::endl;
+    //std::cout << "thread exit" << std::endl;
     {
         std::lock_guard<std::mutex> guard_(mutex_);
         if (logBufferPtr_->length() > 0)

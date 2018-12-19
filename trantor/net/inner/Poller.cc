@@ -2,7 +2,7 @@
 #ifdef __linux__
 #include "poller/EpollPoller.h"
 #else
-#include "poller/PollPoller.h"
+#include "poller/KQueue.h"
 #endif
 using namespace trantor;
 Poller *Poller::newPoller(EventLoop *loop)
@@ -10,6 +10,6 @@ Poller *Poller::newPoller(EventLoop *loop)
 #ifdef __linux__
     return new EpollPoller(loop);
 #else
-    return new PollPoller(loop);
+    return new KQueue(loop);
 #endif
 }

@@ -132,12 +132,34 @@ void Connector::handleWrite()
         {
             LOG_WARN << "Connector::handleWrite - SO_ERROR = "
                      << err << " " << strerror_tl(err);
-            retry(sockfd);
+            if (_retry)
+            {
+                retry(sockfd);
+            }
+            else
+            {
+                ::close(sockfd);
+            }
+            if (_errorCallback)
+            {
+                _errorCallback();
+            }
         }
         else if (Socket::isSelfConnect(sockfd))
         {
             LOG_WARN << "Connector::handleWrite - Self connect";
-            retry(sockfd);
+            if (_retry)
+            {
+                retry(sockfd);
+            }
+            else
+            {
+                ::close(sockfd);
+            }
+            if (_errorCallback)
+            {
+                _errorCallback();
+            }
         }
         else
         {
