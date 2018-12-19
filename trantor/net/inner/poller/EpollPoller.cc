@@ -93,8 +93,8 @@ void EpollPoller::updateChannel(Channel *channel)
     if (index == kNew || index == kDeleted)
     {
         // a new one, add with EPOLL_CTL_ADD
-        int fd = channel->fd();
 #ifndef NDEBUG
+        int fd = channel->fd();
         if (index == kNew)
         {
             assert(_channels.find(fd) == _channels.end());
