@@ -67,7 +67,7 @@ void AsyncFileLogger::output(const char *msg, const uint64_t len)
     if (lostCounter_ > 0)
     {
         char logErr[128];
-        sprintf(logErr, "%lld log information is lost\n", lostCounter_);
+        sprintf(logErr, "%llu log information is lost\n", static_cast<long long unsigned int>(lostCounter_));
         lostCounter_ = 0;
         logBufferPtr_->append(logErr);
     }
@@ -183,7 +183,7 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
     {
         fclose(fp_);
         char seq[10];
-        sprintf(seq, ".%06lld", fileSeq_ % 1000000);
+        sprintf(seq, ".%06lld", static_cast<long long unsigned int>(fileSeq_ % 1000000));
         fileSeq_++;
         std::string newName = filePath_ + fileBaseName_ + "." + createDate_.toCustomedFormattedString("%y%m%d-%H%M%S") + std::string(seq) + fileExtName_;
         rename(fileFullName_.c_str(), newName.c_str());
