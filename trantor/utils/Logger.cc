@@ -74,11 +74,7 @@ void Logger::formatTime()
     }
     logStream_ << T(lastTimeString_, 17);
     char tmp[32];
-#ifdef __linux__
-    sprintf(tmp, ".%06lu UTC ", microSec);
-#else
     sprintf(tmp, ".%06llu UTC ", microSec);
-#endif
     logStream_ << T(tmp, 12);
 #ifdef __linux__
     if (threadId_ == 0)
