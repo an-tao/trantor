@@ -582,7 +582,7 @@ void TcpConnectionImpl::sendFile(int sfd, size_t offset, size_t length)
     }
 }
 
-void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr filePtr)
+void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
 {
     loop_->assertInLoopThread();
     assert(filePtr->_sendFd >= 0);

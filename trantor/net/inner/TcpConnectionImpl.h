@@ -174,7 +174,7 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     //virtual void sendInLoop(const std::string &msg);
     void sendInLoop(const char *buffer, size_t length);
 
-    void sendFileInLoop(const BufferNodePtr file);
+    void sendFileInLoop(const BufferNodePtr &file);
 
     virtual ssize_t writeInLoop(const char *buffer, size_t length);
     size_t highWaterMarkLen_;
