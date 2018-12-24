@@ -79,14 +79,14 @@ void TcpConnectionImpl::writeCallback()
     extendLife();
     if (ioChennelPtr_->isWriting())
     {
-        assert(_writeBufferList.size()>0);
+        assert(!_writeBufferList.empty());
         auto writeBuffer_ = _writeBufferList.front();
         if (writeBuffer_->_sendFd < 0)
         {
             if (writeBuffer_->_msgBuffer->readableBytes() <= 0)
             {
                 _writeBufferList.pop_front();
-                if (_writeBufferList.size() == 0)
+                if (_writeBufferList.empty())
                 {
                     ioChennelPtr_->disableWriting();
                     //
@@ -134,7 +134,7 @@ void TcpConnectionImpl::writeCallback()
             if (writeBuffer_->_fileBytesToSend <= 0)
             {
                 _writeBufferList.pop_front();
-                if (_writeBufferList.size() == 0)
+                if (_writeBufferList.empty())
                 {
                     ioChennelPtr_->disableWriting();
                     if (writeCompleteCallback_)
@@ -278,7 +278,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
     extendLife();
     size_t remainLen = length;
     ssize_t sendLen = 0;
-    if (!ioChennelPtr_->isWriting() && _writeBufferList.size() == 0)
+    if (!ioChennelPtr_->isWriting() && _writeBufferList.empty())
     {
         //send directly
         sendLen = writeInLoop(buffer, length);
@@ -301,7 +301,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
     }
     if (remainLen > 0)
     {
-        if (_writeBufferList.size() == 0)
+        if (_writeBufferList.empty())
         {
             BufferNodePtr node(new BufferNode);
             node->_msgBuffer = std::shared_ptr<MsgBuffer>(new MsgBuffer);
