@@ -513,6 +513,7 @@ void TcpConnectionImpl::sendFile(const char *fileName, size_t offset, size_t len
         if (stat(fileName, &filestat) < 0)
         {
             LOG_SYSERR << fileName << " stat error";
+            close(fd);
             return;
         }
         length = filestat.st_size;

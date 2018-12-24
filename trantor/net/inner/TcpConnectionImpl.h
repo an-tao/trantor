@@ -141,7 +141,7 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
         std::shared_ptr<MsgBuffer> _msgBuffer;
         ~BufferNode()
         {
-            if (_sendFd)
+            if (_sendFd >= 0)
                 close(_sendFd);
         }
     };
