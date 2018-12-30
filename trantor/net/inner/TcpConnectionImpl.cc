@@ -324,6 +324,38 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
     }
 }
 //The order of data sending should be same as the order of calls of send()
+void TcpConnectionImpl::send(const std::shared_ptr<std::string> &msgPtr)
+{
+    if (loop_->isInLoopThread())
+    {
+        std::lock_guard<std::mutex> guard(_sendNumMutex);
+        if (_sendNum == 0)
+        {
+            sendInLoop(msgPtr->data(), msgPtr->length());
+        }
+        else
+        {
+            _sendNum++;
+            auto thisPtr = shared_from_this();
+            loop_->queueInLoop([thisPtr, msgPtr]() {
+                thisPtr->sendInLoop(msgPtr->data(), msgPtr->length());
+                std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
+                thisPtr->_sendNum--;
+            });
+        }
+    }
+    else
+    {
+        auto thisPtr = shared_from_this();
+        std::lock_guard<std::mutex> guard(_sendNumMutex);
+        _sendNum++;
+        loop_->queueInLoop([thisPtr, msgPtr]() {
+            thisPtr->sendInLoop(msgPtr->data(), msgPtr->length());
+            std::lock_guard<std::mutex> guard1(thisPtr->_sendNumMutex);
+            thisPtr->_sendNum--;
+        });
+    }
+}
 void TcpConnectionImpl::send(const char *msg, uint64_t len)
 {
 

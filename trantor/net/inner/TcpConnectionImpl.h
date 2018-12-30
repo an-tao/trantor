@@ -49,6 +49,7 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     virtual void send(std::string &&msg) override;
     virtual void send(const MsgBuffer &buffer) override;
     virtual void send(MsgBuffer &&buffer) override;
+    virtual void send(const std::shared_ptr<std::string> &msgPtr) override;
     virtual void sendFile(const char *fileName, size_t offset = 0, size_t length = 0) override;
 
     virtual const InetAddress &localAddr() const override { return localAddr_; }
