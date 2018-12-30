@@ -28,5 +28,8 @@ int main()
     loop.queueInLoop([]() {
         std::cout << "queueInLoop 1" << std::endl;
     });
+    loop.runAfter(1.5, []() {
+        std::cout << "run after 1.5" << std::endl;
+    });
     loop.loop();
 }

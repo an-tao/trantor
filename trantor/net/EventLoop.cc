@@ -251,8 +251,8 @@ void EventLoop::doRunInLoopFuncs()
 }
 void EventLoop::wakeup()
 {
-    if (!_looping)
-        return;
+    // if (!_looping)
+    //     return;
     uint64_t tmp = 1;
 #ifdef __linux__
     int ret = write(_wakeupFd, &tmp, sizeof(tmp));
