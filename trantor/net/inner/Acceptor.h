@@ -15,19 +15,20 @@ class Acceptor : NonCopyable
   public:
     Acceptor(EventLoop *loop, const InetAddress &addr);
     ~Acceptor();
-    const InetAddress &addr() const { return addr_; }
+    const InetAddress &addr() const { return _addr; }
     void setNewConnectionCallback(const NewConnectionCallback &cb)
     {
-        newConnectionCallback_ = cb;
+        _newConnectionCallback = cb;
     };
     void listen();
 
   protected:
-    Socket sock_;
-    InetAddress addr_;
-    EventLoop *loop_;
-    NewConnectionCallback newConnectionCallback_;
-    Channel acceptChannel_;
+    Socket _sock;
+    InetAddress _addr;
+    EventLoop *_loop;
+    NewConnectionCallback _newConnectionCallback;
+    Channel _acceptChannel;
+    int _idleFd;
     void readCallback();
 };
 } // namespace trantor

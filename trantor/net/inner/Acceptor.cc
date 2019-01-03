@@ -1,39 +1,41 @@
 #include "Acceptor.h"
 using namespace trantor;
 Acceptor::Acceptor(EventLoop *loop, const InetAddress &addr)
-    : sock_(Socket::createNonblockingSocketOrDie(addr.getSockAddr()->sa_family)),
-      addr_(addr),
-      loop_(loop),
-      acceptChannel_(loop, sock_.fd())
+    : _sock(Socket::createNonblockingSocketOrDie(addr.getSockAddr()->sa_family)),
+      _addr(addr),
+      _loop(loop),
+      _acceptChannel(loop, _sock.fd()),
+      _idleFd(::open("/dev/null", O_RDONLY | O_CLOEXEC))
 {
-    sock_.setReuseAddr(true);
-    sock_.setReusePort(true);
+    _sock.setReuseAddr(true);
+    _sock.setReusePort(true);
 
-    sock_.bindAddress(addr_);
+    _sock.bindAddress(_addr);
 
-    acceptChannel_.setReadCallback(std::bind(&Acceptor::readCallback, this));
+    _acceptChannel.setReadCallback(std::bind(&Acceptor::readCallback, this));
 }
 Acceptor::~Acceptor()
 {
-    acceptChannel_.disableAll();
-    acceptChannel_.remove();
+    _acceptChannel.disableAll();
+    _acceptChannel.remove();
+    ::close(_idleFd);
 }
 void Acceptor::listen()
 {
-    loop_->assertInLoopThread();
-    sock_.listen();
-    acceptChannel_.enableReading();
+    _loop->assertInLoopThread();
+    _sock.listen();
+    _acceptChannel.enableReading();
 }
 
 void Acceptor::readCallback()
 {
     InetAddress peer;
-    int newsock = sock_.accept(&peer);
+    int newsock = _sock.accept(&peer);
     if (newsock >= 0)
     {
-        if (newConnectionCallback_)
+        if (_newConnectionCallback)
         {
-            newConnectionCallback_(newsock, peer);
+            _newConnectionCallback(newsock, peer);
         }
         else
         {
@@ -43,5 +45,16 @@ void Acceptor::readCallback()
     else
     {
         LOG_SYSERR << "Accpetor::readCallback";
+        // Read the section named "The special problem of
+        // accept()ing when you can't" in libev's doc.
+        // By Marc Lehmann, author of libev.
+        /// errno is thread safe
+        if (errno == EMFILE)
+        {
+            ::close(_idleFd);
+            _idleFd = _sock.accept(&peer);
+            ::close(_idleFd);
+            _idleFd = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+        }
     }
 }

@@ -27,7 +27,7 @@ class Connector : public NonCopyable, public std::enable_shared_from_this<Connec
     {
         _errorCallback = std::move(cb);
     }
-    const InetAddress &serverAddress() const { return serverAddr_; }
+    const InetAddress &serverAddress() const { return _serverAddr; }
     void start();
     void restart();
     void stop();
@@ -43,15 +43,15 @@ class Connector : public NonCopyable, public std::enable_shared_from_this<Connec
     };
     static const int kMaxRetryDelayMs = 30 * 1000;
     static const int kInitRetryDelayMs = 500;
-    std::shared_ptr<Channel> channelPtr_;
-    EventLoop *loop_;
-    InetAddress serverAddr_;
+    std::shared_ptr<Channel> _channelPtr;
+    EventLoop *_loop;
+    InetAddress _serverAddr;
 
-    std::atomic_bool connect_;
-    std::atomic<States> state_;
+    std::atomic_bool _connect;
+    std::atomic<States> _state;
 
-    int retryInterval_;
-    int maxRetryInterval_;
+    int _retryInterval;
+    int _maxRetryInterval;
 
     bool _retry;
 
