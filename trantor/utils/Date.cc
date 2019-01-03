@@ -23,13 +23,13 @@ const Date Date::roundSecond() const
 }
 const Date Date::roundDay() const
 {
-    struct tm *t;
+    struct tm t;
     time_t seconds = static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
-    t = localtime(&seconds);
-    t->tm_hour = 0;
-    t->tm_min = 0;
-    t->tm_sec = 0;
-    return Date(mktime(t) * MICRO_SECONDS_PRE_SEC);
+    localtime_r(&seconds,&t);
+    t.tm_hour = 0;
+    t.tm_min = 0;
+    t.tm_sec = 0;
+    return Date(mktime(&t) * MICRO_SECONDS_PRE_SEC);
 }
 struct tm Date::tmStruct() const
 {
