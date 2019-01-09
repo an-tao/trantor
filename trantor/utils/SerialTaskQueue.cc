@@ -6,70 +6,70 @@
 namespace trantor
 {
 SerialTaskQueue::SerialTaskQueue(const std::string &name)
-    : queueName_(name),
-      stop_(false),
-      thread_(std::bind(&SerialTaskQueue::queueFunc, this)),
-      isRunTask_(false)
+    : _queueName(name),
+      _stop(false),
+      _thread(std::bind(&SerialTaskQueue::queueFunc, this)),
+      _isRuningTask(false)
 {
     if (name.empty())
     {
-        queueName_ = "SerailTaskQueue";
+        _queueName = "SerailTaskQueue";
     }
-    //LOG_TRACE<<"construct SerialTaskQueue('"<<queueName_<<"')";
+    //LOG_TRACE<<"construct SerialTaskQueue('"<<_queueName<<"')";
 }
 void SerialTaskQueue::stop()
 {
-    stop_ = true;
-    taskCond_.notify_all();
-    thread_.join();
+    _stop = true;
+    _taskCond.notify_all();
+    _thread.join();
 }
 SerialTaskQueue::~SerialTaskQueue()
 {
-    if (!stop_)
+    if (!_stop)
         stop();
-    LOG_TRACE << "destruct SerialTaskQueue('" << queueName_ << "')";
+    LOG_TRACE << "destruct SerialTaskQueue('" << _queueName << "')";
 }
 void SerialTaskQueue::runTaskInQueue(const std::function<void()> &task)
 {
     //LOG_TRACE<<"copy task into queue";
-    std::lock_guard<std::mutex> lock(taskMutex_);
-    taskQueue_.push(task);
-    taskCond_.notify_one();
+    std::lock_guard<std::mutex> lock(_taskMutex);
+    _taskQueue.push(task);
+    _taskCond.notify_one();
 }
 void SerialTaskQueue::runTaskInQueue(std::function<void()> &&task)
 {
     //LOG_TRACE<<"move task into queue";
-    std::lock_guard<std::mutex> lock(taskMutex_);
-    taskQueue_.push(std::move(task));
-    taskCond_.notify_one();
+    std::lock_guard<std::mutex> lock(_taskMutex);
+    _taskQueue.push(std::move(task));
+    _taskCond.notify_one();
 }
 
 void SerialTaskQueue::queueFunc()
 {
 #ifdef __linux__
-    ::prctl(PR_SET_NAME, queueName_.c_str());
+    ::prctl(PR_SET_NAME, _queueName.c_str());
 #endif
-    while (!stop_)
+    while (!_stop)
     {
         std::function<void()> r;
         {
-            std::unique_lock<std::mutex> lock(taskMutex_);
-            while (!stop_ && taskQueue_.size() == 0)
+            std::unique_lock<std::mutex> lock(_taskMutex);
+            while (!_stop && _taskQueue.size() == 0)
             {
-                taskCond_.wait(lock);
+                _taskCond.wait(lock);
             }
-            if (taskQueue_.size() > 0)
+            if (_taskQueue.size() > 0)
             {
                 //LOG_TRACE<<"got a new task!";
-                r = std::move(taskQueue_.front());
-                taskQueue_.pop();
+                r = std::move(_taskQueue.front());
+                _taskQueue.pop();
             }
             else
                 continue;
         }
-        isRunTask_ = true;
+        _isRuningTask = true;
         r();
-        isRunTask_ = false;
+        _isRuningTask = false;
     }
 }
 void SerialTaskQueue::waitAllTasksFinished()
@@ -80,7 +80,7 @@ void SerialTaskQueue::waitAllTasksFinished()
 }
 size_t SerialTaskQueue::getTaskCount()
 {
-    std::lock_guard<std::mutex> guard(taskMutex_);
-    return taskQueue_.size();
+    std::lock_guard<std::mutex> guard(_taskMutex);
+    return _taskQueue.size();
 }
 }; // namespace trantor

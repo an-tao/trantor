@@ -23,18 +23,18 @@ namespace trantor
 class EventLoopThread : NonCopyable
 {
   public:
-    EventLoopThread();
+    explicit EventLoopThread(const std::string &threadName = "EventLoopThread");
     ~EventLoopThread();
     void run();
     //void stop();
     void wait();
-    EventLoop *getLoop() { return loop_; }
+    EventLoop *getLoop() { return _loop; }
 
   private:
-    EventLoop *loop_;
-    SerialTaskQueue loopQueue_;
+    EventLoop *_loop;
+    SerialTaskQueue _loopQueue;
     void loopFuncs();
-    std::condition_variable cond_;
-    std::mutex mutex_;
+    std::condition_variable _cond;
+    std::mutex _mutex;
 };
 } // namespace trantor

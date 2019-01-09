@@ -16,21 +16,23 @@
 
 #include <trantor/net/EventLoopThread.h>
 #include <vector>
+#include <memory>
+
 namespace trantor
 {
 class EventLoopThreadPool : NonCopyable
 {
   public:
     EventLoopThreadPool() = delete;
-    EventLoopThreadPool(size_t threadNum);
+    EventLoopThreadPool(size_t threadNum, const std::string &name = "EventLoopThreadPool");
     void start();
     //void stop();
     void wait();
-    size_t getLoopNum() { return loopThreadVector_.size(); }
+    size_t getLoopNum() { return _loopThreadVector.size(); }
     EventLoop *getNextLoop();
 
   private:
-    std::vector<EventLoopThread> loopThreadVector_;
-    size_t loopIndex_;
+    std::vector<std::shared_ptr<EventLoopThread>> _loopThreadVector;
+    size_t _loopIndex;
 };
 } // namespace trantor

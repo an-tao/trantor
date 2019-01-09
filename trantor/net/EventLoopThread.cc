@@ -3,43 +3,43 @@
 #include <trantor/utils/SerialTaskQueue.h>
 
 using namespace trantor;
-EventLoopThread::EventLoopThread()
-    : loop_(NULL),
-      loopQueue_("EventLoopThread")
+EventLoopThread::EventLoopThread(const std::string &threadName)
+    : _loop(NULL),
+      _loopQueue(threadName)
 {
 }
 EventLoopThread::~EventLoopThread()
 {
-    if (loop_) // not in 100% multiple thread security
+    if (_loop) // not in 100% multiple thread security
     {
-        loop_->quit();
+        _loop->quit();
     }
 }
 //void EventLoopThread::stop() {
-//    if(loop_)
-//        loop_->quit();
+//    if(_loop)
+//        _loop->quit();
 //}
 void EventLoopThread::wait()
 {
-    loopQueue_.waitAllTasksFinished();
+    _loopQueue.waitAllTasksFinished();
 }
 void EventLoopThread::loopFuncs()
 {
     EventLoop loop;
     {
-        std::lock_guard<std::mutex> guard(mutex_);
-        loop_ = &loop;
-        cond_.notify_one();
+        std::lock_guard<std::mutex> guard(_mutex);
+        _loop = &loop;
+        _cond.notify_one();
     }
     loop.loop();
-    loop_ = NULL;
+    _loop = NULL;
 }
 void EventLoopThread::run()
 {
-    loopQueue_.runTaskInQueue(std::bind(&EventLoopThread::loopFuncs, this));
-    std::unique_lock<std::mutex> lock(mutex_);
-    while (loop_ == NULL)
+    _loopQueue.runTaskInQueue(std::bind(&EventLoopThread::loopFuncs, this));
+    std::unique_lock<std::mutex> lock(_mutex);
+    while (_loop == NULL)
     {
-        cond_.wait(lock);
+        _cond.wait(lock);
     }
 }

@@ -13,23 +13,23 @@ class SerialTaskQueue : public TaskQueue
     virtual void runTaskInQueue(const std::function<void()> &task);
     virtual void runTaskInQueue(std::function<void()> &&task);
 
-    virtual std::string getName() const { return queueName_; };
+    virtual std::string getName() const { return _queueName; };
     void waitAllTasksFinished();
     SerialTaskQueue() = delete;
-    SerialTaskQueue(const std::string &name = std::string());
+    explicit SerialTaskQueue(const std::string &name = std::string());
     ~SerialTaskQueue();
-    bool isRunTask() { return isRunTask_; }
+    bool isRuningTask() { return _isRuningTask; }
     size_t getTaskCount();
     void stop();
 
   protected:
-    std::string queueName_;
-    std::queue<std::function<void()>> taskQueue_;
-    std::mutex taskMutex_;
-    std::condition_variable taskCond_;
-    std::atomic_bool stop_;
+    std::string _queueName;
+    std::queue<std::function<void()>> _taskQueue;
+    std::mutex _taskMutex;
+    std::condition_variable _taskCond;
+    std::atomic_bool _stop;
     void queueFunc();
-    std::thread thread_;
-    std::atomic_bool isRunTask_;
+    std::thread _thread;
+    std::atomic_bool _isRuningTask;
 };
 }; // namespace trantor
