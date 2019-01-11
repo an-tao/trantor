@@ -45,9 +45,12 @@ void Channel::handleEvent()
 }
 void Channel::handleEventSafely()
 {
-	//LOG_TRACE<<"handle event _revents="<<_revents;
-	if(_eventCallback)
+	if (_eventCallback)
+	{
 		_eventCallback();
+		return;
+	}
+
 	if (_revents & POLLNVAL)
 	{
 	}
