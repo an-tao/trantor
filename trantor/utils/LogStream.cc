@@ -194,7 +194,7 @@ LogStream &LogStream::operator<<(const void *p)
   return *this;
 }
 
-// FIXME: replace this with Grisu3 by Florian Loitsch.
+// TODO: replace this with Grisu3 by Florian Loitsch.
 LogStream &LogStream::operator<<(double v)
 {
   if (_exBuffer.empty())

@@ -125,13 +125,13 @@ class Socket : NonCopyable
         int flags = ::fcntl(sockfd, F_GETFL, 0);
         flags |= O_NONBLOCK;
         int ret = ::fcntl(sockfd, F_SETFL, flags);
-        // FIXME check
+        // TODO check
 
         // close-on-exec
         flags = ::fcntl(sockfd, F_GETFD, 0);
         flags |= FD_CLOEXEC;
         ret = ::fcntl(sockfd, F_SETFD, flags);
-        // FIXME check
+        // TODO check
 
         (void)ret;
     }

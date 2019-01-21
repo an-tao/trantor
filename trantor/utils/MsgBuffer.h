@@ -23,14 +23,14 @@ class MsgBuffer
     const char *peek() const { return begin() + head_; }
     const char *beginWrite() const { return begin() + tail_; }
     char *beginWrite() { return begin() + tail_; }
-    const uint8_t peekInt8() const
+    uint8_t peekInt8() const
     {
         assert(readableBytes() >= 1);
         return *(static_cast<const uint8_t *>((void *)peek()));
     }
-    const uint16_t peekInt16() const;
-    const uint32_t peekInt32() const;
-    const uint64_t peekInt64() const;
+    uint16_t peekInt16() const;
+    uint32_t peekInt32() const;
+    uint64_t peekInt64() const;
     //read
     std::string read(size_t len);
     uint8_t readInt8();
@@ -38,8 +38,8 @@ class MsgBuffer
     uint32_t readInt32();
     uint64_t readInt64();
     void swap(MsgBuffer &buf);
-    const size_t readableBytes() const { return tail_ - head_; }
-    const size_t writableBytes() const { return buffer_.size() - tail_; }
+    size_t readableBytes() const { return tail_ - head_; }
+    size_t writableBytes() const { return buffer_.size() - tail_; }
     //append
     void append(const MsgBuffer &buf);
     void append(const char *buf, size_t len);
@@ -86,7 +86,7 @@ class MsgBuffer
         assert(readableBytes() >= offset);
         tail_ -= offset;
     }
-    const char operator[](size_t offset) const
+    const char &operator[](size_t offset) const
     {
         assert(readableBytes() >= offset);
         return peek()[offset];

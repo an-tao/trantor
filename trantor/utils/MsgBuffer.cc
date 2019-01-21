@@ -127,19 +127,19 @@ void MsgBuffer::addInFrontInt64(const int64_t l)
     addInFront(static_cast<const char *>((void *)&ll), 8);
 }
 
-const uint16_t MsgBuffer::peekInt16() const
+uint16_t MsgBuffer::peekInt16() const
 {
     assert(readableBytes() >= 2);
     uint16_t rs = *(static_cast<const uint16_t *>((void *)peek()));
     return ntohs(rs);
 }
-const uint32_t MsgBuffer::peekInt32() const
+uint32_t MsgBuffer::peekInt32() const
 {
     assert(readableBytes() >= 4);
     uint32_t rl = *(static_cast<const uint32_t *>((void *)peek()));
     return ntohl(rl);
 }
-const uint64_t MsgBuffer::peekInt64() const
+uint64_t MsgBuffer::peekInt64() const
 {
     assert(readableBytes() >= 8);
     uint64_t rll = *(static_cast<const uint64_t *>((void *)peek()));

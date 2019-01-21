@@ -118,7 +118,7 @@ void TcpConnectionImpl::writeCallback()
                     if (errno != EWOULDBLOCK)
                     {
                         LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                        if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
+                        if (errno == EPIPE || errno == ECONNRESET) // TODO: any others?
                         {
                             return;
                         }
@@ -162,7 +162,7 @@ void TcpConnectionImpl::writeCallback()
                             if (errno != EWOULDBLOCK)
                             {
                                 LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                                if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
+                                if (errno == EPIPE || errno == ECONNRESET) // TODO: any others?
                                 {
                                     return;
                                 }
@@ -288,7 +288,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             if (errno != EWOULDBLOCK)
             {
                 LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
+                if (errno == EPIPE || errno == ECONNRESET) // TODO: any others?
                 {
                     return;
                 }
@@ -679,7 +679,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                 if (errno != EWOULDBLOCK)
                 {
                     LOG_SYSERR << "TcpConnectionImpl::sendFileInLoop";
-                    if (errno == EPIPE || errno == ECONNRESET) // FIXME: any others?
+                    if (errno == EPIPE || errno == ECONNRESET) // TODO: any others?
                     {
                         return;
                     }

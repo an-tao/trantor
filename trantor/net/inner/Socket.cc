@@ -96,7 +96,7 @@ void Socket::setTcpNoDelay(bool on)
     int optval = on ? 1 : 0;
     ::setsockopt(sockFd_, IPPROTO_TCP, TCP_NODELAY,
                  &optval, static_cast<socklen_t>(sizeof optval));
-    // FIXME CHECK
+    // TODO CHECK
 }
 
 void Socket::setReuseAddr(bool on)
@@ -104,7 +104,7 @@ void Socket::setReuseAddr(bool on)
     int optval = on ? 1 : 0;
     ::setsockopt(sockFd_, SOL_SOCKET, SO_REUSEADDR,
                  &optval, static_cast<socklen_t>(sizeof optval));
-    // FIXME CHECK
+    // TODO CHECK
 }
 
 void Socket::setReusePort(bool on)
@@ -130,7 +130,7 @@ void Socket::setKeepAlive(bool on)
     int optval = on ? 1 : 0;
     ::setsockopt(sockFd_, SOL_SOCKET, SO_KEEPALIVE,
                  &optval, static_cast<socklen_t>(sizeof optval));
-    // FIXME CHECK
+    // TODO CHECK
 }
 
 int Socket::getSocketError()

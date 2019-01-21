@@ -147,10 +147,7 @@ AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath, const std::
 {
     fileFullName_ = filePath + fileBaseName + fileExtName;
     fp_ = fopen(fileFullName_.c_str(), "a");
-    if (fp_ != NULL)
-    {
-    }
-    else
+    if (fp_ == NULL)
     {
         std::cout << strerror(errno) << std::endl;
     }

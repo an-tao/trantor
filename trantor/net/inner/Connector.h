@@ -1,9 +1,13 @@
+#pragma once
+
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <atomic>
 #include <memory>
+
 namespace trantor
 {
+
 class Connector : public NonCopyable, public std::enable_shared_from_this<Connector>
 {
   public:
@@ -63,4 +67,5 @@ class Connector : public NonCopyable, public std::enable_shared_from_this<Connec
     void handleError();
     void retry(int sockfd);
 };
+
 } // namespace trantor

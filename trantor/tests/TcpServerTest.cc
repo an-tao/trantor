@@ -22,7 +22,7 @@ int main()
         std::cout << std::string(buffer->peek(), buffer->readableBytes());
         connectionPtr->send(buffer->peek(), buffer->readableBytes());
         buffer->retrieveAll();
-        connectionPtr->forceClose();
+       // connectionPtr->forceClose();
     });
     server.setConnectionCallback([](const TcpConnectionPtr &connPtr) {
         if (connPtr->connected())

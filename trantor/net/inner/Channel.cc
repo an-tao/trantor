@@ -50,10 +50,6 @@ void Channel::handleEventSafely()
 		_eventCallback();
 		return;
 	}
-
-	if (_revents & POLLNVAL)
-	{
-	}
 	if ((_revents & POLLHUP) && !(_revents & POLLIN))
 	{
 		//LOG_TRACE<<"handle close";

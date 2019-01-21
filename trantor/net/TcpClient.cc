@@ -105,7 +105,7 @@ TcpClient::~TcpClient()
     if (conn)
     {
         assert(loop_ == conn->getLoop());
-        // FIXME: not 100% safe, if we are in different thread
+        // TODO: not 100% safe, if we are in different thread
         CloseCallback cb = std::bind(&trantor::removeConnection, loop_, _1);
         loop_->runInLoop(
             std::bind(&TcpConnectionImpl::setCloseCallback,
@@ -118,7 +118,6 @@ TcpClient::~TcpClient()
     else
     {
         connector_->stop();
-        // FIXME: HACK
         loop_->runAfter(1, [=]() {
             trantor::removeConnector(connector_);
         });
@@ -127,7 +126,7 @@ TcpClient::~TcpClient()
 
 void TcpClient::connect()
 {
-    // FIXME: check state
+    // TODO: check state
     LOG_TRACE << "TcpClient::connect[" << name_ << "] - connecting to "
               << connector_->serverAddress().toIpPort();
     connect_ = true;
@@ -163,8 +162,8 @@ void TcpClient::newConnection(int sockfd)
     std::string connName = name_ + buf;
 
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
-    // FIXME poll with zero timeout to double confirm the new connection
-    // FIXME use make_shared if necessary
+    // TODO poll with zero timeout to double confirm the new connection
+    // TODO use make_shared if necessary
 #ifdef USE_OPENSSL
     std::shared_ptr<TcpConnectionImpl> conn;
     if (_sslCtxPtr)
@@ -193,7 +192,7 @@ void TcpClient::newConnection(int sockfd)
     conn->setRecvMsgCallback(messageCallback_);
     conn->setWriteCompleteCallback(writeCompleteCallback_);
     conn->setCloseCallback(
-        std::bind(&TcpClient::removeConnection, this, _1)); // FIXME: unsafe
+        std::bind(&TcpClient::removeConnection, this, _1));
     {
         std::lock_guard<std::mutex> lock(mutex_);
         connection_ = conn;

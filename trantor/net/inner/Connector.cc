@@ -99,9 +99,9 @@ void Connector::connecting(int sockfd)
     assert(!_channelPtr);
     _channelPtr.reset(new Channel(_loop, sockfd));
     _channelPtr->setWriteCallback(
-        std::bind(&Connector::handleWrite, shared_from_this())); // FIXME: unsafe
+        std::bind(&Connector::handleWrite, shared_from_this())); 
     _channelPtr->setErrorCallback(
-        std::bind(&Connector::handleError, shared_from_this())); // FIXME: unsafe
+        std::bind(&Connector::handleError, shared_from_this())); 
     _channelPtr->setCloseCallback(
         std::bind(&Connector::handleError, shared_from_this()));
 
@@ -116,7 +116,7 @@ int Connector::removeAndResetChannel()
     // Can't reset channel_ here, because we are inside Channel::handleEvent
     _loop->queueInLoop([=]() {
         _channelPtr.reset();
-    }); // FIXME: unsafe
+    }); 
     return sockfd;
 }
 
