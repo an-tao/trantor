@@ -242,9 +242,9 @@ void EventLoop::doRunInLoopFuncs()
             std::lock_guard<std::mutex> lock(_funcsMutex);
             tmpFuncs.swap(_funcs);
         }
-        for (auto funcs : tmpFuncs)
+        for (auto const &func : tmpFuncs)
         {
-            funcs();
+            func();
         }
     }
     _callingFuncs = false;

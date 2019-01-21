@@ -72,7 +72,7 @@ void TimerQueue::handleRead()
     _callingExpiredTimers = true;
     //cancelingTimers_.clear();
     // safe to callback outside critical section
-    for (auto timerPtr : expired)
+    for (auto const &timerPtr : expired)
     {
         if (_timerIdSet.find(timerPtr->id()) != _timerIdSet.end())
         {
@@ -103,7 +103,7 @@ void TimerQueue::processTimers()
     _callingExpiredTimers = true;
     //cancelingTimers_.clear();
     // safe to callback outside critical section
-    for (auto timerPtr : expired)
+    for (auto const &timerPtr : expired)
     {
         if (_timerIdSet.find(timerPtr->id()) != _timerIdSet.end())
         {
@@ -250,7 +250,7 @@ std::vector<TimerPtr> TimerQueue::getExpired(const Date &now)
 void TimerQueue::reset(const std::vector<TimerPtr> &expired, const Date &now)
 {
     _loop->assertInLoopThread();
-    for (auto timerPtr : expired)
+    for (auto const &timerPtr : expired)
     {
         if (timerPtr->isRepeat() &&
             _timerIdSet.find(timerPtr->id()) != _timerIdSet.end())
