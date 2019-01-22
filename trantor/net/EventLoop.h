@@ -17,6 +17,7 @@
 #pragma once
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
+#include <trantor/utils/ObjectPool.h>
 
 #include <thread>
 #include <memory>
@@ -63,6 +64,12 @@ class EventLoop : NonCopyable
     void queueInLoop(Func &&f);
     void wakeup();
     void wakeupRead();
+    template <typename T>
+    std::shared_ptr<ObjectPool<T>> getObjectPool()
+    {
+        static std::shared_ptr<ObjectPool<T>> pool=std::make_shared<ObjectPool<T>>();
+        return pool;
+    }
     ///
     /// Runs callback at 'time'.
     /// Safe to call from other threads.
