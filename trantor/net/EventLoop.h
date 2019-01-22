@@ -65,7 +65,7 @@ class EventLoop : NonCopyable
     void wakeup();
     void wakeupRead();
     template <typename T>
-    std::shared_ptr<ObjectPool<T>> getObjectPool()
+    const std::shared_ptr<ObjectPool<T>> &getObjectPool()
     {
         static std::shared_ptr<ObjectPool<T>> pool=std::make_shared<ObjectPool<T>>();
         return pool;

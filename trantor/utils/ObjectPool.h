@@ -15,9 +15,10 @@
 #pragma once
 
 #include <trantor/utils/NonCopyable.h>
-#include <list>
+#include <vector>
 #include <memory>
 #include <type_traits>
+#include <mutex>
 
 namespace trantor
 {
@@ -28,22 +29,28 @@ class ObjectPool : public NonCopyable, public std::enable_shared_from_this<Objec
     std::shared_ptr<T> getObject()
     {
         static_assert(!std::is_pointer<T>::value, "The parameter type of the ObjectPool template can't be pointer type");
-        T *p;
-        if (!_objs.empty())
+        T *p = nullptr;
         {
-            p = _objs.back();
-            _objs.pop_back();
+            std::lock_guard<std::mutex> lock(_mtx);
+            if (!_objs.empty())
+            {
+                p = _objs.back();
+                _objs.pop_back();
+            }
         }
-        else
+
+        if (p == nullptr)
         {
             p = new T;
         }
+
         assert(p);
         std::weak_ptr<ObjectPool<T>> weakPtr = this->shared_from_this();
         auto obj = std::shared_ptr<T>(p, [weakPtr](T *ptr) {
             auto self = weakPtr.lock();
             if (self)
             {
+                std::lock_guard<std::mutex> lock(self->_mtx);
                 self->_objs.push_back(ptr);
             }
             else
@@ -55,6 +62,7 @@ class ObjectPool : public NonCopyable, public std::enable_shared_from_this<Objec
     }
 
   private:
-    std::list<T *> _objs;
+    std::vector<T *> _objs;
+    std::mutex _mtx;
 };
 } // namespace trantor
