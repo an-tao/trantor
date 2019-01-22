@@ -14,19 +14,20 @@
 // that can be found in the License file.
 
 // Author: Tao An
+
 #pragma once
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
-#include <trantor/utils/ObjectPool.h>
-
 #include <thread>
 #include <memory>
 #include <vector>
 #include <mutex>
 #include <queue>
 #include <functional>
+
 namespace trantor
 {
+
 class Poller;
 class TimerQueue;
 class Channel;
@@ -64,12 +65,12 @@ class EventLoop : NonCopyable
     void queueInLoop(Func &&f);
     void wakeup();
     void wakeupRead();
-    template <typename T>
-    const std::shared_ptr<ObjectPool<T>> &getObjectPool()
-    {
-        static std::shared_ptr<ObjectPool<T>> pool=std::make_shared<ObjectPool<T>>();
-        return pool;
-    }
+    // template <typename T>
+    // const std::shared_ptr<ObjectPool<T>> &getObjectPool()
+    // {
+    //     static std::shared_ptr<ObjectPool<T>> pool=std::make_shared<ObjectPool<T>>();
+    //     return pool;
+    // }
     ///
     /// Runs callback at 'time'.
     /// Safe to call from other threads.
@@ -120,4 +121,5 @@ class EventLoop : NonCopyable
 
     void doRunInLoopFuncs();
 };
+
 } // namespace trantor
