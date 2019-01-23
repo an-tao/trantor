@@ -11,7 +11,9 @@ add_executable(timer_test TimerTest.cc)
 
 add_executable(timer_test1 TimerTest1.cc)
 
-add_executable(run_in_loop_test RunInloopTest.cc)
+add_executable(run_in_loop_test1 RunInLoopTest1.cc)
+
+add_executable(run_in_loop_test2 RunInLoopTest2.cc)
 
 add_executable(logger_test LoggerTest.cc)
 

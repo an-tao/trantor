@@ -181,24 +181,16 @@ void EventLoop::runInLoop(Func &&cb)
 }
 void EventLoop::queueInLoop(const Func &cb)
 {
-    {
-        std::lock_guard<std::mutex> lock(_funcsMutex);
-        _funcs.push_back(cb);
-    }
-
-    if (!isInLoopThread() || _callingFuncs || !_looping)
+    _funcs.enqueue(cb);
+    if (!isInLoopThread() || !_looping)
     {
         wakeup();
     }
 }
 void EventLoop::queueInLoop(Func &&cb)
 {
-    {
-        std::lock_guard<std::mutex> lock(_funcsMutex);
-        _funcs.push_back(std::move(cb));
-    }
-
-    if (!isInLoopThread() || _callingFuncs || !_looping)
+    _funcs.enqueue(std::move(cb));
+    if (!isInLoopThread() || !_looping)
     {
         wakeup();
     }
@@ -237,12 +229,8 @@ void EventLoop::doRunInLoopFuncs()
 {
     _callingFuncs = true;
     {
-        std::vector<Func> tmpFuncs;
-        {
-            std::lock_guard<std::mutex> lock(_funcsMutex);
-            tmpFuncs.swap(_funcs);
-        }
-        for (auto const &func : tmpFuncs)
+        Func func;
+        while (_funcs.dequeue(func))
         {
             func();
         }
@@ -267,10 +255,11 @@ void EventLoop::wakeup()
 void EventLoop::wakeupRead()
 {
     uint64_t tmp;
+    ssize_t ret = 0;
 #ifdef __linux__
-    ssize_t ret = read(_wakeupFd, &tmp, sizeof(tmp));
+    ret = read(_wakeupFd, &tmp, sizeof(tmp));
 #else
-    ssize_t ret = read(_wakeupFd[0], &tmp, sizeof(tmp));
+    ret = read(_wakeupFd[0], &tmp, sizeof(tmp));
 #endif
     if (ret < 0)
         LOG_SYSERR << "wakeup read error";
