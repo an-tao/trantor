@@ -44,7 +44,7 @@ class MpscQueue : public NonCopyable
     void enqueue(T &&input)
     {
         BufferNode *node = new BufferNode;
-        node->data = std::forward<T>(input);
+        node->data = std::move(input);
         node->next.store(NULL, std::memory_order_relaxed);
 
         BufferNode *prev_head = _head.exchange(node, std::memory_order_acq_rel);
@@ -72,6 +72,7 @@ class MpscQueue : public NonCopyable
         }
 
         output = std::move(next->data);
+        next->data = T();
         _tail.store(next, std::memory_order_release);
         delete tail;
         return true;
