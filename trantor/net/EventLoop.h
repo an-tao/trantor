@@ -18,6 +18,7 @@
 #pragma once
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
+#include <trantor/utils/LockFreeQueue.h>
 #include <thread>
 #include <memory>
 #include <vector>
@@ -107,9 +108,9 @@ class EventLoop : NonCopyable
 
     bool _eventHandling;
 
-    std::mutex _funcsMutex;
+    //std::mutex _funcsMutex;
 
-    std::vector<Func> _funcs;
+    MpscQueue<Func> _funcs;
     std::unique_ptr<TimerQueue> _timerQueue;
     bool _callingFuncs = false;
 #ifdef __linux__
