@@ -19,6 +19,7 @@
 #include <mutex>
 #include <thread>
 #include <memory>
+#include <condition_variable>
 
 namespace trantor
 {

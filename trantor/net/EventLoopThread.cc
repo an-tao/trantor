@@ -1,5 +1,8 @@
 #include <trantor/net/EventLoopThread.h>
 #include <trantor/utils/Logger.h>
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
 
 using namespace trantor;
 EventLoopThread::EventLoopThread(const std::string &threadName)
