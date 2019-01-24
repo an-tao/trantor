@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TaskQueue.h"
+#include <trantor/net/EventLoopThread.h>
 #include <string>
 #include <queue>
 #include <mutex>
@@ -18,18 +19,13 @@ class SerialTaskQueue : public TaskQueue
     SerialTaskQueue() = delete;
     explicit SerialTaskQueue(const std::string &name = std::string());
     ~SerialTaskQueue();
-    bool isRuningTask() { return _isRuningTask; }
+    bool isRuningTask() { return _loopThread.getLoop() ? _loopThread.getLoop()->isCallingFunctions() : false; }
     size_t getTaskCount();
     void stop();
 
   protected:
     std::string _queueName;
-    std::queue<std::function<void()>> _taskQueue;
-    std::mutex _taskMutex;
-    std::condition_variable _taskCond;
-    std::atomic_bool _stop;
-    void queueFunc();
-    std::thread _thread;
-    std::atomic_bool _isRuningTask;
+    EventLoopThread _loopThread;
+    bool _stop = false;
 };
 }; // namespace trantor

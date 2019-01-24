@@ -70,9 +70,13 @@ class MpscQueue : public NonCopyable
         {
             return false;
         }
-
+#ifdef __linux__
         output = std::move(next->data);
+#else
+        output = next->data;
+        /// Immediately destroy some RAII objects in the next->data
         next->data = T();
+#endif
         _tail.store(next, std::memory_order_release);
         delete tail;
         return true;
