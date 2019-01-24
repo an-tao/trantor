@@ -1,11 +1,13 @@
 #include <trantor/net/EventLoopThread.h>
 #include <trantor/utils/Logger.h>
-#include <trantor/utils/SerialTaskQueue.h>
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
 
 using namespace trantor;
 EventLoopThread::EventLoopThread(const std::string &threadName)
     : _loop(NULL),
-      _loopQueue(threadName)
+      _loopThreadName(threadName)
 {
 }
 EventLoopThread::~EventLoopThread()
@@ -14,6 +16,10 @@ EventLoopThread::~EventLoopThread()
     {
         _loop->quit();
     }
+    if(_threadPtr->joinable())
+    {
+        _threadPtr->join();
+    }
 }
 //void EventLoopThread::stop() {
 //    if(_loop)
@@ -21,10 +27,13 @@ EventLoopThread::~EventLoopThread()
 //}
 void EventLoopThread::wait()
 {
-    _loopQueue.waitAllTasksFinished();
+    _threadPtr->join();
 }
 void EventLoopThread::loopFuncs()
 {
+#ifdef __linux__
+    ::prctl(PR_SET_NAME, _loopThreadName.c_str());
+#endif
     EventLoop loop;
     {
         std::lock_guard<std::mutex> guard(_mutex);
@@ -36,7 +45,8 @@ void EventLoopThread::loopFuncs()
 }
 void EventLoopThread::run()
 {
-    _loopQueue.runTaskInQueue(std::bind(&EventLoopThread::loopFuncs, this));
+    assert(!_threadPtr);
+    _threadPtr = std::unique_ptr<std::thread>(new std::thread([=]() { loopFuncs(); }));
     std::unique_lock<std::mutex> lock(_mutex);
     while (_loop == NULL)
     {

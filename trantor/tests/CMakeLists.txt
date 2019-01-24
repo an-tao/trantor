@@ -5,7 +5,9 @@ if(OpenSSL_FOUND)
     add_executable(ssl_client_test SSLClientTest.cc)
 endif()
 
-add_executable(serial_task_queue_test SerialTaskQueueTest.cc)
+add_executable(serial_task_queue_test1 SerialTaskQueueTest1.cc)
+
+add_executable(serial_task_queue_test2 SerialTaskQueueTest2.cc)
 
 add_executable(timer_test TimerTest.cc)
 

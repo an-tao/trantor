@@ -16,25 +16,33 @@
 
 #include <trantor/net/EventLoop.h>
 #include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/SerialTaskQueue.h>
 #include <mutex>
+#include <thread>
+#include <memory>
+#include <condition_variable>
+
 namespace trantor
 {
+
 class EventLoopThread : NonCopyable
 {
   public:
     explicit EventLoopThread(const std::string &threadName = "EventLoopThread");
     ~EventLoopThread();
-    void run();
+    
     //void stop();
     void wait();
     EventLoop *getLoop() { return _loop; }
+    void run();
 
   private:
+    
     EventLoop *_loop;
-    SerialTaskQueue _loopQueue;
+    std::string _loopThreadName;
     void loopFuncs();
     std::condition_variable _cond;
     std::mutex _mutex;
+    std::unique_ptr<std::thread> _threadPtr;
 };
+
 } // namespace trantor

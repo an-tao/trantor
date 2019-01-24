@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <signal.h>
+#include <fcntl.h>
 
 using namespace std;
 namespace trantor
@@ -57,7 +58,8 @@ EventLoop::EventLoop()
     auto r = pipe(_wakeupFd);
     (void)r;
     assert(!r);
-
+    fcntl(_wakeupFd[0], F_SETFL, O_NONBLOCK | O_CLOEXEC);
+    fcntl(_wakeupFd[1], F_SETFL, O_NONBLOCK | O_CLOEXEC);
     _wakeupChannelPtr = std::unique_ptr<Channel>(new Channel(this, _wakeupFd[0]));
 
 #endif
@@ -249,7 +251,7 @@ void EventLoop::wakeup()
 #endif
     if (ret < 0)
     {
-        LOG_SYSERR << "wakeup error";
+        //LOG_SYSERR << "wakeup error";
     }
 }
 void EventLoop::wakeupRead()

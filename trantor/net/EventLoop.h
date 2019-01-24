@@ -95,6 +95,7 @@ class EventLoop : NonCopyable
     void invalidateTimer(TimerId id);
 
     bool isRunning() { return _looping && (!_quit); }
+    bool isCallingFunctions() { return _callingFuncs; }
 
   private:
     void abortNotInLoopThread();

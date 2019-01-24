@@ -1,4 +1,4 @@
-#include <trantor/net/EventLoopThread.h>
+#include <trantor/utils/SerialTaskQueue.h>
 #include <iostream>
 #include <atomic>
 #include <future>
@@ -10,25 +10,23 @@ int main()
     counter = 0;
     std::promise<int> pro;
     auto ft = pro.get_future();
-    trantor::EventLoopThread loopThread;
-    loopThread.run();
-    auto loop = loopThread.getLoop();
-    loop->runInLoop([&counter, &pro, loop]() {
+    trantor::SerialTaskQueue queue("");
+    queue.runTaskInQueue([&counter, &pro, &queue]() {
         for (int i = 0; i < 10000; i++)
         {
-            loop->queueInLoop([&counter, &pro]() {
+            queue.runTaskInQueue([&counter, &pro]() {
                 counter++;
                 if (counter.load() == 110000)
                     pro.set_value(1);
             });
         }
     });
-    for (int i = 0; i < 10;i++)
+    for (int i = 0; i < 10; i++)
     {
-        std::thread([&counter, loop, &pro]() {
+        std::thread([&counter, &queue, &pro]() {
             for (int i = 0; i < 10000; i++)
             {
-                loop->runInLoop([&counter, &pro]() {
+                queue.runTaskInQueue([&counter, &pro]() {
                     counter++;
                     if (counter.load() == 110000)
                         pro.set_value(1);
