@@ -20,6 +20,7 @@
 #include <thread>
 #include <memory>
 #include <condition_variable>
+#include <future>
 
 namespace trantor
 {
@@ -29,20 +30,18 @@ class EventLoopThread : NonCopyable
   public:
     explicit EventLoopThread(const std::string &threadName = "EventLoopThread");
     ~EventLoopThread();
-    
-    //void stop();
     void wait();
     EventLoop *getLoop() { return _loop; }
     void run();
-
   private:
-    
     EventLoop *_loop;
     std::string _loopThreadName;
     void loopFuncs();
     std::condition_variable _cond;
     std::mutex _mutex;
-    std::unique_ptr<std::thread> _threadPtr;
+    std::thread _thread;
+    std::promise<int> _promiseForRun;
+    std::once_flag _once;
 };
 
 } // namespace trantor
