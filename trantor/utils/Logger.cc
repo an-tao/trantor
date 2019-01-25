@@ -42,14 +42,7 @@ inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
 }
 } // namespace trantor
 using namespace trantor;
-void defaultOutputFunction(const char *msg, const uint64_t len)
-{
-    fwrite(msg, 1, len, stdout);
-}
-void defaultFlushFunction()
-{
-    fflush(stdout);
-}
+
 static __thread uint64_t lastSecond_ = 0;
 static __thread char lastTimeString_[32] = {0};
 #ifdef __linux__
@@ -58,13 +51,7 @@ static __thread pid_t threadId_ = 0;
 static __thread uint64_t threadId_ = 0;
 #endif
 //   static __thread LogStream logStream_;
-#ifdef RELEASE
-Logger::LogLevel Logger::logLevel_ = LogLevel::INFO;
-#else
-Logger::LogLevel Logger::logLevel_ = LogLevel::DEBUG;
-#endif
-std::function<void(const char *msg, const uint64_t len)> Logger::outputFunc_ = defaultOutputFunction;
-std::function<void()> Logger::flushFunc_ = defaultFlushFunction;
+
 void Logger::formatTime()
 {
     uint64_t now = date_.microSecondsSinceEpoch();
@@ -142,15 +129,13 @@ Logger::Logger(SourceFile file, int line, bool isSysErr)
 Logger::~Logger()
 {
     logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
-    if (Logger::outputFunc_)
-        Logger::outputFunc_(logStream_.bufferData(), logStream_.bufferLength());
-    else
-        defaultOutputFunction(logStream_.bufferData(), logStream_.bufferLength());
+    Logger::_outputFunc()(logStream_.bufferData(), logStream_.bufferLength());
     if (level_ >= ERROR)
-        Logger::flushFunc_();
+        Logger::_flushFunc()();
     //logStream_.resetBuffer();
 }
 LogStream &Logger::stream()
 {
     return logStream_;
 }
+

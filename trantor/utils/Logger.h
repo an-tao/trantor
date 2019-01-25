@@ -8,6 +8,8 @@
 #include <iostream>
 namespace trantor
 {
+
+
 class Logger : public NonCopyable
 {
 
@@ -62,24 +64,48 @@ class Logger : public NonCopyable
     LogStream &stream();
     static void setOutputFunction(std::function<void(const char *msg, const uint64_t len)> outputFunc, std::function<void()> flushFunc)
     {
-        outputFunc_ = outputFunc;
-        flushFunc_ = flushFunc;
+        _outputFunc() = outputFunc;
+        _flushFunc() = flushFunc;
     }
 
     static void setLogLevel(LogLevel level)
     {
-        logLevel_ = level;
+        _logLevel() = level;
     }
     static LogLevel logLevel()
     {
-        return logLevel_;
+        return _logLevel();
     }
 
   protected:
+    static void defaultOutputFunction(const char *msg, const uint64_t len)
+    {
+        fwrite(msg, 1, len, stdout);
+    }
+    static void defaultFlushFunction()
+    {
+        fflush(stdout);
+    }
     void formatTime();
-    static LogLevel logLevel_;
-    static std::function<void(const char *msg, const uint64_t len)> outputFunc_;
-    static std::function<void()> flushFunc_;
+    static LogLevel &_logLevel()
+    {
+#ifdef RELEASE
+        static LogLevel logLevel = LogLevel::INFO;
+#else
+        static LogLevel logLevel = LogLevel::DEBUG;
+#endif
+        return logLevel;
+    }
+    static std::function<void(const char *msg, const uint64_t len)> &_outputFunc()
+    {
+        static std::function<void(const char *msg, const uint64_t len)> outputFunc = Logger::defaultOutputFunction;
+        return outputFunc;
+    }
+    static std::function<void()> &_flushFunc()
+    {
+        static std::function<void()> flushFunc = Logger::defaultFlushFunction;
+        return flushFunc;
+    }
     LogStream logStream_;
     Date date_ = Date::date();
     SourceFile sourceFile_;
