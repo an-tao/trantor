@@ -7,8 +7,16 @@
 using namespace trantor;
 EventLoopThread::EventLoopThread(const std::string &threadName)
     : _loop(NULL),
-      _loopThreadName(threadName)
+      _loopThreadName(threadName),
+      _thread([=]() {
+          loopFuncs();
+      })
 {
+    std::unique_lock<std::mutex> lock(_mutex);
+    while (_loop == NULL)
+    {
+        _cond.wait(lock);
+    }
 }
 EventLoopThread::~EventLoopThread()
 {
@@ -16,9 +24,9 @@ EventLoopThread::~EventLoopThread()
     {
         _loop->quit();
     }
-    if(_threadPtr->joinable())
+    if (_thread.joinable())
     {
-        _threadPtr->join();
+        _thread.join();
     }
 }
 //void EventLoopThread::stop() {
@@ -27,7 +35,7 @@ EventLoopThread::~EventLoopThread()
 //}
 void EventLoopThread::wait()
 {
-    _threadPtr->join();
+    _thread.join();
 }
 void EventLoopThread::loopFuncs()
 {
@@ -40,16 +48,14 @@ void EventLoopThread::loopFuncs()
         _loop = &loop;
         _cond.notify_one();
     }
+    auto f = _promiseForRun.get_future();
+    (void)f.get();
     loop.loop();
     _loop = NULL;
 }
 void EventLoopThread::run()
 {
-    assert(!_threadPtr);
-    _threadPtr = std::unique_ptr<std::thread>(new std::thread([=]() { loopFuncs(); }));
-    std::unique_lock<std::mutex> lock(_mutex);
-    while (_loop == NULL)
-    {
-        _cond.wait(lock);
-    }
+    std::call_once(_once, [this]() {
+        _promiseForRun.set_value(1);
+    });
 }
