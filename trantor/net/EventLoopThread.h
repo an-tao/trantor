@@ -33,14 +33,15 @@ class EventLoopThread : NonCopyable
     void wait();
     EventLoop *getLoop() { return _loop; }
     void run();
+
   private:
     EventLoop *_loop;
     std::string _loopThreadName;
     void loopFuncs();
-    std::condition_variable _cond;
-    std::mutex _mutex;
     std::thread _thread;
+    std::promise<EventLoop *> _promiseForLoopPointer;
     std::promise<int> _promiseForRun;
+    std::promise<int> _promiseForLoop;
     std::once_flag _once;
 };
 
