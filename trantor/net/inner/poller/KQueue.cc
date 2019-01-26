@@ -9,12 +9,14 @@
 
 namespace trantor
 {
+
 namespace
 {
 const int kNew = -1;
 const int kAdded = 1;
 const int kDeleted = 2;
 } // namespace
+
 KQueue::KQueue(EventLoop *loop)
     : Poller(loop),
       _kqfd(kqueue()),
@@ -192,4 +194,5 @@ void KQueue::update(Channel *channel)
     }
     kevent(_kqfd, ev, n, NULL, 0, NULL);
 }
+
 } // namespace trantor

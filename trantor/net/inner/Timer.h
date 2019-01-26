@@ -1,3 +1,17 @@
+/**
+ *
+ *  Timer.h
+ *  An Tao
+ *
+ *  Public header file in trantor lib.
+ * 
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *
+ */
+
 #pragma once
 
 #include <trantor/utils/Date.h>
@@ -6,8 +20,10 @@
 #include <functional>
 #include <atomic>
 #include <iostream>
+
 namespace trantor
 {
+
 typedef uint64_t TimerId;
 class Timer : public NonCopyable
 {
@@ -34,4 +50,5 @@ class Timer : public NonCopyable
     const TimerId _id;
     static std::atomic<TimerId> _timersCreated;
 };
+
 }; // namespace trantor

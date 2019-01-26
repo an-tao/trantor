@@ -1,9 +1,24 @@
+/**
+ *
+ *  Channel.cc
+ *  An Tao
+ *
+ *  Public header file in trantor lib.
+ * 
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *
+ */
+
 #include "Channel.h"
 #include <trantor/net/EventLoop.h>
 #include <poll.h>
 #include <iostream>
 namespace trantor
 {
+
 const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = POLLIN | POLLPRI;
 const int Channel::kWriteEvent = POLLOUT;
@@ -16,6 +31,7 @@ Channel::Channel(EventLoop *loop, int fd)
 	  _tied(false)
 {
 }
+
 void Channel::remove()
 {
 	assert(_events == kNoneEvent);
@@ -27,6 +43,7 @@ void Channel::update()
 {
 	_loop->updateChannel(this);
 }
+
 void Channel::handleEvent()
 {
 	//LOG_TRACE<<"_revents="<<_revents;
@@ -79,4 +96,5 @@ void Channel::handleEventSafely()
 			_writeCallback();
 	}
 }
+
 } // namespace trantor

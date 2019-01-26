@@ -1,3 +1,17 @@
+/**
+ *
+ *  AsyncFileLogger.cc
+ *  An Tao
+ *
+ *  Public header file in trantor lib.
+ * 
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *
+ */
+
 #include <trantor/utils/AsyncFileLogger.h>
 #ifndef __WINDOWS__
 #include <unistd.h>
@@ -12,6 +26,7 @@
 #define LOG_FLUSH_TIMEOUT 1
 #define MEM_BUFFER_SIZE 4 * 1024 * 1024
 using namespace trantor;
+
 AsyncFileLogger::AsyncFileLogger()
     : logBufferPtr_(new std::string),
       nextBufferPtr_(new std::string)
@@ -19,6 +34,7 @@ AsyncFileLogger::AsyncFileLogger()
     logBufferPtr_->reserve(MEM_BUFFER_SIZE);
     nextBufferPtr_->reserve(MEM_BUFFER_SIZE);
 }
+
 AsyncFileLogger::~AsyncFileLogger()
 {
     //std::cout << "~AsyncFileLogger" << std::endl;
@@ -43,6 +59,7 @@ AsyncFileLogger::~AsyncFileLogger()
         }
     }
 }
+
 void AsyncFileLogger::output(const char *msg, const uint64_t len)
 {
     std::lock_guard<std::mutex> guard_(mutex_);
@@ -73,6 +90,7 @@ void AsyncFileLogger::output(const char *msg, const uint64_t len)
     }
     logBufferPtr_->append(msg, len);
 }
+
 void AsyncFileLogger::flush()
 {
     std::lock_guard<std::mutex> guard_(mutex_);
@@ -83,6 +101,7 @@ void AsyncFileLogger::flush()
         cond_.notify_one();
     }
 }
+
 void AsyncFileLogger::writeLogToFile(const StringPtr buf)
 {
     if (!loggerFilePtr_)
@@ -95,6 +114,7 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
         loggerFilePtr_.reset();
     }
 }
+
 void AsyncFileLogger::logThreadFunc()
 {
 #ifdef __linux__
@@ -133,6 +153,7 @@ void AsyncFileLogger::logThreadFunc()
             loggerFilePtr_->flush();
     }
 }
+
 void AsyncFileLogger::startLogging()
 {
     threadPtr_ = std::unique_ptr<std::thread>(
@@ -152,6 +173,7 @@ AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath, const std::
         std::cout << strerror(errno) << std::endl;
     }
 }
+
 uint64_t AsyncFileLogger::LoggerFile::fileSeq_ = 0;
 void AsyncFileLogger::LoggerFile::writeLog(const StringPtr buf)
 {
@@ -161,6 +183,7 @@ void AsyncFileLogger::LoggerFile::writeLog(const StringPtr buf)
         fwrite(buf->c_str(), 1, buf->length(), fp_);
     }
 }
+
 void AsyncFileLogger::LoggerFile::flush()
 {
     if (fp_)
@@ -168,12 +191,14 @@ void AsyncFileLogger::LoggerFile::flush()
         fflush(fp_);
     }
 }
+
 uint64_t AsyncFileLogger::LoggerFile::getLength()
 {
     if (fp_)
         return ftell(fp_);
     return 0;
 }
+
 AsyncFileLogger::LoggerFile::~LoggerFile()
 {
     if (fp_)

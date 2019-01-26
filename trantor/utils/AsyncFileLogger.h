@@ -1,3 +1,17 @@
+/**
+ *
+ *  AsyncFileLogger.h
+ *  An Tao
+ *
+ *  Public header file in trantor lib.
+ * 
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *
+ */
+
 #pragma once
 
 #include <trantor/utils/NonCopyable.h>
@@ -9,8 +23,10 @@
 #include <sstream>
 #include <memory>
 #include <queue>
+
 namespace trantor
 {
+
 typedef std::shared_ptr<std::string> StringPtr;
 typedef std::queue<StringPtr> StringPtrQueue;
 class AsyncFileLogger : NonCopyable
@@ -73,4 +89,5 @@ class AsyncFileLogger : NonCopyable
     uint64_t lostCounter_ = 0;
     void swapBuffer();
 };
+
 } // namespace trantor

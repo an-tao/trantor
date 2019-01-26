@@ -1,3 +1,17 @@
+/**
+ *
+ *  Date.cc
+ *  An Tao
+ *
+ *  Public header file in trantor lib.
+ * 
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *
+ */
+
 #include "Date.h"
 #include <sys/time.h>
 #include <cstdlib>
@@ -6,6 +20,7 @@
 
 namespace trantor
 {
+
 const Date Date::date()
 {
     struct timeval tv;
@@ -25,7 +40,7 @@ const Date Date::roundDay() const
 {
     struct tm t;
     time_t seconds = static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
-    localtime_r(&seconds,&t);
+    localtime_r(&seconds, &t);
     t.tm_hour = 0;
     t.tm_min = 0;
     t.tm_sec = 0;
@@ -173,4 +188,5 @@ Date::Date(unsigned int year,
     epoch = mktime(&tm);
     microSecondsSinceEpoch_ = epoch * MICRO_SECONDS_PRE_SEC + microSecond;
 }
+
 }; // namespace trantor

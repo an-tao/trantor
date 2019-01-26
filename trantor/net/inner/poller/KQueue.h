@@ -25,6 +25,7 @@ typedef std::vector<struct kevent> EventList;
 
 namespace trantor
 {
+
 class Channel;
 
 class KQueue : public Poller
@@ -47,4 +48,5 @@ class KQueue : public Poller
     void fillActiveChannels(int numEvents, ChannelList *activeChannels) const;
     void update(Channel *channel);
 };
+
 } // namespace trantor

@@ -11,6 +11,7 @@
  *  Trantor
  *
  */
+
 #include <trantor/net/TcpServer.h>
 #include "Acceptor.h"
 #include "inner/TcpConnectionImpl.h"
@@ -36,11 +37,13 @@ TcpServer::TcpServer(EventLoop *loop,
 {
     acceptorPtr_->setNewConnectionCallback(std::bind(&TcpServer::newConnection, this, _1, _2));
 }
+
 TcpServer::~TcpServer()
 {
     loop_->assertInLoopThread();
     LOG_TRACE << "TcpServer::~TcpServer [" << serverName_ << "] destructing";
 }
+
 void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 {
     LOG_TRACE << "new connection:fd=" << sockfd << " address=" << peer.toIpPort();
@@ -99,6 +102,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     connSet_.insert(newPtr);
     newPtr->connectEstablished();
 }
+
 void TcpServer::start()
 {
     loop_->runInLoop([=]() {
@@ -129,6 +133,7 @@ void TcpServer::start()
         acceptorPtr_->listen();
     });
 }
+
 void TcpServer::setIoLoopNum(size_t num)
 {
     assert(num >= 0);
@@ -138,6 +143,7 @@ void TcpServer::setIoLoopNum(size_t num)
         loopPoolPtr_->start();
     });
 }
+
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";

@@ -1,9 +1,17 @@
-// Copyright 2018, Tao An.  All rights reserved.
-//
-// Use of this source code is governed by a BSD-style license
-// that can be found in the License file.
+/**
+ *
+ *  SSLConnection.h
+ *  An Tao
+ *
+ *  Public header file in trantor lib.
+ * 
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *
+ */
 
-// Author: Tao An
 #pragma once
 #include <openssl/ssl.h>
 #include "../inner/TcpConnectionImpl.h"
@@ -12,6 +20,7 @@
 #include <memory>
 namespace trantor
 {
+
 enum class SSLStatus
 {
     Handshaking,
@@ -20,6 +29,7 @@ enum class SSLStatus
     DisConnecting,
     DisConnected
 };
+
 class SSLConnection : public TcpConnectionImpl
 {
   public:
@@ -44,6 +54,7 @@ class SSLConnection : public TcpConnectionImpl
     virtual void connectEstablished() override;
     virtual ssize_t writeInLoop(const char *buffer, size_t length) override;
 };
+
 typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
 
 } // namespace trantor

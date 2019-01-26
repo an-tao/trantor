@@ -11,7 +11,9 @@
  *  Trantor
  *
  */
+
 #pragma once
+
 #include <trantor/utils/config.h>
 #include <trantor/net/callbacks.h>
 #include <trantor/utils/NonCopyable.h>
@@ -32,6 +34,7 @@
 #endif
 namespace trantor
 {
+
 class Acceptor;
 
 class TcpServer : NonCopyable
@@ -99,4 +102,5 @@ class TcpServer : NonCopyable
     std::shared_ptr<SSL_CTX> _sslCtxPtr;
 #endif
 };
+
 } // namespace trantor

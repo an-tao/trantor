@@ -1,14 +1,30 @@
+/**
+ *
+ *  callbacks.h
+ *  An Tao
+ *
+ *  Public header file in trantor lib.
+ * 
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *
+ */
+
 #pragma once
 
 #include <functional>
 #include <memory>
 namespace trantor
 {
+
 enum TrantorError
 {
     TrantorError_None,
     TrantorError_UnkownError
 };
+
 typedef std::function<void()> TimerCallback;
 
 // the data has been read to (buf, len)

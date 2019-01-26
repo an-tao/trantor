@@ -1,3 +1,17 @@
+/**
+ *
+ *  MsgBuffer.cc
+ *  An Tao
+ *
+ *  Public header file in trantor lib.
+ * 
+ *  Copyright 2018, An Tao.  All rights reserved.
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the License file.
+ *
+ *
+ */
+
 #include <trantor/utils/MsgBuffer.h>
 #include <trantor/utils/Funcs.h>
 #include <string.h>
