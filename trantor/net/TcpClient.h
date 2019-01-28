@@ -49,24 +49,24 @@ class TcpClient : NonCopyable
 
     TcpConnectionPtr connection() const
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return connection_;
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _connection;
     }
 
-    EventLoop *getLoop() const { return loop_; }
-    bool retry() const { return retry_; }
-    void enableRetry() { retry_ = true; }
+    EventLoop *getLoop() const { return _loop; }
+    bool retry() const { return _retry; }
+    void enableRetry() { _retry = true; }
 
     const std::string &name() const
     {
-        return name_;
+        return _name;
     }
 
     /// Set connection callback.
     /// Not thread safe.
     void setConnectionCallback(const ConnectionCallback &cb)
     {
-        connectionCallback_ = cb;
+        _connectionCallback = cb;
     }
     void setConnectionErrorCallback(const ConnectionErrorCallback &cb)
     {
@@ -76,27 +76,27 @@ class TcpClient : NonCopyable
     /// Not thread safe.
     void setMessageCallback(const RecvMessageCallback &cb)
     {
-        messageCallback_ = cb;
+        _messageCallback = cb;
     }
 
     /// Set write complete callback.
     /// Not thread safe.
     void setWriteCompleteCallback(const WriteCompleteCallback &cb)
     {
-        writeCompleteCallback_ = cb;
+        _writeCompleteCallback = cb;
     }
 
     void setConnectionCallback(ConnectionCallback &&cb)
     {
-        connectionCallback_ = std::move(cb);
+        _connectionCallback = std::move(cb);
     }
     void setMessageCallback(RecvMessageCallback &&cb)
     {
-        messageCallback_ = std::move(cb);
+        _messageCallback = std::move(cb);
     }
     void setWriteCompleteCallback(WriteCompleteCallback &&cb)
     {
-        writeCompleteCallback_ = std::move(cb);
+        _writeCompleteCallback = std::move(cb);
     }
 #ifdef USE_OPENSSL
     void enableSSL();
@@ -108,21 +108,22 @@ class TcpClient : NonCopyable
     /// Not thread safe, but in loop
     void removeConnection(const TcpConnectionPtr &conn);
 
-    EventLoop *loop_;
-    ConnectorPtr connector_; // avoid revealing Connector
-    const std::string name_;
-    ConnectionCallback connectionCallback_;
+    EventLoop *_loop;
+    ConnectorPtr _connector; // avoid revealing Connector
+    const std::string _name;
+    ConnectionCallback _connectionCallback;
     ConnectionErrorCallback _connectionErrorCallback;
-    RecvMessageCallback messageCallback_;
-    WriteCompleteCallback writeCompleteCallback_;
-    std::atomic_bool retry_;   // atomic
-    std::atomic_bool connect_; // atomic
+    RecvMessageCallback _messageCallback;
+    WriteCompleteCallback _writeCompleteCallback;
+    std::atomic_bool _retry;   // atomic
+    std::atomic_bool _connect; // atomic
     // always in loop thread
-    int nextConnId_;
-    mutable std::mutex mutex_;
-    TcpConnectionPtr connection_; // @GuardedBy mutex_
+    int _nextConnId;
+    mutable std::mutex _mutex;
+    TcpConnectionPtr _connection; // @GuardedBy _mutex
 #ifdef USE_OPENSSL
     std::shared_ptr<SSL_CTX> _sslCtxPtr;
 #endif
 };
+
 } // namespace trantor

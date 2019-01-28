@@ -36,7 +36,7 @@ SSLConnection::SSLConnection(EventLoop *loop, int socketfd, const InetAddress &l
 void SSLConnection::writeCallback()
 {
     LOG_TRACE << "write Callback";
-    loop_->assertInLoopThread();
+    _loop->assertInLoopThread();
     if (_status == SSLStatus::Handshaking)
     {
         doHandshaking();
@@ -51,7 +51,7 @@ void SSLConnection::writeCallback()
 void SSLConnection::readCallback()
 {
     LOG_TRACE << "read Callback";
-    loop_->assertInLoopThread();
+    _loop->assertInLoopThread();
     if (_status == SSLStatus::Handshaking)
     {
         doHandshaking();
@@ -77,7 +77,7 @@ void SSLConnection::readCallback()
             }
             if (rd > 0)
             {
-                readBuffer_.append(buf, rd);
+                _readBuffer.append(buf, rd);
                 newDataFlag = true;
             }
 
@@ -85,26 +85,26 @@ void SSLConnection::readCallback()
         if (newDataFlag)
         {
             //eval callback function;
-            recvMsgCallback_(shared_from_this(), &readBuffer_);
+            _recvMsgCallback(shared_from_this(), &_readBuffer);
         }
     }
 }
 
 void SSLConnection::connectEstablished()
 {
-    loop_->runInLoop([=]() {
+    _loop->runInLoop([=]() {
         LOG_TRACE << "connectEstablished";
-        assert(state_ == Connecting);
-        ioChennelPtr_->tie(shared_from_this());
-        ioChennelPtr_->enableReading();
-        state_ = Connected;
+        assert(_state == Connecting);
+        _ioChennelPtr->tie(shared_from_this());
+        _ioChennelPtr->enableReading();
+        _state = Connected;
         if (_isServer)
         {
             SSL_set_accept_state(_sslPtr.get());
         }
         else
         {
-            ioChennelPtr_->enableWriting();
+            _ioChennelPtr->enableWriting();
             SSL_set_connect_state(_sslPtr.get());
         }
     });
@@ -116,34 +116,35 @@ void SSLConnection::doHandshaking()
     if (r == 1)
     {
         _status = SSLStatus::Connected;
-        connectionCallback_(shared_from_this());
+        _connectionCallback(shared_from_this());
         return;
     }
     int err = SSL_get_error(_sslPtr.get(), r);
     if (err == SSL_ERROR_WANT_WRITE)
     { //SSL want writable;
-        ioChennelPtr_->enableWriting();
-        ioChennelPtr_->disableReading();
+        _ioChennelPtr->enableWriting();
+        _ioChennelPtr->disableReading();
     }
     else if (err == SSL_ERROR_WANT_READ)
     { //SSL want readable;
-        ioChennelPtr_->enableReading();
-        ioChennelPtr_->disableWriting();
+        _ioChennelPtr->enableReading();
+        _ioChennelPtr->disableWriting();
     }
     else
     { //错误
         //ERR_print_errors(err);
         LOG_FATAL << "SSL handshake err";
-        ioChennelPtr_->disableReading();
+        _ioChennelPtr->disableReading();
         _status = SSLStatus::DisConnected;
+        forceClose();
     }
 }
 
 ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
 {
     LOG_TRACE << "send in loop";
-    loop_->assertInLoopThread();
-    if (state_ != Connected)
+    _loop->assertInLoopThread();
+    if (_state != Connected)
     {
         LOG_WARN << "Connection is not connected,give up sending";
         return -1;
