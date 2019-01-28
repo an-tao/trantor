@@ -91,7 +91,7 @@ class Socket : NonCopyable
     }
     ~Socket()
     {
-        LOG_TRACE << "Socket deconstructed";
+        LOG_TRACE << "Socket deconstructed:" << sockFd_;
         if (sockFd_ >= 0)
             close(sockFd_);
     }
@@ -149,4 +149,3 @@ class Socket : NonCopyable
 };
 
 } // namespace trantor
-

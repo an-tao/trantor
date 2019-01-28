@@ -113,12 +113,12 @@ void Connector::connecting(int sockfd)
     assert(!_channelPtr);
     _channelPtr.reset(new Channel(_loop, sockfd));
     _channelPtr->setWriteCallback(
-        std::bind(&Connector::handleWrite, shared_from_this())); 
+        std::bind(&Connector::handleWrite, shared_from_this()));
     _channelPtr->setErrorCallback(
-        std::bind(&Connector::handleError, shared_from_this())); 
+        std::bind(&Connector::handleError, shared_from_this()));
     _channelPtr->setCloseCallback(
         std::bind(&Connector::handleError, shared_from_this()));
-
+    LOG_TRACE << "connecting:" << sockfd;
     _channelPtr->enableWriting();
 }
 
@@ -130,7 +130,7 @@ int Connector::removeAndResetChannel()
     // Can't reset channel_ here, because we are inside Channel::handleEvent
     _loop->queueInLoop([=]() {
         _channelPtr.reset();
-    }); 
+    });
     return sockfd;
 }
 
