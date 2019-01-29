@@ -21,7 +21,7 @@
 #include <assert.h>
 #include <algorithm>
 
-#define BUFFER_DEF_LENGTH 2048
+#define _bufferDEF_LENGTH 2048
 static const char CRLF[] = "\r\n";
 
 namespace trantor
@@ -29,16 +29,16 @@ namespace trantor
 class MsgBuffer
 {
   public:
-    MsgBuffer(size_t len = BUFFER_DEF_LENGTH);
+    MsgBuffer(size_t len = _bufferDEF_LENGTH);
     //default constructor and assignment operator can work;
     //        MsgBuffer(const MsgBuffer &buf);
     //        MsgBuffer&operator = (const MsgBuffer &buf);
     //        MsgBuffer(MsgBuffer &&buf) noexcept ;
     //        MsgBuffer& operator = (MsgBuffer &&buf) noexcept ;
     //peek
-    const char *peek() const { return begin() + head_; }
-    const char *beginWrite() const { return begin() + tail_; }
-    char *beginWrite() { return begin() + tail_; }
+    const char *peek() const { return begin() + _head; }
+    const char *beginWrite() const { return begin() + _tail; }
+    char *beginWrite() { return begin() + _tail; }
     uint8_t peekInt8() const
     {
         assert(readableBytes() >= 1);
@@ -54,8 +54,8 @@ class MsgBuffer
     uint32_t readInt32();
     uint64_t readInt64();
     void swap(MsgBuffer &buf);
-    size_t readableBytes() const { return tail_ - head_; }
-    size_t writableBytes() const { return buffer_.size() - tail_; }
+    size_t readableBytes() const { return _tail - _head; }
+    size_t writableBytes() const { return _buffer.size() - _tail; }
     //append
     void append(const MsgBuffer &buf);
     void append(const char *buf, size_t len);
@@ -94,13 +94,13 @@ class MsgBuffer
     void hasWritten(size_t len)
     {
         assert(len <= writableBytes());
-        tail_ += len;
+        _tail += len;
     }
     //cancel
     void unwrite(size_t offset)
     {
         assert(readableBytes() >= offset);
-        tail_ -= offset;
+        _tail -= offset;
     }
     const char &operator[](size_t offset) const
     {
@@ -110,17 +110,15 @@ class MsgBuffer
     char &operator[](size_t offset)
     {
         assert(readableBytes() >= offset);
-        return begin()[head_ + offset];
+        return begin()[_head + offset];
     }
 
   private:
-    size_t head_;
-    size_t initCap_;
-    std::vector<char> buffer_;
-
-    size_t tail_;
-
-    const char *begin() const { return &buffer_[0]; }
-    char *begin() { return &buffer_[0]; }
+    size_t _head;
+    size_t _initCap;
+    std::vector<char> _buffer;
+    size_t _tail;
+    const char *begin() const { return &_buffer[0]; }
+    char *begin() { return &_buffer[0]; }
 };
 } // namespace trantor

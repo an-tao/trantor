@@ -39,13 +39,13 @@ class AsyncFileLogger : NonCopyable
     void setFileSizeLimit(uint64_t limit) { sizeLimit_ = limit; }
     void setFileName(const std::string &baseName, const std::string &extName = ".log", const std::string &path = "./")
     {
-        fileBaseName_ = baseName;
-        extName[0] == '.' ? fileExtName_ = extName : fileExtName_ = std::string(".") + extName;
-        filePath_ = path;
-        if (filePath_.length() == 0)
-            filePath_ = "./";
-        if (filePath_[filePath_.length() - 1] != '/')
-            filePath_ = filePath_ + "/";
+        _fileBaseName = baseName;
+        extName[0] == '.' ? _fileExtName = extName : _fileExtName = std::string(".") + extName;
+        _filePath = path;
+        if (_filePath.length() == 0)
+            _filePath = "./";
+        if (_filePath[_filePath.length() - 1] != '/')
+            _filePath = _filePath + "/";
     }
     ~AsyncFileLogger();
     AsyncFileLogger();
@@ -61,9 +61,9 @@ class AsyncFileLogger : NonCopyable
     std::unique_ptr<std::thread> threadPtr_;
     bool stopFlag_ = false;
     void logThreadFunc();
-    std::string filePath_ = "./";
-    std::string fileBaseName_ = "trantor";
-    std::string fileExtName_ = ".log";
+    std::string _filePath = "./";
+    std::string _fileBaseName = "trantor";
+    std::string _fileExtName = ".log";
     uint64_t sizeLimit_ = 20 * 1024 * 1024;
     class LoggerFile : NonCopyable
     {
@@ -72,21 +72,21 @@ class AsyncFileLogger : NonCopyable
         ~LoggerFile();
         void writeLog(const StringPtr buf);
         uint64_t getLength();
-        explicit operator bool() const { return fp_ != NULL; }
+        explicit operator bool() const { return _fp != NULL; }
         void flush();
 
       protected:
-        FILE *fp_ = NULL;
-        Date createDate_;
-        std::string fileFullName_;
-        std::string filePath_;
-        std::string fileBaseName_;
-        std::string fileExtName_;
-        static uint64_t fileSeq_;
+        FILE *_fp = NULL;
+        Date _creationDate;
+        std::string _fileFullName;
+        std::string _filePath;
+        std::string _fileBaseName;
+        std::string _fileExtName;
+        static uint64_t _fileSeq;
     };
-    std::unique_ptr<LoggerFile> loggerFilePtr_;
+    std::unique_ptr<LoggerFile> _loggerFilePtr;
 
-    uint64_t lostCounter_ = 0;
+    uint64_t _lostCounter = 0;
     void swapBuffer();
 };
 

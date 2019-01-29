@@ -23,17 +23,17 @@
 using namespace trantor;
 #define BUF_OFFSET 8
 MsgBuffer::MsgBuffer(size_t len)
-    : head_(BUF_OFFSET),
-      initCap_(len),
-      buffer_(len + head_),
-      tail_(head_)
+    : _head(BUF_OFFSET),
+      _initCap(len),
+      _buffer(len + _head),
+      _tail(_head)
 {
 }
 //MsgBuffer::MsgBuffer(const MsgBuffer &buf)
-//        :head_(buf.head_),
-//         initCap_(buf.initCap_),
-//         buffer_(buf.buffer_),
-//         tail_(buf.tail_)
+//        :_head(buf._head),
+//         _initCap(buf._initCap),
+//         _buffer(buf._buffer),
+//         _tail(buf._tail)
 //{
 //
 //}
@@ -41,19 +41,19 @@ MsgBuffer::MsgBuffer(size_t len)
 //{
 //    if(this!=&buf)
 //    {
-//        head_=buf.head_;
-//        initCap_=buf.initCap_;
-//        buffer_=buf.buffer_;
-//        tail_=buf.tail_;
+//        _head=buf._head;
+//        _initCap=buf._initCap;
+//        _buffer=buf._buffer;
+//        _tail=buf._tail;
 //    }
 //
 //    return *this;
 //}
 //MsgBuffer::MsgBuffer(MsgBuffer &&buf) noexcept
-//:head_(buf.head_),
-// initCap_(buf.initCap_),
-// buffer_(std::move(buf.buffer_)),
-// tail_(buf.tail_)
+//:_head(buf._head),
+// _initCap(buf._initCap),
+// _buffer(std::move(buf._buffer)),
+// _tail(buf._tail)
 //{
 //
 //}
@@ -61,10 +61,10 @@ MsgBuffer::MsgBuffer(size_t len)
 //{
 //    if(this!=&buf)
 //    {
-//        head_=buf.head_;
-//        initCap_=buf.initCap_;
-//        buffer_=std::move(buf.buffer_);
-//        tail_=buf.tail_;
+//        _head=buf._head;
+//        _initCap=buf._initCap;
+//        _buffer=std::move(buf._buffer);
+//        _tail=buf._tail;
 //    }
 //
 //    return *this;
@@ -73,17 +73,17 @@ void MsgBuffer::ensureWritableBytes(size_t len)
 {
     if (writableBytes() >= len)
         return;
-    if (head_ + writableBytes() >= (len + BUF_OFFSET)) //move readable bytes
+    if (_head + writableBytes() >= (len + BUF_OFFSET)) //move readable bytes
     {
-        std::copy(begin() + head_, begin() + tail_, begin() + BUF_OFFSET);
-        tail_ = BUF_OFFSET + (tail_ - head_);
-        head_ = BUF_OFFSET;
+        std::copy(begin() + _head, begin() + _tail, begin() + BUF_OFFSET);
+        _tail = BUF_OFFSET + (_tail - _head);
+        _head = BUF_OFFSET;
         return;
     }
     //create new buffer
     size_t newLen;
-    if ((buffer_.size() * 2) > (BUF_OFFSET + readableBytes() + len))
-        newLen = buffer_.size() * 2;
+    if ((_buffer.size() * 2) > (BUF_OFFSET + readableBytes() + len))
+        newLen = _buffer.size() * 2;
     else
         newLen = BUF_OFFSET + readableBytes() + len;
     MsgBuffer newbuffer(newLen);
@@ -92,22 +92,22 @@ void MsgBuffer::ensureWritableBytes(size_t len)
 }
 void MsgBuffer::swap(MsgBuffer &buf)
 {
-    buffer_.swap(buf.buffer_);
-    std::swap(head_, buf.head_);
-    std::swap(tail_, buf.tail_);
-    std::swap(initCap_, buf.initCap_);
+    _buffer.swap(buf._buffer);
+    std::swap(_head, buf._head);
+    std::swap(_tail, buf._tail);
+    std::swap(_initCap, buf._initCap);
 }
 void MsgBuffer::append(const MsgBuffer &buf)
 {
     ensureWritableBytes(buf.readableBytes());
-    memcpy(&buffer_[tail_], buf.peek(), buf.readableBytes());
-    tail_ += buf.readableBytes();
+    memcpy(&_buffer[_tail], buf.peek(), buf.readableBytes());
+    _tail += buf.readableBytes();
 }
 void MsgBuffer::append(const char *buf, size_t len)
 {
     ensureWritableBytes(len);
-    memcpy(&buffer_[tail_], buf, len);
-    tail_ += len;
+    memcpy(&_buffer[_tail], buf, len);
+    _tail += len;
 }
 void MsgBuffer::appendInt16(const uint16_t s)
 {
@@ -167,22 +167,22 @@ void MsgBuffer::retrieve(size_t len)
         retrieveAll();
         return;
     }
-    head_ += len;
+    _head += len;
 }
 void MsgBuffer::retrieveAll()
 {
-    if (buffer_.size() > (initCap_ * 2))
+    if (_buffer.size() > (_initCap * 2))
     {
-        buffer_.resize(initCap_);
+        _buffer.resize(_initCap);
     }
-    tail_ = head_ = BUF_OFFSET;
+    _tail = _head = BUF_OFFSET;
 }
 ssize_t MsgBuffer::readFd(int fd, int *retErrno)
 {
     char extBuffer[65536];
     struct iovec vec[2];
     size_t writable = writableBytes();
-    vec[0].iov_base = begin() + tail_;
+    vec[0].iov_base = begin() + _tail;
     vec[0].iov_len = writable;
     vec[1].iov_base = extBuffer;
     vec[1].iov_len = sizeof(extBuffer);
@@ -194,11 +194,11 @@ ssize_t MsgBuffer::readFd(int fd, int *retErrno)
     }
     else if (static_cast<size_t>(n) <= writable)
     {
-        tail_ += n;
+        _tail += n;
     }
     else
     {
-        tail_ = buffer_.size();
+        _tail = _buffer.size();
         append(extBuffer, n - writable);
     }
     return n;
@@ -239,22 +239,22 @@ uint64_t MsgBuffer::readInt64()
 
 void MsgBuffer::addInFront(const char *buf, size_t len)
 {
-    if (head_ >= len)
+    if (_head >= len)
     {
-        memcpy(begin() + head_ - len, buf, len);
-        head_ -= len;
+        memcpy(begin() + _head - len, buf, len);
+        _head -= len;
         return;
     }
     if (len <= writableBytes())
     {
-        std::copy(begin() + head_, begin() + tail_, begin() + head_ + len);
-        memcpy(begin() + head_, buf, len);
-        tail_ += len;
+        std::copy(begin() + _head, begin() + _tail, begin() + _head + len);
+        memcpy(begin() + _head, buf, len);
+        _tail += len;
         return;
     }
     size_t newLen;
-    if (len + readableBytes() < initCap_)
-        newLen = initCap_;
+    if (len + readableBytes() < _initCap)
+        newLen = _initCap;
     else
         newLen = len + readableBytes();
     MsgBuffer newBuf(newLen);
