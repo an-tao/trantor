@@ -37,7 +37,7 @@ void KQueue::resetAfterFork()
     for (auto &ch : _channels)
     {
         ch.second.first = 0;
-        if (ch.second.second->isReading() || ch.second.second->isReading())
+        if (ch.second.second->isReading() || ch.second.second->isWriting())
         {
             update(ch.second.second);
         }
