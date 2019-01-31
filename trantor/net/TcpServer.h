@@ -44,22 +44,22 @@ class TcpServer : NonCopyable
     ~TcpServer();
     void start();
     void setIoLoopNum(size_t num);
-    void setRecvMessageCallback(const RecvMessageCallback &cb) { recvMessageCallback_ = cb; }
-    void setConnectionCallback(const ConnectionCallback &cb) { connectionCallback_ = cb; }
-    void setWriteCompleteCallback(const WriteCompleteCallback &cb) { writeCompleteCallback_ = cb; }
+    void setRecvMessageCallback(const RecvMessageCallback &cb) { _recvMessageCallback = cb; }
+    void setConnectionCallback(const ConnectionCallback &cb) { _connectionCallback = cb; }
+    void setWriteCompleteCallback(const WriteCompleteCallback &cb) { _writeCompleteCallback = cb; }
 
-    void setRecvMessageCallback(RecvMessageCallback &&cb) { recvMessageCallback_ = std::move(cb); }
-    void setConnectionCallback(ConnectionCallback &&cb) { connectionCallback_ = std::move(cb); }
-    void setWriteCompleteCallback(WriteCompleteCallback &&cb) { writeCompleteCallback_ = std::move(cb); }
-    const std::string &name() const { return serverName_; }
+    void setRecvMessageCallback(RecvMessageCallback &&cb) { _recvMessageCallback = std::move(cb); }
+    void setConnectionCallback(ConnectionCallback &&cb) { _connectionCallback = std::move(cb); }
+    void setWriteCompleteCallback(WriteCompleteCallback &&cb) { _writeCompleteCallback = std::move(cb); }
+    const std::string &name() const { return _serverName; }
     const std::string ipPort() const;
-    EventLoop *getLoop() const { return loop_; }
+    EventLoop *getLoop() const { return _loop; }
 
     //An idle connection is a connection that has no read or write,
     //kick off it after timeout ;
     void kickoffIdleConnections(size_t timeout)
     {
-        loop_->runInLoop([=]() {
+        _loop->runInLoop([=]() {
             assert(!_started);
             _idleTimeout = timeout;
         });
@@ -69,20 +69,20 @@ class TcpServer : NonCopyable
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 #endif
   private:
-    EventLoop *loop_;
-    std::unique_ptr<Acceptor> acceptorPtr_;
+    EventLoop *_loop;
+    std::unique_ptr<Acceptor> _acceptorPtr;
     void newConnection(int fd, const InetAddress &peer);
-    std::string serverName_;
-    std::set<TcpConnectionPtr> connSet_;
+    std::string _serverName;
+    std::set<TcpConnectionPtr> _connSet;
 
-    RecvMessageCallback recvMessageCallback_;
-    ConnectionCallback connectionCallback_;
-    WriteCompleteCallback writeCompleteCallback_;
+    RecvMessageCallback _recvMessageCallback;
+    ConnectionCallback _connectionCallback;
+    WriteCompleteCallback _writeCompleteCallback;
 
     size_t _idleTimeout = 0;
-    std::map<EventLoop *, std::shared_ptr<TimingWheel>> _timeingWheelMap;
+    std::map<EventLoop *, std::shared_ptr<TimingWheel>> _timingWheelMap;
     void connectionClosed(const TcpConnectionPtr &connectionPtr);
-    std::unique_ptr<EventLoopThreadPool> loopPoolPtr_;
+    std::unique_ptr<EventLoopThreadPool> _loopPoolPtr;
     class IgnoreSigPipe
     {
       public:
