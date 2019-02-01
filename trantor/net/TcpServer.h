@@ -54,7 +54,7 @@ class TcpServer : NonCopyable
     const std::string &name() const { return _serverName; }
     const std::string ipPort() const;
     EventLoop *getLoop() const { return _loop; }
-
+    std::vector<EventLoop *> getIoLoops() const { return _loopPoolPtr->getLoops(); }
     //An idle connection is a connection that has no read or write,
     //kick off it after timeout ;
     void kickoffIdleConnections(size_t timeout)

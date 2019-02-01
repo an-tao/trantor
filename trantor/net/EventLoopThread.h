@@ -31,7 +31,7 @@ class EventLoopThread : NonCopyable
     explicit EventLoopThread(const std::string &threadName = "EventLoopThread");
     ~EventLoopThread();
     void wait();
-    EventLoop *getLoop() { return _loop; }
+    EventLoop *getLoop() const { return _loop; }
     void run();
 
   private:

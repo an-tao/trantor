@@ -54,3 +54,13 @@ EventLoop *EventLoopThreadPool::getNextLoop()
     }
     return NULL;
 }
+
+std::vector<EventLoop *> EventLoopThreadPool::getLoops() const
+{
+    std::vector<EventLoop *> ret;
+    for (auto &loopThread : _loopThreadVector)
+    {
+        ret.push_back(loopThread->getLoop());
+    }
+    return ret;
+}
