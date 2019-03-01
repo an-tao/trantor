@@ -84,9 +84,9 @@ void AsyncFileLogger::output(const char *msg, const uint64_t len)
     if (_lostCounter > 0)
     {
         char logErr[128];
-        sprintf(logErr, "%llu log information is lost\n", static_cast<long long unsigned int>(_lostCounter));
+        auto len = sprintf(logErr, "%llu log information is lost\n", static_cast<long long unsigned int>(_lostCounter));
         _lostCounter = 0;
-        logBufferPtr_->append(logErr);
+        logBufferPtr_->append(logErr, len);
     }
     logBufferPtr_->append(msg, len);
 }
