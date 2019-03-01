@@ -133,6 +133,7 @@ class LogStream : NonCopyable
     {
         assert(strnlen(buf, N) == N - 1);
         append(buf, N - 1);
+        return *this;
     }
 
     self &operator<<(char *str)
