@@ -118,7 +118,6 @@ class TcpClient : NonCopyable
     std::atomic_bool _retry;   // atomic
     std::atomic_bool _connect; // atomic
     // always in loop thread
-    int _nextConnId;
     mutable std::mutex _mutex;
     TcpConnectionPtr _connection; // @GuardedBy _mutex
 #ifdef USE_OPENSSL

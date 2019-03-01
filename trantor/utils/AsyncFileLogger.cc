@@ -205,7 +205,7 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
     {
         fclose(_fp);
         char seq[10];
-        sprintf(seq, ".%06lld", static_cast<long long unsigned int>(_fileSeq % 1000000));
+        sprintf(seq, ".%06llu", static_cast<long long unsigned int>(_fileSeq % 1000000));
         _fileSeq++;
         std::string newName = _filePath + _fileBaseName + "." + _creationDate.toCustomedFormattedString("%y%m%d-%H%M%S") + std::string(seq) + _fileExtName;
         rename(_fileFullName.c_str(), newName.c_str());

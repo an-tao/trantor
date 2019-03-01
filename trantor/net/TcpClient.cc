@@ -70,8 +70,7 @@ TcpClient::TcpClient(EventLoop *loop,
       _connectionCallback(defaultConnectionCallback),
       _messageCallback(defaultMessageCallback),
       _retry(false),
-      _connect(true),
-      _nextConnId(1)
+      _connect(true)
 {
     _connector->setNewConnectionCallback(
         std::bind(&TcpClient::newConnection, this, _1));
@@ -150,11 +149,6 @@ void TcpClient::newConnection(int sockfd)
 {
     _loop->assertInLoopThread();
     InetAddress peerAddr(Socket::getPeerAddr(sockfd));
-    char buf[32];
-    snprintf(buf, sizeof buf, ":%s#%d", peerAddr.toIpPort().c_str(), _nextConnId);
-    ++_nextConnId;
-    std::string connName = _name + buf;
-
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
     // TODO poll with zero timeout to double confirm the new connection
     // TODO use make_shared if necessary
