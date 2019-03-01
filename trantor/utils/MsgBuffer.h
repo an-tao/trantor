@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <trantor/utils/config.h>
 #include <trantor/utils/NonCopyable.h>
 #include <vector>
 #include <stdio.h>
@@ -58,11 +59,25 @@ class MsgBuffer
     size_t writableBytes() const { return _buffer.size() - _tail; }
     //append
     void append(const MsgBuffer &buf);
+    template <int N>
+    void append(const char (&buf)[N])
+    {
+        assert(strnlen(buf, N) == N - 1);
+        ensureWritableBytes(N - 1);
+        append(buf, N - 1);
+    }
     void append(const char *buf, size_t len);
     void append(const std::string &buf)
     {
         ensureWritableBytes(buf.length());
         append(buf.c_str(), buf.length());
+    }
+    void append(const string_view &buf)
+    {
+        if (buf.empty())
+            return;
+        ensureWritableBytes(buf.length());
+        append(buf.data(), buf.length());
     }
     void appendInt8(const uint8_t b) { append(static_cast<const char *>((void *)&b), 1); }
     void appendInt16(const uint16_t s);

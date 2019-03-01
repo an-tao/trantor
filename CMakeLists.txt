@@ -88,12 +88,16 @@ if(DEFINED USE_STD_ANY)
 file(APPEND "${CONFIG_HEADER}" "#include <any>\n")
 file(APPEND "${CONFIG_HEADER}" "using std::any;\n")
 file(APPEND "${CONFIG_HEADER}" "using std::any_cast;\n\n")
+file(APPEND "${CONFIG_HEADER}" "#include <string_view>\n")
+file(APPEND "${CONFIG_HEADER}" "typedef std::string_view string_view;\n\n")
 
 else()
 
 file(APPEND "${CONFIG_HEADER}" "#include <experimental/any>\n")
 file(APPEND "${CONFIG_HEADER}" "using std::experimental::any;\n")
 file(APPEND "${CONFIG_HEADER}" "using std::experimental::any_cast;\n\n")
+file(APPEND "${CONFIG_HEADER}" "#include <experimental/string_view>\n")
+file(APPEND "${CONFIG_HEADER}" "typedef std::experimental::basic_string_view<char> string_view;\n\n")
 
 endif()
 
