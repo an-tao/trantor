@@ -15,7 +15,7 @@
 #pragma once
 
 //token from muduo lib
-
+#include <trantor/utils/config.h>
 #include <trantor/utils/NonCopyable.h>
 
 #include <assert.h>
@@ -128,6 +128,25 @@ class LogStream : NonCopyable
 
     // self& operator<<(signed char);
     // self& operator<<(unsigned char);
+    template <int N>
+    self &operator<<(const char (&buf)[N])
+    {
+        assert(strnlen(buf, N) == N - 1);
+        append(buf, N - 1);
+    }
+
+    self &operator<<(char *str)
+    {
+        if (str)
+        {
+            append(str, strlen(str));
+        }
+        else
+        {
+            append("(null)", 6);
+        }
+        return *this;
+    }
 
     self &operator<<(const char *str)
     {
@@ -142,6 +161,15 @@ class LogStream : NonCopyable
         return *this;
     }
 
+    self &operator<<(const string_view &buf)
+    {
+        if (!buf.empty())
+        {
+            append(buf.data(), buf.length());
+        }
+        return *this;
+    }
+
     self &operator<<(const unsigned char *str)
     {
         return operator<<(reinterpret_cast<const char *>(str));
@@ -152,18 +180,6 @@ class LogStream : NonCopyable
         append(v.c_str(), v.size());
         return *this;
     }
-
-    //  self& operator<<(const StringPiece& v)
-    //  {
-    //    buffer_.append(v.data(), v.size());
-    //    return *this;
-    //  }
-
-    //  self& operator<<(const Buffer& v)
-    //  {
-    //    *this << v.toStringPiece();
-    //    return *this;
-    //  }
 
     void append(const char *data, int len)
     {
@@ -189,6 +205,7 @@ class LogStream : NonCopyable
         }
         return buffer_.data();
     }
+
     size_t bufferLength() const
     {
         if (!_exBuffer.empty())
