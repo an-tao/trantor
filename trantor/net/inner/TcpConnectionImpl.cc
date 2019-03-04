@@ -236,8 +236,12 @@ void TcpConnectionImpl::handleClose()
 void TcpConnectionImpl::handleError()
 {
     int err = _socketPtr->getSocketError();
-    LOG_ERROR << "TcpConnectionImpl::handleError [" << _name
-              << "] - SO_ERROR = " << err << " " << strerror_tl(err);
+    if(err != 104)
+        LOG_ERROR << "TcpConnectionImpl::handleError [" << _name
+                  << "] - SO_ERROR = " << err << " " << strerror_tl(err);
+    else
+        LOG_INFO << "TcpConnectionImpl::handleError [" << _name
+                 << "] - SO_ERROR = " << err << " " << strerror_tl(err);
 }
 void TcpConnectionImpl::setTcpNoDelay(bool on)
 {
