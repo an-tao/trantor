@@ -12,7 +12,7 @@
 //#include <muduo/net/Endian.h>
 
 #include <netdb.h>
-#include <strings.h> // bzero
+#include <strings.h> // memset
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
@@ -55,7 +55,7 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
 {
     if (ipv6)
     {
-        bzero(&addr6_, sizeof addr6_);
+        memset(&addr6_, 0, sizeof(addr6_));
         addr6_.sin6_family = AF_INET6;
         in6_addr ip = loopbackOnly ? in6addr_loopback : in6addr_any;
         addr6_.sin6_addr = ip;
@@ -63,7 +63,7 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
     }
     else
     {
-        bzero(&addr_, sizeof addr_);
+        memset(&addr_, 0, sizeof(addr_));
         addr_.sin_family = AF_INET;
         in_addr_t ip = loopbackOnly ? kInaddrLoopback : kInaddrAny;
         addr_.sin_addr.s_addr = htonl(ip);
@@ -75,7 +75,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isI
 {
     if (ipv6)
     {
-        bzero(&addr6_, sizeof addr6_);
+        memset(&addr6_, 0, sizeof(addr6_));
         addr6_.sin6_family = AF_INET6;
         addr6_.sin6_port = htons(port);
         if (::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr) <= 0)
@@ -85,7 +85,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isI
     }
     else
     {
-        bzero(&addr_, sizeof addr_);
+        memset(&addr_, 0, sizeof(addr_));
         addr_.sin_family = AF_INET;
         addr_.sin_port = htons(port);
         if (::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)
@@ -169,7 +169,7 @@ bool InetAddress::resolve(const std::string &hostname, InetAddress *out, size_t 
     struct hostent hent;
     struct hostent *he = NULL;
     int herrno = 0;
-    bzero(&hent, sizeof(hent));
+    memset(&hent, 0, sizeof(hent));
 
     int ret = gethostbyname_r(hostname.c_str(), &hent, t_resolveBuffer, sizeof t_resolveBuffer, &he, &herrno);
     if (ret == 0 && he != NULL)
