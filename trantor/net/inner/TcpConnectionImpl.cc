@@ -30,18 +30,18 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      const InetAddress &localAddr,
                                      const InetAddress &peerAddr)
     : _loop(loop),
-      _ioChennelPtr(new Channel(loop, socketfd)),
+      _ioChannelPtr(new Channel(loop, socketfd)),
       _socketPtr(new Socket(socketfd)),
       _localAddr(localAddr),
       _peerAddr(peerAddr),
       _state(Connecting)
 {
     LOG_TRACE << "new connection:" << peerAddr.toIpPort() << "->" << localAddr.toIpPort();
-    _ioChennelPtr->setReadCallback(std::bind(&TcpConnectionImpl::readCallback, this));
-    _ioChennelPtr->setWriteCallback(std::bind(&TcpConnectionImpl::writeCallback, this));
-    _ioChennelPtr->setCloseCallback(
+    _ioChannelPtr->setReadCallback(std::bind(&TcpConnectionImpl::readCallback, this));
+    _ioChannelPtr->setWriteCallback(std::bind(&TcpConnectionImpl::writeCallback, this));
+    _ioChannelPtr->setCloseCallback(
         std::bind(&TcpConnectionImpl::handleClose, this));
-    _ioChennelPtr->setErrorCallback(
+    _ioChannelPtr->setErrorCallback(
         std::bind(&TcpConnectionImpl::handleError, this));
     _socketPtr->setKeepAlive(true);
     _name = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
@@ -91,7 +91,7 @@ void TcpConnectionImpl::writeCallback()
 {
     _loop->assertInLoopThread();
     extendLife();
-    if (_ioChennelPtr->isWriting())
+    if (_ioChannelPtr->isWriting())
     {
         assert(!_writeBufferList.empty());
         auto writeBuffer_ = _writeBufferList.front();
@@ -102,7 +102,7 @@ void TcpConnectionImpl::writeCallback()
                 _writeBufferList.pop_front();
                 if (_writeBufferList.empty())
                 {
-                    _ioChennelPtr->disableWriting();
+                    _ioChannelPtr->disableWriting();
                     //
                     if (_writeCompleteCallback)
                         _writeCompleteCallback(shared_from_this());
@@ -150,7 +150,7 @@ void TcpConnectionImpl::writeCallback()
                 _writeBufferList.pop_front();
                 if (_writeBufferList.empty())
                 {
-                    _ioChennelPtr->disableWriting();
+                    _ioChannelPtr->disableWriting();
                     if (_writeCompleteCallback)
                         _writeCompleteCallback(shared_from_this());
                     if (_state == Disconnecting)
@@ -210,8 +210,8 @@ void TcpConnectionImpl::connectEstablished()
     _loop->runInLoop([thisPtr]() {
         LOG_TRACE << "connectEstablished";
         assert(thisPtr->_state == Connecting);
-        thisPtr->_ioChennelPtr->tie(thisPtr);
-        thisPtr->_ioChennelPtr->enableReading();
+        thisPtr->_ioChannelPtr->tie(thisPtr);
+        thisPtr->_ioChannelPtr->enableReading();
         thisPtr->_state = Connected;
         if (thisPtr->_connectionCallback)
             thisPtr->_connectionCallback(thisPtr);
@@ -222,8 +222,8 @@ void TcpConnectionImpl::handleClose()
     LOG_TRACE << "connection closed";
     _loop->assertInLoopThread();
     _state = Disconnected;
-    _ioChennelPtr->disableAll();
-    //  _ioChennelPtr->remove();
+    _ioChannelPtr->disableAll();
+    //  _ioChannelPtr->remove();
     auto guardThis = shared_from_this();
     if (_connectionCallback)
         _connectionCallback(guardThis);
@@ -249,11 +249,11 @@ void TcpConnectionImpl::connectDestroyed()
     if (_state == Connected)
     {
         _state = Disconnected;
-        _ioChennelPtr->disableAll();
+        _ioChannelPtr->disableAll();
 
         _connectionCallback(shared_from_this());
     }
-    _ioChennelPtr->remove();
+    _ioChannelPtr->remove();
 }
 void TcpConnectionImpl::shutdown()
 {
@@ -262,7 +262,7 @@ void TcpConnectionImpl::shutdown()
         if (thisPtr->_state == Connected)
         {
             thisPtr->_state = Disconnecting;
-            if (!thisPtr->_ioChennelPtr->isWriting())
+            if (!thisPtr->_ioChannelPtr->isWriting())
             {
                 thisPtr->_socketPtr->closeWrite();
             }
@@ -293,7 +293,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
     extendLife();
     size_t remainLen = length;
     ssize_t sendLen = 0;
-    if (!_ioChennelPtr->isWriting() && _writeBufferList.empty())
+    if (!_ioChannelPtr->isWriting() && _writeBufferList.empty())
     {
         //send directly
         sendLen = writeInLoop(buffer, length);
@@ -329,8 +329,8 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             _writeBufferList.push_back(std::move(node));
         }
         _writeBufferList.back()->_msgBuffer->append(buffer + sendLen, remainLen);
-        if (!_ioChennelPtr->isWriting())
-            _ioChennelPtr->enableWriting();
+        if (!_ioChannelPtr->isWriting())
+            _ioChannelPtr->enableWriting();
         if (_highWaterMarkCallback && _writeBufferList.back()->_msgBuffer->readableBytes() > _highWaterMarkLen)
         {
             _highWaterMarkCallback(shared_from_this(),
@@ -636,8 +636,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             if (errno != EAGAIN)
             {
                 LOG_SYSERR << "TcpConnectionImpl::sendFileInLoop";
-                if (_ioChennelPtr->isWriting())
-                    _ioChennelPtr->disableWriting();
+                if (_ioChannelPtr->isWriting())
+                    _ioChannelPtr->disableWriting();
             }
             return;
         }
@@ -651,9 +651,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         }
         LOG_TRACE << "sendfile() " << bytesSent << " bytes sent";
         filePtr->_fileBytesToSend -= bytesSent;
-        if (!_ioChennelPtr->isWriting())
+        if (!_ioChannelPtr->isWriting())
         {
-            _ioChennelPtr->enableWriting();
+            _ioChannelPtr->enableWriting();
         }
         return;
     }
@@ -672,9 +672,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                 filePtr->_offset += nSend;
                 if (nSend < n)
                 {
-                    if (!_ioChennelPtr->isWriting())
+                    if (!_ioChannelPtr->isWriting())
                     {
-                        _ioChennelPtr->enableWriting();
+                        _ioChannelPtr->enableWriting();
                     }
                     return;
                 }
@@ -701,8 +701,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         if (n < 0)
         {
             LOG_SYSERR << "read error";
-            if (_ioChennelPtr->isWriting())
-                _ioChennelPtr->disableWriting();
+            if (_ioChannelPtr->isWriting())
+                _ioChannelPtr->disableWriting();
             return;
         }
         if (n == 0)
@@ -711,9 +711,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             break;
         }
     }
-    if (!_ioChennelPtr->isWriting())
+    if (!_ioChannelPtr->isWriting())
     {
-        _ioChennelPtr->enableWriting();
+        _ioChannelPtr->enableWriting();
     }
 }
 

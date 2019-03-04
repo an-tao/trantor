@@ -169,7 +169,7 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
         Disconnecting
     };
     EventLoop *_loop;
-    std::unique_ptr<Channel> _ioChennelPtr;
+    std::unique_ptr<Channel> _ioChannelPtr;
     std::unique_ptr<Socket> _socketPtr;
     MsgBuffer _readBuffer;
     //MsgBuffer writeBuffer_;

@@ -95,8 +95,8 @@ void SSLConnection::connectEstablished()
     _loop->runInLoop([=]() {
         LOG_TRACE << "connectEstablished";
         assert(_state == Connecting);
-        _ioChennelPtr->tie(shared_from_this());
-        _ioChennelPtr->enableReading();
+        _ioChannelPtr->tie(shared_from_this());
+        _ioChannelPtr->enableReading();
         _state = Connected;
         if (_isServer)
         {
@@ -104,7 +104,7 @@ void SSLConnection::connectEstablished()
         }
         else
         {
-            _ioChennelPtr->enableWriting();
+            _ioChannelPtr->enableWriting();
             SSL_set_connect_state(_sslPtr.get());
         }
     });
@@ -122,19 +122,19 @@ void SSLConnection::doHandshaking()
     int err = SSL_get_error(_sslPtr.get(), r);
     if (err == SSL_ERROR_WANT_WRITE)
     { //SSL want writable;
-        _ioChennelPtr->enableWriting();
-        _ioChennelPtr->disableReading();
+        _ioChannelPtr->enableWriting();
+        _ioChannelPtr->disableReading();
     }
     else if (err == SSL_ERROR_WANT_READ)
     { //SSL want readable;
-        _ioChennelPtr->enableReading();
-        _ioChennelPtr->disableWriting();
+        _ioChannelPtr->enableReading();
+        _ioChannelPtr->disableWriting();
     }
     else
     { //错误
         //ERR_print_errors(err);
         LOG_FATAL << "SSL handshake err";
-        _ioChennelPtr->disableReading();
+        _ioChannelPtr->disableReading();
         _status = SSLStatus::DisConnected;
         forceClose();
     }
