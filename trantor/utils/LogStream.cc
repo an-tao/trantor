@@ -87,8 +87,8 @@ template class FixedBuffer<kLargeBuffer>;
 template <int SIZE>
 const char *FixedBuffer<SIZE>::debugString()
 {
-  *cur_ = '\0';
-  return data_;
+  *_cur = '\0';
+  return _data;
 }
 
 template <int SIZE>
@@ -114,15 +114,15 @@ void LogStream::formatInteger(T v)
 {
   if (_exBuffer.empty())
   {
-    if (buffer_.avail() >= kMaxNumericSize)
+    if (_buffer.avail() >= kMaxNumericSize)
     {
-      size_t len = convert(buffer_.current(), v);
-      buffer_.add(len);
+      size_t len = convert(_buffer.current(), v);
+      _buffer.add(len);
       return;
     }
     else
     {
-      _exBuffer.append(buffer_.data(), buffer_.length());
+      _exBuffer.append(_buffer.data(), _buffer.length());
     }
   }
   auto oldLen = _exBuffer.length();
@@ -184,18 +184,18 @@ LogStream &LogStream::operator<<(const void *p)
   uintptr_t v = reinterpret_cast<uintptr_t>(p);
   if (_exBuffer.empty())
   {
-    if (buffer_.avail() >= kMaxNumericSize)
+    if (_buffer.avail() >= kMaxNumericSize)
     {
-      char *buf = buffer_.current();
+      char *buf = _buffer.current();
       buf[0] = '0';
       buf[1] = 'x';
       size_t len = convertHex(buf + 2, v);
-      buffer_.add(len + 2);
+      _buffer.add(len + 2);
       return *this;
     }
     else
     {
-      _exBuffer.append(buffer_.data(), buffer_.length());
+      _exBuffer.append(_buffer.data(), _buffer.length());
     }
   }
   auto oldLen = _exBuffer.length();
@@ -213,15 +213,15 @@ LogStream &LogStream::operator<<(double v)
 {
   if (_exBuffer.empty())
   {
-    if (buffer_.avail() >= kMaxNumericSize)
+    if (_buffer.avail() >= kMaxNumericSize)
     {
-      int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12g", v);
-      buffer_.add(len);
+      int len = snprintf(_buffer.current(), kMaxNumericSize, "%.12g", v);
+      _buffer.add(len);
       return *this;
     }
     else
     {
-      _exBuffer.append(buffer_.data(), buffer_.length());
+      _exBuffer.append(_buffer.data(), _buffer.length());
     }
   }
   auto oldLen = _exBuffer.length();
@@ -234,8 +234,8 @@ LogStream &LogStream::operator<<(double v)
 template <typename T>
 Fmt::Fmt(const char *fmt, T val)
 {
-  length_ = snprintf(buf_, sizeof buf_, fmt, val);
-  assert(static_cast<size_t>(length_) < sizeof buf_);
+  _length = snprintf(_buf, sizeof _buf, fmt, val);
+  assert(static_cast<size_t>(_length) < sizeof _buf);
 }
 
 // Explicit instantiations
