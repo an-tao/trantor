@@ -81,6 +81,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isI
         if (::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr) <= 0)
         {
             LOG_SYSERR << "sockets::fromIpPort";
+            abort();
         }
     }
     else
@@ -91,6 +92,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isI
         if (::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)
         {
             LOG_SYSERR << "sockets::fromIpPort";
+            abort();
         }
     }
 }
