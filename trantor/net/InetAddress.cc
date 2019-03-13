@@ -55,19 +55,19 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
 {
     if (ipv6)
     {
-        memset(&addr6_, 0, sizeof(addr6_));
-        addr6_.sin6_family = AF_INET6;
+        memset(&_addr6, 0, sizeof(_addr6));
+        _addr6.sin6_family = AF_INET6;
         in6_addr ip = loopbackOnly ? in6addr_loopback : in6addr_any;
-        addr6_.sin6_addr = ip;
-        addr6_.sin6_port = htons(port);
+        _addr6.sin6_addr = ip;
+        _addr6.sin6_port = htons(port);
     }
     else
     {
-        memset(&addr_, 0, sizeof(addr_));
-        addr_.sin_family = AF_INET;
+        memset(&_addr, 0, sizeof(_addr));
+        _addr.sin_family = AF_INET;
         in_addr_t ip = loopbackOnly ? kInaddrLoopback : kInaddrAny;
-        addr_.sin_addr.s_addr = htonl(ip);
-        addr_.sin_port = htons(port);
+        _addr.sin_addr.s_addr = htonl(ip);
+        _addr.sin_port = htons(port);
     }
 }
 
@@ -75,10 +75,10 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isI
 {
     if (ipv6)
     {
-        memset(&addr6_, 0, sizeof(addr6_));
-        addr6_.sin6_family = AF_INET6;
-        addr6_.sin6_port = htons(port);
-        if (::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr) <= 0)
+        memset(&_addr6, 0, sizeof(_addr6));
+        _addr6.sin6_family = AF_INET6;
+        _addr6.sin6_port = htons(port);
+        if (::inet_pton(AF_INET6, ip.c_str(), &_addr6.sin6_addr) <= 0)
         {
             LOG_SYSERR << "sockets::fromIpPort";
             abort();
@@ -86,10 +86,10 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isI
     }
     else
     {
-        memset(&addr_, 0, sizeof(addr_));
-        addr_.sin_family = AF_INET;
-        addr_.sin_port = htons(port);
-        if (::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)
+        memset(&_addr, 0, sizeof(_addr));
+        _addr.sin_family = AF_INET;
+        _addr.sin_port = htons(port);
+        if (::inet_pton(AF_INET, ip.c_str(), &_addr.sin_addr) <= 0)
         {
             LOG_SYSERR << "sockets::fromIpPort";
             abort();
@@ -100,15 +100,15 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isI
 std::string InetAddress::toIpPort() const
 {
     char buf[64] = "";
-    uint16_t port = ntohs(addr_.sin_port);
+    uint16_t port = ntohs(_addr.sin_port);
     sprintf(buf, ":%u", port);
     return toIp() + std::string(buf);
 }
 bool InetAddress::isInnerIp() const
 {
-    if (addr_.sin_family == AF_INET)
+    if (_addr.sin_family == AF_INET)
     {
-        uint32_t ip_addr = ntohl(addr_.sin_addr.s_addr);
+        uint32_t ip_addr = ntohl(_addr.sin_addr.s_addr);
         if ((ip_addr >= 0x0A000000 && ip_addr <= 0x0AFFFFFF) ||
             (ip_addr >= 0xAC100000 && ip_addr <= 0xAC1FFFFF) ||
             (ip_addr >= 0xC0A80000 && ip_addr <= 0xC0A8FFFF) ||
@@ -118,18 +118,53 @@ bool InetAddress::isInnerIp() const
             return true;
         }
     }
+    else
+    {
+        auto addrP = ip6NetEndian();
+        // Loopback ip
+        if (*addrP == 0 && *(addrP + 1) == 0 && *(addrP + 2) == 0 && ntohl(*(addrP + 3)) == 1)
+            return true;
+        // Privated ip is prefixed by FEC0::/10 or FE80::/10, need testing
+        auto i32 = (ntohl(*addrP) & 0xffc00000);
+        if ((i32 == 0xfec00000 || i32 == 0xfe800000) &&
+            *(addrP + 1) == 0 && *(addrP + 2) == 0 && *(addrP + 3) == 0)
+            return true;
+    }
     return false;
 }
+
+bool InetAddress::isLoopbackIp() const
+{
+    if (!isIpV6())
+    {
+        LOG_DEBUG << "ipv4";
+        LOG_DEBUG << toIp();
+        uint32_t ip_addr = ntohl(_addr.sin_addr.s_addr);
+        LOG_DEBUG << ip_addr;
+        if (ip_addr == 0x7f000001)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        auto addrP = ip6NetEndian();
+        if (*addrP == 0 && *(addrP + 1) == 0 && *(addrP + 2) == 0 && ntohl(*(addrP + 3)) == 1)
+            return true;
+    }
+    return false;
+}
+
 std::string InetAddress::toIp() const
 {
     char buf[64];
-    if (addr_.sin_family == AF_INET)
+    if (_addr.sin_family == AF_INET)
     {
-        ::inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
+        ::inet_ntop(AF_INET, &_addr.sin_addr, buf, sizeof(buf));
     }
-    else if (addr_.sin_family == AF_INET6)
+    else if (_addr.sin_family == AF_INET6)
     {
-        ::inet_ntop(AF_INET6, &addr6_.sin6_addr, buf, sizeof(buf));
+        ::inet_ntop(AF_INET6, &_addr6.sin6_addr, buf, sizeof(buf));
     }
 
     return buf;
@@ -137,10 +172,19 @@ std::string InetAddress::toIp() const
 
 uint32_t InetAddress::ipNetEndian() const
 {
-    assert(family() == AF_INET);
-    return addr_.sin_addr.s_addr;
+    //assert(family() == AF_INET);
+    return _addr.sin_addr.s_addr;
 }
 
+const uint32_t *InetAddress::ip6NetEndian() const
+{
+//assert(family() == AF_INET6);
+#ifdef __linux__
+    return _addr6.sin6_addr.__in6_u.__u6_addr32;
+#else
+    return _addr6.sin6_addr.__u6_addr.__u6_addr32;
+#endif
+}
 uint16_t InetAddress::toPort() const
 {
     return ntohs(portNetEndian());
@@ -162,7 +206,7 @@ bool InetAddress::resolve(const std::string &hostname, InetAddress *out, size_t 
                                  (addr.second.after(timeout) > trantor::Date::date())))
             {
                 LOG_TRACE << "dns:Hit cache";
-                out->addr_.sin_addr = addr.first;
+                out->_addr.sin_addr = addr.first;
                 return true;
             }
         }
@@ -194,10 +238,10 @@ bool InetAddress::resolve(const std::string &hostname, InetAddress *out, size_t 
 #endif
     {
         assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
-        out->addr_.sin_addr = *reinterpret_cast<struct in_addr *>(he->h_addr);
+        out->_addr.sin_addr = *reinterpret_cast<struct in_addr *>(he->h_addr);
         {
             std::lock_guard<std::mutex> guard(_dnsMutex);
-            _dnsCache[hostname].first = out->addr_.sin_addr;
+            _dnsCache[hostname].first = out->_addr.sin_addr;
             _dnsCache[hostname].second = trantor::Date::date();
         }
         return true;

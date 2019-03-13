@@ -40,42 +40,42 @@ const char digitsHex[] = "0123456789ABCDEF";
 template <typename T>
 size_t convert(char buf[], T value)
 {
-  T i = value;
-  char *p = buf;
+    T i = value;
+    char *p = buf;
 
-  do
-  {
-    int lsd = static_cast<int>(i % 10);
-    i /= 10;
-    *p++ = zero[lsd];
-  } while (i != 0);
+    do
+    {
+        int lsd = static_cast<int>(i % 10);
+        i /= 10;
+        *p++ = zero[lsd];
+    } while (i != 0);
 
-  if (value < 0)
-  {
-    *p++ = '-';
-  }
-  *p = '\0';
-  std::reverse(buf, p);
+    if (value < 0)
+    {
+        *p++ = '-';
+    }
+    *p = '\0';
+    std::reverse(buf, p);
 
-  return p - buf;
+    return p - buf;
 }
 
 size_t convertHex(char buf[], uintptr_t value)
 {
-  uintptr_t i = value;
-  char *p = buf;
+    uintptr_t i = value;
+    char *p = buf;
 
-  do
-  {
-    int lsd = static_cast<int>(i % 16);
-    i /= 16;
-    *p++ = digitsHex[lsd];
-  } while (i != 0);
+    do
+    {
+        int lsd = static_cast<int>(i % 16);
+        i /= 16;
+        *p++ = digitsHex[lsd];
+    } while (i != 0);
 
-  *p = '\0';
-  std::reverse(buf, p);
+    *p = '\0';
+    std::reverse(buf, p);
 
-  return p - buf;
+    return p - buf;
 }
 
 template class FixedBuffer<kSmallBuffer>;
@@ -87,8 +87,8 @@ template class FixedBuffer<kLargeBuffer>;
 template <int SIZE>
 const char *FixedBuffer<SIZE>::debugString()
 {
-  *_cur = '\0';
-  return _data;
+    *_cur = '\0';
+    return _data;
 }
 
 template <int SIZE>
@@ -103,139 +103,139 @@ void FixedBuffer<SIZE>::cookieEnd()
 
 void LogStream::staticCheck()
 {
-  static_assert(kMaxNumericSize - 10 > std::numeric_limits<double>::digits10, "");
-  static_assert(kMaxNumericSize - 10 > std::numeric_limits<long double>::digits10, "");
-  static_assert(kMaxNumericSize - 10 > std::numeric_limits<long>::digits10, "");
-  static_assert(kMaxNumericSize - 10 > std::numeric_limits<long long>::digits10, "");
+    static_assert(kMaxNumericSize - 10 > std::numeric_limits<double>::digits10, "");
+    static_assert(kMaxNumericSize - 10 > std::numeric_limits<long double>::digits10, "");
+    static_assert(kMaxNumericSize - 10 > std::numeric_limits<long>::digits10, "");
+    static_assert(kMaxNumericSize - 10 > std::numeric_limits<long long>::digits10, "");
 }
 
 template <typename T>
 void LogStream::formatInteger(T v)
 {
-  if (_exBuffer.empty())
-  {
-    if (_buffer.avail() >= kMaxNumericSize)
+    if (_exBuffer.empty())
     {
-      size_t len = convert(_buffer.current(), v);
-      _buffer.add(len);
-      return;
+        if (_buffer.avail() >= kMaxNumericSize)
+        {
+            size_t len = convert(_buffer.current(), v);
+            _buffer.add(len);
+            return;
+        }
+        else
+        {
+            _exBuffer.append(_buffer.data(), _buffer.length());
+        }
     }
-    else
-    {
-      _exBuffer.append(_buffer.data(), _buffer.length());
-    }
-  }
-  auto oldLen = _exBuffer.length();
-  _exBuffer.resize(oldLen + kMaxNumericSize);
-  size_t len = convert(&_exBuffer[oldLen], v);
-  _exBuffer.resize(oldLen + len);
+    auto oldLen = _exBuffer.length();
+    _exBuffer.resize(oldLen + kMaxNumericSize);
+    size_t len = convert(&_exBuffer[oldLen], v);
+    _exBuffer.resize(oldLen + len);
 }
 
 LogStream &LogStream::operator<<(short v)
 {
-  *this << static_cast<int>(v);
-  return *this;
+    *this << static_cast<int>(v);
+    return *this;
 }
 
 LogStream &LogStream::operator<<(unsigned short v)
 {
-  *this << static_cast<unsigned int>(v);
-  return *this;
+    *this << static_cast<unsigned int>(v);
+    return *this;
 }
 
 LogStream &LogStream::operator<<(int v)
 {
-  formatInteger(v);
-  return *this;
+    formatInteger(v);
+    return *this;
 }
 
 LogStream &LogStream::operator<<(unsigned int v)
 {
-  formatInteger(v);
-  return *this;
+    formatInteger(v);
+    return *this;
 }
 
 LogStream &LogStream::operator<<(long v)
 {
-  formatInteger(v);
-  return *this;
+    formatInteger(v);
+    return *this;
 }
 
 LogStream &LogStream::operator<<(unsigned long v)
 {
-  formatInteger(v);
-  return *this;
+    formatInteger(v);
+    return *this;
 }
 
 LogStream &LogStream::operator<<(long long v)
 {
-  formatInteger(v);
-  return *this;
+    formatInteger(v);
+    return *this;
 }
 
 LogStream &LogStream::operator<<(unsigned long long v)
 {
-  formatInteger(v);
-  return *this;
+    formatInteger(v);
+    return *this;
 }
 
 LogStream &LogStream::operator<<(const void *p)
 {
-  uintptr_t v = reinterpret_cast<uintptr_t>(p);
-  if (_exBuffer.empty())
-  {
-    if (_buffer.avail() >= kMaxNumericSize)
+    uintptr_t v = reinterpret_cast<uintptr_t>(p);
+    if (_exBuffer.empty())
     {
-      char *buf = _buffer.current();
-      buf[0] = '0';
-      buf[1] = 'x';
-      size_t len = convertHex(buf + 2, v);
-      _buffer.add(len + 2);
-      return *this;
+        if (_buffer.avail() >= kMaxNumericSize)
+        {
+            char *buf = _buffer.current();
+            buf[0] = '0';
+            buf[1] = 'x';
+            size_t len = convertHex(buf + 2, v);
+            _buffer.add(len + 2);
+            return *this;
+        }
+        else
+        {
+            _exBuffer.append(_buffer.data(), _buffer.length());
+        }
     }
-    else
-    {
-      _exBuffer.append(_buffer.data(), _buffer.length());
-    }
-  }
-  auto oldLen = _exBuffer.length();
-  _exBuffer.resize(oldLen + kMaxNumericSize);
-  char *buf = &_exBuffer[oldLen];
-  buf[0] = '0';
-  buf[1] = 'x';
-  size_t len = convertHex(buf + 2, v);
-  _exBuffer.resize(oldLen + len + 2);
-  return *this;
+    auto oldLen = _exBuffer.length();
+    _exBuffer.resize(oldLen + kMaxNumericSize);
+    char *buf = &_exBuffer[oldLen];
+    buf[0] = '0';
+    buf[1] = 'x';
+    size_t len = convertHex(buf + 2, v);
+    _exBuffer.resize(oldLen + len + 2);
+    return *this;
 }
 
 // TODO: replace this with Grisu3 by Florian Loitsch.
 LogStream &LogStream::operator<<(double v)
 {
-  if (_exBuffer.empty())
-  {
-    if (_buffer.avail() >= kMaxNumericSize)
+    if (_exBuffer.empty())
     {
-      int len = snprintf(_buffer.current(), kMaxNumericSize, "%.12g", v);
-      _buffer.add(len);
-      return *this;
+        if (_buffer.avail() >= kMaxNumericSize)
+        {
+            int len = snprintf(_buffer.current(), kMaxNumericSize, "%.12g", v);
+            _buffer.add(len);
+            return *this;
+        }
+        else
+        {
+            _exBuffer.append(_buffer.data(), _buffer.length());
+        }
     }
-    else
-    {
-      _exBuffer.append(_buffer.data(), _buffer.length());
-    }
-  }
-  auto oldLen = _exBuffer.length();
-  _exBuffer.resize(oldLen + kMaxNumericSize);
-  int len = snprintf(&(_exBuffer[oldLen]), kMaxNumericSize, "%.12g", v);
-  _exBuffer.resize(oldLen + len);
-  return *this;
+    auto oldLen = _exBuffer.length();
+    _exBuffer.resize(oldLen + kMaxNumericSize);
+    int len = snprintf(&(_exBuffer[oldLen]), kMaxNumericSize, "%.12g", v);
+    _exBuffer.resize(oldLen + len);
+    return *this;
 }
 
 template <typename T>
 Fmt::Fmt(const char *fmt, T val)
 {
-  _length = snprintf(_buf, sizeof _buf, fmt, val);
-  assert(static_cast<size_t>(_length) < sizeof _buf);
+    _length = snprintf(_buf, sizeof _buf, fmt, val);
+    assert(static_cast<size_t>(_length) < sizeof _buf);
 }
 
 // Explicit instantiations
