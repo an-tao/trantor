@@ -97,12 +97,15 @@ void Connector::connect()
     case ENOTSOCK:
         LOG_SYSERR << "connect error in Connector::startInLoop " << savedErrno;
         ::close(sockfd);
+        if (_errorCallback)
+            _errorCallback();
         break;
 
     default:
         LOG_SYSERR << "Unexpected error in Connector::startInLoop " << savedErrno;
         ::close(sockfd);
-        // connectErrorCallback_();
+        if (_errorCallback)
+            _errorCallback();
         break;
     }
 }

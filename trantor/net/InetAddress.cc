@@ -104,7 +104,7 @@ std::string InetAddress::toIpPort() const
     sprintf(buf, ":%u", port);
     return toIp() + std::string(buf);
 }
-bool InetAddress::isInnerIp() const
+bool InetAddress::isIntranetIp() const
 {
     if (_addr.sin_family == AF_INET)
     {
@@ -126,8 +126,7 @@ bool InetAddress::isInnerIp() const
             return true;
         // Privated ip is prefixed by FEC0::/10 or FE80::/10, need testing
         auto i32 = (ntohl(*addrP) & 0xffc00000);
-        if ((i32 == 0xfec00000 || i32 == 0xfe800000) &&
-            *(addrP + 1) == 0 && *(addrP + 2) == 0 && *(addrP + 3) == 0)
+        if (i32 == 0xfec00000 || i32 == 0xfe800000)
             return true;
     }
     return false;
