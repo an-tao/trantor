@@ -136,10 +136,7 @@ bool InetAddress::isLoopbackIp() const
 {
     if (!isIpV6())
     {
-        LOG_DEBUG << "ipv4";
-        LOG_DEBUG << toIp();
         uint32_t ip_addr = ntohl(_addr.sin_addr.s_addr);
-        LOG_DEBUG << ip_addr;
         if (ip_addr == 0x7f000001)
         {
             return true;
