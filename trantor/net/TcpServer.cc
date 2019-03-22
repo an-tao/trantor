@@ -111,9 +111,9 @@ void TcpServer::start()
         if (_idleTimeout > 0)
         {
             _timingWheelMap[_loop] = std::make_shared<TimingWheel>(_loop,
-                                                                    _idleTimeout,
-                                                                    1,
-                                                                    _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+                                                                   _idleTimeout,
+                                                                   1,
+                                                                   _idleTimeout < 500 ? _idleTimeout + 1 : 100);
             if (_loopPoolPtr)
             {
                 auto loopNum = _loopPoolPtr->getLoopNum();
@@ -122,9 +122,9 @@ void TcpServer::start()
                     //LOG_TRACE << "new Wheel loopNum=" << loopNum;
                     auto poolLoop = _loopPoolPtr->getNextLoop();
                     _timingWheelMap[poolLoop] = std::make_shared<TimingWheel>(poolLoop,
-                                                                               _idleTimeout,
-                                                                               1,
-                                                                               _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+                                                                              _idleTimeout,
+                                                                              1,
+                                                                              _idleTimeout < 500 ? _idleTimeout + 1 : 100);
                     loopNum--;
                 }
             }
@@ -137,11 +137,9 @@ void TcpServer::start()
 void TcpServer::setIoLoopNum(size_t num)
 {
     assert(num >= 0);
-    _loop->runInLoop([=]() {
-        assert(!_started);
-        _loopPoolPtr = std::unique_ptr<EventLoopThreadPool>(new EventLoopThreadPool(num));
-        _loopPoolPtr->start();
-    });
+    assert(!_started);
+    _loopPoolPtr = std::unique_ptr<EventLoopThreadPool>(new EventLoopThreadPool(num));
+    _loopPoolPtr->start();
 }
 
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
