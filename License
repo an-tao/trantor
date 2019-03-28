@@ -1,4 +1,4 @@
-// Trantor - A NIO based TCP network library, using C++11, for Linux
+// Trantor - A non-blocking I/O based TCP network library, using C++14/17, 
 // Copyright (c) 2016, Tao An.  All rights reserved.
 // https://github.com/an-tao/trantor
 //
