@@ -17,10 +17,11 @@
 #include <trantor/utils/config.h>
 #include <trantor/utils/NonCopyable.h>
 #include <vector>
-#include <stdio.h>
 #include <string>
-#include <assert.h>
 #include <algorithm>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 #define _bufferDEF_LENGTH 2048
 static const char CRLF[] = "\r\n";

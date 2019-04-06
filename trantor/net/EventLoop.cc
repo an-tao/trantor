@@ -241,7 +241,7 @@ TimerId EventLoop::runEvery(double interval, Func &&cb)
 }
 void EventLoop::invalidateTimer(TimerId id)
 {
-    if (_timerQueue)
+    if (isRunning() && _timerQueue)
         _timerQueue->invalidateTimer(id);
 }
 void EventLoop::doRunInLoopFuncs()
