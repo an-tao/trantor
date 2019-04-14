@@ -35,6 +35,11 @@ class Channel;
 typedef std::vector<Channel *> ChannelList;
 typedef std::function<void()> Func;
 typedef uint64_t TimerId;
+enum
+{
+    InvalidTimerId = 0
+};
+
 class EventLoop : NonCopyable
 {
   public:

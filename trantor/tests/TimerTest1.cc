@@ -6,7 +6,7 @@ int main()
     trantor::EventLoop loop;
     LOG_FATAL << trantor::Date::date().roundDay().microSecondsSinceEpoch();
     trantor::Date begin = trantor::Date::date().roundSecond().after(2);
-    loop.runAt(begin, [=, &loop]() {
+    auto id=loop.runAt(begin, [=, &loop]() {
         LOG_DEBUG << "test begin:";
         srand((unsigned int)time(NULL));
         for (int i = 0; i < 10000; i++)
@@ -19,6 +19,6 @@ int main()
         }
         LOG_DEBUG << "timer created!";
     });
-
+    std::cout << "id=" << id << std::endl;
     loop.loop();
 }

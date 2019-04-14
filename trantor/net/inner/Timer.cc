@@ -14,9 +14,11 @@
 
 #include "Timer.h"
 #include <trantor/utils/Logger.h>
+#include <trantor/net/EventLoop.h>
+
 namespace trantor
 {
-std::atomic<TimerId> Timer::_timersCreated = ATOMIC_VAR_INIT(0);
+std::atomic<TimerId> Timer::_timersCreated = ATOMIC_VAR_INIT(InvalidTimerId);
 Timer::Timer(const TimerCallback &cb,
              const Date &when,
              double interval)
@@ -24,8 +26,7 @@ Timer::Timer(const TimerCallback &cb,
       _when(when),
       _interval(interval),
       _repeat(interval > 0.0),
-      _id(_timersCreated++)
-
+      _id(++_timersCreated)
 {
 }
 Timer::Timer(TimerCallback &&cb,
@@ -35,7 +36,7 @@ Timer::Timer(TimerCallback &&cb,
       _when(when),
       _interval(interval),
       _repeat(interval > 0.0),
-      _id(_timersCreated++)
+      _id(++_timersCreated)
 {
     //LOG_TRACE<<"Timer move contrustor";
 }

@@ -25,6 +25,7 @@ namespace trantor
 {
 
 typedef uint64_t TimerId;
+
 class Timer : public NonCopyable
 {
   public:
