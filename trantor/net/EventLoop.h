@@ -25,6 +25,7 @@
 #include <mutex>
 #include <queue>
 #include <functional>
+#include <chrono>
 
 namespace trantor
 {
@@ -42,7 +43,7 @@ enum
 
 class EventLoop : NonCopyable
 {
-  public:
+public:
     EventLoop();
     ~EventLoop();
     void loop();
@@ -89,12 +90,45 @@ class EventLoop : NonCopyable
     ///
     TimerId runAfter(double delay, const Func &cb);
     TimerId runAfter(double delay, Func &&cb);
+
+    /// Runs @param cb after @param delay
+    /**
+     * Users could use chrono literals to represent a time duration
+     * For example:
+     * runAfter(5s, task); 
+     * runAfter(10min, task); 
+     */
+    TimerId runAfter(const std::chrono::duration<long double> &delay, const Func &cb)
+    {
+        return runAfter(delay.count(), cb);
+    }
+    TimerId runAfter(const std::chrono::duration<long double> &delay, Func &&cb)
+    {
+        return runAfter(delay.count(), std::move(cb));
+    }
     ///
     /// Runs callback every @c interval seconds.
     /// Safe to call from other threads.
     ///
     TimerId runEvery(double interval, const Func &cb);
     TimerId runEvery(double interval, Func &&cb);
+
+    /// Runs @param cb every @param interval time
+    /**
+     * Users could use chrono literals to represent a time duration
+     * For example:
+     * runEvery(5s, task); 
+     * runEvery(10min, task); 
+     * runEvery(0.1h, task);
+     */
+    TimerId runEvery(const std::chrono::duration<long double> &interval, const Func &cb)
+    {
+        return runEvery(interval.count(), cb);
+    }
+    TimerId runEvery(const std::chrono::duration<long double> &interval, Func &&cb)
+    {
+        return runEvery(interval.count(), std::move(cb));
+    }
     //int getAioEventFd();
     //io_context_t getAioContext() {return ctx_;};
     void invalidateTimer(TimerId id);
@@ -102,7 +136,7 @@ class EventLoop : NonCopyable
     bool isRunning() { return _looping && (!_quit); }
     bool isCallingFunctions() { return _callingFuncs; }
 
-  private:
+private:
     void abortNotInLoopThread();
     bool _looping;
     const std::thread::id _threadId;

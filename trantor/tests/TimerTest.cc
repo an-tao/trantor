@@ -2,15 +2,17 @@
 #include <trantor/utils/Logger.h>
 #include <iostream>
 #include <unistd.h>
+using namespace std::literals;
+
 int main()
 {
     trantor::Logger::setLogLevel(trantor::Logger::TRACE);
     trantor::EventLoop loop;
-    auto id1 = loop.runAfter(1, []() {
+    auto id1 = loop.runAfter(1s, []() {
         LOG_ERROR << "This info shouldn't be displayed!";
     });
     loop.invalidateTimer(id1);
-    auto id2 = loop.runEvery(0.3, []() {
+    auto id2 = loop.runEvery(0.3s, []() {
         LOG_ERROR << "This timer will be invalidated after 3 second;";
     });
     std::thread thread([id2, &loop]() {
