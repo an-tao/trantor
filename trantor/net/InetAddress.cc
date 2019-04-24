@@ -128,6 +128,19 @@ bool InetAddress::isIntranetIp() const
         auto i32 = (ntohl(*addrP) & 0xffc00000);
         if (i32 == 0xfec00000 || i32 == 0xfe800000)
             return true;
+        if (*addrP == 0 && *(addrP + 1) == 0 && ntohl(*(addrP + 2)) == 0xffff)
+        {
+            //the IPv6 version of an IPv4 IP address
+            uint32_t ip_addr = ntohl(*(addrP + 3));
+            if ((ip_addr >= 0x0A000000 && ip_addr <= 0x0AFFFFFF) ||
+                (ip_addr >= 0xAC100000 && ip_addr <= 0xAC1FFFFF) ||
+                (ip_addr >= 0xC0A80000 && ip_addr <= 0xC0A8FFFF) ||
+                ip_addr == 0x7f000001)
+
+            {
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -146,6 +159,9 @@ bool InetAddress::isLoopbackIp() const
     {
         auto addrP = ip6NetEndian();
         if (*addrP == 0 && *(addrP + 1) == 0 && *(addrP + 2) == 0 && ntohl(*(addrP + 3)) == 1)
+            return true;
+        //the IPv6 version of an IPv4 loopback address
+        if (*addrP == 0 && *(addrP + 1) == 0 && ntohl(*(addrP + 2)) == 0xffff && ntohl(*(addrP + 3)) == 0x7f000001)
             return true;
     }
     return false;
