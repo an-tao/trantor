@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.2)
 project(trantor)
 
-IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#Clang, use c++17
+    set(DEFS "USE_STD_ANY")
+    set(USE_STD_ANY 1)
+    set(CMAKE_CXX_STD_FLAGS c++17)
+else()
     EXEC_PROGRAM (gcc ARGS "--version | grep '^gcc'|awk '{print $3}' | sed s'/)//g' | sed s'/-.*//g'" OUTPUT_VARIABLE version)
     MESSAGE(STATUS "This is gcc version:: " ${version})
     if(version LESS 5.4.0)
@@ -16,10 +21,6 @@ IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
         set(USE_STD_ANY 1)
         MESSAGE(STATUS "c++17")
     endif()
-else()
-    set(DEFS "USE_STD_ANY")
-    set(USE_STD_ANY 1)
-    set(CMAKE_CXX_STD_FLAGS c++17)
 endif()
 
 # include directories
