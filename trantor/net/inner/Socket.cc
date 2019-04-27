@@ -33,7 +33,7 @@ void Socket::bindAddress(const InetAddress &localaddr)
         return;
     else
     {
-        LOG_SYSERR << "bind failed";
+        LOG_SYSERR << ", Bind address failed at " << localaddr.toIpPort();
         exit(-1);
     }
 }
