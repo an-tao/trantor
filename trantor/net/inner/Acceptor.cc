@@ -14,15 +14,15 @@
 
 #include "Acceptor.h"
 using namespace trantor;
-Acceptor::Acceptor(EventLoop *loop, const InetAddress &addr)
+Acceptor::Acceptor(EventLoop *loop, const InetAddress &addr, bool reUseAddr, bool reUsePort)
     : _sock(Socket::createNonblockingSocketOrDie(addr.getSockAddr()->sa_family)),
       _addr(addr),
       _loop(loop),
       _acceptChannel(loop, _sock.fd()),
       _idleFd(::open("/dev/null", O_RDONLY | O_CLOEXEC))
 {
-    _sock.setReuseAddr(true);
-    _sock.setReusePort(true);
+    _sock.setReuseAddr(reUseAddr);
+    _sock.setReusePort(reUsePort);
 
     _sock.bindAddress(_addr);
 

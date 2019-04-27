@@ -26,8 +26,8 @@ namespace trantor
 typedef std::function<void(int fd, const InetAddress &)> NewConnectionCallback;
 class Acceptor : NonCopyable
 {
-  public:
-    Acceptor(EventLoop *loop, const InetAddress &addr);
+public:
+    Acceptor(EventLoop *loop, const InetAddress &addr, bool reUseAddr = true, bool reUsePort = true);
     ~Acceptor();
     const InetAddress &addr() const { return _addr; }
     void setNewConnectionCallback(const NewConnectionCallback &cb)
@@ -36,7 +36,7 @@ class Acceptor : NonCopyable
     };
     void listen();
 
-  protected:
+protected:
     Socket _sock;
     InetAddress _addr;
     EventLoop *_loop;

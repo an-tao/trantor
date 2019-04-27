@@ -39,8 +39,12 @@ class Acceptor;
 
 class TcpServer : NonCopyable
 {
-  public:
-    TcpServer(EventLoop *loop, const InetAddress &address, const std::string &name);
+public:
+    TcpServer(EventLoop *loop,
+              const InetAddress &address,
+              const std::string &name,
+              bool reUseAddr = true,
+              bool reUsePort = true);
     ~TcpServer();
     void start();
     void setIoLoopNum(size_t num);
@@ -68,7 +72,7 @@ class TcpServer : NonCopyable
 #ifdef USE_OPENSSL
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 #endif
-  private:
+private:
     EventLoop *_loop;
     std::unique_ptr<Acceptor> _acceptorPtr;
     void newConnection(int fd, const InetAddress &peer);
@@ -85,7 +89,7 @@ class TcpServer : NonCopyable
     std::unique_ptr<EventLoopThreadPool> _loopPoolPtr;
     class IgnoreSigPipe
     {
-      public:
+    public:
         IgnoreSigPipe()
         {
             ::signal(SIGPIPE, SIG_IGN);

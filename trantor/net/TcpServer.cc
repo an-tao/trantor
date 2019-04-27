@@ -26,9 +26,11 @@ using namespace std::placeholders;
 
 TcpServer::TcpServer(EventLoop *loop,
                      const InetAddress &address,
-                     const std::string &name)
+                     const std::string &name,
+                     bool reUseAddr,
+                     bool reUsePort)
     : _loop(loop),
-      _acceptorPtr(new Acceptor(loop, address)),
+      _acceptorPtr(new Acceptor(loop, address, reUseAddr, reUsePort)),
       _serverName(name),
       _recvMessageCallback([](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
           LOG_ERROR << "unhandled recv message [" << buffer->readableBytes() << " bytes]";
