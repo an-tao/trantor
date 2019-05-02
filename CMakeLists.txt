@@ -109,7 +109,6 @@ if (MAKETEST STREQUAL YES)
 endif ()
 
 #install
-SET(CMAKE_INSTALL_PREFIX /usr/local)
 
 install(TARGETS trantor DESTINATION lib)
 
