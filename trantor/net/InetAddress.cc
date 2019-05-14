@@ -45,11 +45,14 @@ static const in_addr_t kInaddrLoopback = INADDR_LOOPBACK;
 
 using namespace trantor;
 
+/*
 #ifdef __linux__
 #if !(__GNUC_PREREQ(4, 6))
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 #endif
 #endif
+*/
+
 InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
     : _isIpV6(ipv6)
 {
@@ -192,7 +195,7 @@ const uint32_t *InetAddress::ip6NetEndian() const
 {
 //assert(family() == AF_INET6);
 #ifdef __linux__
-    return _addr6.sin6_addr.__in6_u.__u6_addr32;
+    return _addr6.sin6_addr.s6_addr32;
 #else
     return _addr6.sin6_addr.__u6_addr.__u6_addr32;
 #endif
