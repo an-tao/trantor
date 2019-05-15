@@ -68,13 +68,20 @@ void SSLConnection::readCallback()
             readLength = _readBuffer.writableBytes();
             rd = SSL_read(_sslPtr.get(), _readBuffer.beginWrite(), readLength);
             LOG_TRACE << "ssl read:" << rd << " bytes";
-            int sslerr = SSL_get_error(_sslPtr.get(), rd);
-            if (rd <= 0 && sslerr != SSL_ERROR_WANT_READ)
+            if (rd <= 0)
             {
-                LOG_TRACE << "ssl read err:" << sslerr;
-                _status = SSLStatus::DisConnected;
-                handleClose();
-                return;
+                int sslerr = SSL_get_error(_sslPtr.get(), rd);
+                if (sslerr == SSL_ERROR_WANT_READ)
+                {
+                    break;
+                }
+                else
+                {
+                    LOG_TRACE << "ssl read err:" << sslerr;
+                    _status = SSLStatus::DisConnected;
+                    handleClose();
+                    return;
+                }
             }
             if (rd > 0)
             {
