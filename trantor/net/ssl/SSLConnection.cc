@@ -60,7 +60,7 @@ void SSLConnection::readCallback()
     else if (_status == SSLStatus::Connected)
     {
         int rd;
-        char buf[65536];
+        char buf[4096];
         bool newDataFlag = false;
         do
         {
