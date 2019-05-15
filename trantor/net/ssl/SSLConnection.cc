@@ -60,12 +60,13 @@ void SSLConnection::readCallback()
     else if (_status == SSLStatus::Connected)
     {
         int rd;
-        char buf[4096];
         bool newDataFlag = false;
+        size_t readLength;
         do
         {
-
-            rd = SSL_read(_sslPtr.get(), buf, sizeof(buf));
+            _readBuffer.ensureWritableBytes(1024);
+            readLength = _readBuffer.writableBytes();
+            rd = SSL_read(_sslPtr.get(), _readBuffer.beginWrite(), readLength);
             LOG_TRACE << "ssl read:" << rd << " bytes";
             int sslerr = SSL_get_error(_sslPtr.get(), rd);
             if (rd <= 0 && sslerr != SSL_ERROR_WANT_READ)
@@ -77,11 +78,10 @@ void SSLConnection::readCallback()
             }
             if (rd > 0)
             {
-                _readBuffer.append(buf, rd);
+                _readBuffer.hasWritten(rd);
                 newDataFlag = true;
             }
-
-        } while (rd == sizeof(buf));
+        } while ((size_t)rd == readLength);
         if (newDataFlag)
         {
             //eval callback function;
@@ -131,7 +131,7 @@ void SSLConnection::doHandshaking()
         _ioChannelPtr->disableWriting();
     }
     else
-    { //错误
+    {
         //ERR_print_errors(err);
         LOG_FATAL << "SSL handshake err";
         _ioChannelPtr->disableReading();
