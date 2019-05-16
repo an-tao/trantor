@@ -83,15 +83,12 @@ void SSLConnection::readCallback()
                     return;
                 }
             }
-            if (rd > 0)
-            {
-                _readBuffer.hasWritten(rd);
-                newDataFlag = true;
-            }
+            _readBuffer.hasWritten(rd);
+            newDataFlag = true;
         } while ((size_t)rd == readLength);
         if (newDataFlag)
         {
-            //eval callback function;
+            //Run callback function
             _recvMsgCallback(shared_from_this(), &_readBuffer);
         }
     }
