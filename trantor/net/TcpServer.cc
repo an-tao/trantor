@@ -82,20 +82,12 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     }
     else
     {
-        newPtr = std::make_shared<TcpConnectionImpl>(ioLoop,
-                                                     sockfd,
-                                                     InetAddress(
-                                                         Socket::getLocalAddr(
-                                                             sockfd)),
-                                                     peer);
+        newPtr = std::make_shared<TcpConnectionImpl>(
+            ioLoop, sockfd, InetAddress(Socket::getLocalAddr(sockfd)), peer);
     }
 #else
-    auto newPtr =
-        std::make_shared<TcpConnectionImpl>(ioLoop,
-                                            sockfd,
-                                            InetAddress(
-                                                Socket::getLocalAddr(sockfd)),
-                                            peer);
+    auto newPtr = std::make_shared<TcpConnectionImpl>(
+        ioLoop, sockfd, InetAddress(Socket::getLocalAddr(sockfd)), peer);
 #endif
 
     if (_idleTimeout > 0)
