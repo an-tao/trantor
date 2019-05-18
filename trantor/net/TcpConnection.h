@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -26,7 +26,6 @@
 
 namespace trantor
 {
-
 class TcpConnection
 {
   public:
@@ -39,7 +38,9 @@ class TcpConnection
     virtual void send(MsgBuffer &&buffer) = 0;
     virtual void send(const std::shared_ptr<std::string> &msgPtr) = 0;
 
-    virtual void sendFile(const char *fileName, size_t offset = 0, size_t length = 0) = 0;
+    virtual void sendFile(const char *fileName,
+                          size_t offset = 0,
+                          size_t length = 0) = 0;
 
     virtual const InetAddress &localAddr() const = 0;
     virtual const InetAddress &peerAddr() const = 0;
@@ -47,10 +48,11 @@ class TcpConnection
     virtual bool connected() const = 0;
     virtual bool disconnected() const = 0;
 
-    //virtual MsgBuffer* getSendBuffer() =0;
+    // virtual MsgBuffer* getSendBuffer() =0;
     virtual MsgBuffer *getRecvBuffer() = 0;
-    //set callbacks
-    virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb, size_t markLen) = 0;
+    // set callbacks
+    virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
+                                          size_t markLen) = 0;
 
     virtual void setTcpNoDelay(bool on) = 0;
     virtual void shutdown() = 0;
@@ -63,10 +65,10 @@ class TcpConnection
 
     virtual any *getMutableContext() = 0;
 
-    //Call this method to avoid being kicked off by TcpServer, refer to 
-    //the kickoffIdleConnections method in the TcpServer class. 
+    // Call this method to avoid being kicked off by TcpServer, refer to
+    // the kickoffIdleConnections method in the TcpServer class.
     virtual void keepAlive() = 0;
     virtual bool isKeepAlive() = 0;
 };
 
-} // namespace trantor
+}  // namespace trantor

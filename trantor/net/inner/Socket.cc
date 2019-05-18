@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -49,13 +49,14 @@ void Socket::listen()
 }
 int Socket::accept(InetAddress *peeraddr)
 {
-
     struct sockaddr_in6 addr6;
     memset(&addr6, 0, sizeof(addr6));
     socklen_t size = sizeof(addr6);
 #ifdef __linux__
-    int connfd = ::accept4(sockFd_, (struct sockaddr *)&addr6,
-                           &size, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    int connfd = ::accept4(sockFd_,
+                           (struct sockaddr *)&addr6,
+                           &size,
+                           SOCK_NONBLOCK | SOCK_CLOEXEC);
 #else
     int connfd = ::accept(sockFd_, (struct sockaddr *)&addr6, &size);
     setNonBlockAndCloseOnExec(connfd);
@@ -83,7 +84,9 @@ struct sockaddr_in6 Socket::getLocalAddr(int sockfd)
     struct sockaddr_in6 localaddr;
     memset(&localaddr, 0, sizeof(localaddr));
     socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
-    if (::getsockname(sockfd, static_cast<struct sockaddr *>((void *)(&localaddr)), &addrlen) < 0)
+    if (::getsockname(sockfd,
+                      static_cast<struct sockaddr *>((void *)(&localaddr)),
+                      &addrlen) < 0)
     {
         LOG_SYSERR << "sockets::getLocalAddr";
     }
@@ -95,7 +98,9 @@ struct sockaddr_in6 Socket::getPeerAddr(int sockfd)
     struct sockaddr_in6 peeraddr;
     memset(&peeraddr, 0, sizeof(peeraddr));
     socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
-    if (::getpeername(sockfd, static_cast<struct sockaddr *>((void *)(&peeraddr)), &addrlen) < 0)
+    if (::getpeername(sockfd,
+                      static_cast<struct sockaddr *>((void *)(&peeraddr)),
+                      &addrlen) < 0)
     {
         LOG_SYSERR << "sockets::getPeerAddr";
     }
@@ -105,16 +110,22 @@ struct sockaddr_in6 Socket::getPeerAddr(int sockfd)
 void Socket::setTcpNoDelay(bool on)
 {
     int optval = on ? 1 : 0;
-    ::setsockopt(sockFd_, IPPROTO_TCP, TCP_NODELAY,
-                 &optval, static_cast<socklen_t>(sizeof optval));
+    ::setsockopt(sockFd_,
+                 IPPROTO_TCP,
+                 TCP_NODELAY,
+                 &optval,
+                 static_cast<socklen_t>(sizeof optval));
     // TODO CHECK
 }
 
 void Socket::setReuseAddr(bool on)
 {
     int optval = on ? 1 : 0;
-    ::setsockopt(sockFd_, SOL_SOCKET, SO_REUSEADDR,
-                 &optval, static_cast<socklen_t>(sizeof optval));
+    ::setsockopt(sockFd_,
+                 SOL_SOCKET,
+                 SO_REUSEADDR,
+                 &optval,
+                 static_cast<socklen_t>(sizeof optval));
     // TODO CHECK
 }
 
@@ -122,8 +133,11 @@ void Socket::setReusePort(bool on)
 {
 #ifdef SO_REUSEPORT
     int optval = on ? 1 : 0;
-    int ret = ::setsockopt(sockFd_, SOL_SOCKET, SO_REUSEPORT,
-                           &optval, static_cast<socklen_t>(sizeof optval));
+    int ret = ::setsockopt(sockFd_,
+                           SOL_SOCKET,
+                           SO_REUSEPORT,
+                           &optval,
+                           static_cast<socklen_t>(sizeof optval));
     if (ret < 0 && on)
     {
         LOG_SYSERR << "SO_REUSEPORT failed.";
@@ -139,8 +153,11 @@ void Socket::setReusePort(bool on)
 void Socket::setKeepAlive(bool on)
 {
     int optval = on ? 1 : 0;
-    ::setsockopt(sockFd_, SOL_SOCKET, SO_KEEPALIVE,
-                 &optval, static_cast<socklen_t>(sizeof optval));
+    ::setsockopt(sockFd_,
+                 SOL_SOCKET,
+                 SO_KEEPALIVE,
+                 &optval,
+                 static_cast<socklen_t>(sizeof optval));
     // TODO CHECK
 }
 

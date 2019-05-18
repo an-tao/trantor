@@ -34,12 +34,11 @@
 #endif
 namespace trantor
 {
-
 class Acceptor;
 
 class TcpServer : NonCopyable
 {
-public:
+  public:
     TcpServer(EventLoop *loop,
               const InetAddress &address,
               const std::string &name,
@@ -48,19 +47,46 @@ public:
     ~TcpServer();
     void start();
     void setIoLoopNum(size_t num);
-    void setRecvMessageCallback(const RecvMessageCallback &cb) { _recvMessageCallback = cb; }
-    void setConnectionCallback(const ConnectionCallback &cb) { _connectionCallback = cb; }
-    void setWriteCompleteCallback(const WriteCompleteCallback &cb) { _writeCompleteCallback = cb; }
+    void setRecvMessageCallback(const RecvMessageCallback &cb)
+    {
+        _recvMessageCallback = cb;
+    }
+    void setConnectionCallback(const ConnectionCallback &cb)
+    {
+        _connectionCallback = cb;
+    }
+    void setWriteCompleteCallback(const WriteCompleteCallback &cb)
+    {
+        _writeCompleteCallback = cb;
+    }
 
-    void setRecvMessageCallback(RecvMessageCallback &&cb) { _recvMessageCallback = std::move(cb); }
-    void setConnectionCallback(ConnectionCallback &&cb) { _connectionCallback = std::move(cb); }
-    void setWriteCompleteCallback(WriteCompleteCallback &&cb) { _writeCompleteCallback = std::move(cb); }
-    const std::string &name() const { return _serverName; }
+    void setRecvMessageCallback(RecvMessageCallback &&cb)
+    {
+        _recvMessageCallback = std::move(cb);
+    }
+    void setConnectionCallback(ConnectionCallback &&cb)
+    {
+        _connectionCallback = std::move(cb);
+    }
+    void setWriteCompleteCallback(WriteCompleteCallback &&cb)
+    {
+        _writeCompleteCallback = std::move(cb);
+    }
+    const std::string &name() const
+    {
+        return _serverName;
+    }
     const std::string ipPort() const;
-    EventLoop *getLoop() const { return _loop; }
-    std::vector<EventLoop *> getIoLoops() const { return _loopPoolPtr->getLoops(); }
-    //An idle connection is a connection that has no read or write,
-    //kick off it after timeout ;
+    EventLoop *getLoop() const
+    {
+        return _loop;
+    }
+    std::vector<EventLoop *> getIoLoops() const
+    {
+        return _loopPoolPtr->getLoops();
+    }
+    // An idle connection is a connection that has no read or write,
+    // kick off it after timeout ;
     void kickoffIdleConnections(size_t timeout)
     {
         _loop->runInLoop([=]() {
@@ -72,7 +98,7 @@ public:
 #ifdef USE_OPENSSL
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 #endif
-private:
+  private:
     EventLoop *_loop;
     std::unique_ptr<Acceptor> _acceptorPtr;
     void newConnection(int fd, const InetAddress &peer);
@@ -89,7 +115,7 @@ private:
     std::unique_ptr<EventLoopThreadPool> _loopPoolPtr;
     class IgnoreSigPipe
     {
-    public:
+      public:
         IgnoreSigPipe()
         {
             ::signal(SIGPIPE, SIG_IGN);
@@ -102,9 +128,9 @@ private:
     bool _started = false;
 
 #ifdef USE_OPENSSL
-    //OpenSSL SSL context Object;
+    // OpenSSL SSL context Object;
     std::shared_ptr<SSL_CTX> _sslCtxPtr;
 #endif
 };
 
-} // namespace trantor
+}  // namespace trantor

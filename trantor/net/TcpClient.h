@@ -41,7 +41,7 @@ class TcpClient : NonCopyable
     TcpClient(EventLoop *loop,
               const InetAddress &serverAddr,
               const std::string &nameArg);
-    ~TcpClient(); // force out-line dtor, for scoped_ptr members.
+    ~TcpClient();  // force out-line dtor, for scoped_ptr members.
 
     void connect();
     void disconnect();
@@ -53,9 +53,18 @@ class TcpClient : NonCopyable
         return _connection;
     }
 
-    EventLoop *getLoop() const { return _loop; }
-    bool retry() const { return _retry; }
-    void enableRetry() { _retry = true; }
+    EventLoop *getLoop() const
+    {
+        return _loop;
+    }
+    bool retry() const
+    {
+        return _retry;
+    }
+    void enableRetry()
+    {
+        _retry = true;
+    }
 
     const std::string &name() const
     {
@@ -109,20 +118,20 @@ class TcpClient : NonCopyable
     void removeConnection(const TcpConnectionPtr &conn);
 
     EventLoop *_loop;
-    ConnectorPtr _connector; // avoid revealing Connector
+    ConnectorPtr _connector;  // avoid revealing Connector
     const std::string _name;
     ConnectionCallback _connectionCallback;
     ConnectionErrorCallback _connectionErrorCallback;
     RecvMessageCallback _messageCallback;
     WriteCompleteCallback _writeCompleteCallback;
-    std::atomic_bool _retry;   // atomic
-    std::atomic_bool _connect; // atomic
+    std::atomic_bool _retry;    // atomic
+    std::atomic_bool _connect;  // atomic
     // always in loop thread
     mutable std::mutex _mutex;
-    TcpConnectionPtr _connection; // @GuardedBy _mutex
+    TcpConnectionPtr _connection;  // @GuardedBy _mutex
 #ifdef USE_OPENSSL
     std::shared_ptr<SSL_CTX> _sslCtxPtr;
 #endif
 };
 
-} // namespace trantor
+}  // namespace trantor

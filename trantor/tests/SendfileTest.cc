@@ -45,16 +45,29 @@ int main(int argc, char *argv[])
     InetAddress addr(1207);
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
-    server.setRecvMessageCallback([](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
-        //LOG_DEBUG<<"recv callback!";
-    });
+    server.setRecvMessageCallback(
+        [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
+            // LOG_DEBUG<<"recv callback!";
+        });
     int counter = 0;
-    server.setConnectionCallback([=, &counter](const TcpConnectionPtr &connPtr) {
-        if (connPtr->connected())
-        {
-            LOG_DEBUG << "New connection";
-            std::thread t([=, &counter]() {
-                for (int i = 0; i < 5; i++)
+    server.setConnectionCallback(
+        [=, &counter](const TcpConnectionPtr &connPtr) {
+            if (connPtr->connected())
+            {
+                LOG_DEBUG << "New connection";
+                std::thread t([=, &counter]() {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        connPtr->sendFile(argv[1]);
+                        char str[64];
+                        counter++;
+                        sprintf(str, "\n%d files sent!\n", counter);
+                        connPtr->send(str, strlen(str));
+                    }
+                });
+                t.detach();
+
+                for (int i = 0; i < 3; i++)
                 {
                     connPtr->sendFile(argv[1]);
                     char str[64];
@@ -62,23 +75,12 @@ int main(int argc, char *argv[])
                     sprintf(str, "\n%d files sent!\n", counter);
                     connPtr->send(str, strlen(str));
                 }
-            });
-            t.detach();
-
-            for (int i = 0; i < 3; i++)
-            {
-                connPtr->sendFile(argv[1]);
-                char str[64];
-                counter++;
-                sprintf(str, "\n%d files sent!\n", counter);
-                connPtr->send(str, strlen(str));
             }
-        }
-        else if (connPtr->disconnected())
-        {
-            LOG_DEBUG << "connection disconnected";
-        }
-    });
+            else if (connPtr->disconnected())
+            {
+                LOG_DEBUG << "connection disconnected";
+            }
+        });
     server.setIoLoopNum(3);
     server.start();
     loopThread.wait();

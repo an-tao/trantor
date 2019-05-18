@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -12,7 +12,7 @@
  *
  */
 
-//taken from muduo lib
+// taken from muduo lib
 
 #include <trantor/utils/LogStream.h>
 #include <algorithm>
@@ -30,7 +30,6 @@ namespace trantor
 {
 namespace detail
 {
-
 const char digits[] = "9876543210123456789";
 const char *zero = digits + 9;
 
@@ -81,8 +80,8 @@ size_t convertHex(char buf[], uintptr_t value)
 template class FixedBuffer<kSmallBuffer>;
 template class FixedBuffer<kLargeBuffer>;
 
-} // namespace detail
-} // namespace trantor
+}  // namespace detail
+}  // namespace trantor
 
 template <int SIZE>
 const char *FixedBuffer<SIZE>::debugString()
@@ -103,10 +102,16 @@ void FixedBuffer<SIZE>::cookieEnd()
 
 void LogStream::staticCheck()
 {
-    static_assert(kMaxNumericSize - 10 > std::numeric_limits<double>::digits10, "");
-    static_assert(kMaxNumericSize - 10 > std::numeric_limits<long double>::digits10, "");
-    static_assert(kMaxNumericSize - 10 > std::numeric_limits<long>::digits10, "");
-    static_assert(kMaxNumericSize - 10 > std::numeric_limits<long long>::digits10, "");
+    static_assert(kMaxNumericSize - 10 > std::numeric_limits<double>::digits10,
+                  "");
+    static_assert(kMaxNumericSize - 10 >
+                      std::numeric_limits<long double>::digits10,
+                  "");
+    static_assert(kMaxNumericSize - 10 > std::numeric_limits<long>::digits10,
+                  "");
+    static_assert(kMaxNumericSize - 10 >
+                      std::numeric_limits<long long>::digits10,
+                  "");
 }
 
 template <typename T>

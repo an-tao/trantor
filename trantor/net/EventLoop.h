@@ -29,7 +29,6 @@
 
 namespace trantor
 {
-
 class Poller;
 class TimerQueue;
 class Channel;
@@ -43,7 +42,7 @@ enum
 
 class EventLoop : NonCopyable
 {
-public:
+  public:
     EventLoop();
     ~EventLoop();
     void loop();
@@ -75,8 +74,8 @@ public:
     // template <typename T>
     // const std::shared_ptr<ObjectPool<T>> &getObjectPool()
     // {
-    //     static std::shared_ptr<ObjectPool<T>> pool=std::make_shared<ObjectPool<T>>();
-    //     return pool;
+    //     static std::shared_ptr<ObjectPool<T>>
+    //     pool=std::make_shared<ObjectPool<T>>(); return pool;
     // }
     ///
     /// Runs callback at 'time'.
@@ -95,10 +94,11 @@ public:
     /**
      * Users could use chrono literals to represent a time duration
      * For example:
-     * runAfter(5s, task); 
-     * runAfter(10min, task); 
+     * runAfter(5s, task);
+     * runAfter(10min, task);
      */
-    TimerId runAfter(const std::chrono::duration<long double> &delay, const Func &cb)
+    TimerId runAfter(const std::chrono::duration<long double> &delay,
+                     const Func &cb)
     {
         return runAfter(delay.count(), cb);
     }
@@ -117,26 +117,34 @@ public:
     /**
      * Users could use chrono literals to represent a time duration
      * For example:
-     * runEvery(5s, task); 
-     * runEvery(10min, task); 
+     * runEvery(5s, task);
+     * runEvery(10min, task);
      * runEvery(0.1h, task);
      */
-    TimerId runEvery(const std::chrono::duration<long double> &interval, const Func &cb)
+    TimerId runEvery(const std::chrono::duration<long double> &interval,
+                     const Func &cb)
     {
         return runEvery(interval.count(), cb);
     }
-    TimerId runEvery(const std::chrono::duration<long double> &interval, Func &&cb)
+    TimerId runEvery(const std::chrono::duration<long double> &interval,
+                     Func &&cb)
     {
         return runEvery(interval.count(), std::move(cb));
     }
-    //int getAioEventFd();
-    //io_context_t getAioContext() {return ctx_;};
+    // int getAioEventFd();
+    // io_context_t getAioContext() {return ctx_;};
     void invalidateTimer(TimerId id);
 
-    bool isRunning() { return _looping && (!_quit); }
-    bool isCallingFunctions() { return _callingFuncs; }
+    bool isRunning()
+    {
+        return _looping && (!_quit);
+    }
+    bool isCallingFunctions()
+    {
+        return _callingFuncs;
+    }
 
-private:
+  private:
     void abortNotInLoopThread();
     bool _looping;
     const std::thread::id _threadId;
@@ -148,7 +156,7 @@ private:
 
     bool _eventHandling;
 
-    //std::mutex _funcsMutex;
+    // std::mutex _funcsMutex;
 
     MpscQueue<Func> _funcs;
     std::unique_ptr<TimerQueue> _timerQueue;
@@ -163,4 +171,4 @@ private:
     void doRunInLoopFuncs();
 };
 
-} // namespace trantor
+}  // namespace trantor

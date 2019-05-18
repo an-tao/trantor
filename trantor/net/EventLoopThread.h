@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -24,14 +24,16 @@
 
 namespace trantor
 {
-
 class EventLoopThread : NonCopyable
 {
   public:
     explicit EventLoopThread(const std::string &threadName = "EventLoopThread");
     ~EventLoopThread();
     void wait();
-    EventLoop *getLoop() const { return _loop; }
+    EventLoop *getLoop() const
+    {
+        return _loop;
+    }
     void run();
 
   private:
@@ -45,4 +47,4 @@ class EventLoopThread : NonCopyable
     std::once_flag _once;
 };
 
-} // namespace trantor
+}  // namespace trantor

@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -19,13 +19,13 @@
 #include <assert.h>
 namespace trantor
 {
-///A lock-free multiple producers single consumer queue
+/// A lock-free multiple producers single consumer queue
 template <typename T>
 class MpscQueue : public NonCopyable
 {
   public:
-    MpscQueue() : _head(new BufferNode),
-                  _tail(_head.load(std::memory_order_relaxed))
+    MpscQueue()
+        : _head(new BufferNode), _tail(_head.load(std::memory_order_relaxed))
     {
         BufferNode *front = _head.load(std::memory_order_relaxed);
         front->next.store(NULL, std::memory_order_relaxed);
@@ -93,4 +93,4 @@ class MpscQueue : public NonCopyable
     std::atomic<BufferNode *> _tail;
 };
 
-} // namespace trantor
+}  // namespace trantor

@@ -32,12 +32,15 @@ TcpServer::TcpServer(EventLoop *loop,
     : _loop(loop),
       _acceptorPtr(new Acceptor(loop, address, reUseAddr, reUsePort)),
       _serverName(name),
-      _recvMessageCallback([](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
-          LOG_ERROR << "unhandled recv message [" << buffer->readableBytes() << " bytes]";
-          buffer->retrieveAll();
-      })
+      _recvMessageCallback(
+          [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
+              LOG_ERROR << "unhandled recv message [" << buffer->readableBytes()
+                        << " bytes]";
+              buffer->retrieveAll();
+          })
 {
-    _acceptorPtr->setNewConnectionCallback(std::bind(&TcpServer::newConnection, this, _1, _2));
+    _acceptorPtr->setNewConnectionCallback(
+        std::bind(&TcpServer::newConnection, this, _1, _2));
 }
 
 TcpServer::~TcpServer()
@@ -48,8 +51,9 @@ TcpServer::~TcpServer()
 
 void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 {
-    LOG_TRACE << "new connection:fd=" << sockfd << " address=" << peer.toIpPort();
-    //test code for blocking or nonblocking
+    LOG_TRACE << "new connection:fd=" << sockfd
+              << " address=" << peer.toIpPort();
+    // test code for blocking or nonblocking
     //    std::vector<char> str(1024*1024*100);
     //    for(int i=0;i<str.size();i++)
     //        str[i]='A';
@@ -68,21 +72,30 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     std::shared_ptr<TcpConnectionImpl> newPtr;
     if (_sslCtxPtr)
     {
-        newPtr = std::make_shared<SSLConnection>(ioLoop,
-                                                 sockfd,
-                                                 InetAddress(Socket::getLocalAddr(sockfd)),
-                                                 peer,
-                                                 _sslCtxPtr);
+        newPtr =
+            std::make_shared<SSLConnection>(ioLoop,
+                                            sockfd,
+                                            InetAddress(
+                                                Socket::getLocalAddr(sockfd)),
+                                            peer,
+                                            _sslCtxPtr);
     }
     else
     {
         newPtr = std::make_shared<TcpConnectionImpl>(ioLoop,
                                                      sockfd,
-                                                     InetAddress(Socket::getLocalAddr(sockfd)),
+                                                     InetAddress(
+                                                         Socket::getLocalAddr(
+                                                             sockfd)),
                                                      peer);
     }
 #else
-    auto newPtr = std::make_shared<TcpConnectionImpl>(ioLoop, sockfd, InetAddress(Socket::getLocalAddr(sockfd)), peer);
+    auto newPtr =
+        std::make_shared<TcpConnectionImpl>(ioLoop,
+                                            sockfd,
+                                            InetAddress(
+                                                Socket::getLocalAddr(sockfd)),
+                                            peer);
 #endif
 
     if (_idleTimeout > 0)
@@ -96,10 +109,11 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
         if (_connectionCallback)
             _connectionCallback(connectionPtr);
     });
-    newPtr->setWriteCompleteCallback([=](const TcpConnectionPtr &connectionPtr) {
-        if (_writeCompleteCallback)
-            _writeCompleteCallback(connectionPtr);
-    });
+    newPtr->setWriteCompleteCallback(
+        [=](const TcpConnectionPtr &connectionPtr) {
+            if (_writeCompleteCallback)
+                _writeCompleteCallback(connectionPtr);
+        });
     newPtr->setCloseCallback(std::bind(&TcpServer::connectionClosed, this, _1));
     _connSet.insert(newPtr);
     newPtr->connectEstablished();
@@ -112,21 +126,27 @@ void TcpServer::start()
         _started = true;
         if (_idleTimeout > 0)
         {
-            _timingWheelMap[_loop] = std::make_shared<TimingWheel>(_loop,
-                                                                   _idleTimeout,
-                                                                   1,
-                                                                   _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+            _timingWheelMap[_loop] =
+                std::make_shared<TimingWheel>(_loop,
+                                              _idleTimeout,
+                                              1,
+                                              _idleTimeout < 500
+                                                  ? _idleTimeout + 1
+                                                  : 100);
             if (_loopPoolPtr)
             {
                 auto loopNum = _loopPoolPtr->getLoopNum();
                 while (loopNum > 0)
                 {
-                    //LOG_TRACE << "new Wheel loopNum=" << loopNum;
+                    // LOG_TRACE << "new Wheel loopNum=" << loopNum;
                     auto poolLoop = _loopPoolPtr->getNextLoop();
-                    _timingWheelMap[poolLoop] = std::make_shared<TimingWheel>(poolLoop,
-                                                                              _idleTimeout,
-                                                                              1,
-                                                                              _idleTimeout < 500 ? _idleTimeout + 1 : 100);
+                    _timingWheelMap[poolLoop] =
+                        std::make_shared<TimingWheel>(poolLoop,
+                                                      _idleTimeout,
+                                                      1,
+                                                      _idleTimeout < 500
+                                                          ? _idleTimeout + 1
+                                                          : 100);
                     loopNum--;
                 }
             }
@@ -140,7 +160,8 @@ void TcpServer::setIoLoopNum(size_t num)
 {
     assert(num >= 0);
     assert(!_started);
-    _loopPoolPtr = std::unique_ptr<EventLoopThreadPool>(new EventLoopThreadPool(num));
+    _loopPoolPtr =
+        std::unique_ptr<EventLoopThreadPool>(new EventLoopThreadPool(num));
     _loopPoolPtr->start();
 }
 
@@ -154,7 +175,8 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
         assert(n == 1);
     });
 
-    std::dynamic_pointer_cast<TcpConnectionImpl>(connectionPtr)->connectDestroyed();
+    std::dynamic_pointer_cast<TcpConnectionImpl>(connectionPtr)
+        ->connectDestroyed();
 }
 
 const std::string TcpServer::ipPort() const
@@ -163,11 +185,13 @@ const std::string TcpServer::ipPort() const
 }
 
 #ifdef USE_OPENSSL
-void TcpServer::enableSSL(const std::string &certPath, const std::string &keyPath)
+void TcpServer::enableSSL(const std::string &certPath,
+                          const std::string &keyPath)
 {
-    //init OpenSSL
+// init OpenSSL
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
-    (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
+    (defined(LIBRESSL_VERSION_NUMBER) &&      \
+     LIBRESSL_VERSION_NUMBER < 0x20700000L)
     // Initialize OpenSSL once;
     static std::once_flag once;
     std::call_once(once, []() {
@@ -179,20 +203,22 @@ void TcpServer::enableSSL(const std::string &certPath, const std::string &keyPat
 #endif
 
     /* Create a new OpenSSL context */
-    _sslCtxPtr = std::shared_ptr<SSL_CTX>(
-        SSL_CTX_new(SSLv23_method()),
-        [](SSL_CTX *ctx) {
-            SSL_CTX_free(ctx);
-        });
+    _sslCtxPtr =
+        std::shared_ptr<SSL_CTX>(SSL_CTX_new(SSLv23_method()),
+                                 [](SSL_CTX *ctx) { SSL_CTX_free(ctx); });
     assert(_sslCtxPtr);
 
-    auto r = SSL_CTX_use_certificate_file(_sslCtxPtr.get(), certPath.c_str(), SSL_FILETYPE_PEM);
+    auto r = SSL_CTX_use_certificate_file(_sslCtxPtr.get(),
+                                          certPath.c_str(),
+                                          SSL_FILETYPE_PEM);
     if (!r)
     {
         LOG_FATAL << strerror(errno);
         abort();
     }
-    r = SSL_CTX_use_PrivateKey_file(_sslCtxPtr.get(), keyPath.c_str(), SSL_FILETYPE_PEM);
+    r = SSL_CTX_use_PrivateKey_file(_sslCtxPtr.get(),
+                                    keyPath.c_str(),
+                                    SSL_FILETYPE_PEM);
     if (!r)
     {
         LOG_FATAL << strerror(errno);

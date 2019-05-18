@@ -20,7 +20,7 @@
 #include <trantor/net/EventLoop.h>
 #include "Socket.h"
 
-#include <stdio.h> // snprintf
+#include <stdio.h>  // snprintf
 #include <functional>
 
 using namespace trantor;
@@ -39,10 +39,9 @@ using namespace std::placeholders;
 
 namespace trantor
 {
-
 void removeConnector(const ConnectorPtr &connector)
 {
-    //connector->
+    // connector->
 }
 
 static void defaultConnectionCallback(const TcpConnectionPtr &conn)
@@ -50,16 +49,16 @@ static void defaultConnectionCallback(const TcpConnectionPtr &conn)
     LOG_TRACE << conn->localAddr().toIpPort() << " -> "
               << conn->peerAddr().toIpPort() << " is "
               << (conn->connected() ? "UP" : "DOWN");
-    // do not call conn->forceClose(), because some users want to register message callback only.
+    // do not call conn->forceClose(), because some users want to register
+    // message callback only.
 }
 
-static void defaultMessageCallback(const TcpConnectionPtr &,
-                                   MsgBuffer *buf)
+static void defaultMessageCallback(const TcpConnectionPtr &, MsgBuffer *buf)
 {
     buf->retrieveAll();
 }
 
-} // namespace trantor
+}  // namespace trantor
 
 TcpClient::TcpClient(EventLoop *loop,
                      const InetAddress &serverAddr,
@@ -80,14 +79,12 @@ TcpClient::TcpClient(EventLoop *loop,
             _connectionErrorCallback();
         }
     });
-    LOG_TRACE << "TcpClient::TcpClient[" << _name
-              << "] - connector ";
+    LOG_TRACE << "TcpClient::TcpClient[" << _name << "] - connector ";
 }
 
 TcpClient::~TcpClient()
 {
-    LOG_TRACE << "TcpClient::~TcpClient[" << _name
-              << "] - connector ";
+    LOG_TRACE << "TcpClient::~TcpClient[" << _name << "] - connector ";
     TcpConnectionImplPtr conn;
     {
         std::lock_guard<std::mutex> lock(_mutex);
@@ -101,7 +98,8 @@ TcpClient::~TcpClient()
         _loop->runInLoop([conn, loop]() {
             conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
                 loop->queueInLoop([connPtr]() {
-                    std::dynamic_pointer_cast<TcpConnectionImpl>(connPtr)->connectDestroyed();
+                    std::dynamic_pointer_cast<TcpConnectionImpl>(connPtr)
+                        ->connectDestroyed();
                 });
             });
         });
@@ -111,9 +109,7 @@ TcpClient::~TcpClient()
     {
         /// TODO need test in this condition
         _connector->stop();
-        _loop->runAfter(1, [=]() {
-            trantor::removeConnector(_connector);
-        });
+        _loop->runAfter(1, [=]() { trantor::removeConnector(_connector); });
     }
 }
 
@@ -150,8 +146,8 @@ void TcpClient::newConnection(int sockfd)
     _loop->assertInLoopThread();
     InetAddress peerAddr(Socket::getPeerAddr(sockfd));
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
-    // TODO poll with zero timeout to double confirm the new connection
-    // TODO use make_shared if necessary
+// TODO poll with zero timeout to double confirm the new connection
+// TODO use make_shared if necessary
 #ifdef USE_OPENSSL
     std::shared_ptr<TcpConnectionImpl> conn;
     if (_sslCtxPtr)
@@ -171,16 +167,13 @@ void TcpClient::newConnection(int sockfd)
                                                    peerAddr);
     }
 #else
-    auto conn = std::make_shared<TcpConnectionImpl>(_loop,
-                                                    sockfd,
-                                                    localAddr,
-                                                    peerAddr);
+    auto conn =
+        std::make_shared<TcpConnectionImpl>(_loop, sockfd, localAddr, peerAddr);
 #endif
     conn->setConnectionCallback(_connectionCallback);
     conn->setRecvMsgCallback(_messageCallback);
     conn->setWriteCompleteCallback(_writeCompleteCallback);
-    conn->setCloseCallback(
-        std::bind(&TcpClient::removeConnection, this, _1));
+    conn->setCloseCallback(std::bind(&TcpClient::removeConnection, this, _1));
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _connection = conn;
@@ -199,8 +192,9 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
         _connection.reset();
     }
 
-    _loop->queueInLoop(std::bind(&TcpConnectionImpl::connectDestroyed,
-                                 std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
+    _loop->queueInLoop(
+        std::bind(&TcpConnectionImpl::connectDestroyed,
+                  std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
     if (_retry && _connect)
     {
         LOG_TRACE << "TcpClient::connect[" << _name << "] - Reconnecting to "
@@ -212,9 +206,10 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
 #ifdef USE_OPENSSL
 void TcpClient::enableSSL()
 {
-    //init OpenSSL
+// init OpenSSL
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
-    (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20700000L)
+    (defined(LIBRESSL_VERSION_NUMBER) &&      \
+     LIBRESSL_VERSION_NUMBER < 0x20700000L)
     // Initialize OpenSSL once;
     static std::once_flag once;
     std::call_once(once, []() {
@@ -225,11 +220,9 @@ void TcpClient::enableSSL()
     });
 #endif
     /* Create a new OpenSSL context */
-    _sslCtxPtr = std::shared_ptr<SSL_CTX>(
-        SSL_CTX_new(SSLv23_method()),
-        [](SSL_CTX *ctx) {
-            SSL_CTX_free(ctx);
-        });
+    _sslCtxPtr =
+        std::shared_ptr<SSL_CTX>(SSL_CTX_new(SSLv23_method()),
+                                 [](SSL_CTX *ctx) { SSL_CTX_free(ctx); });
     assert(_sslCtxPtr);
 }
 #endif

@@ -2,7 +2,7 @@
  *
  *  TaskQueue.h
  *  An Tao
- *  
+ *
  *  Public header file in trantor lib.
  *
  *  Copyright 2018, An Tao.  All rights reserved.
@@ -25,7 +25,10 @@ class TaskQueue : public NonCopyable
   public:
     virtual void runTaskInQueue(const std::function<void()> &task) = 0;
     virtual void runTaskInQueue(std::function<void()> &&task) = 0;
-    virtual std::string getName() const { return ""; };
+    virtual std::string getName() const
+    {
+        return "";
+    };
     void syncTaskInQueue(const std::function<void()> &task)
     {
         std::promise<int> prom;
@@ -37,4 +40,4 @@ class TaskQueue : public NonCopyable
         fut.get();
     };
 };
-}; // namespace trantor
+};  // namespace trantor

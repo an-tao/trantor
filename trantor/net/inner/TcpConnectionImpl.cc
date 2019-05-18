@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -36,9 +36,12 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
       _peerAddr(peerAddr),
       _state(Connecting)
 {
-    LOG_TRACE << "new connection:" << peerAddr.toIpPort() << "->" << localAddr.toIpPort();
-    _ioChannelPtr->setReadCallback(std::bind(&TcpConnectionImpl::readCallback, this));
-    _ioChannelPtr->setWriteCallback(std::bind(&TcpConnectionImpl::writeCallback, this));
+    LOG_TRACE << "new connection:" << peerAddr.toIpPort() << "->"
+              << localAddr.toIpPort();
+    _ioChannelPtr->setReadCallback(
+        std::bind(&TcpConnectionImpl::readCallback, this));
+    _ioChannelPtr->setWriteCallback(
+        std::bind(&TcpConnectionImpl::writeCallback, this));
     _ioChannelPtr->setCloseCallback(
         std::bind(&TcpConnectionImpl::handleClose, this));
     _ioChannelPtr->setErrorCallback(
@@ -51,15 +54,15 @@ TcpConnectionImpl::~TcpConnectionImpl()
 }
 void TcpConnectionImpl::readCallback()
 {
-    //LOG_TRACE<<"read Callback";
+    // LOG_TRACE<<"read Callback";
     _loop->assertInLoopThread();
     int ret = 0;
 
     ssize_t n = _readBuffer.readFd(_socketPtr->fd(), &ret);
-    //LOG_TRACE<<"read "<<n<<" bytes from socket";
+    // LOG_TRACE<<"read "<<n<<" bytes from socket";
     if (n == 0)
     {
-        //socket closed by peer
+        // socket closed by peer
         handleClose();
     }
     else if (n < 0)
@@ -128,11 +131,12 @@ void TcpConnectionImpl::writeCallback()
                 }
                 else
                 {
-                    //error
+                    // error
                     if (errno != EWOULDBLOCK)
                     {
                         LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                        if (errno == EPIPE || errno == ECONNRESET) // TODO: any others?
+                        if (errno == EPIPE ||
+                            errno == ECONNRESET)  // TODO: any others?
                         {
                             return;
                         }
@@ -144,7 +148,7 @@ void TcpConnectionImpl::writeCallback()
         }
         else
         {
-            //file
+            // file
             if (writeBuffer_->_fileBytesToSend <= 0)
             {
                 _writeBufferList.pop_front();
@@ -162,9 +166,11 @@ void TcpConnectionImpl::writeCallback()
                 {
                     if (_writeBufferList.front()->_sendFd < 0)
                     {
-                        //There is data to be sent in the buffer.
-                        auto n = writeInLoop(_writeBufferList.front()->_msgBuffer->peek(),
-                                             _writeBufferList.front()->_msgBuffer->readableBytes());
+                        // There is data to be sent in the buffer.
+                        auto n = writeInLoop(_writeBufferList.front()
+                                                 ->_msgBuffer->peek(),
+                                             _writeBufferList.front()
+                                                 ->_msgBuffer->readableBytes());
                         _writeBufferList.front()->_msgBuffer->retrieve(n);
                         if (n >= 0)
                         {
@@ -172,22 +178,24 @@ void TcpConnectionImpl::writeCallback()
                         }
                         else
                         {
-                            //error
+                            // error
                             if (errno != EWOULDBLOCK)
                             {
                                 LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                                if (errno == EPIPE || errno == ECONNRESET) // TODO: any others?
+                                if (errno == EPIPE ||
+                                    errno == ECONNRESET)  // TODO: any others?
                                 {
                                     return;
                                 }
-                                LOG_SYSERR << "Unexpected error(" << errno << ")";
+                                LOG_SYSERR << "Unexpected error(" << errno
+                                           << ")";
                                 return;
                             }
                         }
                     }
                     else
                     {
-                        //more file
+                        // more file
                         sendFileInLoop(_writeBufferList.front());
                     }
                 }
@@ -236,7 +244,7 @@ void TcpConnectionImpl::handleClose()
 void TcpConnectionImpl::handleError()
 {
     int err = _socketPtr->getSocketError();
-    if(err != 104)
+    if (err != 104)
         LOG_ERROR << "TcpConnectionImpl::handleError [" << _name
                   << "] - SO_ERROR = " << err << " " << strerror_tl(err);
     else
@@ -299,15 +307,15 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
     ssize_t sendLen = 0;
     if (!_ioChannelPtr->isWriting() && _writeBufferList.empty())
     {
-        //send directly
+        // send directly
         sendLen = writeInLoop(buffer, length);
         if (sendLen < 0)
         {
-            //error
+            // error
             if (errno != EWOULDBLOCK)
             {
                 LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                if (errno == EPIPE || errno == ECONNRESET) // TODO: any others?
+                if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
                 {
                     return;
                 }
@@ -332,17 +340,21 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             node->_msgBuffer = std::shared_ptr<MsgBuffer>(new MsgBuffer);
             _writeBufferList.push_back(std::move(node));
         }
-        _writeBufferList.back()->_msgBuffer->append(buffer + sendLen, remainLen);
+        _writeBufferList.back()->_msgBuffer->append(buffer + sendLen,
+                                                    remainLen);
         if (!_ioChannelPtr->isWriting())
             _ioChannelPtr->enableWriting();
-        if (_highWaterMarkCallback && _writeBufferList.back()->_msgBuffer->readableBytes() > _highWaterMarkLen)
+        if (_highWaterMarkCallback &&
+            _writeBufferList.back()->_msgBuffer->readableBytes() >
+                _highWaterMarkLen)
         {
             _highWaterMarkCallback(shared_from_this(),
-                                   _writeBufferList.back()->_msgBuffer->readableBytes());
+                                   _writeBufferList.back()
+                                       ->_msgBuffer->readableBytes());
         }
     }
 }
-//The order of data sending should be same as the order of calls of send()
+// The order of data sending should be same as the order of calls of send()
 void TcpConnectionImpl::send(const std::shared_ptr<std::string> &msgPtr)
 {
     if (_loop->isInLoopThread())
@@ -377,7 +389,6 @@ void TcpConnectionImpl::send(const std::shared_ptr<std::string> &msgPtr)
 }
 void TcpConnectionImpl::send(const char *msg, uint64_t len)
 {
-
     if (_loop->isInLoopThread())
     {
         std::lock_guard<std::mutex> guard(_sendNumMutex);
@@ -540,7 +551,9 @@ void TcpConnectionImpl::send(MsgBuffer &&buffer)
         });
     }
 }
-void TcpConnectionImpl::sendFile(const char *fileName, size_t offset, size_t length)
+void TcpConnectionImpl::sendFile(const char *fileName,
+                                 size_t offset,
+                                 size_t length)
 {
     assert(fileName);
 
@@ -634,7 +647,10 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
 #ifdef __linux__
     if (!_isSSLConn)
     {
-        auto bytesSent = sendfile(_socketPtr->fd(), filePtr->_sendFd, &filePtr->_offset, filePtr->_fileBytesToSend);
+        auto bytesSent = sendfile(_socketPtr->fd(),
+                                  filePtr->_sendFd,
+                                  &filePtr->_offset,
+                                  filePtr->_fileBytesToSend);
         if (bytesSent < 0)
         {
             if (errno != EAGAIN)
@@ -692,7 +708,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                 if (errno != EWOULDBLOCK)
                 {
                     LOG_SYSERR << "TcpConnectionImpl::sendFileInLoop";
-                    if (errno == EPIPE || errno == ECONNRESET) // TODO: any others?
+                    if (errno == EPIPE ||
+                        errno == ECONNRESET)  // TODO: any others?
                     {
                         return;
                     }

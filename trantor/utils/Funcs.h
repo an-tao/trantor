@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -25,4 +25,4 @@ inline uint64_t ntoh64(uint64_t n)
 {
     return (((uint64_t)ntohl(n)) << 32) | ntohl(n >> 32);
 }
-} // namespace trantor
+}  // namespace trantor

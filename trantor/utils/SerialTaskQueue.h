@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -28,12 +28,20 @@ class SerialTaskQueue : public TaskQueue
     virtual void runTaskInQueue(const std::function<void()> &task);
     virtual void runTaskInQueue(std::function<void()> &&task);
 
-    virtual std::string getName() const { return _queueName; };
+    virtual std::string getName() const
+    {
+        return _queueName;
+    };
     void waitAllTasksFinished();
     SerialTaskQueue() = delete;
     explicit SerialTaskQueue(const std::string &name = std::string());
     ~SerialTaskQueue();
-    bool isRuningTask() { return _loopThread.getLoop() ? _loopThread.getLoop()->isCallingFunctions() : false; }
+    bool isRuningTask()
+    {
+        return _loopThread.getLoop()
+                   ? _loopThread.getLoop()->isCallingFunctions()
+                   : false;
+    }
     size_t getTaskCount();
     void stop();
 
@@ -42,4 +50,4 @@ class SerialTaskQueue : public TaskQueue
     EventLoopThread _loopThread;
     bool _stop = false;
 };
-}; // namespace trantor
+};  // namespace trantor

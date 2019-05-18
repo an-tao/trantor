@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -41,9 +41,7 @@ Connector::Connector(EventLoop *loop, InetAddress &&addr, bool retry)
 void Connector::start()
 {
     _connect = true;
-    _loop->runInLoop([=]() {
-        startInLoop();
-    });
+    _loop->runInLoop([=]() { startInLoop(); });
 }
 void Connector::restart()
 {
@@ -72,41 +70,43 @@ void Connector::connect()
     int savedErrno = (ret == 0) ? 0 : errno;
     switch (savedErrno)
     {
-    case 0:
-    case EINPROGRESS:
-    case EINTR:
-    case EISCONN:
-        LOG_TRACE << "connecting";
-        connecting(sockfd);
-        break;
+        case 0:
+        case EINPROGRESS:
+        case EINTR:
+        case EISCONN:
+            LOG_TRACE << "connecting";
+            connecting(sockfd);
+            break;
 
-    case EAGAIN:
-    case EADDRINUSE:
-    case EADDRNOTAVAIL:
-    case ECONNREFUSED:
-    case ENETUNREACH:
-        retry(sockfd);
-        break;
+        case EAGAIN:
+        case EADDRINUSE:
+        case EADDRNOTAVAIL:
+        case ECONNREFUSED:
+        case ENETUNREACH:
+            retry(sockfd);
+            break;
 
-    case EACCES:
-    case EPERM:
-    case EAFNOSUPPORT:
-    case EALREADY:
-    case EBADF:
-    case EFAULT:
-    case ENOTSOCK:
-        LOG_SYSERR << "connect error in Connector::startInLoop " << savedErrno;
-        ::close(sockfd);
-        if (_errorCallback)
-            _errorCallback();
-        break;
+        case EACCES:
+        case EPERM:
+        case EAFNOSUPPORT:
+        case EALREADY:
+        case EBADF:
+        case EFAULT:
+        case ENOTSOCK:
+            LOG_SYSERR << "connect error in Connector::startInLoop "
+                       << savedErrno;
+            ::close(sockfd);
+            if (_errorCallback)
+                _errorCallback();
+            break;
 
-    default:
-        LOG_SYSERR << "Unexpected error in Connector::startInLoop " << savedErrno;
-        ::close(sockfd);
-        if (_errorCallback)
-            _errorCallback();
-        break;
+        default:
+            LOG_SYSERR << "Unexpected error in Connector::startInLoop "
+                       << savedErrno;
+            ::close(sockfd);
+            if (_errorCallback)
+                _errorCallback();
+            break;
     }
 }
 
@@ -131,9 +131,7 @@ int Connector::removeAndResetChannel()
     _channelPtr->remove();
     int sockfd = _channelPtr->fd();
     // Can't reset channel_ here, because we are inside Channel::handleEvent
-    _loop->queueInLoop([=]() {
-        _channelPtr.reset();
-    });
+    _loop->queueInLoop([=]() { _channelPtr.reset(); });
     return sockfd;
 }
 
@@ -147,8 +145,8 @@ void Connector::handleWrite()
         int err = Socket::getSocketError(sockfd);
         if (err)
         {
-            LOG_WARN << "Connector::handleWrite - SO_ERROR = "
-                     << err << " " << strerror_tl(err);
+            LOG_WARN << "Connector::handleWrite - SO_ERROR = " << err << " "
+                     << strerror_tl(err);
             if (_retry)
             {
                 retry(sockfd);
@@ -229,8 +227,9 @@ void Connector::retry(int sockfd)
     _state = kDisconnected;
     if (_connect)
     {
-        LOG_INFO << "Connector::retry - Retry connecting to " << _serverAddr.toIpPort()
-                 << " in " << _retryInterval << " milliseconds. ";
+        LOG_INFO << "Connector::retry - Retry connecting to "
+                 << _serverAddr.toIpPort() << " in " << _retryInterval
+                 << " milliseconds. ";
         _loop->runAfter(_retryInterval / 1000.0,
                         std::bind(&Connector::startInLoop, shared_from_this()));
         _retryInterval = std::min(_retryInterval * 2, _maxRetryInterval);

@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -18,12 +18,15 @@
 #include <trantor/net/inner/Socket.h>
 #include <openssl/err.h>
 using namespace trantor;
-SSLConnection::SSLConnection(EventLoop *loop, int socketfd, const InetAddress &localAddr,
+SSLConnection::SSLConnection(EventLoop *loop,
+                             int socketfd,
+                             const InetAddress &localAddr,
                              const InetAddress &peerAddr,
                              const std::shared_ptr<SSL_CTX> &ctxPtr,
                              bool isServer)
     : TcpConnectionImpl(loop, socketfd, localAddr, peerAddr),
-      _sslPtr(std::shared_ptr<SSL>(SSL_new(ctxPtr.get()), [](SSL *ssl) { SSL_free(ssl); })),
+      _sslPtr(std::shared_ptr<SSL>(SSL_new(ctxPtr.get()),
+                                   [](SSL *ssl) { SSL_free(ssl); })),
       _isServer(isServer)
 {
     assert(_sslPtr);
@@ -88,7 +91,7 @@ void SSLConnection::readCallback()
         } while ((size_t)rd == readLength);
         if (newDataFlag)
         {
-            //Run callback function
+            // Run callback function
             _recvMsgCallback(shared_from_this(), &_readBuffer);
         }
     }
@@ -125,18 +128,18 @@ void SSLConnection::doHandshaking()
     }
     int err = SSL_get_error(_sslPtr.get(), r);
     if (err == SSL_ERROR_WANT_WRITE)
-    { //SSL want writable;
+    {  // SSL want writable;
         _ioChannelPtr->enableWriting();
         _ioChannelPtr->disableReading();
     }
     else if (err == SSL_ERROR_WANT_READ)
-    { //SSL want readable;
+    {  // SSL want readable;
         _ioChannelPtr->enableReading();
         _ioChannelPtr->disableWriting();
     }
     else
     {
-        //ERR_print_errors(err);
+        // ERR_print_errors(err);
         LOG_FATAL << "SSL handshake err";
         _ioChannelPtr->disableReading();
         _status = SSLStatus::DisConnected;
@@ -159,7 +162,7 @@ ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
         return -1;
     }
 
-    //send directly
+    // send directly
     auto sendLen = SSL_write(_sslPtr.get(), buffer, length);
     int sslerr = SSL_get_error(_sslPtr.get(), sendLen);
     if (sendLen < 0 && sslerr != SSL_ERROR_WANT_WRITE)

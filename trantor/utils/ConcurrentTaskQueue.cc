@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -21,14 +21,13 @@
 using namespace trantor;
 ConcurrentTaskQueue::ConcurrentTaskQueue(size_t threadNum,
                                          const std::string &name)
-    : queueCount_(threadNum),
-      queueName_(name),
-      stop_(false)
+    : queueCount_(threadNum), queueName_(name), stop_(false)
 {
     assert(threadNum > 0);
     for (unsigned int i = 0; i < queueCount_; i++)
     {
-        threads_.push_back(std::thread(std::bind(&ConcurrentTaskQueue::queueFunc, this, i)));
+        threads_.push_back(
+            std::thread(std::bind(&ConcurrentTaskQueue::queueFunc, this, i)));
     }
 }
 void ConcurrentTaskQueue::runTaskInQueue(const std::function<void()> &task)

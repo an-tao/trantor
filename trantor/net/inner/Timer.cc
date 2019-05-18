@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -19,9 +19,7 @@
 namespace trantor
 {
 std::atomic<TimerId> Timer::_timersCreated = ATOMIC_VAR_INIT(InvalidTimerId);
-Timer::Timer(const TimerCallback &cb,
-             const Date &when,
-             double interval)
+Timer::Timer(const TimerCallback &cb, const Date &when, double interval)
     : _callback(cb),
       _when(when),
       _interval(interval),
@@ -29,16 +27,14 @@ Timer::Timer(const TimerCallback &cb,
       _id(++_timersCreated)
 {
 }
-Timer::Timer(TimerCallback &&cb,
-             const Date &when,
-             double interval)
+Timer::Timer(TimerCallback &&cb, const Date &when, double interval)
     : _callback(std::move(cb)),
       _when(when),
       _interval(interval),
       _repeat(interval > 0.0),
       _id(++_timersCreated)
 {
-    //LOG_TRACE<<"Timer move contrustor";
+    // LOG_TRACE<<"Timer move contrustor";
 }
 void Timer::run() const
 {
@@ -61,4 +57,4 @@ bool Timer::operator>(const Timer &t) const
 {
     return _when > t._when;
 }
-}; // namespace trantor
+};  // namespace trantor

@@ -11,7 +11,7 @@ int main()
     std::promise<int> pro;
     auto ft = pro.get_future();
     trantor::EventLoopThread loopThread;
-    
+
     auto loop = loopThread.getLoop();
     loop->runInLoop([&counter, &pro, loop]() {
         for (int i = 0; i < 10000; i++)
@@ -23,7 +23,7 @@ int main()
             });
         }
     });
-    for (int i = 0; i < 10;i++)
+    for (int i = 0; i < 10; i++)
     {
         std::thread([&counter, loop, &pro]() {
             for (int i = 0; i < 10000; i++)
@@ -34,8 +34,7 @@ int main()
                         pro.set_value(1);
                 });
             }
-        })
-            .detach();
+        }).detach();
     }
     loopThread.run();
     ft.get();

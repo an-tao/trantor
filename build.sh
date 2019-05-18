@@ -25,14 +25,14 @@ function build_trantor() {
     
     #If errors then exit
     if [ "$?" != "0" ]; then
-        exit
+        exit -1
     fi
     
     make
     
     #If errors then exit
     if [ "$?" != "0" ]; then
-        exit
+        exit -1 
     fi
 
     echo "Installing ..."
@@ -40,6 +40,7 @@ function build_trantor() {
 
     #Reback current directory
     cd $current_dir
+    exit 0
     #Ok!
 }
 

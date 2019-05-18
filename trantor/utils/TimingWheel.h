@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -29,12 +29,11 @@
 #define TIMING_BUCKET_NUM_PER_WHEEL 100
 #define TIMING_TICK_INTERVAL 1.0
 
-//Four wheels with 200 buckets per wheel means the cache map can work with
-//a timeout up to 200^4 seconds,about 50 years;
+// Four wheels with 200 buckets per wheel means the cache map can work with
+// a timeout up to 200^4 seconds,about 50 years;
 
 namespace trantor
 {
-
 typedef std::shared_ptr<void> EntryPtr;
 
 typedef std::unordered_set<EntryPtr> EntryBucket;
@@ -46,7 +45,9 @@ class TimingWheel
     class CallbackEntry
     {
       public:
-        CallbackEntry(std::function<void()> cb) : cb_(std::move(cb)) {}
+        CallbackEntry(std::function<void()> cb) : cb_(std::move(cb))
+        {
+        }
         ~CallbackEntry()
         {
             cb_();
@@ -65,7 +66,8 @@ class TimingWheel
     /// number of wheels
     /// @param bucketsNumPerWheel
     /// buckets number per wheel
-    /// The max delay of the CacheMap is about tickInterval*(bucketsNumPerWheel^wheelsNum) seconds.
+    /// The max delay of the CacheMap is about
+    /// tickInterval*(bucketsNumPerWheel^wheelsNum) seconds.
 
     TimingWheel(trantor::EventLoop *loop,
                 size_t maxTimeout,
@@ -99,7 +101,8 @@ class TimingWheel
                 {
                     EntryBucket tmp;
                     {
-                        //use tmp val to make this critical area as short as possible.
+                        // use tmp val to make this critical area as short as
+                        // possible.
                         _wheels[i].front().swap(tmp);
                         _wheels[i].pop_front();
                         _wheels[i].push_back(EntryBucket());
@@ -121,8 +124,8 @@ class TimingWheel
         LOG_TRACE << "TimingWheel destruct!";
     }
 
-    //If timeout>0,the value will be erased
-    //within the 'timeout' seconds after the last access
+    // If timeout>0,the value will be erased
+    // within the 'timeout' seconds after the last access
     void insertEntry(size_t delay, EntryPtr entryPtr)
     {
         if (delay <= 0)
@@ -135,15 +138,13 @@ class TimingWheel
         }
         else
         {
-            _loop->runInLoop([=]() {
-                insertEntryInloop(delay, entryPtr);
-            });
+            _loop->runInLoop([=]() { insertEntryInloop(delay, entryPtr); });
         }
     }
 
     void insertEntryInloop(size_t delay, EntryPtr entryPtr)
     {
-        //protected by bucketMutex;
+        // protected by bucketMutex;
         _loop->assertInLoopThread();
 
         delay = delay / _tickInterval + 1;
@@ -160,21 +161,27 @@ class TimingWheel
                 entryPtr = std::make_shared<CallbackEntry>([=]() {
                     if (delay > 0)
                     {
-                        _wheels[i][(delay + (t % _bucketsNumPerWheel) - 1) % _bucketsNumPerWheel].insert(entryPtr);
+                        _wheels[i][(delay + (t % _bucketsNumPerWheel) - 1) %
+                                   _bucketsNumPerWheel]
+                            .insert(entryPtr);
                     }
                 });
             }
             else
             {
-                //delay is too long to put entry at valid position in wheels;
+                // delay is too long to put entry at valid position in wheels;
                 _wheels[i][_bucketsNumPerWheel - 1].insert(entryPtr);
             }
-            delay = (delay + (t % _bucketsNumPerWheel) - 1) / _bucketsNumPerWheel;
+            delay =
+                (delay + (t % _bucketsNumPerWheel) - 1) / _bucketsNumPerWheel;
             t = t / _bucketsNumPerWheel;
         }
     }
 
-    EventLoop *getLoop() { return _loop; }
+    EventLoop *getLoop()
+    {
+        return _loop;
+    }
 
   private:
     std::vector<BucketQueue> _wheels;
@@ -188,4 +195,4 @@ class TimingWheel
     size_t _wheelsNum;
     size_t _bucketsNumPerWheel;
 };
-} // namespace trantor
+}  // namespace trantor

@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -27,9 +27,7 @@ namespace trantor
 class T
 {
   public:
-    T(const char *str, unsigned len)
-        : str_(str),
-          len_(len)
+    T(const char *str, unsigned len) : str_(str), len_(len)
     {
         assert(strlen(str) == len_);
     }
@@ -54,7 +52,7 @@ inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
     s.append(v.data_, v.size_);
     return s;
 }
-} // namespace trantor
+}  // namespace trantor
 using namespace trantor;
 
 static __thread uint64_t lastSecond_ = 0;
@@ -74,7 +72,9 @@ void Logger::formatTime()
     if (now != lastSecond_)
     {
         lastSecond_ = now;
-        strncpy(lastTimeString_, date_.toFormattedString(false).c_str(), sizeof(lastTimeString_) - 1);
+        strncpy(lastTimeString_,
+                date_.toFormattedString(false).c_str(),
+                sizeof(lastTimeString_) - 1);
     }
     logStream_ << T(lastTimeString_, 17);
     char tmp[32];
@@ -105,33 +105,25 @@ static const char *logLevelStr[Logger::LogLevel::NUM_LOG_LEVELS] = {
     " FATAL ",
 };
 Logger::Logger(SourceFile file, int line)
-    : sourceFile_(file),
-      fileLine_(line),
-      level_(INFO)
+    : sourceFile_(file), fileLine_(line), level_(INFO)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
 }
 Logger::Logger(SourceFile file, int line, LogLevel level)
-    : sourceFile_(file),
-      fileLine_(line),
-      level_(level)
+    : sourceFile_(file), fileLine_(line), level_(level)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
 }
 Logger::Logger(SourceFile file, int line, LogLevel level, const char *func)
-    : sourceFile_(file),
-      fileLine_(line),
-      level_(level)
+    : sourceFile_(file), fileLine_(line), level_(level)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7) << "[" << func << "] ";
 }
 Logger::Logger(SourceFile file, int line, bool isSysErr)
-    : sourceFile_(file),
-      fileLine_(line),
-      level_(FATAL)
+    : sourceFile_(file), fileLine_(line), level_(FATAL)
 {
     formatTime();
     if (errno != 0)
@@ -146,10 +138,9 @@ Logger::~Logger()
     Logger::_outputFunc()(logStream_.bufferData(), logStream_.bufferLength());
     if (level_ >= ERROR)
         Logger::_flushFunc()();
-    //logStream_.resetBuffer();
+    // logStream_.resetBuffer();
 }
 LogStream &Logger::stream()
 {
     return logStream_;
 }
-

@@ -1,13 +1,14 @@
 os:
   - linux
   - osx
+
+osx_image: xcode10.1
+
 sudo: required
-dist: trusty
+
+dist: xenial
 
 language: cpp
-compiler:
-  - gcc
-  - clang
 
 addons:
   apt:

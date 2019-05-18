@@ -21,30 +21,33 @@ int main()
     connCount = 1;
     for (int i = 0; i < connCount; i++)
     {
-        client[i] = std::make_shared<trantor::TcpClient>(&loop, serverAddr, "tcpclienttest");
+        client[i] = std::make_shared<trantor::TcpClient>(&loop,
+                                                         serverAddr,
+                                                         "tcpclienttest");
         client[i]->enableSSL();
-        client[i]->setConnectionCallback([=, &loop, &connCount](const TcpConnectionPtr &conn) {
-            if (conn->connected())
-            {
-                LOG_DEBUG << i << " connected!";
-                char tmp[20];
-                sprintf(tmp, "%d client!!", i);
-                conn->send(tmp);
-            }
-            else
-            {
-                LOG_DEBUG << i << " disconnected";
-                connCount--;
-                if (connCount == 0)
-                    loop.quit();
-            }
-        });
-        client[i]->setMessageCallback([=](const TcpConnectionPtr &conn,
-                                          MsgBuffer *buf) {
-            LOG_DEBUG << std::string(buf->peek(), buf->readableBytes());
-            buf->retrieveAll();
-            conn->shutdown();
-        });
+        client[i]->setConnectionCallback(
+            [=, &loop, &connCount](const TcpConnectionPtr &conn) {
+                if (conn->connected())
+                {
+                    LOG_DEBUG << i << " connected!";
+                    char tmp[20];
+                    sprintf(tmp, "%d client!!", i);
+                    conn->send(tmp);
+                }
+                else
+                {
+                    LOG_DEBUG << i << " disconnected";
+                    connCount--;
+                    if (connCount == 0)
+                        loop.quit();
+                }
+            });
+        client[i]->setMessageCallback(
+            [=](const TcpConnectionPtr &conn, MsgBuffer *buf) {
+                LOG_DEBUG << std::string(buf->peek(), buf->readableBytes());
+                buf->retrieveAll();
+                conn->shutdown();
+            });
         client[i]->connect();
     }
     loop.loop();

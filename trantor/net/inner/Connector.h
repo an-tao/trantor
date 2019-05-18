@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -21,8 +21,8 @@
 
 namespace trantor
 {
-
-class Connector : public NonCopyable, public std::enable_shared_from_this<Connector>
+class Connector : public NonCopyable,
+                  public std::enable_shared_from_this<Connector>
 {
   public:
     typedef std::function<void(int sockfd)> NewConnectionCallback;
@@ -45,7 +45,10 @@ class Connector : public NonCopyable, public std::enable_shared_from_this<Connec
     {
         _errorCallback = std::move(cb);
     }
-    const InetAddress &serverAddress() const { return _serverAddr; }
+    const InetAddress &serverAddress() const
+    {
+        return _serverAddr;
+    }
     void start();
     void restart();
     void stop();
@@ -82,4 +85,4 @@ class Connector : public NonCopyable, public std::enable_shared_from_this<Connec
     void retry(int sockfd);
 };
 
-} // namespace trantor
+}  // namespace trantor

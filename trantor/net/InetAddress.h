@@ -21,9 +21,9 @@
 #include <mutex>
 namespace trantor
 {
-//namespace sockets
+// namespace sockets
 //{
-//const struct sockaddr* sockaddr_cast(const struct sockaddr_in6* addr);
+// const struct sockaddr* sockaddr_cast(const struct sockaddr_in6* addr);
 //}
 
 ///
@@ -35,7 +35,9 @@ class InetAddress
   public:
     /// Constructs an endpoint with given port number.
     /// Mostly used in TcpServer listening.
-    InetAddress(uint16_t port = 0, bool loopbackOnly = false, bool ipv6 = false);
+    InetAddress(uint16_t port = 0,
+                bool loopbackOnly = false,
+                bool ipv6 = false);
 
     /// Constructs an endpoint with given ip and port.
     /// @c ip should be "1.2.3.4"
@@ -43,8 +45,7 @@ class InetAddress
 
     /// Constructs an endpoint with given struct @c sockaddr_in
     /// Mostly used when accepting new connections
-    explicit InetAddress(const struct sockaddr_in &addr)
-        : _addr(addr)
+    explicit InetAddress(const struct sockaddr_in &addr) : _addr(addr)
     {
     }
 
@@ -53,12 +54,18 @@ class InetAddress
     {
     }
 
-    sa_family_t family() const { return _addr.sin_family; }
+    sa_family_t family() const
+    {
+        return _addr.sin_family;
+    }
     std::string toIp() const;
     std::string toIpPort() const;
     uint16_t toPort() const;
 
-    bool isIpV6() const { return _isIpV6; }
+    bool isIpV6() const
+    {
+        return _isIpV6;
+    }
     // default copy/assignment are Okay
 
     bool isIntranetIp() const;
@@ -76,13 +83,19 @@ class InetAddress
 
     uint32_t ipNetEndian() const;
     const uint32_t *ip6NetEndian() const;
-    uint16_t portNetEndian() const { return _addr.sin_port; }
+    uint16_t portNetEndian() const
+    {
+        return _addr.sin_port;
+    }
 
     // resolve hostname to IP address, not changing port or sin_family
     // return true on success.
     // thread safe
-    static bool resolve(const std::string &hostname, InetAddress *result, size_t timeout = 3600);
-    // static std::vector<InetAddress> resolveAll(const char* hostname, uint16_t port = 0);
+    static bool resolve(const std::string &hostname,
+                        InetAddress *result,
+                        size_t timeout = 3600);
+    // static std::vector<InetAddress> resolveAll(const char* hostname, uint16_t
+    // port = 0);
 
   private:
     union {
@@ -90,10 +103,12 @@ class InetAddress
         struct sockaddr_in6 _addr6;
     };
     bool _isIpV6 = false;
-    static std::unordered_map<std::string, std::pair<struct in_addr, trantor::Date>> _dnsCache;
+    static std::unordered_map<std::string,
+                              std::pair<struct in_addr, trantor::Date>>
+        _dnsCache;
     static std::mutex _dnsMutex;
 };
 
-} // namespace trantor
+}  // namespace trantor
 
-#endif // MUDUO_NET_INETADDRESS_H
+#endif  // MUDUO_NET_INETADDRESS_H
