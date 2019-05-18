@@ -167,10 +167,10 @@ void TcpConnectionImpl::writeCallback()
                     if (_writeBufferList.front()->_sendFd < 0)
                     {
                         // There is data to be sent in the buffer.
-                        auto n = writeInLoop(_writeBufferList.front()
-                                                 ->_msgBuffer->peek(),
-                                             _writeBufferList.front()
-                                                 ->_msgBuffer->readableBytes());
+                        auto n = writeInLoop(
+                            _writeBufferList.front()->_msgBuffer->peek(),
+                            _writeBufferList.front()
+                                ->_msgBuffer->readableBytes());
                         _writeBufferList.front()->_msgBuffer->retrieve(n);
                         if (n >= 0)
                         {
@@ -348,9 +348,9 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             _writeBufferList.back()->_msgBuffer->readableBytes() >
                 _highWaterMarkLen)
         {
-            _highWaterMarkCallback(shared_from_this(),
-                                   _writeBufferList.back()
-                                       ->_msgBuffer->readableBytes());
+            _highWaterMarkCallback(
+                shared_from_this(),
+                _writeBufferList.back()->_msgBuffer->readableBytes());
         }
     }
 }

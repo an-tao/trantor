@@ -152,12 +152,8 @@ void TcpClient::newConnection(int sockfd)
     std::shared_ptr<TcpConnectionImpl> conn;
     if (_sslCtxPtr)
     {
-        conn = std::make_shared<SSLConnection>(_loop,
-                                               sockfd,
-                                               localAddr,
-                                               peerAddr,
-                                               _sslCtxPtr,
-                                               false);
+        conn = std::make_shared<SSLConnection>(
+            _loop, sockfd, localAddr, peerAddr, _sslCtxPtr, false);
     }
     else
     {
