@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -23,14 +23,15 @@
 
 namespace trantor
 {
-
 class Socket : NonCopyable
 {
   public:
     static int createNonblockingSocketOrDie(int family)
     {
 #ifdef __linux__
-        int sock = ::socket(family, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
+        int sock = ::socket(family,
+                            SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
+                            IPPROTO_TCP);
 #else
         int sock = ::socket(family, SOCK_STREAM, IPPROTO_TCP);
         setNonBlockAndCloseOnExec(sock);
@@ -61,9 +62,15 @@ class Socket : NonCopyable
     static int connect(int sockfd, const InetAddress &addr)
     {
         if (addr.isIpV6())
-            return ::connect(sockfd, addr.getSockAddr(), static_cast<socklen_t>(sizeof(struct sockaddr_in6)));
+            return ::connect(sockfd,
+                             addr.getSockAddr(),
+                             static_cast<socklen_t>(
+                                 sizeof(struct sockaddr_in6)));
         else
-            return ::connect(sockfd, addr.getSockAddr(), static_cast<socklen_t>(sizeof(struct sockaddr_in)));
+            return ::connect(sockfd,
+                             addr.getSockAddr(),
+                             static_cast<socklen_t>(
+                                 sizeof(struct sockaddr_in)));
     }
 
     static bool isSelfConnect(int sockfd)
@@ -72,13 +79,19 @@ class Socket : NonCopyable
         struct sockaddr_in6 peeraddr = getPeerAddr(sockfd);
         if (localaddr.sin6_family == AF_INET)
         {
-            const struct sockaddr_in *laddr4 = reinterpret_cast<struct sockaddr_in *>(&localaddr);
-            const struct sockaddr_in *raddr4 = reinterpret_cast<struct sockaddr_in *>(&peeraddr);
-            return laddr4->sin_port == raddr4->sin_port && laddr4->sin_addr.s_addr == raddr4->sin_addr.s_addr;
+            const struct sockaddr_in *laddr4 =
+                reinterpret_cast<struct sockaddr_in *>(&localaddr);
+            const struct sockaddr_in *raddr4 =
+                reinterpret_cast<struct sockaddr_in *>(&peeraddr);
+            return laddr4->sin_port == raddr4->sin_port &&
+                   laddr4->sin_addr.s_addr == raddr4->sin_addr.s_addr;
         }
         else if (localaddr.sin6_family == AF_INET6)
         {
-            return localaddr.sin6_port == peeraddr.sin6_port && memcmp(&localaddr.sin6_addr, &peeraddr.sin6_addr, sizeof localaddr.sin6_addr) == 0;
+            return localaddr.sin6_port == peeraddr.sin6_port &&
+                   memcmp(&localaddr.sin6_addr,
+                          &peeraddr.sin6_addr,
+                          sizeof localaddr.sin6_addr) == 0;
         }
         else
         {
@@ -102,7 +115,10 @@ class Socket : NonCopyable
     int accept(InetAddress *peeraddr);
     void closeWrite();
     int read(char *buffer, uint64_t len);
-    int fd() { return sockFd_; }
+    int fd()
+    {
+        return sockFd_;
+    }
     static struct sockaddr_in6 getLocalAddr(int sockfd);
     static struct sockaddr_in6 getPeerAddr(int sockfd);
 
@@ -129,7 +145,7 @@ class Socket : NonCopyable
 
   protected:
     int sockFd_;
-    //taken from muduo
+    // taken from muduo
     static void setNonBlockAndCloseOnExec(int sockfd)
     {
         // non-block
@@ -148,4 +164,4 @@ class Socket : NonCopyable
     }
 };
 
-} // namespace trantor
+}  // namespace trantor

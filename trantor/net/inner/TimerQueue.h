@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -24,7 +24,7 @@
 #include <unordered_set>
 namespace trantor
 {
-//class Timer;
+// class Timer;
 class EventLoop;
 class Channel;
 typedef std::shared_ptr<Timer> TimerPtr;
@@ -41,7 +41,9 @@ class TimerQueue : NonCopyable
   public:
     explicit TimerQueue(EventLoop *loop);
     ~TimerQueue();
-    TimerId addTimer(const TimerCallback &cb, const Date &when, double interval);
+    TimerId addTimer(const TimerCallback &cb,
+                     const Date &when,
+                     double interval);
     TimerId addTimer(TimerCallback &&cb, const Date &when, double interval);
     void addTimerInLoop(const TimerPtr &timer);
     void invalidateTimer(TimerId id);
@@ -69,4 +71,4 @@ class TimerQueue : NonCopyable
   private:
     std::unordered_set<uint64_t> _timerIdSet;
 };
-}; // namespace trantor
+};  // namespace trantor

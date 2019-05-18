@@ -25,7 +25,6 @@ typedef std::vector<struct kevent> EventList;
 
 namespace trantor
 {
-
 class Channel;
 
 class KQueue : public Poller
@@ -42,11 +41,11 @@ class KQueue : public Poller
     static const int kInitEventListSize = 16;
     int _kqfd;
     EventList _events;
-    typedef std::unordered_map<int, std::pair<int,Channel*>> ChannelMap;
+    typedef std::unordered_map<int, std::pair<int, Channel *>> ChannelMap;
     ChannelMap _channels;
 
     void fillActiveChannels(int numEvents, ChannelList *activeChannels) const;
     void update(Channel *channel);
 };
 
-} // namespace trantor
+}  // namespace trantor

@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -23,13 +23,10 @@
 using namespace trantor;
 #define BUF_OFFSET 8
 MsgBuffer::MsgBuffer(size_t len)
-    : _head(BUF_OFFSET),
-      _initCap(len),
-      _buffer(len + _head),
-      _tail(_head)
+    : _head(BUF_OFFSET), _initCap(len), _buffer(len + _head), _tail(_head)
 {
 }
-//MsgBuffer::MsgBuffer(const MsgBuffer &buf)
+// MsgBuffer::MsgBuffer(const MsgBuffer &buf)
 //        :_head(buf._head),
 //         _initCap(buf._initCap),
 //         _buffer(buf._buffer),
@@ -37,7 +34,7 @@ MsgBuffer::MsgBuffer(size_t len)
 //{
 //
 //}
-//MsgBuffer& MsgBuffer::operator = (const MsgBuffer &buf)
+// MsgBuffer& MsgBuffer::operator = (const MsgBuffer &buf)
 //{
 //    if(this!=&buf)
 //    {
@@ -49,7 +46,7 @@ MsgBuffer::MsgBuffer(size_t len)
 //
 //    return *this;
 //}
-//MsgBuffer::MsgBuffer(MsgBuffer &&buf) noexcept
+// MsgBuffer::MsgBuffer(MsgBuffer &&buf) noexcept
 //:_head(buf._head),
 // _initCap(buf._initCap),
 // _buffer(std::move(buf._buffer)),
@@ -57,7 +54,7 @@ MsgBuffer::MsgBuffer(size_t len)
 //{
 //
 //}
-//MsgBuffer& MsgBuffer::operator = (MsgBuffer &&buf) noexcept
+// MsgBuffer& MsgBuffer::operator = (MsgBuffer &&buf) noexcept
 //{
 //    if(this!=&buf)
 //    {
@@ -73,14 +70,14 @@ void MsgBuffer::ensureWritableBytes(size_t len)
 {
     if (writableBytes() >= len)
         return;
-    if (_head + writableBytes() >= (len + BUF_OFFSET)) //move readable bytes
+    if (_head + writableBytes() >= (len + BUF_OFFSET))  // move readable bytes
     {
         std::copy(begin() + _head, begin() + _tail, begin() + BUF_OFFSET);
         _tail = BUF_OFFSET + (_tail - _head);
         _head = BUF_OFFSET;
         return;
     }
-    //create new buffer
+    // create new buffer
     size_t newLen;
     if ((_buffer.size() * 2) > (BUF_OFFSET + readableBytes() + len))
         newLen = _buffer.size() * 2;

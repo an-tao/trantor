@@ -77,11 +77,11 @@ EventLoop::EventLoop()
     assert(!r);
     fcntl(_wakeupFd[0], F_SETFL, O_NONBLOCK | O_CLOEXEC);
     fcntl(_wakeupFd[1], F_SETFL, O_NONBLOCK | O_CLOEXEC);
-    _wakeupChannelPtr = std::unique_ptr<Channel>(new Channel(this, _wakeupFd[0]));
+    _wakeupChannelPtr =
+        std::unique_ptr<Channel>(new Channel(this, _wakeupFd[0]));
 
 #endif
-    _wakeupChannelPtr->setReadCallback(
-        std::bind(&EventLoop::wakeupRead, this));
+    _wakeupChannelPtr->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
     _wakeupChannelPtr->enableReading();
 }
 #ifdef __linux__
@@ -124,7 +124,9 @@ void EventLoop::removeChannel(Channel *channel)
     if (_eventHandling)
     {
         assert(_currentActiveChannel == channel ||
-               std::find(_activeChannels.begin(), _activeChannels.end(), channel) == _activeChannels.end());
+               std::find(_activeChannels.begin(),
+                         _activeChannels.end(),
+                         channel) == _activeChannels.end());
     }
     _poller->removeChannel(channel);
 }
@@ -156,24 +158,25 @@ void EventLoop::loop()
         _timerQueue->processTimers();
 #endif
         // TODO sort channel by priority
-        //std::cout<<"after ->poll()"<<std::endl;
+        // std::cout<<"after ->poll()"<<std::endl;
         _eventHandling = true;
-        for (auto it = _activeChannels.begin();
-             it != _activeChannels.end(); ++it)
+        for (auto it = _activeChannels.begin(); it != _activeChannels.end();
+             ++it)
         {
             _currentActiveChannel = *it;
             _currentActiveChannel->handleEvent();
         }
         _currentActiveChannel = NULL;
         _eventHandling = false;
-        //std::cout << "looping" << endl;
+        // std::cout << "looping" << endl;
         doRunInLoopFuncs();
     }
     _looping = false;
 }
 void EventLoop::abortNotInLoopThread()
 {
-    LOG_FATAL << "It is forbidden to run loop on threads other than event-loop thread";
+    LOG_FATAL << "It is forbidden to run loop on threads other than event-loop "
+                 "thread";
     exit(-1);
 }
 void EventLoop::runInLoop(const Func &cb)
@@ -237,7 +240,9 @@ TimerId EventLoop::runEvery(double interval, const Func &cb)
 }
 TimerId EventLoop::runEvery(double interval, Func &&cb)
 {
-    return _timerQueue->addTimer(std::move(cb), Date::date().after(interval), interval);
+    return _timerQueue->addTimer(std::move(cb),
+                                 Date::date().after(interval),
+                                 interval);
 }
 void EventLoop::invalidateTimer(TimerId id)
 {
@@ -268,7 +273,7 @@ void EventLoop::wakeup()
 #endif
     if (ret < 0)
     {
-        //LOG_SYSERR << "wakeup error";
+        // LOG_SYSERR << "wakeup error";
     }
 }
 void EventLoop::wakeupRead()
@@ -283,4 +288,4 @@ void EventLoop::wakeupRead()
     if (ret < 0)
         LOG_SYSERR << "wakeup read error";
 }
-} // namespace trantor
+}  // namespace trantor

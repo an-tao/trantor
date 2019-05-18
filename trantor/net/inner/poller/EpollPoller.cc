@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -36,7 +36,7 @@ namespace
 const int kNew = -1;
 const int kAdded = 1;
 const int kDeleted = 2;
-} // namespace
+}  // namespace
 
 EpollPoller::EpollPoller(EventLoop *loop)
     : Poller(loop),
@@ -58,7 +58,7 @@ void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
     // Timestamp now(Timestamp::now());
     if (numEvents > 0)
     {
-        //LOG_TRACE << numEvents << " events happended";
+        // LOG_TRACE << numEvents << " events happended";
         fillActiveChannels(numEvents, activeChannels);
         if (static_cast<size_t>(numEvents) == _events.size())
         {
@@ -67,7 +67,7 @@ void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
     }
     else if (numEvents == 0)
     {
-        //std::cout << "nothing happended" << std::endl;
+        // std::cout << "nothing happended" << std::endl;
     }
     else
     {
@@ -96,17 +96,17 @@ void EpollPoller::fillActiveChannels(int numEvents,
         channel->setRevents(_events[i].events);
         activeChannels->push_back(channel);
     }
-    //LOG_TRACE<<"active Channels num:"<<activeChannels->size();
+    // LOG_TRACE<<"active Channels num:"<<activeChannels->size();
 }
 void EpollPoller::updateChannel(Channel *channel)
 {
     assertInLoopThread();
     const int index = channel->index();
-    //LOG_TRACE << "fd = " << channel->fd()
+    // LOG_TRACE << "fd = " << channel->fd()
     //  << " events = " << channel->events() << " index = " << index;
     if (index == kNew || index == kDeleted)
     {
-        // a new one, add with EPOLL_CTL_ADD
+// a new one, add with EPOLL_CTL_ADD
 #ifndef NDEBUG
         int fd = channel->fd();
         if (index == kNew)
@@ -115,7 +115,7 @@ void EpollPoller::updateChannel(Channel *channel)
             _channels[fd] = channel;
         }
         else
-        { // index == kDeleted
+        {  // index == kDeleted
             assert(_channels.find(fd) != _channels.end());
             assert(_channels[fd] == channel);
         }
@@ -125,7 +125,7 @@ void EpollPoller::updateChannel(Channel *channel)
     }
     else
     {
-        // update existing one with EPOLL_CTL_MOD/DEL
+// update existing one with EPOLL_CTL_MOD/DEL
 #ifndef NDEBUG
         int fd = channel->fd();
         (void)fd;
@@ -175,13 +175,15 @@ void EpollPoller::update(int operation, Channel *channel)
     {
         if (operation == EPOLL_CTL_DEL)
         {
-            // LOG_SYSERR << "epoll_ctl op =" << operationToString(operation) << " fd =" << fd;
+            // LOG_SYSERR << "epoll_ctl op =" << operationToString(operation) <<
+            // " fd =" << fd;
         }
         else
         {
-            //  LOG_SYSFATAL << "epoll_ctl op =" << operationToString(operation) << " fd =" << fd;
+            //  LOG_SYSFATAL << "epoll_ctl op =" << operationToString(operation)
+            //  << " fd =" << fd;
         }
     }
 }
 
-} // namespace trantor
+}  // namespace trantor

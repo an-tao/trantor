@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -24,7 +24,6 @@ typedef std::vector<struct epoll_event> EventList;
 
 namespace trantor
 {
-
 class Channel;
 
 class EpollPoller : public Poller
@@ -45,7 +44,6 @@ class EpollPoller : public Poller
     typedef std::map<int, Channel *> ChannelMap;
     ChannelMap _channels;
 #endif
-    void fillActiveChannels(int numEvents,
-                            ChannelList *activeChannels) const;
+    void fillActiveChannels(int numEvents, ChannelList *activeChannels) const;
 };
-} // namespace trantor
+}  // namespace trantor

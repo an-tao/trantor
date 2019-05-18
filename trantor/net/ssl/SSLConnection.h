@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -20,7 +20,6 @@
 #include <memory>
 namespace trantor
 {
-
 enum class SSLStatus
 {
     Handshaking,
@@ -33,18 +32,22 @@ enum class SSLStatus
 class SSLConnection : public TcpConnectionImpl
 {
   public:
-    SSLConnection(EventLoop *loop, int socketfd, const InetAddress &localAddr,
+    SSLConnection(EventLoop *loop,
+                  int socketfd,
+                  const InetAddress &localAddr,
                   const InetAddress &peerAddr,
                   const std::shared_ptr<SSL_CTX> &ctxPtr,
                   bool isServer = true);
-    virtual ~SSLConnection() {}
+    virtual ~SSLConnection()
+    {
+    }
 
   private:
     void doHandshaking();
     SSLStatus _status = SSLStatus::Handshaking;
 
   private:
-    //OpenSSL
+    // OpenSSL
     std::shared_ptr<SSL> _sslPtr;
     bool _isServer;
 
@@ -57,4 +60,4 @@ class SSLConnection : public TcpConnectionImpl
 
 typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
 
-} // namespace trantor
+}  // namespace trantor

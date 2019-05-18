@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -14,20 +14,18 @@
 
 #pragma once
 
-//token from muduo lib
+// token from muduo lib
 #include <trantor/utils/config.h>
 #include <trantor/utils/NonCopyable.h>
 
 #include <assert.h>
-#include <string.h> // memcpy
+#include <string.h>  // memcpy
 #include <string>
 
 namespace trantor
 {
-
 namespace detail
 {
-
 const int kSmallBuffer = 4000;
 const int kLargeBuffer = 4000 * 1000;
 
@@ -35,8 +33,7 @@ template <int SIZE>
 class FixedBuffer : NonCopyable
 {
   public:
-    FixedBuffer()
-        : _cur(_data)
+    FixedBuffer() : _cur(_data)
     {
         setCookie(cookieStart);
     }
@@ -57,26 +54,57 @@ class FixedBuffer : NonCopyable
         return false;
     }
 
-    const char *data() const { return _data; }
-    int length() const { return static_cast<int>(_cur - _data); }
+    const char *data() const
+    {
+        return _data;
+    }
+    int length() const
+    {
+        return static_cast<int>(_cur - _data);
+    }
 
     // write to _data directly
-    char *current() { return _cur; }
-    int avail() const { return static_cast<int>(end() - _cur); }
-    void add(size_t len) { _cur += len; }
+    char *current()
+    {
+        return _cur;
+    }
+    int avail() const
+    {
+        return static_cast<int>(end() - _cur);
+    }
+    void add(size_t len)
+    {
+        _cur += len;
+    }
 
-    void reset() { _cur = _data; }
-    void bzero() { memset(_data, 0, sizeof(_data)); }
+    void reset()
+    {
+        _cur = _data;
+    }
+    void bzero()
+    {
+        memset(_data, 0, sizeof(_data));
+    }
 
     // for used by GDB
     const char *debugString();
-    void setCookie(void (*cookie)()) { cookie_ = cookie; }
+    void setCookie(void (*cookie)())
+    {
+        cookie_ = cookie;
+    }
     // for used by unit test
-    std::string toString() const { return std::string(_data, length()); }
-    //StringPiece toStringPiece() const { return StringPiece(_data, length()); }
+    std::string toString() const
+    {
+        return std::string(_data, length());
+    }
+    // StringPiece toStringPiece() const { return StringPiece(_data, length());
+    // }
 
   private:
-    const char *end() const { return _data + sizeof _data; }
+    const char *end() const
+    {
+        return _data + sizeof _data;
+    }
     // Must be outline function for cookies.
     static void cookieStart();
     static void cookieEnd();
@@ -86,7 +114,7 @@ class FixedBuffer : NonCopyable
     char *_cur;
 };
 
-} // namespace detail
+}  // namespace detail
 
 class LogStream : NonCopyable
 {
@@ -197,7 +225,7 @@ class LogStream : NonCopyable
             _exBuffer.append(data, len);
         }
     }
-    //const Buffer& buffer() const { return _buffer; }
+    // const Buffer& buffer() const { return _buffer; }
     const char *bufferData() const
     {
         if (!_exBuffer.empty())
@@ -232,14 +260,20 @@ class LogStream : NonCopyable
     static const int kMaxNumericSize = 32;
 };
 
-class Fmt // : boost::noncopyable
+class Fmt  // : boost::noncopyable
 {
   public:
     template <typename T>
     Fmt(const char *fmt, T val);
 
-    const char *data() const { return _buf; }
-    int length() const { return _length; }
+    const char *data() const
+    {
+        return _buf;
+    }
+    int length() const
+    {
+        return _length;
+    }
 
   private:
     char _buf[32];
@@ -252,4 +286,4 @@ inline LogStream &operator<<(LogStream &s, const Fmt &fmt)
     return s;
 }
 
-} // namespace trantor
+}  // namespace trantor

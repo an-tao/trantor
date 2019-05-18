@@ -32,8 +32,7 @@ int main()
                         pro.set_value(1);
                 });
             }
-        })
-            .detach();
+        }).detach();
     }
 
     ft.get();

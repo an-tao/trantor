@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -22,10 +22,8 @@
 #include <iostream>
 namespace trantor
 {
-
 class Logger : public NonCopyable
 {
-
   public:
     enum LogLevel
     {
@@ -42,12 +40,10 @@ class Logger : public NonCopyable
     {
       public:
         template <int N>
-        inline SourceFile(const char (&arr)[N])
-            : data_(arr),
-              size_(N - 1)
+        inline SourceFile(const char (&arr)[N]) : data_(arr), size_(N - 1)
         {
             // std::cout<<data_<<std::endl;
-            const char *slash = strrchr(data_, '/'); // builtin function
+            const char *slash = strrchr(data_, '/');  // builtin function
             if (slash)
             {
                 data_ = slash + 1;
@@ -55,8 +51,7 @@ class Logger : public NonCopyable
             }
         }
 
-        explicit SourceFile(const char *filename)
-            : data_(filename)
+        explicit SourceFile(const char *filename) : data_(filename)
         {
             const char *slash = strrchr(filename, '/');
             if (slash)
@@ -75,7 +70,9 @@ class Logger : public NonCopyable
     Logger(SourceFile file, int line, LogLevel level, const char *func);
     ~Logger();
     LogStream &stream();
-    static void setOutputFunction(std::function<void(const char *msg, const uint64_t len)> outputFunc, std::function<void()> flushFunc)
+    static void setOutputFunction(
+        std::function<void(const char *msg, const uint64_t len)> outputFunc,
+        std::function<void()> flushFunc)
     {
         _outputFunc() = outputFunc;
         _flushFunc() = flushFunc;
@@ -109,9 +106,11 @@ class Logger : public NonCopyable
 #endif
         return logLevel;
     }
-    static std::function<void(const char *msg, const uint64_t len)> &_outputFunc()
+    static std::function<void(const char *msg, const uint64_t len)>
+        &_outputFunc()
     {
-        static std::function<void(const char *msg, const uint64_t len)> outputFunc = Logger::defaultOutputFunction;
+        static std::function<void(const char *msg, const uint64_t len)>
+            outputFunc = Logger::defaultOutputFunction;
         return outputFunc;
     }
     static std::function<void()> &_flushFunc()
@@ -126,24 +125,30 @@ class Logger : public NonCopyable
     LogLevel level_;
 };
 #ifdef NDEBUG
-#define LOG_TRACE \
-    if (0)        \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRACE, __func__).stream()
+#define LOG_TRACE                                                         \
+    if (0)                                                                \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRACE, __func__) \
+        .stream()
 #else
-#define LOG_TRACE                                              \
-    if (trantor::Logger::logLevel() <= trantor::Logger::TRACE) \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRACE, __func__).stream()
+#define LOG_TRACE                                                         \
+    if (trantor::Logger::logLevel() <= trantor::Logger::TRACE)            \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRACE, __func__) \
+        .stream()
 #endif
-#define LOG_DEBUG                                              \
-    if (trantor::Logger::logLevel() <= trantor::Logger::DEBUG) \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::DEBUG, __func__).stream()
+#define LOG_DEBUG                                                         \
+    if (trantor::Logger::logLevel() <= trantor::Logger::DEBUG)            \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::DEBUG, __func__) \
+        .stream()
 #define LOG_INFO                                              \
     if (trantor::Logger::logLevel() <= trantor::Logger::INFO) \
     trantor::Logger(__FILE__, __LINE__).stream()
-#define LOG_WARN trantor::Logger(__FILE__, __LINE__, trantor::Logger::WARN).stream()
-#define LOG_ERROR trantor::Logger(__FILE__, __LINE__, trantor::Logger::ERROR).stream()
-#define LOG_FATAL trantor::Logger(__FILE__, __LINE__, trantor::Logger::FATAL).stream()
+#define LOG_WARN \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::WARN).stream()
+#define LOG_ERROR \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::ERROR).stream()
+#define LOG_FATAL \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::FATAL).stream()
 #define LOG_SYSERR trantor::Logger(__FILE__, __LINE__, true).stream()
 
 const char *strerror_tl(int savedErrno);
-} // namespace trantor
+}  // namespace trantor

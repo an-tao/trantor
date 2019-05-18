@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -23,7 +23,6 @@
 
 namespace trantor
 {
-
 class ConcurrentTaskQueue : public TaskQueue
 {
   public:
@@ -31,7 +30,10 @@ class ConcurrentTaskQueue : public TaskQueue
     virtual void runTaskInQueue(const std::function<void()> &task);
     virtual void runTaskInQueue(std::function<void()> &&task);
 
-    virtual std::string getName() const { return queueName_; };
+    virtual std::string getName() const
+    {
+        return queueName_;
+    };
     size_t getTaskCount();
     void stop();
     ~ConcurrentTaskQueue();
@@ -49,4 +51,4 @@ class ConcurrentTaskQueue : public TaskQueue
     void queueFunc(int queueNum);
 };
 
-} // namespace trantor
+}  // namespace trantor

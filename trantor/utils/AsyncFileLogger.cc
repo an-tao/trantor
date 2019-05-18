@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -28,8 +28,7 @@
 using namespace trantor;
 
 AsyncFileLogger::AsyncFileLogger()
-    : logBufferPtr_(new std::string),
-      nextBufferPtr_(new std::string)
+    : logBufferPtr_(new std::string), nextBufferPtr_(new std::string)
 {
     logBufferPtr_->reserve(MEM_BUFFER_SIZE);
     nextBufferPtr_->reserve(MEM_BUFFER_SIZE);
@@ -37,14 +36,14 @@ AsyncFileLogger::AsyncFileLogger()
 
 AsyncFileLogger::~AsyncFileLogger()
 {
-    //std::cout << "~AsyncFileLogger" << std::endl;
+    // std::cout << "~AsyncFileLogger" << std::endl;
     stopFlag_ = true;
     if (threadPtr_)
     {
         cond_.notify_all();
         threadPtr_->join();
     }
-    //std::cout << "thread exit" << std::endl;
+    // std::cout << "thread exit" << std::endl;
     {
         std::lock_guard<std::mutex> guard_(mutex_);
         if (logBufferPtr_->length() > 0)
@@ -75,7 +74,7 @@ void AsyncFileLogger::output(const char *msg, const uint64_t len)
         swapBuffer();
         cond_.notify_one();
     }
-    if (writeBuffers_.size() > 25) //100M bytes logs in buffer
+    if (writeBuffers_.size() > 25)  // 100M bytes logs in buffer
     {
         _lostCounter++;
         return;
@@ -84,7 +83,10 @@ void AsyncFileLogger::output(const char *msg, const uint64_t len)
     if (_lostCounter > 0)
     {
         char logErr[128];
-        auto strlen = sprintf(logErr, "%llu log information is lost\n", static_cast<long long unsigned int>(_lostCounter));
+        auto strlen =
+            sprintf(logErr,
+                    "%llu log information is lost\n",
+                    static_cast<long long unsigned int>(_lostCounter));
         _lostCounter = 0;
         logBufferPtr_->append(logErr, strlen);
     }
@@ -96,7 +98,8 @@ void AsyncFileLogger::flush()
     std::lock_guard<std::mutex> guard_(mutex_);
     if (logBufferPtr_->length() > 0)
     {
-        //std::cout<<"flush log buffer len:"<<logBufferPtr_->length()<<std::endl;
+        // std::cout<<"flush log buffer
+        // len:"<<logBufferPtr_->length()<<std::endl;
         swapBuffer();
         cond_.notify_one();
     }
@@ -106,7 +109,8 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
 {
     if (!_loggerFilePtr)
     {
-        _loggerFilePtr = std::unique_ptr<LoggerFile>(new LoggerFile(_filePath, _fileBaseName, _fileExtName));
+        _loggerFilePtr = std::unique_ptr<LoggerFile>(
+            new LoggerFile(_filePath, _fileBaseName, _fileExtName));
     }
     _loggerFilePtr->writeLog(buf);
     if (_loggerFilePtr->getLength() > sizeLimit_)
@@ -126,7 +130,9 @@ void AsyncFileLogger::logThreadFunc()
             std::unique_lock<std::mutex> lock(mutex_);
             while (writeBuffers_.size() == 0 && !stopFlag_)
             {
-                if (cond_.wait_for(lock, std::chrono::seconds(LOG_FLUSH_TIMEOUT)) == std::cv_status::timeout)
+                if (cond_.wait_for(lock,
+                                   std::chrono::seconds(LOG_FLUSH_TIMEOUT)) ==
+                    std::cv_status::timeout)
                 {
                     if (logBufferPtr_->length() > 0)
                     {
@@ -160,7 +166,9 @@ void AsyncFileLogger::startLogging()
         new std::thread(std::bind(&AsyncFileLogger::logThreadFunc, this)));
 }
 
-AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath, const std::string &fileBaseName, const std::string &fileExtName)
+AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
+                                        const std::string &fileBaseName,
+                                        const std::string &fileExtName)
     : _creationDate(Date::date()),
       _filePath(filePath),
       _fileBaseName(fileBaseName),
@@ -179,7 +187,7 @@ void AsyncFileLogger::LoggerFile::writeLog(const StringPtr buf)
 {
     if (_fp)
     {
-        //std::cout<<"write "<<buf->length()<<" bytes to file"<<std::endl;
+        // std::cout<<"write "<<buf->length()<<" bytes to file"<<std::endl;
         fwrite(buf->c_str(), 1, buf->length(), _fp);
     }
 }
@@ -205,9 +213,14 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
     {
         fclose(_fp);
         char seq[10];
-        sprintf(seq, ".%06llu", static_cast<long long unsigned int>(_fileSeq % 1000000));
+        sprintf(seq,
+                ".%06llu",
+                static_cast<long long unsigned int>(_fileSeq % 1000000));
         _fileSeq++;
-        std::string newName = _filePath + _fileBaseName + "." + _creationDate.toCustomedFormattedString("%y%m%d-%H%M%S") + std::string(seq) + _fileExtName;
+        std::string newName =
+            _filePath + _fileBaseName + "." +
+            _creationDate.toCustomedFormattedString("%y%m%d-%H%M%S") +
+            std::string(seq) + _fileExtName;
         rename(_fileFullName.c_str(), newName.c_str());
     }
 }

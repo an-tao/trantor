@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -26,21 +26,26 @@
 
 namespace trantor
 {
-
 typedef std::shared_ptr<std::string> StringPtr;
 typedef std::queue<StringPtr> StringPtrQueue;
 class AsyncFileLogger : NonCopyable
 {
   public:
-    //static AsyncFileLogger* getInstance();
+    // static AsyncFileLogger* getInstance();
     void output(const char *msg, const uint64_t len);
     void flush();
     void startLogging();
-    void setFileSizeLimit(uint64_t limit) { sizeLimit_ = limit; }
-    void setFileName(const std::string &baseName, const std::string &extName = ".log", const std::string &path = "./")
+    void setFileSizeLimit(uint64_t limit)
+    {
+        sizeLimit_ = limit;
+    }
+    void setFileName(const std::string &baseName,
+                     const std::string &extName = ".log",
+                     const std::string &path = "./")
     {
         _fileBaseName = baseName;
-        extName[0] == '.' ? _fileExtName = extName : _fileExtName = std::string(".") + extName;
+        extName[0] == '.' ? _fileExtName = extName
+                          : _fileExtName = std::string(".") + extName;
         _filePath = path;
         if (_filePath.length() == 0)
             _filePath = "./";
@@ -68,11 +73,16 @@ class AsyncFileLogger : NonCopyable
     class LoggerFile : NonCopyable
     {
       public:
-        LoggerFile(const std::string &filePath, const std::string &fileBaseName, const std::string &fileExtName);
+        LoggerFile(const std::string &filePath,
+                   const std::string &fileBaseName,
+                   const std::string &fileExtName);
         ~LoggerFile();
         void writeLog(const StringPtr buf);
         uint64_t getLength();
-        explicit operator bool() const { return _fp != NULL; }
+        explicit operator bool() const
+        {
+            return _fp != NULL;
+        }
         void flush();
 
       protected:
@@ -90,4 +100,4 @@ class AsyncFileLogger : NonCopyable
     void swapBuffer();
 };
 
-} // namespace trantor
+}  // namespace trantor

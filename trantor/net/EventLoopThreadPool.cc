@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -14,7 +14,8 @@
 
 #include <trantor/net/EventLoopThreadPool.h>
 using namespace trantor;
-EventLoopThreadPool::EventLoopThreadPool(size_t threadNum, const std::string &name)
+EventLoopThreadPool::EventLoopThreadPool(size_t threadNum,
+                                         const std::string &name)
     : _loopIndex(0)
 {
     for (size_t i = 0; i < threadNum; i++)
@@ -29,7 +30,7 @@ void EventLoopThreadPool::start()
         _loopThreadVector[i]->run();
     }
 }
-//void EventLoopThreadPool::stop(){
+// void EventLoopThreadPool::stop(){
 //    for(unsigned int i=0;i<_loopThreadVector.size();i++)
 //    {
 //        _loopThreadVector[i].stop();

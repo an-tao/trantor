@@ -27,12 +27,12 @@ int main()
         {
             LOG_DEBUG << "sum=" << sum;
             struct timespec req = {0};
-            req.tv_sec = 0;                
+            req.tv_sec = 0;
             req.tv_nsec = 100000L;
             nanosleep(&req, NULL);
         }
     });
-    
+
     getc(stdin);
     LOG_DEBUG << "sum=" << sum;
 }

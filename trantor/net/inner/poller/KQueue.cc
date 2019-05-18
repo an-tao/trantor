@@ -9,18 +9,15 @@
 
 namespace trantor
 {
-
 namespace
 {
 const int kNew = -1;
 const int kAdded = 1;
 const int kDeleted = 2;
-} // namespace
+}  // namespace
 
 KQueue::KQueue(EventLoop *loop)
-    : Poller(loop),
-      _kqfd(kqueue()),
-      _events(kInitEventListSize)
+    : Poller(loop), _kqfd(kqueue()), _events(kInitEventListSize)
 {
     assert(_kqfd >= 0);
 }
@@ -50,12 +47,17 @@ void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
     timeout.tv_sec = timeoutMs / 1000;
     timeout.tv_nsec = (timeoutMs % 1000) * 1000000;
 
-    int numEvents = kevent(_kqfd, NULL, 0, _events.data(), static_cast<int>(_events.size()), &timeout);
+    int numEvents = kevent(_kqfd,
+                           NULL,
+                           0,
+                           _events.data(),
+                           static_cast<int>(_events.size()),
+                           &timeout);
     int savedErrno = errno;
     // Timestamp now(Timestamp::now());
     if (numEvents > 0)
     {
-        //LOG_TRACE << numEvents << " events happended";
+        // LOG_TRACE << numEvents << " events happended";
         fillActiveChannels(numEvents, activeChannels);
         if (static_cast<size_t>(numEvents) == _events.size())
         {
@@ -64,7 +66,7 @@ void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
     }
     else if (numEvents == 0)
     {
-        //std::cout << "nothing happended" << std::endl;
+        // std::cout << "nothing happended" << std::endl;
     }
     else
     {
@@ -117,7 +119,7 @@ void KQueue::updateChannel(Channel *channel)
             assert(_channels.find(channel->fd()) == _channels.end());
         }
         else
-        { // index == kDeleted
+        {  // index == kDeleted
             assert(_channels.find(channel->fd()) != _channels.end());
             assert(_channels[channel->fd()].second == channel);
         }
@@ -178,21 +180,48 @@ void KQueue::update(Channel *channel)
 
     if ((events & Channel::kReadEvent) && (!(oldEvents & Channel::kReadEvent)))
     {
-        EV_SET(&ev[n++], fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, (void *)(intptr_t)channel);
+        EV_SET(&ev[n++],
+               fd,
+               EVFILT_READ,
+               EV_ADD | EV_ENABLE,
+               0,
+               0,
+               (void *)(intptr_t)channel);
     }
-    else if ((!(events & Channel::kReadEvent)) && (oldEvents & Channel::kReadEvent))
+    else if ((!(events & Channel::kReadEvent)) &&
+             (oldEvents & Channel::kReadEvent))
     {
-        EV_SET(&ev[n++], fd, EVFILT_READ, EV_DELETE, 0, 0, (void *)(intptr_t)channel);
+        EV_SET(&ev[n++],
+               fd,
+               EVFILT_READ,
+               EV_DELETE,
+               0,
+               0,
+               (void *)(intptr_t)channel);
     }
-    if ((events & Channel::kWriteEvent) && (!(oldEvents & Channel::kWriteEvent)))
+    if ((events & Channel::kWriteEvent) &&
+        (!(oldEvents & Channel::kWriteEvent)))
     {
-        EV_SET(&ev[n++], fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, (void *)(intptr_t)channel);
+        EV_SET(&ev[n++],
+               fd,
+               EVFILT_WRITE,
+               EV_ADD | EV_ENABLE,
+               0,
+               0,
+               (void *)(intptr_t)channel);
     }
-    else if ((!(events & Channel::kWriteEvent)) && (oldEvents & Channel::kWriteEvent))
+    else if ((!(events & Channel::kWriteEvent)) &&
+             (oldEvents & Channel::kWriteEvent))
     {
-        EV_SET(&ev[n++], fd, EVFILT_WRITE, EV_DELETE, 0, 0, (void *)(intptr_t)channel);
+        EV_SET(&ev[n++],
+               fd,
+               EVFILT_WRITE,
+               EV_DELETE,
+               0,
+               0,
+               (void *)(intptr_t)channel);
     }
     kevent(_kqfd, ev, n, NULL, 0, NULL);
 }
 
-} // namespace trantor
+}  // namespace trantor

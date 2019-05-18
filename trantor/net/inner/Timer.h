@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -23,7 +23,6 @@
 
 namespace trantor
 {
-
 typedef uint64_t TimerId;
 
 class Timer : public NonCopyable
@@ -39,9 +38,18 @@ class Timer : public NonCopyable
     void restart(const Date &now);
     bool operator<(const Timer &t) const;
     bool operator>(const Timer &t) const;
-    const Date &when() const { return _when; }
-    bool isRepeat() { return _repeat; }
-    TimerId id() { return _id; }
+    const Date &when() const
+    {
+        return _when;
+    }
+    bool isRepeat()
+    {
+        return _repeat;
+    }
+    TimerId id()
+    {
+        return _id;
+    }
 
   private:
     TimerCallback _callback;
@@ -52,4 +60,4 @@ class Timer : public NonCopyable
     static std::atomic<TimerId> _timersCreated;
 };
 
-}; // namespace trantor
+};  // namespace trantor

@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -14,8 +14,12 @@
 
 #include "Acceptor.h"
 using namespace trantor;
-Acceptor::Acceptor(EventLoop *loop, const InetAddress &addr, bool reUseAddr, bool reUsePort)
-    : _sock(Socket::createNonblockingSocketOrDie(addr.getSockAddr()->sa_family)),
+Acceptor::Acceptor(EventLoop *loop,
+                   const InetAddress &addr,
+                   bool reUseAddr,
+                   bool reUsePort)
+    : _sock(
+          Socket::createNonblockingSocketOrDie(addr.getSockAddr()->sa_family)),
       _addr(addr),
       _loop(loop),
       _acceptChannel(loop, _sock.fd()),

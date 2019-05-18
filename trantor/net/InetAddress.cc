@@ -12,7 +12,7 @@
 //#include <muduo/net/Endian.h>
 
 #include <netdb.h>
-#include <strings.h> // memset
+#include <strings.h>  // memset
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
@@ -74,7 +74,8 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
     }
 }
 
-InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6) : _isIpV6(ipv6)
+InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
+    : _isIpV6(ipv6)
 {
     if (ipv6)
     {
@@ -125,7 +126,8 @@ bool InetAddress::isIntranetIp() const
     {
         auto addrP = ip6NetEndian();
         // Loopback ip
-        if (*addrP == 0 && *(addrP + 1) == 0 && *(addrP + 2) == 0 && ntohl(*(addrP + 3)) == 1)
+        if (*addrP == 0 && *(addrP + 1) == 0 && *(addrP + 2) == 0 &&
+            ntohl(*(addrP + 3)) == 1)
             return true;
         // Privated ip is prefixed by FEC0::/10 or FE80::/10, need testing
         auto i32 = (ntohl(*addrP) & 0xffc00000);
@@ -133,7 +135,7 @@ bool InetAddress::isIntranetIp() const
             return true;
         if (*addrP == 0 && *(addrP + 1) == 0 && ntohl(*(addrP + 2)) == 0xffff)
         {
-            //the IPv6 version of an IPv4 IP address
+            // the IPv6 version of an IPv4 IP address
             uint32_t ip_addr = ntohl(*(addrP + 3));
             if ((ip_addr >= 0x0A000000 && ip_addr <= 0x0AFFFFFF) ||
                 (ip_addr >= 0xAC100000 && ip_addr <= 0xAC1FFFFF) ||
@@ -161,10 +163,12 @@ bool InetAddress::isLoopbackIp() const
     else
     {
         auto addrP = ip6NetEndian();
-        if (*addrP == 0 && *(addrP + 1) == 0 && *(addrP + 2) == 0 && ntohl(*(addrP + 3)) == 1)
+        if (*addrP == 0 && *(addrP + 1) == 0 && *(addrP + 2) == 0 &&
+            ntohl(*(addrP + 3)) == 1)
             return true;
-        //the IPv6 version of an IPv4 loopback address
-        if (*addrP == 0 && *(addrP + 1) == 0 && ntohl(*(addrP + 2)) == 0xffff && ntohl(*(addrP + 3)) == 0x7f000001)
+        // the IPv6 version of an IPv4 loopback address
+        if (*addrP == 0 && *(addrP + 1) == 0 && ntohl(*(addrP + 2)) == 0xffff &&
+            ntohl(*(addrP + 3)) == 0x7f000001)
             return true;
     }
     return false;
@@ -187,13 +191,13 @@ std::string InetAddress::toIp() const
 
 uint32_t InetAddress::ipNetEndian() const
 {
-    //assert(family() == AF_INET);
+    // assert(family() == AF_INET);
     return _addr.sin_addr.s_addr;
 }
 
 const uint32_t *InetAddress::ip6NetEndian() const
 {
-//assert(family() == AF_INET6);
+// assert(family() == AF_INET6);
 #ifdef __linux__
     return _addr6.sin6_addr.s6_addr32;
 #else
@@ -208,8 +212,11 @@ uint16_t InetAddress::toPort() const
 static __thread char t_resolveBuffer[64 * 1024];
 #endif
 std::mutex InetAddress::_dnsMutex;
-std::unordered_map<std::string, std::pair<struct in_addr, trantor::Date>> InetAddress::_dnsCache;
-bool InetAddress::resolve(const std::string &hostname, InetAddress *out, size_t timeout)
+std::unordered_map<std::string, std::pair<struct in_addr, trantor::Date>>
+    InetAddress::_dnsCache;
+bool InetAddress::resolve(const std::string &hostname,
+                          InetAddress *out,
+                          size_t timeout)
 {
     assert(out != NULL);
     {
@@ -217,8 +224,8 @@ bool InetAddress::resolve(const std::string &hostname, InetAddress *out, size_t 
         if (_dnsCache.find(hostname) != _dnsCache.end())
         {
             auto &addr = _dnsCache[hostname];
-            if (timeout == 0 || (timeout > 0 &&
-                                 (addr.second.after(timeout) > trantor::Date::date())))
+            if (timeout == 0 || (timeout > 0 && (addr.second.after(timeout) >
+                                                 trantor::Date::date())))
             {
                 LOG_TRACE << "dns:Hit cache";
                 out->_addr.sin_addr = addr.first;
@@ -232,7 +239,12 @@ bool InetAddress::resolve(const std::string &hostname, InetAddress *out, size_t 
     int herrno = 0;
     memset(&hent, 0, sizeof(hent));
 
-    int ret = gethostbyname_r(hostname.c_str(), &hent, t_resolveBuffer, sizeof t_resolveBuffer, &he, &herrno);
+    int ret = gethostbyname_r(hostname.c_str(),
+                              &hent,
+                              t_resolveBuffer,
+                              sizeof t_resolveBuffer,
+                              &he,
+                              &herrno);
     if (ret == 0 && he != NULL)
 #else
     /// Multi-threads safety

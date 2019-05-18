@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -23,12 +23,15 @@
 namespace trantor
 {
 template <typename T>
-class ObjectPool : public NonCopyable, public std::enable_shared_from_this<ObjectPool<T>>
+class ObjectPool : public NonCopyable,
+                   public std::enable_shared_from_this<ObjectPool<T>>
 {
   public:
     std::shared_ptr<T> getObject()
     {
-        static_assert(!std::is_pointer<T>::value, "The parameter type of the ObjectPool template can't be pointer type");
+        static_assert(!std::is_pointer<T>::value,
+                      "The parameter type of the ObjectPool template can't be "
+                      "pointer type");
         T *p = nullptr;
         {
             std::lock_guard<std::mutex> lock(_mtx);
@@ -65,4 +68,4 @@ class ObjectPool : public NonCopyable, public std::enable_shared_from_this<Objec
     std::vector<T *> _objs;
     std::mutex _mtx;
 };
-} // namespace trantor
+}  // namespace trantor

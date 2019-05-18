@@ -4,7 +4,7 @@
  *  An Tao
  *
  *  Public header file in trantor lib.
- * 
+ *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the License file.
@@ -22,22 +22,26 @@
 
 namespace trantor
 {
-
 class Channel;
 class Socket;
 class TcpServer;
 void removeConnection(EventLoop *loop, const TcpConnectionPtr &conn);
-class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::enable_shared_from_this<TcpConnectionImpl>
+class TcpConnectionImpl : public TcpConnection,
+                          public NonCopyable,
+                          public std::enable_shared_from_this<TcpConnectionImpl>
 {
     friend class TcpServer;
     friend class TcpClient;
-    friend void trantor::removeConnection(EventLoop *loop, const TcpConnectionPtr &conn);
+    friend void trantor::removeConnection(EventLoop *loop,
+                                          const TcpConnectionPtr &conn);
 
   public:
     class KickoffEntry
     {
       public:
-        KickoffEntry(const std::weak_ptr<TcpConnection> &conn) : _conn(conn) {}
+        KickoffEntry(const std::weak_ptr<TcpConnection> &conn) : _conn(conn)
+        {
+        }
         void reset()
         {
             _conn.reset();
@@ -55,7 +59,9 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
         std::weak_ptr<TcpConnection> _conn;
     };
 
-    TcpConnectionImpl(EventLoop *loop, int socketfd, const InetAddress &localAddr,
+    TcpConnectionImpl(EventLoop *loop,
+                      int socketfd,
+                      const InetAddress &localAddr,
                       const InetAddress &peerAddr);
     virtual ~TcpConnectionImpl();
     virtual void send(const char *msg, uint64_t len) override;
@@ -64,18 +70,36 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     virtual void send(const MsgBuffer &buffer) override;
     virtual void send(MsgBuffer &&buffer) override;
     virtual void send(const std::shared_ptr<std::string> &msgPtr) override;
-    virtual void sendFile(const char *fileName, size_t offset = 0, size_t length = 0) override;
+    virtual void sendFile(const char *fileName,
+                          size_t offset = 0,
+                          size_t length = 0) override;
 
-    virtual const InetAddress &localAddr() const override { return _localAddr; }
-    virtual const InetAddress &peerAddr() const override { return _peerAddr; }
+    virtual const InetAddress &localAddr() const override
+    {
+        return _localAddr;
+    }
+    virtual const InetAddress &peerAddr() const override
+    {
+        return _peerAddr;
+    }
 
-    virtual bool connected() const override { return _state == Connected; }
-    virtual bool disconnected() const override { return _state == Disconnected; }
+    virtual bool connected() const override
+    {
+        return _state == Connected;
+    }
+    virtual bool disconnected() const override
+    {
+        return _state == Disconnected;
+    }
 
-    //virtual MsgBuffer* getSendBuffer() override{ return  &writeBuffer_;}
-    virtual MsgBuffer *getRecvBuffer() override { return &_readBuffer; }
-    //set callbacks
-    virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb, size_t markLen) override
+    // virtual MsgBuffer* getSendBuffer() override{ return  &writeBuffer_;}
+    virtual MsgBuffer *getRecvBuffer() override
+    {
+        return &_readBuffer;
+    }
+    // set callbacks
+    virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
+                                          size_t markLen) override
     {
         _highWaterMarkCallback = cb;
         _highWaterMarkLen = markLen;
@@ -90,11 +114,17 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
             entry->reset();
         }
     }
-    virtual bool isKeepAlive() override { return _idleTimeout == 0; }
+    virtual bool isKeepAlive() override
+    {
+        return _idleTimeout == 0;
+    }
     virtual void setTcpNoDelay(bool on) override;
     virtual void shutdown() override;
     virtual void forceClose() override;
-    virtual EventLoop *getLoop() override { return _loop; }
+    virtual EventLoop *getLoop() override
+    {
+        return _loop;
+    }
 
     virtual void setContext(const any &context) override
     {
@@ -123,7 +153,8 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     size_t _idleTimeout = 0;
     Date _lastTimingWheelUpdateTime;
 
-    void enableKickingOff(size_t timeout, const std::shared_ptr<TimingWheel> &timingWheel)
+    void enableKickingOff(size_t timeout,
+                          const std::shared_ptr<TimingWheel> &timingWheel)
     {
         assert(timingWheel);
         assert(timingWheel->getLoop() == _loop);
@@ -136,9 +167,18 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     }
     void extendLife();
     void sendFile(int sfd, size_t offset = 0, size_t length = 0);
-    void setRecvMsgCallback(const RecvMessageCallback &cb) { _recvMsgCallback = cb; }
-    void setConnectionCallback(const ConnectionCallback &cb) { _connectionCallback = cb; }
-    void setWriteCompleteCallback(const WriteCompleteCallback &cb) { _writeCompleteCallback = cb; }
+    void setRecvMsgCallback(const RecvMessageCallback &cb)
+    {
+        _recvMsgCallback = cb;
+    }
+    void setConnectionCallback(const ConnectionCallback &cb)
+    {
+        _connectionCallback = cb;
+    }
+    void setWriteCompleteCallback(const WriteCompleteCallback &cb)
+    {
+        _writeCompleteCallback = cb;
+    }
     void setCloseCallback(const CloseCallback &cb)
     {
         _closeCallback = cb;
@@ -172,13 +212,13 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     std::unique_ptr<Channel> _ioChannelPtr;
     std::unique_ptr<Socket> _socketPtr;
     MsgBuffer _readBuffer;
-    //MsgBuffer writeBuffer_;
+    // MsgBuffer writeBuffer_;
     std::list<BufferNodePtr> _writeBufferList;
     virtual void readCallback();
     virtual void writeCallback();
     InetAddress _localAddr, _peerAddr;
     ConnState _state;
-    //callbacks
+    // callbacks
     RecvMessageCallback _recvMsgCallback;
     ConnectionCallback _connectionCallback;
     CloseCallback _closeCallback;
@@ -186,7 +226,7 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
     HighWaterMarkCallback _highWaterMarkCallback;
     void handleClose();
     void handleError();
-    //virtual void sendInLoop(const std::string &msg);
+    // virtual void sendInLoop(const std::string &msg);
     void sendInLoop(const char *buffer, size_t length);
 
     void sendFileInLoop(const BufferNodePtr &file);
@@ -201,4 +241,4 @@ class TcpConnectionImpl : public TcpConnection, public NonCopyable, public std::
 
 typedef std::shared_ptr<TcpConnectionImpl> TcpConnectionImplPtr;
 
-} // namespace trantor
+}  // namespace trantor
