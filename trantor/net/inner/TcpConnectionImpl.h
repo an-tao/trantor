@@ -39,7 +39,8 @@ class TcpConnectionImpl : public TcpConnection,
     class KickoffEntry
     {
       public:
-        KickoffEntry(const std::weak_ptr<TcpConnection> &conn) : _conn(conn)
+        explicit KickoffEntry(const std::weak_ptr<TcpConnection> &conn)
+            : _conn(conn)
         {
         }
         void reset()

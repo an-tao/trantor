@@ -30,7 +30,7 @@ class Channel;
 typedef std::shared_ptr<Timer> TimerPtr;
 struct comp
 {
-    bool operator()(const TimerPtr &x, const TimerPtr &y)
+    bool operator()(const TimerPtr &x, const TimerPtr &y) const
     {
         return *x > *y;
     }
