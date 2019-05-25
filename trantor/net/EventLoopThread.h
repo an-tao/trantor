@@ -40,11 +40,11 @@ class EventLoopThread : NonCopyable
     EventLoop *_loop;
     std::string _loopThreadName;
     void loopFuncs();
-    std::thread _thread;
     std::promise<EventLoop *> _promiseForLoopPointer;
     std::promise<int> _promiseForRun;
     std::promise<int> _promiseForLoop;
     std::once_flag _once;
+    std::thread _thread;
 };
 
 }  // namespace trantor
