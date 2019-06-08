@@ -135,18 +135,18 @@ class LogStream : NonCopyable
     self &operator<<(unsigned int);
     self &operator<<(long);
     self &operator<<(unsigned long);
-    self &operator<<(long long);
-    self &operator<<(unsigned long long);
+    self &operator<<(const long long &);
+    self &operator<<(const unsigned long long &);
 
     self &operator<<(const void *);
 
-    self &operator<<(float v)
+    self &operator<<(float &v)
     {
         *this << static_cast<double>(v);
         return *this;
     }
-    self &operator<<(double);
-    // self& operator<<(long double);
+    self &operator<<(const double &);
+    self &operator<<(const long double &v);
 
     self &operator<<(char v)
     {
@@ -250,14 +250,11 @@ class LogStream : NonCopyable
     }
 
   private:
-    void staticCheck();
-
     template <typename T>
     void formatInteger(T);
 
     Buffer _buffer;
     std::string _exBuffer;
-    static const int kMaxNumericSize = 32;
 };
 
 class Fmt  // : boost::noncopyable
@@ -276,7 +273,7 @@ class Fmt  // : boost::noncopyable
     }
 
   private:
-    char _buf[32];
+    char _buf[48];
     int _length;
 };
 
