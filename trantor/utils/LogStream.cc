@@ -100,23 +100,10 @@ void FixedBuffer<SIZE>::cookieEnd()
 {
 }
 
-void LogStream::staticCheck()
-{
-    static_assert(kMaxNumericSize - 10 > std::numeric_limits<double>::digits10,
-                  "");
-    static_assert(kMaxNumericSize - 10 >
-                      std::numeric_limits<long double>::digits10,
-                  "");
-    static_assert(kMaxNumericSize - 10 > std::numeric_limits<long>::digits10,
-                  "");
-    static_assert(kMaxNumericSize - 10 >
-                      std::numeric_limits<long long>::digits10,
-                  "");
-}
-
 template <typename T>
 void LogStream::formatInteger(T v)
 {
+    constexpr static int kMaxNumericSize = std::numeric_limits<T>::digits10 + 4;
     if (_exBuffer.empty())
     {
         if (_buffer.avail() >= kMaxNumericSize)
@@ -172,13 +159,13 @@ LogStream &LogStream::operator<<(unsigned long v)
     return *this;
 }
 
-LogStream &LogStream::operator<<(long long v)
+LogStream &LogStream::operator<<(const long long &v)
 {
     formatInteger(v);
     return *this;
 }
 
-LogStream &LogStream::operator<<(unsigned long long v)
+LogStream &LogStream::operator<<(const unsigned long long &v)
 {
     formatInteger(v);
     return *this;
@@ -187,6 +174,8 @@ LogStream &LogStream::operator<<(unsigned long long v)
 LogStream &LogStream::operator<<(const void *p)
 {
     uintptr_t v = reinterpret_cast<uintptr_t>(p);
+    constexpr static int kMaxNumericSize =
+        std::numeric_limits<uintptr_t>::digits / 4 + 4;
     if (_exBuffer.empty())
     {
         if (_buffer.avail() >= kMaxNumericSize)
@@ -214,8 +203,9 @@ LogStream &LogStream::operator<<(const void *p)
 }
 
 // TODO: replace this with Grisu3 by Florian Loitsch.
-LogStream &LogStream::operator<<(double v)
+LogStream &LogStream::operator<<(const double &v)
 {
+    constexpr static int kMaxNumericSize = 32;
     if (_exBuffer.empty())
     {
         if (_buffer.avail() >= kMaxNumericSize)
@@ -232,6 +222,29 @@ LogStream &LogStream::operator<<(double v)
     auto oldLen = _exBuffer.length();
     _exBuffer.resize(oldLen + kMaxNumericSize);
     int len = snprintf(&(_exBuffer[oldLen]), kMaxNumericSize, "%.12g", v);
+    _exBuffer.resize(oldLen + len);
+    return *this;
+}
+
+LogStream &LogStream::operator<<(const long double &v)
+{
+    constexpr static int kMaxNumericSize = 48;
+    if (_exBuffer.empty())
+    {
+        if (_buffer.avail() >= kMaxNumericSize)
+        {
+            int len = snprintf(_buffer.current(), kMaxNumericSize, "%.12Lg", v);
+            _buffer.add(len);
+            return *this;
+        }
+        else
+        {
+            _exBuffer.append(_buffer.data(), _buffer.length());
+        }
+    }
+    auto oldLen = _exBuffer.length();
+    _exBuffer.resize(oldLen + kMaxNumericSize);
+    int len = snprintf(&(_exBuffer[oldLen]), kMaxNumericSize, "%.12Lg", v);
     _exBuffer.resize(oldLen + len);
     return *this;
 }
