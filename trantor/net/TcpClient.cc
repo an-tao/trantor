@@ -44,6 +44,8 @@ void removeConnector(const ConnectorPtr &connector)
     // connector->
 }
 
+TcpClient::IgnoreSigPipe TcpClient::initObj;
+
 static void defaultConnectionCallback(const TcpConnectionPtr &conn)
 {
     LOG_TRACE << conn->localAddr().toIpPort() << " -> "

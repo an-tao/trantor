@@ -132,6 +132,16 @@ class TcpClient : NonCopyable
 #ifdef USE_OPENSSL
     std::shared_ptr<SSL_CTX> _sslCtxPtr;
 #endif
+    class IgnoreSigPipe
+    {
+      public:
+        IgnoreSigPipe()
+        {
+            ::signal(SIGPIPE, SIG_IGN);
+        }
+    };
+
+    static IgnoreSigPipe initObj;
 };
 
 }  // namespace trantor
