@@ -69,6 +69,9 @@ class TcpConnection
     // the kickoffIdleConnections method in the TcpServer class.
     virtual void keepAlive() = 0;
     virtual bool isKeepAlive() = 0;
+
+    virtual size_t bytesSent() const = 0;
+    virtual size_t bytesReceived() const = 0;
 };
 
 }  // namespace trantor

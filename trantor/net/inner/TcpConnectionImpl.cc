@@ -70,9 +70,13 @@ void TcpConnectionImpl::readCallback()
         LOG_SYSERR << "read socket error";
     }
     extendLife();
-    if (n > 0 && _recvMsgCallback)
+    if (n > 0)
     {
-        _recvMsgCallback(shared_from_this(), &_readBuffer);
+        _bytesReceived += n;
+        if (_recvMsgCallback)
+        {
+            _recvMsgCallback(shared_from_this(), &_readBuffer);
+        }
     }
 }
 void TcpConnectionImpl::extendLife()
@@ -740,5 +744,6 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
 
 ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 {
+    _bytesSent += length;
     return write(_socketPtr->fd(), buffer, length);
 }
