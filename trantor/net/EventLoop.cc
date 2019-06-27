@@ -35,7 +35,6 @@
 #include <signal.h>
 #include <fcntl.h>
 
-using namespace std;
 namespace trantor
 {
 #ifdef __linux__
