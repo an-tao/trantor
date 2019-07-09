@@ -126,9 +126,9 @@ Logger::Logger(SourceFile file, int line, bool isSysErr)
     : sourceFile_(file), fileLine_(line), level_(FATAL)
 {
     formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
     if (errno != 0)
     {
-        logStream_ << T(logLevelStr[level_], 7);
         logStream_ << strerror(errno) << " (errno=" << errno << ") ";
     }
 }
