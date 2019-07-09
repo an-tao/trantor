@@ -148,14 +148,7 @@ void TcpServer::start()
     });
 }
 
-void TcpServer::setIoLoopNum(size_t num)
-{
-    assert(num >= 0);
-    assert(!_started);
-    _loopPoolPtr =
-        std::unique_ptr<EventLoopThreadPool>(new EventLoopThreadPool(num));
-    _loopPoolPtr->start();
-}
+
 
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {

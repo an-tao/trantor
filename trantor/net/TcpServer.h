@@ -46,7 +46,20 @@ class TcpServer : NonCopyable
               bool reUsePort = true);
     ~TcpServer();
     void start();
-    void setIoLoopNum(size_t num);
+    void setIoLoopNum(size_t num)
+    {
+        assert(num >= 0);
+        assert(!_started);
+        _loopPoolPtr = std::make_shared<EventLoopThreadPool>(num);
+        _loopPoolPtr->start();
+    }
+    void setIoLoopThreadPool(const std::shared_ptr<EventLoopThreadPool> &pool)
+    {
+        assert(pool->getLoopNum() > 0);
+        assert(!_started);
+        _loopPoolPtr = pool;
+        _loopPoolPtr->start();
+    }
     void setRecvMessageCallback(const RecvMessageCallback &cb)
     {
         _recvMessageCallback = cb;
@@ -112,7 +125,7 @@ class TcpServer : NonCopyable
     size_t _idleTimeout = 0;
     std::map<EventLoop *, std::shared_ptr<TimingWheel>> _timingWheelMap;
     void connectionClosed(const TcpConnectionPtr &connectionPtr);
-    std::unique_ptr<EventLoopThreadPool> _loopPoolPtr;
+    std::shared_ptr<EventLoopThreadPool> _loopPoolPtr;
     class IgnoreSigPipe
     {
       public:
