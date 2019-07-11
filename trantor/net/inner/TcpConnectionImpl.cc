@@ -47,6 +47,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     _ioChannelPtr->setErrorCallback(
         std::bind(&TcpConnectionImpl::handleError, this));
     _socketPtr->setKeepAlive(true);
+    _socketPtr->setTcpNoDelay(true);
     _name = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
 }
 TcpConnectionImpl::~TcpConnectionImpl()
