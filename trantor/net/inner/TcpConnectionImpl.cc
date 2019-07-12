@@ -319,7 +319,6 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             // error
             if (errno != EWOULDBLOCK)
             {
-                LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
                 if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
                 {
                     return;
