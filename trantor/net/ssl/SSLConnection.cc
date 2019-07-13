@@ -140,7 +140,7 @@ void SSLConnection::doHandshaking()
     else
     {
         // ERR_print_errors(err);
-        LOG_FATAL << "SSL handshake err";
+        LOG_DEBUG << "SSL handshake err: " << err;
         _ioChannelPtr->disableReading();
         _status = SSLStatus::DisConnected;
         forceClose();

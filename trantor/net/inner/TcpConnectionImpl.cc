@@ -68,6 +68,11 @@ void TcpConnectionImpl::readCallback()
     }
     else if (n < 0)
     {
+        if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
+        {
+            LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
+            return;
+        }
         LOG_SYSERR << "read socket error";
     }
     extendLife();
@@ -136,13 +141,12 @@ void TcpConnectionImpl::writeCallback()
                 }
                 else
                 {
-                    // error
                     if (errno != EWOULDBLOCK)
                     {
-                        LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                        if (errno == EPIPE ||
-                            errno == ECONNRESET)  // TODO: any others?
+                        // TODO: any others?
+                        if (errno == EPIPE || errno == ECONNRESET)
                         {
+                            LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
                             return;
                         }
                         LOG_SYSERR << "Unexpected error(" << errno << ")";
@@ -183,13 +187,13 @@ void TcpConnectionImpl::writeCallback()
                         }
                         else
                         {
-                            // error
                             if (errno != EWOULDBLOCK)
                             {
-                                LOG_SYSERR << "TcpConnectionImpl::sendInLoop";
-                                if (errno == EPIPE ||
-                                    errno == ECONNRESET)  // TODO: any others?
+                                // TODO: any others?
+                                if (errno == EPIPE || errno == ECONNRESET)
                                 {
+                                    LOG_DEBUG << "EPIPE or ECONNRESET, erron="
+                                              << errno;
                                     return;
                                 }
                                 LOG_SYSERR << "Unexpected error(" << errno
@@ -249,6 +253,8 @@ void TcpConnectionImpl::handleClose()
 void TcpConnectionImpl::handleError()
 {
     int err = _socketPtr->getSocketError();
+    if (err == 0)
+        return;
     if (err != 104)
         LOG_ERROR << "TcpConnectionImpl::handleError [" << _name
                   << "] - SO_ERROR = " << err << " " << strerror_tl(err);
@@ -321,6 +327,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             {
                 if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
                 {
+                    LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
                     return;
                 }
                 LOG_SYSERR << "Unexpected error(" << errno << ")";
@@ -711,10 +718,10 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             {
                 if (errno != EWOULDBLOCK)
                 {
-                    LOG_SYSERR << "TcpConnectionImpl::sendFileInLoop";
-                    if (errno == EPIPE ||
-                        errno == ECONNRESET)  // TODO: any others?
+                    // TODO: any others?
+                    if (errno == EPIPE || errno == ECONNRESET)
                     {
+                        LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
                         return;
                     }
                     LOG_SYSERR << "Unexpected error(" << errno << ")";
