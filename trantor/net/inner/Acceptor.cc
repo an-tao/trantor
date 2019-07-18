@@ -28,7 +28,6 @@ Acceptor::Acceptor(EventLoop *loop,
     _sock.setReuseAddr(reUseAddr);
     _sock.setReusePort(reUsePort);
     _sock.bindAddress(_addr);
-    _sock.setTcpNoDelay(true);
     _acceptChannel.setReadCallback(std::bind(&Acceptor::readCallback, this));
 }
 Acceptor::~Acceptor()
