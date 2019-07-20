@@ -17,7 +17,6 @@
 // Author: Tao An
 
 #pragma once
-#include <trantor/utils/config.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
@@ -25,15 +24,11 @@
 #include <thread>
 #include <atomic>
 #include <signal.h>
-#ifdef USE_OPENSSL
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#endif
 namespace trantor
 {
 class Connector;
 typedef std::shared_ptr<Connector> ConnectorPtr;
-
+class SSLContext;
 class TcpClient : NonCopyable
 {
   public:
@@ -108,9 +103,7 @@ class TcpClient : NonCopyable
     {
         _writeCompleteCallback = std::move(cb);
     }
-#ifdef USE_OPENSSL
     void enableSSL();
-#endif
 
   private:
     /// Not thread safe, but in loop
@@ -130,9 +123,7 @@ class TcpClient : NonCopyable
     // always in loop thread
     mutable std::mutex _mutex;
     TcpConnectionPtr _connection;  // @GuardedBy _mutex
-#ifdef USE_OPENSSL
-    std::shared_ptr<SSL_CTX> _sslCtxPtr;
-#endif
+    std::shared_ptr<SSLContext> _sslCtxPtr;
     class IgnoreSigPipe
     {
       public:

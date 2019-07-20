@@ -13,8 +13,6 @@
  */
 
 #pragma once
-
-#include <trantor/utils/config.h>
 #include <trantor/net/callbacks.h>
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Logger.h>
@@ -26,15 +24,10 @@
 #include <memory>
 #include <set>
 #include <signal.h>
-#ifdef USE_OPENSSL
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
-#endif
 namespace trantor
 {
 class Acceptor;
+class SSLContext;
 
 class TcpServer : NonCopyable
 {
@@ -108,9 +101,8 @@ class TcpServer : NonCopyable
         });
     }
 
-#ifdef USE_OPENSSL
     void enableSSL(const std::string &certPath, const std::string &keyPath);
-#endif
+
   private:
     EventLoop *_loop;
     std::unique_ptr<Acceptor> _acceptorPtr;
@@ -140,10 +132,8 @@ class TcpServer : NonCopyable
 
     bool _started = false;
 
-#ifdef USE_OPENSSL
     // OpenSSL SSL context Object;
-    std::shared_ptr<SSL_CTX> _sslCtxPtr;
-#endif
+    std::shared_ptr<SSLContext> _sslCtxPtr;
 };
 
 }  // namespace trantor

@@ -61,7 +61,7 @@ void Socket::bindAddress(const InetAddress &localaddr)
     else
     {
         LOG_SYSERR << ", Bind address failed at " << localaddr.toIpPort();
-        exit(-1);
+        exit(1);
     }
 }
 void Socket::listen()
@@ -71,7 +71,7 @@ void Socket::listen()
     if (ret < 0)
     {
         LOG_SYSERR << "listen failed";
-        exit(-1);
+        exit(1);
     }
 }
 int Socket::accept(InetAddress *peeraddr)

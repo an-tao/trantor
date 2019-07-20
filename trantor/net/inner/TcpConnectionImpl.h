@@ -127,23 +127,6 @@ class TcpConnectionImpl : public TcpConnection,
         return _loop;
     }
 
-    virtual void setContext(const any &context) override
-    {
-        _context = context;
-    }
-    virtual void setContext(any &&context) override
-    {
-        _context = std::move(context);
-    }
-    virtual const any &getContext() const override
-    {
-        return _context;
-    }
-
-    virtual any *getMutableContext() override
-    {
-        return &_context;
-    }
     virtual size_t bytesSent() const override
     {
         return _bytesSent;
@@ -154,7 +137,6 @@ class TcpConnectionImpl : public TcpConnection,
     }
 
   protected:
-    any _context;
     /// Internal use only.
 
     std::weak_ptr<KickoffEntry> _kickoffEntry;
@@ -249,7 +231,6 @@ class TcpConnectionImpl : public TcpConnection,
 
     size_t _bytesSent = 0;
     size_t _bytesReceived = 0;
-
 };
 
 typedef std::shared_ptr<TcpConnectionImpl> TcpConnectionImplPtr;

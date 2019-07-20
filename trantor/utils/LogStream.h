@@ -15,13 +15,14 @@
 #pragma once
 
 // token from muduo lib
-#include <trantor/utils/config.h>
 #include <trantor/utils/NonCopyable.h>
 
 #include <assert.h>
 #include <string.h>  // memcpy
 #include <string>
-
+#if __cplusplus >= 201703L
+#include <string_view>
+#endif
 namespace trantor
 {
 namespace detail
@@ -190,7 +191,8 @@ class LogStream : NonCopyable
         return *this;
     }
 
-    self &operator<<(const string_view &buf)
+#if __cplusplus >= 201703L
+    self &operator<<(const std::string_view &buf)
     {
         if (!buf.empty())
         {
@@ -198,7 +200,7 @@ class LogStream : NonCopyable
         }
         return *this;
     }
-
+#endif
     self &operator<<(const unsigned char *str)
     {
         return operator<<(reinterpret_cast<const char *>(str));

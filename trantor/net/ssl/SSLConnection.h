@@ -13,7 +13,6 @@
  */
 
 #pragma once
-#include <openssl/ssl.h>
 #include "../inner/TcpConnectionImpl.h"
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/TcpConnection.h>
@@ -28,6 +27,14 @@ enum class SSLStatus
     DisConnecting,
     DisConnected
 };
+void initOpenSSL();
+class SSLContext;
+class SSLConn;
+
+std::shared_ptr<SSLContext> newSSLContext();
+void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
+                          const std::string &certPath,
+                          const std::string &keyPath);
 
 class SSLConnection : public TcpConnectionImpl
 {
@@ -36,7 +43,7 @@ class SSLConnection : public TcpConnectionImpl
                   int socketfd,
                   const InetAddress &localAddr,
                   const InetAddress &peerAddr,
-                  const std::shared_ptr<SSL_CTX> &ctxPtr,
+                  const std::shared_ptr<SSLContext> &ctxPtr,
                   bool isServer = true);
     virtual ~SSLConnection()
     {
@@ -48,7 +55,7 @@ class SSLConnection : public TcpConnectionImpl
 
   private:
     // OpenSSL
-    std::shared_ptr<SSL> _sslPtr;
+    std::shared_ptr<SSLConn> _sslPtr;
     bool _isServer;
 
   protected:

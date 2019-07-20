@@ -1,27 +1,5 @@
-cmake_minimum_required(VERSION 3.2)
-project(trantor)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#Clang, use c++17
-    set(DEFS "USE_STD_ANY")
-    set(USE_STD_ANY 1)
-    set(CMAKE_CXX_STD_FLAGS c++17)
-else()
-    EXEC_PROGRAM (gcc ARGS "--version | grep '^gcc'|awk '{print $3}' | sed s'/)//g' | sed s'/-.*//g'" OUTPUT_VARIABLE version)
-    MESSAGE(STATUS "This is gcc version:: " ${version})
-    if(version LESS 5.4.0)
-        MESSAGE(STATUS "gcc is too old")
-        stop()
-    elseif(version LESS 7.1.0)
-        set(CMAKE_CXX_STD_FLAGS c++14)
-        MESSAGE(STATUS "c++14")
-    else()
-        set(CMAKE_CXX_STD_FLAGS c++17)
-        set(DEFS "USE_STD_ANY")
-        set(USE_STD_ANY 1)
-        MESSAGE(STATUS "c++17")
-    endif()
-endif()
+CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
+PROJECT(trantor)
 
 # include directories
 INCLUDE_DIRECTORIES(
@@ -33,14 +11,6 @@ INCLUDE_DIRECTORIES(
         /usr/include
 )
 
-if(CMAKE_BUILD_TYPE STREQUAL "")
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -std=${CMAKE_CXX_STD_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -std=${CMAKE_CXX_STD_FLAGS}")
-
-
 # lib directories
 LINK_DIRECTORIES(
         ${PROJECT_BINARY_DIR}/
@@ -48,75 +18,91 @@ LINK_DIRECTORIES(
         /usr/lib
 )
 
-AUX_SOURCE_DIRECTORY(trantor/utils DIR_SRC)
-AUX_SOURCE_DIRECTORY(trantor/net DIR_SRC)
-AUX_SOURCE_DIRECTORY(trantor/net/inner DIR_SRC)
-find_package (OpenSSL)
-if(OpenSSL_FOUND)
-    #add_definitions(-DUSE_OPENSSL)
-    set(DEFS "USE_OPENSSL;${DEFS}")
+SET(public_net_headers
+    trantor/net/EventLoop.h
+    trantor/net/EventLoopThread.h
+    trantor/net/EventLoopThreadPool.h
+    trantor/net/InetAddress.h
+    trantor/net/TcpClient.h
+    trantor/net/TcpConnection.h
+    trantor/net/TcpServer.h
+    trantor/net/callbacks.h)
+    
+SET(public_utils_headers
+    trantor/utils/AsyncFileLogger.h
+    trantor/utils/ConcurrentTaskQueue.h
+    trantor/utils/Date.h
+    trantor/utils/Funcs.h
+    trantor/utils/LockFreeQueue.h
+    trantor/utils/LogStream.h
+    trantor/utils/Logger.h
+    trantor/utils/MsgBuffer.h
+    trantor/utils/NonCopyable.h
+    trantor/utils/ObjectPool.h
+    trantor/utils/SerialTaskQueue.h
+    trantor/utils/TaskQueue.h
+    trantor/utils/TimingWheel.h)
+
+SOURCE_GROUP( "Public API" FILES ${public_net_headers} ${public_utils_headers})
+
+SET(trantor_sources
+    trantor/utils/AsyncFileLogger.cc
+    trantor/utils/ConcurrentTaskQueue.cc
+    trantor/utils/Date.cc
+    trantor/utils/LogStream.cc
+    trantor/utils/Logger.cc
+    trantor/utils/MsgBuffer.cc
+    trantor/utils/SerialTaskQueue.cc
+    trantor/utils/TimingWheel.cc
+    trantor/net/EventLoop.cc
+    trantor/net/EventLoopThread.cc
+    trantor/net/EventLoopThreadPool.cc
+    trantor/net/InetAddress.cc
+    trantor/net/TcpClient.cc
+    trantor/net/TcpServer.cc
+    trantor/net/inner/Acceptor.cc
+    trantor/net/inner/Channel.cc
+    trantor/net/inner/Connector.cc
+    trantor/net/inner/Poller.cc
+    trantor/net/inner/Socket.cc
+    trantor/net/inner/TcpConnectionImpl.cc
+    trantor/net/inner/Timer.cc
+    trantor/net/inner/TimerQueue.cc)
+
+FIND_PACKAGE(OpenSSL)
+IF(OpenSSL_FOUND)
     include_directories(${OPENSSL_INCLUDE_DIR})
-    link_libraries(${OPENSSL_LIBRARIES})
-    AUX_SOURCE_DIRECTORY(trantor/net/ssl DIR_SRC)
-endif()
+    LINK_LIBRARIES(${OPENSSL_LIBRARIES})
+    SET(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnection.cc)
+ELSE()
+    SET(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnectionSkipped.cc)
+ENDIF()
 
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    ADD_LIBRARY(trantor ${DIR_SRC} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/EpollPoller.cc)
+    SET(trantor_sources ${trantor_sources} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/EpollPoller.cc)
     MESSAGE(STATUS "current platform: Linux ")
 ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    MESSAGE(STATUS "current platform: Windows")
+    MESSAGE(FATAL_ERROR "Error: Currently does not support Windows")
 ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    ADD_LIBRARY(trantor ${DIR_SRC} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/KQueue.cc)
+    SET(trantor_sources ${trantor_sources} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/KQueue.cc)
     MESSAGE(STATUS "current platform: FreeBSD")
 ELSEIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    #ADD_LIBRARY(trantor ${DIR_SRC} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/PollPoller.cc)
-    ADD_LIBRARY(trantor ${DIR_SRC} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/KQueue.cc)
+    SET(trantor_sources ${trantor_sources} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/KQueue.cc)
     MESSAGE(STATUS "current platform: MacOS")
 ELSE ()
     MESSAGE(STATUS "other platform: ${CMAKE_SYSTEM_NAME}")
 ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
+ADD_LIBRARY(trantor ${trantor_sources})
+SET_PROPERTY(TARGET trantor PROPERTY CXX_STANDARD 14)
+SET_PROPERTY(TARGET trantor PROPERTY CXX_STANDARD_REQUIRED ON)
+SET_PROPERTY(TARGET trantor PROPERTY CXX_EXTENSIONS OFF)
 
-SET(CONFIG_HEADER "${PROJECT_SOURCE_DIR}/config.h")
-file(WRITE "${CONFIG_HEADER}" "#pragma once\n")
-foreach(loop_var ${DEFS})
-    file(APPEND "${CONFIG_HEADER}" "#define ${loop_var}\n")
-endforeach(loop_var)
-file(APPEND "${CONFIG_HEADER}" "\n")
-
-if(DEFINED USE_STD_ANY)
-
-file(APPEND "${CONFIG_HEADER}" "#include <any>\n")
-file(APPEND "${CONFIG_HEADER}" "using std::any;\n")
-file(APPEND "${CONFIG_HEADER}" "using std::any_cast;\n\n")
-file(APPEND "${CONFIG_HEADER}" "#include <string_view>\n")
-file(APPEND "${CONFIG_HEADER}" "typedef std::string_view string_view;\n\n")
-
-else()
-
-file(APPEND "${CONFIG_HEADER}" "#include <experimental/any>\n")
-file(APPEND "${CONFIG_HEADER}" "using std::experimental::any;\n")
-file(APPEND "${CONFIG_HEADER}" "using std::experimental::any_cast;\n\n")
-file(APPEND "${CONFIG_HEADER}" "#include <experimental/string_view>\n")
-file(APPEND "${CONFIG_HEADER}" "typedef std::experimental::basic_string_view<char> string_view;\n\n")
-
-endif()
-
-EXEC_PROGRAM(${PROJECT_SOURCE_DIR}/update_config.sh ARGS "${CONFIG_HEADER} ${PROJECT_SOURCE_DIR}/trantor/utils/config.h")
-
-if (MAKETEST STREQUAL YES)
+IF (MAKETEST STREQUAL YES)
     ADD_SUBDIRECTORY(trantor/tests)
-endif ()
+ENDIF ()
 
-#install
+INSTALL(TARGETS trantor DESTINATION lib)
 
-install(TARGETS trantor DESTINATION lib)
-
-install(DIRECTORY trantor/utils/ DESTINATION include/trantor/utils
-        FILES_MATCHING PATTERN "*.h")
-
-file(GLOB trantor_net_headers "${CMAKE_CURRENT_SOURCE_DIR}/trantor/net/*.h")
-install(FILES ${trantor_net_headers} DESTINATION include/trantor/net)
-
-
-
+INSTALL(FILES ${public_net_headers} DESTINATION include/trantor/net)
+INSTALL(FILES ${public_utils_headers} DESTINATION include/trantor/utils)
