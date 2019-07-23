@@ -254,12 +254,12 @@ void TcpConnectionImpl::handleError()
     int err = _socketPtr->getSocketError();
     if (err == 0)
         return;
-    if (err != 104)
-        LOG_ERROR << "TcpConnectionImpl::handleError [" << _name
-                  << "] - SO_ERROR = " << err << " " << strerror_tl(err);
+    if (err == EPIPE || err == ECONNRESET || err == 104)
+        LOG_DEBUG << "[" << _name << "] - SO_ERROR = " << err << " "
+                  << strerror_tl(err);
     else
-        LOG_INFO << "TcpConnectionImpl::handleError [" << _name
-                 << "] - SO_ERROR = " << err << " " << strerror_tl(err);
+        LOG_ERROR << "[" << _name << "] - SO_ERROR = " << err << " "
+                  << strerror_tl(err);
 }
 void TcpConnectionImpl::setTcpNoDelay(bool on)
 {
