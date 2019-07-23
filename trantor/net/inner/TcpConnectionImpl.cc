@@ -255,11 +255,15 @@ void TcpConnectionImpl::handleError()
     if (err == 0)
         return;
     if (err == EPIPE || err == ECONNRESET || err == 104)
+    {
         LOG_DEBUG << "[" << _name << "] - SO_ERROR = " << err << " "
                   << strerror_tl(err);
+    }
     else
+    {
         LOG_ERROR << "[" << _name << "] - SO_ERROR = " << err << " "
                   << strerror_tl(err);
+    }
 }
 void TcpConnectionImpl::setTcpNoDelay(bool on)
 {
