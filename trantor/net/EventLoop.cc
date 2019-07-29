@@ -176,7 +176,7 @@ void EventLoop::abortNotInLoopThread()
 {
     LOG_FATAL << "It is forbidden to run loop on threads other than event-loop "
                  "thread";
-    exit(-1);
+    exit(1);
 }
 void EventLoop::runInLoop(const Func &cb)
 {

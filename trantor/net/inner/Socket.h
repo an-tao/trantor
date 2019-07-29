@@ -39,7 +39,7 @@ class Socket : NonCopyable
         if (sock < 0)
         {
             LOG_SYSERR << "sockets::createNonblockingOrDie";
-            exit(-1);
+            exit(1);
         }
         return sock;
     }

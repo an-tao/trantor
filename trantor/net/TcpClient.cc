@@ -12,9 +12,7 @@
 #include <trantor/net/TcpClient.h>
 
 #include <trantor/utils/Logger.h>
-#ifdef USE_OPENSSL
 #include "ssl/SSLConnection.h"
-#endif
 #include "Connector.h"
 #include "inner/TcpConnectionImpl.h"
 #include <trantor/net/EventLoop.h>
@@ -100,7 +98,7 @@ TcpClient::~TcpClient()
         _loop->runInLoop([conn, loop]() {
             conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
                 loop->queueInLoop([connPtr]() {
-                    std::dynamic_pointer_cast<TcpConnectionImpl>(connPtr)
+                    static_cast<TcpConnectionImpl *>(connPtr.get())
                         ->connectDestroyed();
                 });
             });
@@ -148,9 +146,8 @@ void TcpClient::newConnection(int sockfd)
     _loop->assertInLoopThread();
     InetAddress peerAddr(Socket::getPeerAddr(sockfd));
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
-// TODO poll with zero timeout to double confirm the new connection
-// TODO use make_shared if necessary
-#ifdef USE_OPENSSL
+    // TODO poll with zero timeout to double confirm the new connection
+    // TODO use make_shared if necessary
     std::shared_ptr<TcpConnectionImpl> conn;
     if (_sslCtxPtr)
     {
@@ -164,10 +161,6 @@ void TcpClient::newConnection(int sockfd)
                                                    localAddr,
                                                    peerAddr);
     }
-#else
-    auto conn =
-        std::make_shared<TcpConnectionImpl>(_loop, sockfd, localAddr, peerAddr);
-#endif
     conn->setConnectionCallback(_connectionCallback);
     conn->setRecvMsgCallback(_messageCallback);
     conn->setWriteCompleteCallback(_writeCompleteCallback);
@@ -201,26 +194,10 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
     }
 }
 
-#ifdef USE_OPENSSL
 void TcpClient::enableSSL()
 {
-// init OpenSSL
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
-    (defined(LIBRESSL_VERSION_NUMBER) &&      \
-     LIBRESSL_VERSION_NUMBER < 0x20700000L)
-    // Initialize OpenSSL once;
-    static std::once_flag once;
-    std::call_once(once, []() {
-        SSL_library_init();
-        ERR_load_crypto_strings();
-        SSL_load_error_strings();
-        OpenSSL_add_all_algorithms();
-    });
-#endif
+    // init OpenSSL
+    initOpenSSL();
     /* Create a new OpenSSL context */
-    _sslCtxPtr =
-        std::shared_ptr<SSL_CTX>(SSL_CTX_new(SSLv23_method()),
-                                 [](SSL_CTX *ctx) { SSL_CTX_free(ctx); });
-    assert(_sslCtxPtr);
+    _sslCtxPtr = newSSLContext();
 }
-#endif

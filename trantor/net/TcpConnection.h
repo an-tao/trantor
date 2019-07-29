@@ -13,8 +13,6 @@
  */
 
 #pragma once
-
-#include <trantor/utils/config.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/utils/NonCopyable.h>
@@ -59,12 +57,35 @@ class TcpConnection
     virtual void forceClose() = 0;
     virtual EventLoop *getLoop() = 0;
 
-    virtual void setContext(const any &context) = 0;
-    virtual void setContext(any &&context) = 0;
-    virtual const any &getContext() const = 0;
+    /// Set custom data on the connection
+    void setContext(const std::shared_ptr<void> &context)
+    {
+        _contextPtr = context;
+    }
+    void setContext(std::shared_ptr<void> &&context)
+    {
+        _contextPtr = std::move(context);
+    }
 
-    virtual any *getMutableContext() = 0;
+    /// Get custom data from the connection
+    template <typename T>
+    std::shared_ptr<T> getContext() const
+    {
+        return std::static_pointer_cast<T>(_contextPtr);
+    }
 
+    /// Return true if the context is set by user.
+    bool hasContext() const
+    {
+        return (bool)_contextPtr;
+    }
+    
+    /// Clear the context.
+    void clearContext()
+    {
+        _contextPtr.reset();
+    }
+    
     // Call this method to avoid being kicked off by TcpServer, refer to
     // the kickoffIdleConnections method in the TcpServer class.
     virtual void keepAlive() = 0;
@@ -72,6 +93,9 @@ class TcpConnection
 
     virtual size_t bytesSent() const = 0;
     virtual size_t bytesReceived() const = 0;
+
+  private:
+    std::shared_ptr<void> _contextPtr;
 };
 
 }  // namespace trantor

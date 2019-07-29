@@ -13,11 +13,12 @@
  */
 
 #pragma once
-
-#include <trantor/utils/config.h>
 #include <trantor/utils/NonCopyable.h>
 #include <vector>
 #include <string>
+#if __cplusplus >= 201703L
+#include <string_view>
+#endif
 #include <algorithm>
 #include <stdio.h>
 #include <assert.h>
@@ -88,13 +89,15 @@ class MsgBuffer
         ensureWritableBytes(buf.length());
         append(buf.c_str(), buf.length());
     }
-    void append(const string_view &buf)
+#if __cplusplus >= 201703L
+    void append(const std::string_view &buf)
     {
         if (buf.empty())
             return;
         ensureWritableBytes(buf.length());
         append(buf.data(), buf.length());
     }
+#endif
     void appendInt8(const uint8_t b)
     {
         append(static_cast<const char *>((void *)&b), 1);
