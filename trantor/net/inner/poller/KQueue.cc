@@ -1,6 +1,6 @@
 #include "KQueue.h"
 #include "Channel.h"
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#ifdef USE_KQUEUE
 #include <trantor/utils/Logger.h>
 #include <sys/types.h>
 #include <sys/event.h>
@@ -10,7 +10,7 @@
 #endif
 namespace trantor
 {
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#ifdef USE_KQUEUE
 namespace
 {
 const int kNew = -1;

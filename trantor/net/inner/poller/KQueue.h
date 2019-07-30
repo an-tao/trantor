@@ -17,7 +17,9 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/EventLoop.h>
 
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#if (defined(__unix__) && !defined(__linux__)) || \
+    (defined(__APPLE__) && defined(__MACH__))
+#define USE_KQUEUE
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -38,7 +40,7 @@ class KQueue : public Poller
     virtual void resetAfterFork() override;
 
   private:
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#ifdef USE_KQUEUE
     static const int kInitEventListSize = 16;
     int _kqfd;
     EventList _events;
