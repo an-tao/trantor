@@ -31,7 +31,7 @@ class SSLConn
 
 void initOpenSSL()
 {
-    LOG_FATAL << "SSL is not supported!";
+    LOG_FATAL << "SSL is not supported due to not being compiled with OpenSSL!";
     exit(1);
 }
 std::shared_ptr<SSLContext> newSSLContext()
@@ -42,7 +42,7 @@ void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
                           const std::string &certPath,
                           const std::string &keyPath)
 {
-    LOG_FATAL << "SSL is not supported!";
+    LOG_FATAL << "SSL is not supported due to not being compiled with OpenSSL!";
     exit(1);
 }
 }  // namespace trantor
@@ -55,7 +55,7 @@ SSLConnection::SSLConnection(EventLoop *loop,
                              bool isServer)
     : TcpConnectionImpl(loop, socketfd, localAddr, peerAddr)
 {
-    LOG_FATAL << "SSL is not supported!";
+    LOG_FATAL << "SSL is not supported due to not being compiled with OpenSSL!";
     exit(1);
 }
 

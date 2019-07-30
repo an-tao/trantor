@@ -18,10 +18,11 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/EventLoop.h>
 
+#ifdef __linux__
 #include <memory>
 #include <map>
 typedef std::vector<struct epoll_event> EventList;
-
+#endif
 namespace trantor
 {
 class Channel;
@@ -36,6 +37,7 @@ class EpollPoller : public Poller
     virtual void removeChannel(Channel *channel) override;
 
   private:
+#ifdef __linux__
     static const int kInitEventListSize = 16;
     int _epollfd;
     EventList _events;
@@ -45,5 +47,6 @@ class EpollPoller : public Poller
     ChannelMap _channels;
 #endif
     void fillActiveChannels(int numEvents, ChannelList *activeChannels) const;
+#endif
 };
 }  // namespace trantor

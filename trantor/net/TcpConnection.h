@@ -79,13 +79,13 @@ class TcpConnection
     {
         return (bool)_contextPtr;
     }
-    
+
     /// Clear the context.
     void clearContext()
     {
         _contextPtr.reset();
     }
-    
+
     // Call this method to avoid being kicked off by TcpServer, refer to
     // the kickoffIdleConnections method in the TcpServer class.
     virtual void keepAlive() = 0;

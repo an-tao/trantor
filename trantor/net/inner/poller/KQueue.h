@@ -17,12 +17,12 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/EventLoop.h>
 
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
 typedef std::vector<struct kevent> EventList;
-
+#endif
 namespace trantor
 {
 class Channel;
@@ -38,6 +38,7 @@ class KQueue : public Poller
     virtual void resetAfterFork() override;
 
   private:
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
     static const int kInitEventListSize = 16;
     int _kqfd;
     EventList _events;
@@ -46,6 +47,7 @@ class KQueue : public Poller
 
     void fillActiveChannels(int numEvents, ChannelList *activeChannels) const;
     void update(Channel *channel);
+#endif
 };
 
 }  // namespace trantor
