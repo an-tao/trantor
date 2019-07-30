@@ -67,7 +67,9 @@ SET(trantor_sources
     trantor/net/inner/Socket.cc
     trantor/net/inner/TcpConnectionImpl.cc
     trantor/net/inner/Timer.cc
-    trantor/net/inner/TimerQueue.cc)
+    trantor/net/inner/TimerQueue.cc
+    trantor/net/inner/poller/EpollPoller.cc
+    trantor/net/inner/poller/KQueue.cc)
 
 FIND_PACKAGE(OpenSSL)
 IF(OpenSSL_FOUND)
@@ -77,21 +79,6 @@ IF(OpenSSL_FOUND)
 ELSE()
     SET(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnectionSkipped.cc)
 ENDIF()
-
-IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    SET(trantor_sources ${trantor_sources} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/EpollPoller.cc)
-    MESSAGE(STATUS "current platform: Linux ")
-ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    MESSAGE(FATAL_ERROR "Error: Currently does not support Windows")
-ELSEIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    SET(trantor_sources ${trantor_sources} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/KQueue.cc)
-    MESSAGE(STATUS "current platform: FreeBSD")
-ELSEIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    SET(trantor_sources ${trantor_sources} ${PROJECT_SOURCE_DIR}/trantor/net/inner/poller/KQueue.cc)
-    MESSAGE(STATUS "current platform: MacOS")
-ELSE ()
-    MESSAGE(STATUS "other platform: ${CMAKE_SYSTEM_NAME}")
-ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 ADD_LIBRARY(trantor ${trantor_sources})
 SET_PROPERTY(TARGET trantor PROPERTY CXX_STANDARD 14)

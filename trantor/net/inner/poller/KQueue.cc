@@ -1,14 +1,16 @@
 #include "KQueue.h"
 #include "Channel.h"
+#ifdef USE_KQUEUE
 #include <trantor/utils/Logger.h>
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <poll.h>
-
+#endif
 namespace trantor
 {
+#ifdef USE_KQUEUE
 namespace
 {
 const int kNew = -1;
@@ -223,5 +225,25 @@ void KQueue::update(Channel *channel)
     }
     kevent(_kqfd, ev, n, NULL, 0, NULL);
 }
-
+#else
+KQueue::KQueue(EventLoop *loop) : Poller(loop)
+{
+    assert(false);
+}
+KQueue::~KQueue()
+{
+}
+void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
+{
+}
+void KQueue::updateChannel(Channel *channel)
+{
+}
+void KQueue::removeChannel(Channel *channel)
+{
+}
+void KQueue::resetAfterFork()
+{
+}
+#endif
 }  // namespace trantor

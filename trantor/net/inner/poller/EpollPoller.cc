@@ -15,15 +15,17 @@
 #include <trantor/utils/Logger.h>
 #include "Channel.h"
 #include "EpollPoller.h"
+#ifdef __linux__
 #include <poll.h>
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <assert.h>
 #include <strings.h>
 #include <iostream>
-
+#endif
 namespace trantor
 {
+#ifdef __linux__
 static_assert(EPOLLIN == POLLIN, "EPOLLIN != POLLIN");
 static_assert(EPOLLPRI == POLLPRI, "EPOLLPRI != POLLPRI");
 static_assert(EPOLLOUT == POLLOUT, "EPOLLOUT != POLLOUT");
@@ -185,5 +187,22 @@ void EpollPoller::update(int operation, Channel *channel)
         }
     }
 }
-
+#else
+EpollPoller::EpollPoller(EventLoop *loop) : Poller(loop)
+{
+    assert(false);
+}
+EpollPoller::~EpollPoller()
+{
+}
+void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
+{
+}
+void EpollPoller::updateChannel(Channel *channel)
+{
+}
+void EpollPoller::removeChannel(Channel *channel)
+{
+}
+#endif
 }  // namespace trantor
