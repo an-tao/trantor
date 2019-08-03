@@ -45,6 +45,7 @@ class SSLContext
     SSLContext()
     {
         _ctxPtr = SSL_CTX_new(SSLv23_method());
+        // SSL_CTX_set_mode(_ctxPtr, SSL_MODE_ENABLE_PARTIAL_WRITE);
     }
     ~SSLContext()
     {
@@ -260,20 +261,30 @@ ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
         LOG_WARN << "SSL is not connected,give up sending";
         return -1;
     }
-
     // send directly
-    ERR_clear_error();
-    auto sendLen = SSL_write(_sslPtr->get(), buffer, length);
-    if (sendLen <= 0)
+    size_t sendTotalLen = 0;
+    while (sendTotalLen < length)
     {
-        int sslerr = SSL_get_error(_sslPtr->get(), sendLen);
-        if (sslerr != SSL_ERROR_WANT_WRITE && sslerr != SSL_ERROR_WANT_READ)
+        auto len = length - sendTotalLen;
+        if (len > sizeof(_sendBuffer))
         {
-            LOG_ERROR << "ssl write error:" << sslerr;
-            forceClose();
-            return -1;
+            len = sizeof(_sendBuffer);
         }
-        return 0;
+        memcpy(_sendBuffer, buffer + sendTotalLen, len);
+        ERR_clear_error();
+        auto sendLen = SSL_write(_sslPtr->get(), _sendBuffer, len);
+        if (sendLen <= 0)
+        {
+            int sslerr = SSL_get_error(_sslPtr->get(), sendLen);
+            if (sslerr != SSL_ERROR_WANT_WRITE && sslerr != SSL_ERROR_WANT_READ)
+            {
+                LOG_ERROR << "ssl write error:" << sslerr;
+                forceClose();
+                return -1;
+            }
+            return sendTotalLen;
+        }
+        sendTotalLen += sendLen;
     }
-    return sendLen;
+    return sendTotalLen;
 }

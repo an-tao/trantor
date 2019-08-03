@@ -63,6 +63,7 @@ class SSLConnection : public TcpConnectionImpl
     virtual void writeCallback() override;
     virtual void connectEstablished() override;
     virtual ssize_t writeInLoop(const char *buffer, size_t length) override;
+    char _sendBuffer[8192];
 };
 
 typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
