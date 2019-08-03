@@ -239,7 +239,7 @@ void SSLConnection::doHandshaking()
     else
     {
         // ERR_print_errors(err);
-        LOG_DEBUG << "SSL handshake err: " << err;
+        LOG_TRACE << "SSL handshake err: " << err;
         _ioChannelPtr->disableReading();
         _status = SSLStatus::DisConnected;
         forceClose();
@@ -263,11 +263,15 @@ ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
 
     // send directly
     auto sendLen = SSL_write(_sslPtr->get(), buffer, length);
-    int sslerr = SSL_get_error(_sslPtr->get(), sendLen);
-    if (sendLen < 0 && sslerr != SSL_ERROR_WANT_WRITE)
+    if (sendLen <= 0)
     {
-        LOG_ERROR << "ssl write error:" << sslerr;
-        return -1;
+        int sslerr = SSL_get_error(_sslPtr->get(), sendLen);
+        if (sslerr != SSL_ERROR_WANT_WRITE && sslerr != SSL_ERROR_WANT_READ)
+        {
+            LOG_ERROR << "ssl write error:" << sslerr;
+            return -1;
+        }
+        return 0;
     }
     return sendLen;
 }

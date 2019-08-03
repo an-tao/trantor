@@ -700,7 +700,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         if (n > 0)
         {
             auto nSend = writeInLoop(&buf[0], n);
-            if (nSend > 0)
+            if (nSend >= 0)
             {
                 filePtr->_fileBytesToSend -= nSend;
                 filePtr->_offset += nSend;
@@ -715,8 +715,6 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                 else if (nSend == n)
                     continue;
             }
-            if (nSend == 0)
-                return;
             if (nSend < 0)
             {
                 if (errno != EWOULDBLOCK)
