@@ -231,6 +231,8 @@ class TcpConnectionImpl : public TcpConnection,
 
     size_t _bytesSent = 0;
     size_t _bytesReceived = 0;
+
+    std::unique_ptr<std::vector<char>> _fileBufferPtr;
 };
 
 typedef std::shared_ptr<TcpConnectionImpl> TcpConnectionImplPtr;

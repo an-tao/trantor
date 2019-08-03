@@ -693,13 +693,18 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     }
 #endif
     lseek(filePtr->_sendFd, filePtr->_offset, SEEK_SET);
+    if (!_fileBufferPtr)
+    {
+        _fileBufferPtr = std::make_unique<std::vector<char>>(16 * 1024);
+    }
     while (filePtr->_fileBytesToSend > 0)
     {
-        std::vector<char> buf(1024 * 1024);
-        auto n = read(filePtr->_sendFd, &buf[0], buf.size());
+        auto n = read(filePtr->_sendFd,
+                      &(*_fileBufferPtr)[0],
+                      _fileBufferPtr->size());
         if (n > 0)
         {
-            auto nSend = writeInLoop(&buf[0], n);
+            auto nSend = writeInLoop(&(*_fileBufferPtr)[0], n);
             if (nSend >= 0)
             {
                 filePtr->_fileBytesToSend -= nSend;
