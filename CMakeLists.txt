@@ -136,7 +136,7 @@ set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 configure_file(cmake/templates/TrantorConfig.cmake.in
   "${PROJECT_BINARY_DIR}/TrantorConfig.cmake" @ONLY)
 # ... for the install tree
-set(CONF_INCLUDE_DIRS "\${TRANTOR_CMAKE_DIR}/${REL_INCLUDE_DIR}")
+set(CONF_INCLUDE_DIRS "\${INSTALL_TRANTOR_CMAKE_DIR}/${REL_INCLUDE_DIR}")
 configure_file(cmake/templates/TrantorConfig.cmake.in
   "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TrantorConfig.cmake" @ONLY)
 # ... for both
