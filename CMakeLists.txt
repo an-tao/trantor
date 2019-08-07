@@ -1,51 +1,46 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
-PROJECT(trantor)
+cmake_minimum_required(VERSION 3.2)
+project(Trantor)
+
+set(TRANTOR_MAJOR_VERSION 1)
+set(TRANTOR_MINOR_VERSION 0)
+set(TRANTOR_PATCH_VERSION 0)
+set(TRANTOR_VERSION
+  ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
+
+# Offer the user the choice of overriding the installation directories
+set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
+set(INSTALL_INCLUDE_DIR include CACHE PATH
+  "Installation directory for header files")
+if(WIN32 AND NOT CYGWIN)
+  set(DEF_INSTALL_TRANTOR_CMAKE_DIR cmake)
+else()
+  set(DEF_INSTALL_TRANTOR_CMAKE_DIR lib/cmake/Trantor)
+endif()
+set(INSTALL_TRANTOR_CMAKE_DIR ${DEF_INSTALL_TRANTOR_CMAKE_DIR} CACHE PATH
+  "Installation directory for cmake files")
+
+# Make relative paths absolute (needed later on)
+foreach(p LIB INCLUDE TRANTOR_CMAKE)
+  set(var INSTALL_${p}_DIR)
+  if(NOT IS_ABSOLUTE "${${var}}")
+    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+  endif()
+endforeach()
 
 # include directories
-INCLUDE_DIRECTORIES(
+include_directories(
         ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/trantor/utils
         ${PROJECT_SOURCE_DIR}/trantor/net
         ${PROJECT_SOURCE_DIR}/trantor/net/inner
-        /usr/local/include
-        /usr/include
 )
 
 # lib directories
-LINK_DIRECTORIES(
-        ${PROJECT_BINARY_DIR}/
-        /usr/local/lib
-        /usr/lib
-)
+# LINK_DIRECTORIES(
+#         ${PROJECT_BINARY_DIR}
+# )
 
-SET(public_net_headers
-    trantor/net/EventLoop.h
-    trantor/net/EventLoopThread.h
-    trantor/net/EventLoopThreadPool.h
-    trantor/net/InetAddress.h
-    trantor/net/TcpClient.h
-    trantor/net/TcpConnection.h
-    trantor/net/TcpServer.h
-    trantor/net/callbacks.h)
-    
-SET(public_utils_headers
-    trantor/utils/AsyncFileLogger.h
-    trantor/utils/ConcurrentTaskQueue.h
-    trantor/utils/Date.h
-    trantor/utils/Funcs.h
-    trantor/utils/LockFreeQueue.h
-    trantor/utils/LogStream.h
-    trantor/utils/Logger.h
-    trantor/utils/MsgBuffer.h
-    trantor/utils/NonCopyable.h
-    trantor/utils/ObjectPool.h
-    trantor/utils/SerialTaskQueue.h
-    trantor/utils/TaskQueue.h
-    trantor/utils/TimingWheel.h)
-
-SOURCE_GROUP( "Public API" FILES ${public_net_headers} ${public_utils_headers})
-
-SET(trantor_sources
+set(trantor_sources
     trantor/utils/AsyncFileLogger.cc
     trantor/utils/ConcurrentTaskQueue.cc
     trantor/utils/Date.cc
@@ -71,25 +66,90 @@ SET(trantor_sources
     trantor/net/inner/poller/EpollPoller.cc
     trantor/net/inner/poller/KQueue.cc)
 
-FIND_PACKAGE(OpenSSL)
-IF(OpenSSL_FOUND)
+find_package(OpenSSL)
+if(OpenSSL_FOUND)
     include_directories(${OPENSSL_INCLUDE_DIR})
-    LINK_LIBRARIES(${OPENSSL_LIBRARIES})
-    SET(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnection.cc)
-ELSE()
-    SET(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnectionSkipped.cc)
-ENDIF()
+    link_libraries(${OPENSSL_LIBRARIES})
+    set(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnection.cc)
+else()
+    set(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnectionSkipped.cc)
+endif()
 
-ADD_LIBRARY(trantor ${trantor_sources})
-SET_PROPERTY(TARGET trantor PROPERTY CXX_STANDARD 14)
-SET_PROPERTY(TARGET trantor PROPERTY CXX_STANDARD_REQUIRED ON)
-SET_PROPERTY(TARGET trantor PROPERTY CXX_EXTENSIONS OFF)
+add_library(trantor ${trantor_sources})
+set_property(TARGET trantor PROPERTY CXX_STANDARD 14)
+set_property(TARGET trantor PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET trantor PROPERTY CXX_EXTENSIONS OFF)
 
-IF (MAKETEST STREQUAL YES)
-    ADD_SUBDIRECTORY(trantor/tests)
-ENDIF ()
+if (MAKETEST STREQUAL YES)
+    add_subdirectory(trantor/tests)
+endif ()
 
-INSTALL(TARGETS trantor DESTINATION lib)
+set(public_net_headers
+    trantor/net/EventLoop.h
+    trantor/net/EventLoopThread.h
+    trantor/net/EventLoopThreadPool.h
+    trantor/net/InetAddress.h
+    trantor/net/TcpClient.h
+    trantor/net/TcpConnection.h
+    trantor/net/TcpServer.h
+    trantor/net/callbacks.h)
+    
+set(public_utils_headers
+    trantor/utils/AsyncFileLogger.h
+    trantor/utils/ConcurrentTaskQueue.h
+    trantor/utils/Date.h
+    trantor/utils/Funcs.h
+    trantor/utils/LockFreeQueue.h
+    trantor/utils/LogStream.h
+    trantor/utils/Logger.h
+    trantor/utils/MsgBuffer.h
+    trantor/utils/NonCopyable.h
+    trantor/utils/ObjectPool.h
+    trantor/utils/SerialTaskQueue.h
+    trantor/utils/TaskQueue.h
+    trantor/utils/TimingWheel.h)
 
-INSTALL(FILES ${public_net_headers} DESTINATION include/trantor/net)
-INSTALL(FILES ${public_utils_headers} DESTINATION include/trantor/utils)
+source_group( "Public API" FILES ${public_net_headers} ${public_utils_headers})
+
+install(TARGETS trantor
+  # IMPORTANT: Add the trantor library to the "export-set"
+  EXPORT TrantorTargets
+  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib)
+
+install(FILES ${public_net_headers} DESTINATION ${INSTALL_INCLUDE_DIR}/trantor/net)
+install(FILES ${public_utils_headers} DESTINATION ${INSTALL_INCLUDE_DIR}/trantor/utils)
+
+
+# Add all targets to the build-tree export set
+export(TARGETS trantor
+       FILE "${PROJECT_BINARY_DIR}/TrantorTargets.cmake")
+
+include(CMakePackageConfigHelpers)
+# ... for the build tree(locally included)
+set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}")
+configure_package_config_file(cmake/templates/TrantorConfig.cmake.in
+                              ${CMAKE_CURRENT_BINARY_DIR}/TrantorConfig.cmake
+                              INSTALL_DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                              PATH_VARS CONF_INCLUDE_DIRS)
+# ... for the install tree
+set(CONF_INCLUDE_DIRS "${INSTALL_INCLUDE_DIR}")
+configure_package_config_file(cmake/templates/TrantorConfig.cmake.in
+                              ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TrantorConfig.cmake
+                              INSTALL_DESTINATION ${INSTALL_TRANTOR_CMAKE_DIR}
+                              PATH_VARS CONF_INCLUDE_DIRS)
+
+# version
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/TrantorConfigVersion.cmake
+                                 VERSION ${TRANTOR_VERSION}
+                                 COMPATIBILITY SameMajorVersion)
+
+# Install the TrantorConfig.cmake and TrantorConfigVersion.cmake
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TrantorConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/TrantorConfigVersion.cmake"
+        DESTINATION "${INSTALL_TRANTOR_CMAKE_DIR}" COMPONENT dev)
+
+# Install the export set for use with the install-tree
+install(EXPORT TrantorTargets 
+        DESTINATION "${INSTALL_TRANTOR_CMAKE_DIR}" COMPONENT dev)
+
