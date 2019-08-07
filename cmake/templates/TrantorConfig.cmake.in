@@ -1,0 +1,18 @@
+# - Config file for the Trantor package
+# It defines the following variables
+#  TRANTOR_INCLUDE_DIRS - include directories for Trantor
+#  TRANTOR_LIBRARIES    - libraries to link against
+
+@PACKAGE_INIT@
+
+# Compute paths
+set_and_check(TRANTOR_INCLUDE_DIRS "@PACKAGE_CONF_INCLUDE_DIRS@")
+
+# Our library dependencies (contains definitions for IMPORTED targets)
+get_filename_component(TRANTOR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+if(NOT TARGET trantor)
+  include("${TRANTOR_CMAKE_DIR}/TrantorTargets.cmake")
+endif()
+
+# These are IMPORTED targets created by TrantorTargets.cmake
+set(TRANTOR_LIBRARIES trantor pthread)
