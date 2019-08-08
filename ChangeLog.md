@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc4] - 2019-08-08
+
+### API change list
+
+- None
+
+### Changed
+
+- Add TrantorConfig.cmake so that users can use trantor with the `find_package(Trantor)` command.
+
+### Fixed
+
+- Fix an SSL error (occurs when sending large data via SSL).
+
 ## [1.0.0-rc3] - 2019-07-30
 
 ### API change list
@@ -30,7 +44,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc3...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc4...HEAD
+
+[1.0.0-rc4]: https://github.com/an-tao/trantor/compare/v1.0.0-rc3...v1.0.0-rc4
 
 [1.0.0-rc3]: https://github.com/an-tao/trantor/compare/v1.0.0-rc2...v1.0.0-rc3
 
