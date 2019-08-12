@@ -13,6 +13,7 @@ std::shared_ptr<Resolver> Resolver::newResolver(trantor::EventLoop *loop,
     return std::make_shared<NormalResolver>(timeout);
 }
 
+
 void NormalResolver::resolve(const std::string &hostname,
                              const Callback &callback)
 {
@@ -44,13 +45,24 @@ void NormalResolver::resolve(const std::string &hostname,
             struct hostent *he = NULL;
             int herrno = 0;
             memset(&hent, 0, sizeof(hent));
-
-            int ret = gethostbyname_r(hostname.c_str(),
+            int ret;
+            while(1)
+            {
+                ret = gethostbyname_r(hostname.c_str(),
                                       &hent,
-                                      t_resolveBuffer,
-                                      sizeof t_resolveBuffer,
+                                      thisPtr->_resolveBuffer.data(),
+                                      thisPtr->_resolveBuffer.size(),
                                       &he,
                                       &herrno);
+                if(ret == ERANGE)
+                {
+                    thisPtr->_resolveBuffer.resize(thisPtr->_resolveBuffer.size()*2);
+                }
+                else
+                {
+                    break;
+                }
+            }
             if (ret == 0 && he != NULL)
 #else
             /// Multi-threads safety
@@ -89,6 +101,7 @@ void NormalResolver::resolve(const std::string &hostname,
             else
             {
                 LOG_SYSERR << "InetAddress::resolve";
+                callback(InetAddress{});
                 return;
             }
         });

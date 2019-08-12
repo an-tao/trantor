@@ -10,6 +10,7 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/SerialTaskQueue.h>
 #include <memory>
+#include <vector>
 
 namespace trantor
 {
@@ -20,7 +21,7 @@ class NormalResolver : public Resolver,
   public:
     virtual void resolve(const std::string& hostname,
                          const Callback& callback) override;
-    NormalResolver(size_t timeout) : _taskQueue("Dns Queue"), _timeout(timeout)
+    NormalResolver(size_t timeout) : _taskQueue("Dns Queue"), _timeout(timeout), _resolveBuffer(16*1024)
     {
     }
     virtual ~NormalResolver()
@@ -28,13 +29,12 @@ class NormalResolver : public Resolver,
     }
 
   private:
-#ifdef __linux__
-    static __thread char t_resolveBuffer[64 * 1024];
-#endif
     std::mutex _dnsMutex;
     std::unordered_map<std::string, std::pair<struct in_addr, trantor::Date>>
         _dnsCache;
     trantor::SerialTaskQueue _taskQueue;
     const size_t _timeout = 60;
+    std::vector<char> _resolveBuffer;
+
 };
 }  // namespace trantor
