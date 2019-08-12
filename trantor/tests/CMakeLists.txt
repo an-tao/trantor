@@ -34,6 +34,8 @@ ADD_EXECUTABLE(timing_wheel_test TimingWheelTest.cc)
 
 ADD_EXECUTABLE(kickoff_test KickoffTest.cc)
 
+ADD_EXECUTABLE(dns_test DnsTest.cc)
+
 SET(targets_list    ssl_server_test
                     ssl_client_test
                     serial_task_queue_test1
@@ -50,7 +52,8 @@ SET(targets_list    ssl_server_test
                     async_file_logger_test1
                     sendfile_test
                     timing_wheel_test
-                    kickoff_test)
+                    kickoff_test
+                    dns_test)
 
 SET_PROPERTY(TARGET ${targets_list} PROPERTY CXX_STANDARD 14)
 SET_PROPERTY(TARGET ${targets_list} PROPERTY CXX_STANDARD_REQUIRED ON)

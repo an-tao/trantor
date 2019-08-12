@@ -84,8 +84,8 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
         _addr6.sin6_port = htons(port);
         if (::inet_pton(AF_INET6, ip.c_str(), &_addr6.sin6_addr) <= 0)
         {
-            LOG_SYSERR << "sockets::fromIpPort";
-            abort();
+            // LOG_SYSERR << "sockets::fromIpPort";
+            // abort();
         }
     }
     else
@@ -95,8 +95,8 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
         _addr.sin_port = htons(port);
         if (::inet_pton(AF_INET, ip.c_str(), &_addr.sin_addr) <= 0)
         {
-            LOG_SYSERR << "sockets::fromIpPort";
-            abort();
+            // LOG_SYSERR << "sockets::fromIpPort";
+            // abort();
         }
     }
 }
@@ -207,78 +207,4 @@ const uint32_t *InetAddress::ip6NetEndian() const
 uint16_t InetAddress::toPort() const
 {
     return ntohs(portNetEndian());
-}
-#ifdef __linux__
-static __thread char t_resolveBuffer[64 * 1024];
-#endif
-std::mutex InetAddress::_dnsMutex;
-std::unordered_map<std::string, std::pair<struct in_addr, trantor::Date>>
-    InetAddress::_dnsCache;
-bool InetAddress::resolve(const std::string &hostname,
-                          InetAddress *out,
-                          size_t timeout)
-{
-    assert(out != NULL);
-    {
-        std::lock_guard<std::mutex> guard(_dnsMutex);
-        if (_dnsCache.find(hostname) != _dnsCache.end())
-        {
-            auto &addr = _dnsCache[hostname];
-            if (timeout == 0 || (timeout > 0 && (addr.second.after(timeout) >
-                                                 trantor::Date::date())))
-            {
-                LOG_TRACE << "dns:Hit cache";
-                out->_addr.sin_addr = addr.first;
-                return true;
-            }
-        }
-    }
-#ifdef __linux__
-    struct hostent hent;
-    struct hostent *he = NULL;
-    int herrno = 0;
-    memset(&hent, 0, sizeof(hent));
-
-    int ret = gethostbyname_r(hostname.c_str(),
-                              &hent,
-                              t_resolveBuffer,
-                              sizeof t_resolveBuffer,
-                              &he,
-                              &herrno);
-    if (ret == 0 && he != NULL)
-#else
-    /// Multi-threads safety
-    static std::mutex _mutex;
-    struct hostent *he = NULL;
-    struct hostent hent;
-    {
-        std::lock_guard<std::mutex> guard(_mutex);
-        auto result = gethostbyname(hostname.c_str());
-        if (result != NULL)
-        {
-            memcpy(&hent, result, sizeof(hent));
-            he = &hent;
-        }
-    }
-
-    if (he != NULL)
-#endif
-    {
-        assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
-        out->_addr.sin_addr = *reinterpret_cast<struct in_addr *>(he->h_addr);
-        {
-            std::lock_guard<std::mutex> guard(_dnsMutex);
-            _dnsCache[hostname].first = out->_addr.sin_addr;
-            _dnsCache[hostname].second = trantor::Date::date();
-        }
-        return true;
-    }
-    else
-    {
-        //        if (ret)
-        {
-            LOG_SYSERR << "InetAddress::resolve";
-        }
-        return false;
-    }
 }

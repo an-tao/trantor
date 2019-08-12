@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### API change list
+
+- Remove the resolve method from the InetAddress class.
+
+### Added
+
+- Add the Resolver class.
+  
 ## [1.0.0-rc4] - 2019-08-08
 
 ### API change list
