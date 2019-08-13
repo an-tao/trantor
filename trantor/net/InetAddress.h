@@ -87,15 +87,10 @@ class InetAddress
     {
         return _addr.sin_port;
     }
-
-    // resolve hostname to IP address, not changing port or sin_family
-    // return true on success.
-    // thread safe
-    static bool resolve(const std::string &hostname,
-                        InetAddress *result,
-                        size_t timeout = 3600);
-    // static std::vector<InetAddress> resolveAll(const char* hostname, uint16_t
-    // port = 0);
+    void setPortNetEndian(uint16_t port)
+    {
+        _addr.sin_port = port;
+    }
 
   private:
     union {

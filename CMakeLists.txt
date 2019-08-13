@@ -40,7 +40,7 @@ include_directories(
 #         ${PROJECT_BINARY_DIR}
 # )
 
-set(trantor_sources
+set(TRANTOR_SOURCES
     trantor/utils/AsyncFileLogger.cc
     trantor/utils/ConcurrentTaskQueue.cc
     trantor/utils/Date.cc
@@ -70,12 +70,24 @@ find_package(OpenSSL)
 if(OpenSSL_FOUND)
     include_directories(${OPENSSL_INCLUDE_DIR})
     link_libraries(${OPENSSL_LIBRARIES})
-    set(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnection.cc)
+    set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/ssl/SSLConnection.cc)
 else()
-    set(trantor_sources ${trantor_sources} trantor/net/ssl/SSLConnectionSkipped.cc)
+    set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/ssl/SSLConnectionSkipped.cc)
 endif()
 
-add_library(trantor ${trantor_sources})
+find_path(CARES_INCLUDE_DIR ares.h)
+find_library(CARES_LIBRARY NAMES cares)
+if(CARES_INCLUDE_DIR AND CARES_LIBRARY)
+    message(STATUS "found cares")
+    message(STATUS "inc:" ${CARES_INCLUDE_DIR})
+    message(STATUS "lib:" ${CARES_LIBRARY})
+    include_directories(${CARES_INCLUDE_DIR})
+    link_libraries(${CARES_LIBRARY})
+    set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/AresResolver.cc)
+else()
+    set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
+endif()
+add_library(trantor ${TRANTOR_SOURCES})
 set_property(TARGET trantor PROPERTY CXX_STANDARD 14)
 set_property(TARGET trantor PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET trantor PROPERTY CXX_EXTENSIONS OFF)
@@ -92,7 +104,8 @@ set(public_net_headers
     trantor/net/TcpClient.h
     trantor/net/TcpConnection.h
     trantor/net/TcpServer.h
-    trantor/net/callbacks.h)
+    trantor/net/callbacks.h
+    trantor/net/Resolver.h)
     
 set(public_utils_headers
     trantor/utils/AsyncFileLogger.h
