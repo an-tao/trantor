@@ -17,9 +17,9 @@ void NormalResolver::resolve(const std::string &hostname,
                              const Callback &callback)
 {
     {
-        std::lock_guard<std::mutex> guard(_dnsMutex);
-        auto iter = _dnsCache.find(hostname);
-        if (iter != _dnsCache.end())
+        std::lock_guard<std::mutex> guard(globalMutex());
+        auto iter = globalCache().find(hostname);
+        if (iter != globalCache().end())
         {
             auto &cachedAddr = iter->second;
             if (_timeout == 0 ||
@@ -92,9 +92,9 @@ void NormalResolver::resolve(const std::string &hostname,
                 InetAddress inet(addr);
                 callback(inet);
                 {
-                    std::lock_guard<std::mutex> guard(thisPtr->_dnsMutex);
-                    thisPtr->_dnsCache[hostname].first = addr.sin_addr;
-                    thisPtr->_dnsCache[hostname].second = trantor::Date::date();
+                    std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
+                    thisPtr->globalCache()[hostname].first = addr.sin_addr;
+                    thisPtr->globalCache()[hostname].second = trantor::Date::date();
                 }
                 return;
             }

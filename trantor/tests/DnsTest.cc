@@ -31,6 +31,14 @@ void dns(const std::shared_ptr<trantor::Resolver> &resolver)
                           std::cout << "bad address:" << addr.toIp() << " "
                                     << interval / 1000 << "ms" << std::endl;
                       });
+    resolver->resolve("localhost",
+                      [now](const trantor::InetAddress &addr) {
+                          auto interval =
+                              trantor::Date::now().microSecondsSinceEpoch() -
+                              now.microSecondsSinceEpoch();
+                          std::cout << "localhost:" << addr.toIp() << " "
+                                    << interval / 1000 << "ms" << std::endl;
+                      });
 }
 int main()
 {

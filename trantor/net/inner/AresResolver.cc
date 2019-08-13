@@ -51,7 +51,7 @@ AresResolver::AresResolver(EventLoop* loop, size_t timeout)
     : _loop(loop), _ctx(NULL), _timerActive(false), _timeout(timeout)
 {
     assert(_loop);
-    static char lookups[] = "b";
+    // static char lookups[] = "b";
     struct ares_options options;
     int optmask = ARES_OPT_FLAGS;
     options.flags = ARES_FLAG_NOCHECKRESP;
@@ -62,8 +62,8 @@ AresResolver::AresResolver(EventLoop* loop, size_t timeout)
     options.sock_state_cb_data = this;
     optmask |= ARES_OPT_TIMEOUT;
     options.timeout = 2;
-    optmask |= ARES_OPT_LOOKUPS;
-    options.lookups = lookups;
+    // optmask |= ARES_OPT_LOOKUPS;
+    // options.lookups = lookups;
 
     int status = ares_init_options(&_ctx, &options, optmask);
     if (status != ARES_SUCCESS)
@@ -84,23 +84,33 @@ void AresResolver::resolveInLoop(const std::string& hostname,
                                  const Callback& cb)
 {
     _loop->assertInLoopThread();
-    auto iter = _dnsCache.find(hostname);
-    if (iter != _dnsCache.end())
+    bool cached = false;
+    InetAddress inet;
     {
-        auto& cachedAddr = iter->second;
-        if (_timeout == 0 ||
-            cachedAddr.second.after(_timeout) > trantor::Date::date())
+        std::lock_guard<std::mutex> lock(globalMutex());
+        auto iter = globalCache().find(hostname);
+        if (iter != globalCache().end())
         {
-            struct sockaddr_in addr;
-            memset(&addr, 0, sizeof addr);
-            addr.sin_family = AF_INET;
-            addr.sin_port = 0;
-            addr.sin_addr = cachedAddr.first;
-            InetAddress inet(addr);
-            cb(inet);
-            return;
+            auto& cachedAddr = iter->second;
+            if (_timeout == 0 ||
+                cachedAddr.second.after(_timeout) > trantor::Date::date())
+            {
+                struct sockaddr_in addr;
+                memset(&addr, 0, sizeof addr);
+                addr.sin_family = AF_INET;
+                addr.sin_port = 0;
+                addr.sin_addr = cachedAddr.first;
+                inet = InetAddress(addr);
+                cached = true;
+            }
         }
     }
+    if (cached)
+    {
+        cb(inet);
+        return;
+    }
+
     QueryData* queryData = new QueryData(this, cb, hostname);
     ares_gethostbyname(_ctx,
                        hostname.c_str(),
@@ -157,8 +167,11 @@ void AresResolver::onQueryResult(int status,
         addr.sin_addr = *reinterpret_cast<in_addr*>(result->h_addr);
     }
     InetAddress inet(addr);
-    _dnsCache[hostname].first = addr.sin_addr;
-    _dnsCache[hostname].second = trantor::Date::date();
+    {
+        std::lock_guard<std::mutex> lock(globalMutex());
+        globalCache()[hostname].first = addr.sin_addr;
+        globalCache()[hostname].second = trantor::Date::date();
+    }
     callback(inet);
 }
 
