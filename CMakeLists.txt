@@ -35,11 +35,6 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/trantor/net/inner
 )
 
-# lib directories
-# LINK_DIRECTORIES(
-#         ${PROJECT_BINARY_DIR}
-# )
-
 set(TRANTOR_SOURCES
     trantor/utils/AsyncFileLogger.cc
     trantor/utils/ConcurrentTaskQueue.cc
@@ -78,9 +73,6 @@ endif()
 find_path(CARES_INCLUDE_DIR ares.h)
 find_library(CARES_LIBRARY NAMES cares)
 if(CARES_INCLUDE_DIR AND CARES_LIBRARY)
-    message(STATUS "found cares")
-    message(STATUS "inc:" ${CARES_INCLUDE_DIR})
-    message(STATUS "lib:" ${CARES_LIBRARY})
     include_directories(${CARES_INCLUDE_DIR})
     link_libraries(${CARES_LIBRARY})
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/AresResolver.cc)
@@ -94,6 +86,12 @@ set_property(TARGET trantor PROPERTY CXX_EXTENSIONS OFF)
 
 if (MAKETEST STREQUAL YES)
     add_subdirectory(trantor/tests)
+    find_package(GTest)
+    if(GTest_FOUND)
+        include_directories(${GTEST_INCLUDE_DIRS})
+        link_libraries(${GTEST_LIBRARIES})
+        add_subdirectory(trantor/unittests)
+    endif()
 endif ()
 
 set(public_net_headers
