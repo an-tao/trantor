@@ -30,9 +30,20 @@ class NormalResolver : public Resolver,
     }
 
   private:
-    std::mutex _dnsMutex;
-    std::unordered_map<std::string, std::pair<struct in_addr, trantor::Date>>
-        _dnsCache;
+    static std::unordered_map<std::string,
+                              std::pair<struct in_addr, trantor::Date>>&
+    globalCache()
+    {
+        static std::unordered_map<std::string,
+                                  std::pair<struct in_addr, trantor::Date>>
+            _dnsCache;
+        return _dnsCache;
+    }
+    static std::mutex& globalMutex()
+    {
+        static std::mutex _mutex;
+        return _mutex;
+    }
     trantor::SerialTaskQueue _taskQueue;
     const size_t _timeout = 60;
     std::vector<char> _resolveBuffer;

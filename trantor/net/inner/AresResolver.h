@@ -62,8 +62,21 @@ class AresResolver : public Resolver,
     bool _timerActive;
     typedef std::map<int, std::unique_ptr<trantor::Channel>> ChannelList;
     ChannelList _channels;
-    std::unordered_map<std::string, std::pair<struct in_addr, trantor::Date>>
-        _dnsCache;
+    static std::unordered_map<std::string,
+                              std::pair<struct in_addr, trantor::Date>>&
+    globalCache()
+    {
+        static std::unordered_map<std::string,
+                                  std::pair<struct in_addr, trantor::Date>>
+            _dnsCache;
+        return _dnsCache;
+    }
+    static std::mutex& globalMutex()
+    {
+        static std::mutex _mutex;
+        return _mutex;
+    }
+
     const size_t _timeout = 60;
 
     void onRead(int sockfd);
