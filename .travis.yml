@@ -28,4 +28,4 @@ addons:
     - gtest
 
 script:
-  - ./build.sh -t && ./test.sh
+  - ./build.sh -t
