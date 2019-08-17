@@ -1,12 +1,11 @@
-os:
-  - linux
-  - osx
-
-osx_image: xcode10.1
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+    - os: osx
+      osx_image: xcode11
 
 sudo: required
-
-dist: xenial
 
 language: cpp
 
@@ -20,13 +19,14 @@ addons:
     - libssl-dev
     - build-essential
     - cmake
+    - libgtest-dev
+    - libc-ares-dev
   homebrew:
     packages:
     - openssl
     - cmake
     - libtool
+    - gtest
 
 script:
-  - ./build.sh
-
-
+  - ./build.sh -t

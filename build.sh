@@ -20,8 +20,12 @@ function build_trantor() {
     echo "Entering folder: ${build_dir}"
     cd $build_dir
 
-    echo "Start building drogon ..."
-    cmake ..
+    echo "Start building trantor ..."
+    if [ $1 -eq 1 ]; then
+        cmake .. -DMAKETEST=YES
+    else
+        cmake ..
+    fi
     
     #If errors then exit
     if [ "$?" != "0" ]; then
@@ -44,4 +48,8 @@ function build_trantor() {
     #Ok!
 }
 
-build_trantor
+if [ "$1" = "-t" ]; then
+    build_trantor 1
+else
+    build_trantor 0
+fi

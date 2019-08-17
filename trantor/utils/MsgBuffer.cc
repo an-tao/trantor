@@ -87,7 +87,7 @@ void MsgBuffer::ensureWritableBytes(size_t len)
     newbuffer.append(*this);
     swap(newbuffer);
 }
-void MsgBuffer::swap(MsgBuffer &buf)
+void MsgBuffer::swap(MsgBuffer &buf) noexcept
 {
     _buffer.swap(buf._buffer);
     std::swap(_head, buf._head);
