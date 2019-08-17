@@ -84,7 +84,7 @@ set_property(TARGET trantor PROPERTY CXX_STANDARD 14)
 set_property(TARGET trantor PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET trantor PROPERTY CXX_EXTENSIONS OFF)
 
-if (MAKETEST STREQUAL YES)
+if(MAKETEST STREQUAL YES)
     add_subdirectory(trantor/tests)
     find_package(GTest)
     if(GTest_FOUND)
@@ -92,7 +92,7 @@ if (MAKETEST STREQUAL YES)
         link_libraries(${GTEST_LIBRARIES})
         add_subdirectory(trantor/unittests)
     endif()
-endif ()
+endif()
 
 set(public_net_headers
     trantor/net/EventLoop.h

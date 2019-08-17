@@ -1,12 +1,11 @@
-os:
-  - linux
-  - osx
-
-osx_image: xcode10.1
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+    - os: osx
+      osx_image: xcode11
 
 sudo: required
-
-dist: xenial
 
 language: cpp
 
@@ -30,4 +29,3 @@ addons:
 
 script:
   - ./build.sh -t && ./test.sh
-  
