@@ -20,13 +20,14 @@ addons:
     - libssl-dev
     - build-essential
     - cmake
+    - libgtest-dev
   homebrew:
     packages:
     - openssl
     - cmake
     - libtool
+    - gtest
 
 script:
-  - ./build.sh
-
-
+  - ./build.sh -t && ./test.sh
+  

@@ -65,7 +65,7 @@ class MsgBuffer
     uint16_t readInt16();
     uint32_t readInt32();
     uint64_t readInt64();
-    void swap(MsgBuffer &buf);
+    void swap(MsgBuffer &buf) noexcept;
     size_t readableBytes() const
     {
         return _tail - _head;
@@ -167,4 +167,19 @@ class MsgBuffer
         return &_buffer[0];
     }
 };
+
+inline void swap(MsgBuffer &one, MsgBuffer &two) noexcept
+{
+    one.swap(two);
+}
 }  // namespace trantor
+
+namespace std
+{
+template <>
+inline void swap<trantor::MsgBuffer>(trantor::MsgBuffer &one,
+                                     trantor::MsgBuffer &two) noexcept
+{
+    one.swap(two);
+}
+}  // namespace std
