@@ -20,6 +20,7 @@ addons:
     - build-essential
     - cmake
     - libgtest-dev
+    - libc-ares-dev
   homebrew:
     packages:
     - openssl
