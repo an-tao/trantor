@@ -3,13 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc5] - 2019-08-24
+
 ### API change list
 
 - Remove the resolve method from the InetAddress class.
 
 ### Added
 
-- Add the Resolver class.
+- Add the Resolver class that provides high-performance DNS functionality(with c-ares library)
+- Add some unit tests.
   
 ## [1.0.0-rc4] - 2019-08-08
 
@@ -52,7 +55,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc4...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc5...HEAD
+
+[1.0.0-rc5]: https://github.com/an-tao/trantor/compare/v1.0.0-rc4...v1.0.0-rc5
 
 [1.0.0-rc4]: https://github.com/an-tao/trantor/compare/v1.0.0-rc3...v1.0.0-rc4
 
