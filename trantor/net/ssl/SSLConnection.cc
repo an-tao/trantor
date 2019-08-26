@@ -66,7 +66,7 @@ class SSLContext
 class SSLConn
 {
   public:
-    SSLConn(SSL_CTX *ctx)
+    explicit SSLConn(SSL_CTX *ctx)
     {
         _SSL = SSL_new(ctx);
     }

@@ -94,7 +94,8 @@ void NormalResolver::resolve(const std::string &hostname,
                 {
                     std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
                     thisPtr->globalCache()[hostname].first = addr.sin_addr;
-                    thisPtr->globalCache()[hostname].second = trantor::Date::date();
+                    thisPtr->globalCache()[hostname].second =
+                        trantor::Date::date();
                 }
                 return;
             }

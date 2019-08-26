@@ -84,7 +84,7 @@ class AresResolver : public Resolver,
     void onQueryResult(int status,
                        struct hostent* result,
                        const std::string& hostname,
-                       const Callback& cb);
+                       const Callback& callback);
     void onSockCreate(int sockfd, int type);
     void onSockStateChange(int sockfd, bool read, bool write);
 

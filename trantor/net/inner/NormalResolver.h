@@ -21,7 +21,7 @@ class NormalResolver : public Resolver,
   public:
     virtual void resolve(const std::string& hostname,
                          const Callback& callback) override;
-    NormalResolver(size_t timeout)
+    explicit NormalResolver(size_t timeout)
         : _taskQueue("Dns Queue"), _timeout(timeout), _resolveBuffer(16 * 1024)
     {
     }
