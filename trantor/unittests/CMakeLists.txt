@@ -1,8 +1,8 @@
-link_libraries(trantor pthread)
+
+find_package(GTest REQUIRED)
 add_executable(msgbuffer_unittest MsgBufferUnittest.cc)
+target_link_libraries(msgbuffer_unittest PRIVATE trantor GTest::GTest)
 add_executable(inetaddress_unittest InetAddressUnittest.cc)
+target_link_libraries(inetaddress_unittest PRIVATE trantor GTest::GTest)
 add_executable(date_unittest DateUnittest.cc)
-set(UNITTEST_TARGETS msgbuffer_unittest inetaddress_unittest date_unittest)
-set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_STANDARD 14)
-set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_EXTENSIONS OFF)
+target_link_libraries(date_unittest PRIVATE trantor GTest::GTest)

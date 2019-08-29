@@ -1,40 +1,56 @@
-LINK_LIBRARIES(trantor pthread)
+add_executable(ssl_server_test SSLServerTest.cc)
+target_link_libraries(ssl_server_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(ssl_server_test SSLServerTest.cc)
+add_executable(ssl_client_test SSLClientTest.cc)
+target_link_libraries(ssl_client_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(ssl_client_test SSLClientTest.cc)
+add_executable(serial_task_queue_test1 SerialTaskQueueTest1.cc)
+target_link_libraries(serial_task_queue_test1 PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(serial_task_queue_test1 SerialTaskQueueTest1.cc)
+add_executable(serial_task_queue_test2 SerialTaskQueueTest2.cc)
+target_link_libraries(serial_task_queue_test2 PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(serial_task_queue_test2 SerialTaskQueueTest2.cc)
+add_executable(timer_test TimerTest.cc)
+target_link_libraries(timer_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(timer_test TimerTest.cc)
+add_executable(timer_test1 TimerTest1.cc)
+target_link_libraries(timer_test1 PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(timer_test1 TimerTest1.cc)
+add_executable(run_in_loop_test1 RunInLoopTest1.cc)
+target_link_libraries(run_in_loop_test1 PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(run_in_loop_test1 RunInLoopTest1.cc)
+add_executable(run_in_loop_test2 RunInLoopTest2.cc)
+target_link_libraries(run_in_loop_test2 PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(run_in_loop_test2 RunInLoopTest2.cc)
+add_executable(logger_test LoggerTest.cc)
+target_link_libraries(logger_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(logger_test LoggerTest.cc)
+add_executable(async_file_logger_test AsyncFileLoggerTest.cc)
+target_link_libraries(async_file_logger_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(async_file_logger_test AsyncFileLoggerTest.cc)
+add_executable(tcp_server_test TcpServerTest.cc)
+target_link_libraries(tcp_server_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(tcp_server_test TcpServerTest.cc)
+add_executable(concurrent_task_queue_test ConcurrentTaskQueueTest.cc)
+target_link_libraries(concurrent_task_queue_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(concurrent_task_queue_test ConcurrentTaskQueueTest.cc)
+add_executable(tcp_client_test TcpClientTest.cc)
+target_link_libraries(tcp_client_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(tcp_client_test TcpClientTest.cc)
+add_executable(async_file_logger_test1 AsyncFileLoggerTest1.cc)
+target_link_libraries(async_file_logger_test1 PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(async_file_logger_test1 AsyncFileLoggerTest1.cc)
+add_executable(sendfile_test SendfileTest.cc)
+target_link_libraries(sendfile_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(sendfile_test SendfileTest.cc)
+add_executable(timing_wheel_test TimingWheelTest.cc)
+target_link_libraries(timing_wheel_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(timing_wheel_test TimingWheelTest.cc)
+add_executable(kickoff_test KickoffTest.cc)
+target_link_libraries(kickoff_test PRIVATE trantor pthread)
 
-ADD_EXECUTABLE(kickoff_test KickoffTest.cc)
-
-ADD_EXECUTABLE(dns_test DnsTest.cc)
+add_executable(dns_test DnsTest.cc)
+target_link_libraries(dns_test PRIVATE trantor pthread)
 
 SET(targets_list    ssl_server_test
                     ssl_client_test
@@ -55,7 +71,4 @@ SET(targets_list    ssl_server_test
                     kickoff_test
                     dns_test)
 
-SET_PROPERTY(TARGET ${targets_list} PROPERTY CXX_STANDARD 14)
-SET_PROPERTY(TARGET ${targets_list} PROPERTY CXX_STANDARD_REQUIRED ON)
-SET_PROPERTY(TARGET ${targets_list} PROPERTY CXX_EXTENSIONS OFF)
 
