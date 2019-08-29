@@ -1,10 +1,15 @@
 # - Config file for the Trantor package
+# It defines the following variables
+#  TRANTOR_INCLUDE_DIRS - include directories for Trantor
+#  TRANTOR_LIBRARIES    - libraries to link against
+#  TRANTOR_FOUND
 
 @PACKAGE_INIT@
-
-find_package(OpenSSL)
+if(NOT OpenSSL_FOUND)
+    find_package(OpenSSL)
+endif()
 # Compute paths
-add_library(Trantor::Trantor INTERFACE IMPORTED GLOBAL)
+add_library(Trantor::Trantor INTERFACE IMPORTED)
 set_target_properties(Trantor::Trantor PROPERTIES
                       INTERFACE_INCLUDE_DIRECTORIES "@PACKAGE_CONF_INCLUDE_DIRS@")
 
@@ -16,3 +21,8 @@ endif()
 
 # These are IMPORTED targets created by TrantorTargets.cmake
 target_link_libraries(Trantor::Trantor INTERFACE trantor)
+
+
+set(TRANTOR_FOUND TRUE)
+set_and_check(TRANTOR_INCLUDE_DIRS "@PACKAGE_CONF_INCLUDE_DIRS@")
+set(TRANTOR_LIBRARIES trantor)

@@ -63,7 +63,7 @@ set(TRANTOR_SOURCES
     trantor/net/inner/poller/EpollPoller.cc
     trantor/net/inner/poller/KQueue.cc)
 
-find_package(OpenSSL)
+find_package (OpenSSL)
 if(OpenSSL_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC OpenSSL::SSL OpenSSL::Crypto)
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/ssl/SSLConnection.cc)
