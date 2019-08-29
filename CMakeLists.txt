@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.2)
-project(Trantor)
-
+cmake_minimum_required(VERSION 3.6)
+project(trantor)
+add_library(${PROJECT_NAME} STATIC)
 set(TRANTOR_MAJOR_VERSION 1)
 set(TRANTOR_MINOR_VERSION 0)
 set(TRANTOR_PATCH_VERSION 0)
@@ -28,11 +28,13 @@ foreach(p LIB INCLUDE TRANTOR_CMAKE)
 endforeach()
 
 # include directories
-include_directories(
-        ${PROJECT_SOURCE_DIR}
-        ${PROJECT_SOURCE_DIR}/trantor/utils
-        ${PROJECT_SOURCE_DIR}/trantor/net
-        ${PROJECT_SOURCE_DIR}/trantor/net/inner
+target_include_directories(${PROJECT_NAME}
+                           PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+                                  $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
+                           PRIVATE ${PROJECT_SOURCE_DIR}
+                                   ${PROJECT_SOURCE_DIR}/trantor/utils
+                                   ${PROJECT_SOURCE_DIR}/trantor/net
+                                   ${PROJECT_SOURCE_DIR}/trantor/net/inner
 )
 
 set(TRANTOR_SOURCES
@@ -61,10 +63,10 @@ set(TRANTOR_SOURCES
     trantor/net/inner/poller/EpollPoller.cc
     trantor/net/inner/poller/KQueue.cc)
 
-find_package(OpenSSL)
+find_package (OpenSSL)
 if(OpenSSL_FOUND)
-    include_directories(${OPENSSL_INCLUDE_DIR})
-    link_libraries(${OPENSSL_LIBRARIES})
+    target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/ssl/SSLConnection.cc)
 else()
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/ssl/SSLConnectionSkipped.cc)
@@ -73,23 +75,20 @@ endif()
 find_path(CARES_INCLUDE_DIR ares.h)
 find_library(CARES_LIBRARY NAMES cares)
 if(CARES_INCLUDE_DIR AND CARES_LIBRARY)
-    include_directories(${CARES_INCLUDE_DIR})
-    link_libraries(${CARES_LIBRARY})
+    target_include_directories(${PROJECT_NAME} PRIVATE ${CARES_INCLUDE_DIR})
+    target_link_libraries(${PROJECT_NAME} INTERFACE ${CARES_LIBRARY})
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/AresResolver.cc)
 else()
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
 endif()
-add_library(trantor STATIC ${TRANTOR_SOURCES})
-set_property(TARGET trantor PROPERTY CXX_STANDARD 14)
-set_property(TARGET trantor PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET trantor PROPERTY CXX_EXTENSIONS OFF)
+target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
+target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 
 if(MAKETEST STREQUAL YES)
     add_subdirectory(trantor/tests)
     find_package(GTest)
     if(GTest_FOUND)
-        include_directories(${GTEST_INCLUDE_DIRS})
-        link_libraries(${GTEST_LIBRARIES})
         add_subdirectory(trantor/unittests)
     endif()
 endif()
