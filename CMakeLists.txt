@@ -65,7 +65,8 @@ set(TRANTOR_SOURCES
 
 find_package (OpenSSL)
 if(OpenSSL_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/ssl/SSLConnection.cc)
 else()
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/ssl/SSLConnectionSkipped.cc)
@@ -82,7 +83,7 @@ else()
 endif()
 target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
-target_link_libraries(${PROJECT_NAME} INTERFACE pthread)
+target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 
 if(MAKETEST STREQUAL YES)
     add_subdirectory(trantor/tests)

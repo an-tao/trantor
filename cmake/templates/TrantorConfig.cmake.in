@@ -3,13 +3,13 @@
 #  TRANTOR_INCLUDE_DIRS - include directories for Trantor
 #  TRANTOR_LIBRARIES    - libraries to link against
 #  TRANTOR_FOUND
+# This module defines the following IMPORTED target:
+# Trantor::Trantor
 
 @PACKAGE_INIT@
-if(NOT OpenSSL_FOUND)
-    find_package(OpenSSL)
-endif()
+
 # Compute paths
-add_library(Trantor::Trantor INTERFACE IMPORTED)
+add_library(Trantor::Trantor INTERFACE IMPORTED GLOBAL)
 set_target_properties(Trantor::Trantor PROPERTIES
                       INTERFACE_INCLUDE_DIRECTORIES "@PACKAGE_CONF_INCLUDE_DIRS@")
 
