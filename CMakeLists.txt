@@ -129,24 +129,11 @@ install(TARGETS trantor
 install(FILES ${public_net_headers} DESTINATION ${INSTALL_INCLUDE_DIR}/trantor/net)
 install(FILES ${public_utils_headers} DESTINATION ${INSTALL_INCLUDE_DIR}/trantor/utils)
 
-
-# Add all targets to the build-tree export set
-export(TARGETS trantor
-       FILE "${PROJECT_BINARY_DIR}/TrantorTargets.cmake")
-
 include(CMakePackageConfigHelpers)
-# ... for the build tree(locally included)
-set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}")
-configure_package_config_file(cmake/templates/TrantorConfig.cmake.in
-                              ${CMAKE_CURRENT_BINARY_DIR}/TrantorConfig.cmake
-                              INSTALL_DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-                              PATH_VARS CONF_INCLUDE_DIRS)
 # ... for the install tree
-set(CONF_INCLUDE_DIRS "${INSTALL_INCLUDE_DIR}")
 configure_package_config_file(cmake/templates/TrantorConfig.cmake.in
                               ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TrantorConfig.cmake
-                              INSTALL_DESTINATION ${INSTALL_TRANTOR_CMAKE_DIR}
-                              PATH_VARS CONF_INCLUDE_DIRS)
+                              INSTALL_DESTINATION ${INSTALL_TRANTOR_CMAKE_DIR})
 
 # version
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/TrantorConfigVersion.cmake

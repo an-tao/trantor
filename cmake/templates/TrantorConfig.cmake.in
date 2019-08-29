@@ -10,8 +10,6 @@
 
 # Compute paths
 add_library(Trantor::Trantor INTERFACE IMPORTED GLOBAL)
-set_target_properties(Trantor::Trantor PROPERTIES
-                      INTERFACE_INCLUDE_DIRECTORIES "@PACKAGE_CONF_INCLUDE_DIRS@")
 
 # Our library dependencies (contains definitions for IMPORTED targets)
 get_filename_component(TRANTOR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
@@ -24,5 +22,5 @@ target_link_libraries(Trantor::Trantor INTERFACE trantor)
 
 
 set(TRANTOR_FOUND TRUE)
-set_and_check(TRANTOR_INCLUDE_DIRS "@PACKAGE_CONF_INCLUDE_DIRS@")
+get_target_property(TRANTOR_INCLUDE_DIRS trantor INTERFACE_INCLUDE_DIRECTORIES)
 set(TRANTOR_LIBRARIES trantor)
