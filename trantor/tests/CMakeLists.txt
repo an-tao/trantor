@@ -52,23 +52,3 @@ target_link_libraries(kickoff_test PRIVATE trantor pthread)
 add_executable(dns_test DnsTest.cc)
 target_link_libraries(dns_test PRIVATE trantor pthread)
 
-SET(targets_list    ssl_server_test
-                    ssl_client_test
-                    serial_task_queue_test1
-                    serial_task_queue_test2
-                    timer_test
-                    timer_test1
-                    run_in_loop_test1
-                    run_in_loop_test2
-                    logger_test
-                    async_file_logger_test
-                    tcp_server_test
-                    concurrent_task_queue_test
-                    tcp_client_test
-                    async_file_logger_test1
-                    sendfile_test
-                    timing_wheel_test
-                    kickoff_test
-                    dns_test)
-
-

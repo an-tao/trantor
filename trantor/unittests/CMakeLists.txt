@@ -1,4 +1,3 @@
-
 find_package(GTest REQUIRED)
 add_executable(msgbuffer_unittest MsgBufferUnittest.cc)
 target_link_libraries(msgbuffer_unittest PRIVATE trantor GTest::GTest)

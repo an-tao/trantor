@@ -9,5 +9,5 @@ Drawing on the design of Muduo Library
 ## Dependence
 
 gcc 5.4.0 or newer;    
-cmake 3.2 or newer;    
+cmake 3.6 or newer;    
 linux kernel 2.6.9 x86-64 or newer;
