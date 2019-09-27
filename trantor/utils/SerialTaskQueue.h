@@ -50,4 +50,4 @@ class SerialTaskQueue : public TaskQueue
     EventLoopThread _loopThread;
     bool _stop = false;
 };
-};  // namespace trantor
+}  // namespace trantor

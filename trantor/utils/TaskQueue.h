@@ -40,4 +40,4 @@ class TaskQueue : public NonCopyable
         fut.get();
     };
 };
-};  // namespace trantor
+}  // namespace trantor

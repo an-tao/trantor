@@ -233,13 +233,13 @@ KQueue::KQueue(EventLoop *loop) : Poller(loop)
 KQueue::~KQueue()
 {
 }
-void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
+void KQueue::poll(int , ChannelList *)
 {
 }
-void KQueue::updateChannel(Channel *channel)
+void KQueue::updateChannel(Channel *)
 {
 }
-void KQueue::removeChannel(Channel *channel)
+void KQueue::removeChannel(Channel *)
 {
 }
 void KQueue::resetAfterFork()

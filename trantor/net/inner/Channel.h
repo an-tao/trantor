@@ -167,4 +167,4 @@ class Channel : NonCopyable
     std::weak_ptr<void> _tie;
     bool _tied;
 };
-};  // namespace trantor
+}  // namespace trantor

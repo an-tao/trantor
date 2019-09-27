@@ -247,4 +247,4 @@ Date::Date(unsigned int year,
     microSecondsSinceEpoch_ = epoch * MICRO_SECONDS_PRE_SEC + microSecond;
 }
 
-};  // namespace trantor
+}  // namespace trantor

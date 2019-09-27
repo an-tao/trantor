@@ -60,4 +60,4 @@ class Timer : public NonCopyable
     static std::atomic<TimerId> _timersCreated;
 };
 
-};  // namespace trantor
+}  // namespace trantor

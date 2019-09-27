@@ -147,4 +147,4 @@ class Date
   private:
     int64_t microSecondsSinceEpoch_ = 0;
 };
-};  // namespace trantor
+}  // namespace trantor

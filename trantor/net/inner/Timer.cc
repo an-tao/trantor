@@ -57,4 +57,4 @@ bool Timer::operator>(const Timer &t) const
 {
     return _when > t._when;
 }
-};  // namespace trantor
+}  // namespace trantor
