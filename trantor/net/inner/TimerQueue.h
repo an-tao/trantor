@@ -71,4 +71,4 @@ class TimerQueue : NonCopyable
   private:
     std::unordered_set<uint64_t> _timerIdSet;
 };
-};  // namespace trantor
+}  // namespace trantor

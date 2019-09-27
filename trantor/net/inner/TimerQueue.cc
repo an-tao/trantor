@@ -66,12 +66,12 @@ void readTimerfd(int timerfd, const Date &now)
 {
     uint64_t howmany;
     ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
-    // LOG_TRACE << "TimerQueue::handleRead() " << howmany << " at " <<
-    // now.toString();
+    LOG_TRACE << "TimerQueue::handleRead() " << howmany << " at "
+              << now.toFormattedString(true);
     if (n != sizeof howmany)
     {
-        // LOG_ERROR << "TimerQueue::handleRead() reads " << n << " bytes
-        // instead of 8";
+        LOG_ERROR << "TimerQueue::handleRead() reads " << n
+                  << " bytes instead of 8";
     }
 }
 

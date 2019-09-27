@@ -157,7 +157,7 @@ void AresResolver::onQueryResult(int status,
                                  const std::string& hostname,
                                  const Callback& callback)
 {
-    // LOG_DEBUG << "onQueryResult " << status;
+    LOG_TRACE << "onQueryResult " << status;
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof addr);
     addr.sin_family = AF_INET;
@@ -177,6 +177,7 @@ void AresResolver::onQueryResult(int status,
 
 void AresResolver::onSockCreate(int sockfd, int type)
 {
+    (void)type;
     _loop->assertInLoopThread();
     assert(_channels.find(sockfd) == _channels.end());
     Channel* channel = new Channel(_loop, sockfd);
@@ -187,6 +188,7 @@ void AresResolver::onSockCreate(int sockfd, int type)
 
 void AresResolver::onSockStateChange(int sockfd, bool read, bool write)
 {
+    (void)write;
     _loop->assertInLoopThread();
     ChannelList::iterator it = _channels.find(sockfd);
     assert(it != _channels.end());
@@ -209,6 +211,7 @@ void AresResolver::ares_host_callback(void* data,
                                       int timeouts,
                                       struct hostent* hostent)
 {
+    (void)timeouts;
     QueryData* query = static_cast<QueryData*>(data);
 
     query->_owner->onQueryResult(status,

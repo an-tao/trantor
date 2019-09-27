@@ -37,7 +37,7 @@ using namespace std::placeholders;
 
 namespace trantor
 {
-void removeConnector(const ConnectorPtr &connector)
+void removeConnector(const ConnectorPtr &)
 {
     // connector->
 }

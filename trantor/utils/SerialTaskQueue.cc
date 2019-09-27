@@ -53,4 +53,4 @@ void SerialTaskQueue::waitAllTasksFinished()
     });
 }
 
-};  // namespace trantor
+}  // namespace trantor

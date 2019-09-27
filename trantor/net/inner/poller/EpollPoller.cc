@@ -195,13 +195,13 @@ EpollPoller::EpollPoller(EventLoop *loop) : Poller(loop)
 EpollPoller::~EpollPoller()
 {
 }
-void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
+void EpollPoller::poll(int, ChannelList *)
 {
 }
-void EpollPoller::updateChannel(Channel *channel)
+void EpollPoller::updateChannel(Channel *)
 {
 }
-void EpollPoller::removeChannel(Channel *channel)
+void EpollPoller::removeChannel(Channel *)
 {
 }
 #endif

@@ -122,7 +122,7 @@ Logger::Logger(SourceFile file, int line, LogLevel level, const char *func)
     formatTime();
     logStream_ << T(logLevelStr[level_], 7) << "[" << func << "] ";
 }
-Logger::Logger(SourceFile file, int line, bool isSysErr)
+Logger::Logger(SourceFile file, int line, bool)
     : sourceFile_(file), fileLine_(line), level_(FATAL)
 {
     formatTime();

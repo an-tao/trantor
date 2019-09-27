@@ -41,7 +41,6 @@ class TcpServer : NonCopyable
     void start();
     void setIoLoopNum(size_t num)
     {
-        assert(num >= 0);
         assert(!_started);
         _loopPoolPtr = std::make_shared<EventLoopThreadPool>(num);
         _loopPoolPtr->start();
