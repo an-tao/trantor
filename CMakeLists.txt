@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 add_library(${PROJECT_NAME} STATIC)
+# if(MSVC)
+#   target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+# else()
+#   target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic)
+# endif()
+
 set(TRANTOR_MAJOR_VERSION 1)
 set(TRANTOR_MINOR_VERSION 0)
 set(TRANTOR_PATCH_VERSION 0)
@@ -167,4 +173,5 @@ install(
 # Install the export set for use with the install-tree
 install(EXPORT TrantorTargets
         DESTINATION "${INSTALL_TRANTOR_CMAKE_DIR}"
+        NAMESPACE Trantor::
         COMPONENT dev)

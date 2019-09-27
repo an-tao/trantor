@@ -9,18 +9,15 @@
 @PACKAGE_INIT@
 
 # Compute paths
-add_library(Trantor::Trantor INTERFACE IMPORTED GLOBAL)
 
 # Our library dependencies (contains definitions for IMPORTED targets)
 get_filename_component(TRANTOR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-if(NOT TARGET trantor)
+if(NOT TARGET Trantor::Trantor)
   include("${TRANTOR_CMAKE_DIR}/TrantorTargets.cmake")
+  set_target_properties(Trantor::trantor PROPERTIES IMPORTED_GLOBAL TRUE)
+  add_library(Trantor::Trantor ALIAS Trantor::trantor)
 endif()
 
-# These are IMPORTED targets created by TrantorTargets.cmake
-target_link_libraries(Trantor::Trantor INTERFACE trantor)
-
-
 set(TRANTOR_FOUND TRUE)
-get_target_property(TRANTOR_INCLUDE_DIRS trantor INTERFACE_INCLUDE_DIRECTORIES)
-set(TRANTOR_LIBRARIES trantor)
+get_target_property(TRANTOR_INCLUDE_DIRS Trantor::Trantor INTERFACE_INCLUDE_DIRECTORIES)
+set(TRANTOR_LIBRARIES Trantor::Trantor)

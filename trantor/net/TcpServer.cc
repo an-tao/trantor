@@ -30,12 +30,11 @@ TcpServer::TcpServer(EventLoop *loop,
     : _loop(loop),
       _acceptorPtr(new Acceptor(loop, address, reUseAddr, reUsePort)),
       _serverName(name),
-      _recvMessageCallback(
-          [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
-              LOG_ERROR << "unhandled recv message [" << buffer->readableBytes()
-                        << " bytes]";
-              buffer->retrieveAll();
-          })
+      _recvMessageCallback([](const TcpConnectionPtr &, MsgBuffer *buffer) {
+          LOG_ERROR << "unhandled recv message [" << buffer->readableBytes()
+                    << " bytes]";
+          buffer->retrieveAll();
+      })
 {
     _acceptorPtr->setNewConnectionCallback(
         std::bind(&TcpServer::newConnection, this, _1, _2));
