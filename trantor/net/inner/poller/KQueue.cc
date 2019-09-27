@@ -233,7 +233,7 @@ KQueue::KQueue(EventLoop *loop) : Poller(loop)
 KQueue::~KQueue()
 {
 }
-void KQueue::poll(int , ChannelList *)
+void KQueue::poll(int, ChannelList *)
 {
 }
 void KQueue::updateChannel(Channel *)
