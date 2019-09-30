@@ -39,5 +39,8 @@ class TaskQueue : public NonCopyable
         });
         fut.get();
     };
+    virtual ~TaskQueue()
+    {
+    }
 };
 }  // namespace trantor
