@@ -35,7 +35,7 @@ class SerialTaskQueue : public TaskQueue
     void waitAllTasksFinished();
     SerialTaskQueue() = delete;
     explicit SerialTaskQueue(const std::string &name = std::string());
-    ~SerialTaskQueue();
+    virtual ~SerialTaskQueue();
     bool isRuningTask()
     {
         return _loopThread.getLoop()
