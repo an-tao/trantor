@@ -51,7 +51,7 @@ int createEventfd()
 }
 const int kPollTimeMs = 10000;
 #endif
-__thread EventLoop *t_loopInThisThread = 0;
+__thread EventLoop *t_loopInThisThread = nullptr;
 
 EventLoop::EventLoop()
     : _looping(false),
@@ -98,7 +98,7 @@ void EventLoop::resetAfterFork()
 EventLoop::~EventLoop()
 {
     assert(!_looping);
-    t_loopInThisThread = NULL;
+    t_loopInThisThread = nullptr;
 #ifdef __linux__
     close(_wakeupFd);
 #else
