@@ -26,6 +26,7 @@
 #include <queue>
 #include <functional>
 #include <chrono>
+#include <limits>
 
 namespace trantor
 {
@@ -177,7 +178,7 @@ class EventLoop : NonCopyable
     std::unique_ptr<Channel> _wakeupChannelPtr;
 
     void doRunInLoopFuncs();
-    size_t _index = -1;
+    size_t _index = std::numeric_limits<size_t>::max();
 };
 
 }  // namespace trantor
