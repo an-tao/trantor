@@ -51,7 +51,7 @@ int createEventfd()
 }
 const int kPollTimeMs = 10000;
 #endif
-__thread EventLoop *t_loopInThisThread = nullptr;
+thread_local EventLoop *t_loopInThisThread = nullptr;
 
 EventLoop::EventLoop()
     : _looping(false),
