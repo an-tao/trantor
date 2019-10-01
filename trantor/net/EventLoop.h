@@ -71,6 +71,14 @@ class EventLoop : NonCopyable
     void queueInLoop(Func &&f);
     void wakeup();
     void wakeupRead();
+    size_t index()
+    {
+        return _index;
+    }
+    void setIndex(size_t index)
+    {
+        _index = index;
+    }
     // template <typename T>
     // const std::shared_ptr<ObjectPool<T>> &getObjectPool()
     // {
@@ -169,6 +177,7 @@ class EventLoop : NonCopyable
     std::unique_ptr<Channel> _wakeupChannelPtr;
 
     void doRunInLoopFuncs();
+    size_t _index = -1;
 };
 
 }  // namespace trantor
