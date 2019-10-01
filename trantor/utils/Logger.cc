@@ -55,14 +55,14 @@ inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
 }  // namespace trantor
 using namespace trantor;
 
-static __thread uint64_t lastSecond_ = 0;
-static __thread char lastTimeString_[32] = {0};
+static thread_local uint64_t lastSecond_ = 0;
+static thread_local char lastTimeString_[32] = {0};
 #ifdef __linux__
-static __thread pid_t threadId_ = 0;
+static thread_local pid_t threadId_ = 0;
 #else
-static __thread uint64_t threadId_ = 0;
+static thread_local uint64_t threadId_ = 0;
 #endif
-//   static __thread LogStream logStream_;
+//   static thread_local LogStream logStream_;
 
 void Logger::formatTime()
 {
