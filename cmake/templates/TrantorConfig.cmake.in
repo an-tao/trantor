@@ -14,8 +14,6 @@
 get_filename_component(TRANTOR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 if(NOT TARGET Trantor::Trantor)
   include("${TRANTOR_CMAKE_DIR}/TrantorTargets.cmake")
-  set_target_properties(Trantor::trantor PROPERTIES IMPORTED_GLOBAL TRUE)
-  add_library(Trantor::Trantor ALIAS Trantor::trantor)
 endif()
 
 set(TRANTOR_FOUND TRUE)

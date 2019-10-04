@@ -98,6 +98,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
+set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_NAME Trantor)
 
 if(MAKETEST STREQUAL YES)
   add_subdirectory(trantor/tests)

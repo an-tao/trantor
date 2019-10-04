@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc6] - 2019-10-4
+
+### API change list
+
+- Add index() interface to the EventLoop class.
+
+### Changed
+
+- Fix some compilation warnings.
+
+- Modify the CMakeLists.txt
+
 ## [1.0.0-rc5] - 2019-08-24
 
 ### API change list
@@ -55,7 +67,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc5...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc6...HEAD
+
+[1.0.0-rc6]: https://github.com/an-tao/trantor/compare/v1.0.0-rc5...v1.0.0-rc6
 
 [1.0.0-rc5]: https://github.com/an-tao/trantor/compare/v1.0.0-rc4...v1.0.0-rc5
 
