@@ -177,8 +177,7 @@ inline void swap(MsgBuffer &one, MsgBuffer &two) noexcept
 namespace std
 {
 template <>
-inline void swap<trantor::MsgBuffer>(trantor::MsgBuffer &one,
-                                     trantor::MsgBuffer &two) noexcept
+inline void swap(trantor::MsgBuffer &one, trantor::MsgBuffer &two) noexcept
 {
     one.swap(two);
 }
