@@ -27,8 +27,8 @@ namespace trantor
 {
 namespace detail
 {
-static constexpr size_t kSmallBuffer = 4000;
-static constexpr size_t kLargeBuffer = 4000 * 1000;
+static constexpr size_t kSmallBuffer{4000};
+static constexpr size_t kLargeBuffer{4000 * 1000};
 
 template <int SIZE>
 class FixedBuffer : NonCopyable

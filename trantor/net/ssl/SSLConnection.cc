@@ -140,12 +140,12 @@ void SSLConnection::writeCallback()
 {
     LOG_TRACE << "write Callback";
     loop_->assertInLoopThread();
-    if (statusOfSSL == SSLStatus::Handshaking)
+    if (statusOfSSL_ == SSLStatus::Handshaking)
     {
         doHandshaking();
         return;
     }
-    else if (statusOfSSL == SSLStatus::Connected)
+    else if (statusOfSSL_ == SSLStatus::Connected)
     {
         TcpConnectionImpl::writeCallback();
     }
@@ -155,12 +155,12 @@ void SSLConnection::readCallback()
 {
     LOG_TRACE << "read Callback";
     loop_->assertInLoopThread();
-    if (statusOfSSL == SSLStatus::Handshaking)
+    if (statusOfSSL_ == SSLStatus::Handshaking)
     {
         doHandshaking();
         return;
     }
-    else if (statusOfSSL == SSLStatus::Connected)
+    else if (statusOfSSL_ == SSLStatus::Connected)
     {
         int rd;
         bool newDataFlag = false;
@@ -181,7 +181,7 @@ void SSLConnection::readCallback()
                 else
                 {
                     LOG_TRACE << "ssl read err:" << sslerr;
-                    statusOfSSL = SSLStatus::DisConnected;
+                    statusOfSSL_ = SSLStatus::DisConnected;
                     handleClose();
                     return;
                 }
@@ -218,11 +218,11 @@ void SSLConnection::connectEstablished()
 }
 void SSLConnection::doHandshaking()
 {
-    assert(statusOfSSL == SSLStatus::Handshaking);
+    assert(statusOfSSL_ == SSLStatus::Handshaking);
     int r = SSL_do_handshake(sslPtr_->get());
     if (r == 1)
     {
-        statusOfSSL = SSLStatus::Connected;
+        statusOfSSL_ = SSLStatus::Connected;
         connectionCallback_(shared_from_this());
         return;
     }
@@ -242,7 +242,7 @@ void SSLConnection::doHandshaking()
         // ERR_print_errors(err);
         LOG_TRACE << "SSL handshake err: " << err;
         ioChannelPtr_->disableReading();
-        statusOfSSL = SSLStatus::DisConnected;
+        statusOfSSL_ = SSLStatus::DisConnected;
         forceClose();
     }
 }
@@ -256,7 +256,7 @@ ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
         LOG_WARN << "Connection is not connected,give up sending";
         return -1;
     }
-    if (statusOfSSL != SSLStatus::Connected)
+    if (statusOfSSL_ != SSLStatus::Connected)
     {
         LOG_WARN << "SSL is not connected,give up sending";
         return -1;

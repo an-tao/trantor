@@ -23,7 +23,7 @@
 using namespace trantor;
 namespace trantor
 {
-static constexpr size_t kBufferOffset = 8;
+static constexpr size_t kBufferOffset {8};
 }
 
 MsgBuffer::MsgBuffer(size_t len)

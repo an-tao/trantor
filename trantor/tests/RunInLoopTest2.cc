@@ -14,22 +14,22 @@ int main()
 
     auto loop = loopThread.getLoop();
     loop->runInLoop([&counter, &pro, loop]() {
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 10000; ++i)
         {
             loop->queueInLoop([&counter, &pro]() {
-                counter++;
+                ++counter;
                 if (counter.load() == 110000)
                     pro.set_value(1);
             });
         }
     });
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 10; ++i)
     {
         std::thread([&counter, loop, &pro]() {
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 10000; ++i)
             {
                 loop->runInLoop([&counter, &pro]() {
-                    counter++;
+                    ++counter;
                     if (counter.load() == 110000)
                         pro.set_value(1);
                 });

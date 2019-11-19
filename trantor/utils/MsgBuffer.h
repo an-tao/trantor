@@ -26,8 +26,8 @@
 
 namespace trantor
 {
-static constexpr size_t kBufferDefaultLength = 2048;
-static constexpr char CRLF[] = "\r\n";
+static constexpr size_t kBufferDefaultLength{2048};
+static constexpr char CRLF[]{"\r\n"};
 class MsgBuffer
 {
   public:

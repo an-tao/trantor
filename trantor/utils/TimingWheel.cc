@@ -30,19 +30,19 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
     wheelsNum_ = 1;
     while (maxTickNum > bucketsNumPerWheel_)
     {
-        wheelsNum_++;
+        ++wheelsNum_;
         maxTickNum = maxTickNum / bucketsNumPerWheel_;
     }
     wheels_.resize(wheelsNum_);
-    for (size_t i = 0; i < wheelsNum_; i++)
+    for (size_t i = 0; i < wheelsNum_; ++i)
     {
         wheels_[i].resize(bucketsNumPerWheel_);
     }
     timerId_ = loop_->runEvery(tickInterval_, [=]() {
-        ticksCounter_++;
+        ++ticksCounter_;
         size_t t = ticksCounter_;
         size_t pow = 1;
-        for (size_t i = 0; i < wheelsNum_; i++)
+        for (size_t i = 0; i < wheelsNum_; ++i)
         {
             if ((t % pow) == 0)
             {
@@ -64,7 +64,7 @@ TimingWheel::~TimingWheel()
 {
     loop_->invalidateTimer(timerId_);
 
-    for (int i = wheels_.size() - 1; i >= 0; i--)
+    for (int i = wheels_.size() - 1; i >= 0; --i)
     {
         wheels_[i].clear();
     }
@@ -95,7 +95,7 @@ void TimingWheel::insertEntryInloop(size_t delay, EntryPtr entryPtr)
 
     delay = delay / tickInterval_ + 1;
     size_t t = ticksCounter_;
-    for (size_t i = 0; i < wheelsNum_; i++)
+    for (size_t i = 0; i < wheelsNum_; ++i)
     {
         if (delay <= bucketsNumPerWheel_)
         {

@@ -53,7 +53,7 @@ class SSLConnection : public TcpConnectionImpl
 
   private:
     void doHandshaking();
-    SSLStatus statusOfSSL = SSLStatus::Handshaking;
+    SSLStatus statusOfSSL_ = SSLStatus::Handshaking;
     // OpenSSL
     std::shared_ptr<SSLConn> sslPtr_;
     bool isServer_;

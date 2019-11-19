@@ -28,7 +28,7 @@ int main()
     server.setConnectionCallback([&n](const TcpConnectionPtr &connPtr) {
         if (connPtr->connected())
         {
-            n++;
+            ++n;
             if (n % 2 == 0)
             {
                 connPtr->keepAlive();
