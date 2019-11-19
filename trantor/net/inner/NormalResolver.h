@@ -14,6 +14,7 @@
 
 namespace trantor
 {
+constexpr size_t kResolveBufferLength = 16 * 1024;
 class NormalResolver : public Resolver,
                        public NonCopyable,
                        public std::enable_shared_from_this<NormalResolver>
@@ -22,7 +23,7 @@ class NormalResolver : public Resolver,
     virtual void resolve(const std::string& hostname,
                          const Callback& callback) override;
     explicit NormalResolver(size_t timeout)
-        : _taskQueue("Dns Queue"), _timeout(timeout), _resolveBuffer(16 * 1024)
+        : timeout_(timeout), resolveBuffer_(kResolveBufferLength)
     {
     }
     virtual ~NormalResolver()
@@ -36,16 +37,16 @@ class NormalResolver : public Resolver,
     {
         static std::unordered_map<std::string,
                                   std::pair<struct in_addr, trantor::Date>>
-            _dnsCache;
-        return _dnsCache;
+            dnsCache_;
+        return dnsCache_;
     }
     static std::mutex& globalMutex()
     {
-        static std::mutex _mutex;
-        return _mutex;
+        static std::mutex mutex_;
+        return mutex_;
     }
-    trantor::SerialTaskQueue _taskQueue;
-    const size_t _timeout = 60;
-    std::vector<char> _resolveBuffer;
+    trantor::SerialTaskQueue taskQueue_{"Dns Queue"};
+    const size_t timeout_;
+    std::vector<char> resolveBuffer_;
 };
 }  // namespace trantor

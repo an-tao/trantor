@@ -19,21 +19,21 @@ const int kDeleted = 2;
 }  // namespace
 
 KQueue::KQueue(EventLoop *loop)
-    : Poller(loop), _kqfd(kqueue()), _events(kInitEventListSize)
+    : Poller(loop), kqfd_(kqueue()), events_(kInitEventListSize)
 {
-    assert(_kqfd >= 0);
+    assert(kqfd_ >= 0);
 }
 
 KQueue::~KQueue()
 {
-    close(_kqfd);
+    close(kqfd_);
 }
 
 void KQueue::resetAfterFork()
 {
-    close(_kqfd);
-    _kqfd = kqueue();
-    for (auto &ch : _channels)
+    close(kqfd_);
+    kqfd_ = kqueue();
+    for (auto &ch : channels_)
     {
         ch.second.first = 0;
         if (ch.second.second->isReading() || ch.second.second->isWriting())
@@ -49,11 +49,11 @@ void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
     timeout.tv_sec = timeoutMs / 1000;
     timeout.tv_nsec = (timeoutMs % 1000) * 1000000;
 
-    int numEvents = kevent(_kqfd,
+    int numEvents = kevent(kqfd_,
                            NULL,
                            0,
-                           _events.data(),
-                           static_cast<int>(_events.size()),
+                           events_.data(),
+                           static_cast<int>(events_.size()),
                            &timeout);
     int savedErrno = errno;
     // Timestamp now(Timestamp::now());
@@ -61,9 +61,9 @@ void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
     {
         // LOG_TRACE << numEvents << " events happended";
         fillActiveChannels(numEvents, activeChannels);
-        if (static_cast<size_t>(numEvents) == _events.size())
+        if (static_cast<size_t>(numEvents) == events_.size())
         {
-            _events.resize(_events.size() * 2);
+            events_.resize(events_.size() * 2);
         }
     }
     else if (numEvents == 0)
@@ -85,12 +85,12 @@ void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
 void KQueue::fillActiveChannels(int numEvents,
                                 ChannelList *activeChannels) const
 {
-    assert(static_cast<size_t>(numEvents) <= _events.size());
+    assert(static_cast<size_t>(numEvents) <= events_.size());
     for (int i = 0; i < numEvents; ++i)
     {
-        Channel *channel = static_cast<Channel *>(_events[i].udata);
-        assert(_channels.find(channel->fd()) != _channels.end());
-        int events = _events[i].filter;
+        Channel *channel = static_cast<Channel *>(events_[i].udata);
+        assert(channels_.find(channel->fd()) != channels_.end());
+        int events = events_[i].filter;
         if (events == EVFILT_READ)
         {
             channel->setRevents(POLLIN);
@@ -118,12 +118,12 @@ void KQueue::updateChannel(Channel *channel)
     {
         if (index == kNew)
         {
-            assert(_channels.find(channel->fd()) == _channels.end());
+            assert(channels_.find(channel->fd()) == channels_.end());
         }
         else
         {  // index == kDeleted
-            assert(_channels.find(channel->fd()) != _channels.end());
-            assert(_channels[channel->fd()].second == channel);
+            assert(channels_.find(channel->fd()) != channels_.end());
+            assert(channels_[channel->fd()].second == channel);
         }
         update(channel);
         channel->setIndex(kAdded);
@@ -133,7 +133,7 @@ void KQueue::updateChannel(Channel *channel)
         // update existing one
         int fd = channel->fd();
         (void)fd;
-        assert(_channels.find(fd) != _channels.end());
+        assert(channels_.find(fd) != channels_.end());
         assert(index == kAdded);
         if (channel->isNoneEvent())
         {
@@ -150,7 +150,7 @@ void KQueue::removeChannel(Channel *channel)
 {
     assertInLoopThread();
     int fd = channel->fd();
-    assert(_channels.find(fd) != _channels.end());
+    assert(channels_.find(fd) != channels_.end());
     assert(channel->isNoneEvent());
     int index = channel->index();
     assert(index == kAdded || index == kDeleted);
@@ -160,7 +160,7 @@ void KQueue::removeChannel(Channel *channel)
         update(channel);
     }
 
-    size_t n = _channels.erase(fd);
+    size_t n = channels_.erase(fd);
     (void)n;
     assert(n == 1);
     channel->setIndex(kNew);
@@ -172,13 +172,13 @@ void KQueue::update(Channel *channel)
     int n = 0;
     auto events = channel->events();
     int oldEvents = 0;
-    if (_channels.find(channel->fd()) != _channels.end())
+    if (channels_.find(channel->fd()) != channels_.end())
     {
-        oldEvents = _channels[channel->fd()].first;
+        oldEvents = channels_[channel->fd()].first;
     }
 
     auto fd = channel->fd();
-    _channels[fd] = {events, channel};
+    channels_[fd] = {events, channel};
 
     if ((events & Channel::kReadEvent) && (!(oldEvents & Channel::kReadEvent)))
     {
@@ -223,7 +223,7 @@ void KQueue::update(Channel *channel)
                0,
                (void *)(intptr_t)channel);
     }
-    kevent(_kqfd, ev, n, NULL, 0, NULL);
+    kevent(kqfd_, ev, n, NULL, 0, NULL);
 }
 #else
 KQueue::KQueue(EventLoop *loop) : Poller(loop)

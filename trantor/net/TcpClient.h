@@ -27,7 +27,7 @@
 namespace trantor
 {
 class Connector;
-typedef std::shared_ptr<Connector> ConnectorPtr;
+using ConnectorPtr = std::shared_ptr<Connector>;
 class SSLContext;
 class TcpClient : NonCopyable
 {
@@ -45,63 +45,63 @@ class TcpClient : NonCopyable
 
     TcpConnectionPtr connection() const
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _connection;
+        std::lock_guard<std::mutex> lock(mutex_);
+        return connection_;
     }
 
     EventLoop *getLoop() const
     {
-        return _loop;
+        return loop_;
     }
     bool retry() const
     {
-        return _retry;
+        return retry_;
     }
     void enableRetry()
     {
-        _retry = true;
+        retry_ = true;
     }
 
     const std::string &name() const
     {
-        return _name;
+        return name_;
     }
 
     /// Set connection callback.
     /// Not thread safe.
     void setConnectionCallback(const ConnectionCallback &cb)
     {
-        _connectionCallback = cb;
+        connectionCallback_ = cb;
     }
     void setConnectionErrorCallback(const ConnectionErrorCallback &cb)
     {
-        _connectionErrorCallback = cb;
+        connectionErrorCallback_ = cb;
     }
     /// Set message callback.
     /// Not thread safe.
     void setMessageCallback(const RecvMessageCallback &cb)
     {
-        _messageCallback = cb;
+        messageCallback_ = cb;
     }
 
     /// Set write complete callback.
     /// Not thread safe.
     void setWriteCompleteCallback(const WriteCompleteCallback &cb)
     {
-        _writeCompleteCallback = cb;
+        writeCompleteCallback_ = cb;
     }
 
     void setConnectionCallback(ConnectionCallback &&cb)
     {
-        _connectionCallback = std::move(cb);
+        connectionCallback_ = std::move(cb);
     }
     void setMessageCallback(RecvMessageCallback &&cb)
     {
-        _messageCallback = std::move(cb);
+        messageCallback_ = std::move(cb);
     }
     void setWriteCompleteCallback(WriteCompleteCallback &&cb)
     {
-        _writeCompleteCallback = std::move(cb);
+        writeCompleteCallback_ = std::move(cb);
     }
     void enableSSL();
 
@@ -111,19 +111,19 @@ class TcpClient : NonCopyable
     /// Not thread safe, but in loop
     void removeConnection(const TcpConnectionPtr &conn);
 
-    EventLoop *_loop;
-    ConnectorPtr _connector;  // avoid revealing Connector
-    const std::string _name;
-    ConnectionCallback _connectionCallback;
-    ConnectionErrorCallback _connectionErrorCallback;
-    RecvMessageCallback _messageCallback;
-    WriteCompleteCallback _writeCompleteCallback;
-    std::atomic_bool _retry;    // atomic
-    std::atomic_bool _connect;  // atomic
+    EventLoop *loop_;
+    ConnectorPtr connector_;  // avoid revealing Connector
+    const std::string name_;
+    ConnectionCallback connectionCallback_;
+    ConnectionErrorCallback connectionErrorCallback_;
+    RecvMessageCallback messageCallback_;
+    WriteCompleteCallback writeCompleteCallback_;
+    std::atomic_bool retry_;    // atomic
+    std::atomic_bool connect_;  // atomic
     // always in loop thread
-    mutable std::mutex _mutex;
-    TcpConnectionPtr _connection;  // @GuardedBy _mutex
-    std::shared_ptr<SSLContext> _sslCtxPtr;
+    mutable std::mutex mutex_;
+    TcpConnectionPtr connection_;  // @GuardedBy mutex_
+    std::shared_ptr<SSLContext> sslCtxPtr_;
     class IgnoreSigPipe
     {
       public:

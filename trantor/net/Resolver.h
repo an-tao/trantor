@@ -15,7 +15,7 @@ namespace trantor
 class Resolver
 {
   public:
-    typedef std::function<void(const trantor::InetAddress&)> Callback;
+    using Callback = std::function<void(const trantor::InetAddress&)>;
     static std::shared_ptr<Resolver> newResolver(EventLoop* loop = nullptr,
                                                  size_t timeout = 60);
     virtual void resolve(const std::string& hostname,

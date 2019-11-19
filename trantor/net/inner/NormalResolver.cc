@@ -22,8 +22,8 @@ void NormalResolver::resolve(const std::string &hostname,
         if (iter != globalCache().end())
         {
             auto &cachedAddr = iter->second;
-            if (_timeout == 0 ||
-                cachedAddr.second.after(_timeout) > trantor::Date::date())
+            if (timeout_ == 0 ||
+                cachedAddr.second.after(timeout_) > trantor::Date::date())
             {
                 struct sockaddr_in addr;
                 memset(&addr, 0, sizeof addr);
@@ -49,14 +49,14 @@ void NormalResolver::resolve(const std::string &hostname,
             {
                 ret = gethostbyname_r(hostname.c_str(),
                                       &hent,
-                                      thisPtr->_resolveBuffer.data(),
-                                      thisPtr->_resolveBuffer.size(),
+                                      thisPtr->resolveBuffer_.data(),
+                                      thisPtr->resolveBuffer_.size(),
                                       &he,
                                       &herrno);
                 if (ret == ERANGE)
                 {
-                    thisPtr->_resolveBuffer.resize(
-                        thisPtr->_resolveBuffer.size() * 2);
+                    thisPtr->resolveBuffer_.resize(
+                        thisPtr->resolveBuffer_.size() * 2);
                 }
                 else
                 {

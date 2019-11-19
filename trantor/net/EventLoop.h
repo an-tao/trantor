@@ -33,9 +33,9 @@ namespace trantor
 class Poller;
 class TimerQueue;
 class Channel;
-typedef std::vector<Channel *> ChannelList;
-typedef std::function<void()> Func;
-typedef uint64_t TimerId;
+using ChannelList = std::vector<Channel *>;
+using Func = std::function<void()>;
+using TimerId = uint64_t;
 enum
 {
     InvalidTimerId = 0
@@ -61,7 +61,7 @@ class EventLoop : NonCopyable
     void resetAfterFork();
     bool isInLoopThread() const
     {
-        return _threadId == std::this_thread::get_id();
+        return threadId_ == std::this_thread::get_id();
     };
     static EventLoop *getEventLoopOfCurrentThread();
     void updateChannel(Channel *chl);
@@ -74,18 +74,13 @@ class EventLoop : NonCopyable
     void wakeupRead();
     size_t index()
     {
-        return _index;
+        return index_;
     }
     void setIndex(size_t index)
     {
-        _index = index;
+        index_ = index;
     }
-    // template <typename T>
-    // const std::shared_ptr<ObjectPool<T>> &getObjectPool()
-    // {
-    //     static std::shared_ptr<ObjectPool<T>>
-    //     pool=std::make_shared<ObjectPool<T>>(); return pool;
-    // }
+
     ///
     /// Runs callback at 'time'.
     /// Safe to call from other threads.
@@ -103,8 +98,10 @@ class EventLoop : NonCopyable
     /**
      * Users could use chrono literals to represent a time duration
      * For example:
-     * runAfter(5s, task);
-     * runAfter(10min, task);
+     * @code
+       runAfter(5s, task);
+       runAfter(10min, task);
+       @endcode
      */
     TimerId runAfter(const std::chrono::duration<long double> &delay,
                      const Func &cb)
@@ -126,9 +123,11 @@ class EventLoop : NonCopyable
     /**
      * Users could use chrono literals to represent a time duration
      * For example:
-     * runEvery(5s, task);
-     * runEvery(10min, task);
-     * runEvery(0.1h, task);
+     * @code
+       runEvery(5s, task);
+       runEvery(10min, task);
+       runEvery(0.1h, task);
+       @endcode
      */
     TimerId runEvery(const std::chrono::duration<long double> &interval,
                      const Func &cb)
@@ -146,39 +145,36 @@ class EventLoop : NonCopyable
 
     bool isRunning()
     {
-        return _looping && (!_quit);
+        return looping_ && (!quit_);
     }
     bool isCallingFunctions()
     {
-        return _callingFuncs;
+        return callingFuncs_;
     }
 
   private:
     void abortNotInLoopThread();
-    bool _looping;
-    const std::thread::id _threadId;
-    bool _quit;
-    std::unique_ptr<Poller> _poller;
+    bool looping_;
+    const std::thread::id threadId_;
+    bool quit_;
+    std::unique_ptr<Poller> poller_;
 
-    ChannelList _activeChannels;
-    Channel *_currentActiveChannel;
+    ChannelList activeChannels_;
+    Channel *currentActiveChannel_;
 
-    bool _eventHandling;
-
-    // std::mutex _funcsMutex;
-
-    MpscQueue<Func> _funcs;
-    std::unique_ptr<TimerQueue> _timerQueue;
-    bool _callingFuncs = false;
+    bool eventHandling_;
+    MpscQueue<Func> funcs_;
+    std::unique_ptr<TimerQueue> timerQueue_;
+    bool callingFuncs_{false};
 #ifdef __linux__
-    int _wakeupFd;
+    int wakeupFd_;
 #else
-    int _wakeupFd[2];
+    int wakeupFd_[2];
 #endif
-    std::unique_ptr<Channel> _wakeupChannelPtr;
+    std::unique_ptr<Channel> wakeupChannelPtr_;
 
     void doRunInLoopFuncs();
-    size_t _index = std::numeric_limits<size_t>::max();
+    size_t index_{std::numeric_limits<size_t>::max()};
 };
 
 }  // namespace trantor

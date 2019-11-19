@@ -31,13 +31,13 @@ class EventLoopThreadPool : NonCopyable
     void wait();
     size_t getLoopNum()
     {
-        return _loopThreadVector.size();
+        return loopThreadVector_.size();
     }
     EventLoop *getNextLoop();
     std::vector<EventLoop *> getLoops() const;
 
   private:
-    std::vector<std::shared_ptr<EventLoopThread>> _loopThreadVector;
-    size_t _loopIndex;
+    std::vector<std::shared_ptr<EventLoopThread>> loopThreadVector_;
+    size_t loopIndex_;
 };
 }  // namespace trantor

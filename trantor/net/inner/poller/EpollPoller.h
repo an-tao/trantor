@@ -21,7 +21,7 @@
 #ifdef __linux__
 #include <memory>
 #include <map>
-typedef std::vector<struct epoll_event> EventList;
+using EventList = std::vector<struct epoll_event>;
 #endif
 namespace trantor
 {
@@ -39,12 +39,12 @@ class EpollPoller : public Poller
   private:
 #ifdef __linux__
     static const int kInitEventListSize = 16;
-    int _epollfd;
-    EventList _events;
+    int epollfd_;
+    EventList events_;
     void update(int operation, Channel *channel);
 #ifndef NDEBUG
-    typedef std::map<int, Channel *> ChannelMap;
-    ChannelMap _channels;
+    using ChannelMap = std::map<int, Channel *>;
+    ChannelMap channels_;
 #endif
     void fillActiveChannels(int numEvents, ChannelList *activeChannels) const;
 #endif

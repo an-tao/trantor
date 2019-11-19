@@ -25,9 +25,9 @@ class MpscQueue : public NonCopyable
 {
   public:
     MpscQueue()
-        : _head(new BufferNode), _tail(_head.load(std::memory_order_relaxed))
+        : head_(new BufferNode), tail_(head_.load(std::memory_order_relaxed))
     {
-        BufferNode *front = _head.load(std::memory_order_relaxed);
+        BufferNode *front = head_.load(std::memory_order_relaxed);
         front->next.store(NULL, std::memory_order_relaxed);
     }
 
@@ -37,33 +37,33 @@ class MpscQueue : public NonCopyable
         while (this->dequeue(output))
         {
         }
-        BufferNode *front = _head.load(std::memory_order_relaxed);
+        BufferNode *front = head_.load(std::memory_order_relaxed);
         delete front;
     }
 
     void enqueue(T &&input)
     {
-        BufferNode *node = new BufferNode;
+        BufferNode *node{new BufferNode};
         node->data = std::move(input);
         node->next.store(NULL, std::memory_order_relaxed);
 
-        BufferNode *prev_head = _head.exchange(node, std::memory_order_acq_rel);
-        prev_head->next.store(node, std::memory_order_release);
+        BufferNode *prevhead{head_.exchange(node, std::memory_order_acq_rel)};
+        prevhead->next.store(node, std::memory_order_release);
     }
 
     void enqueue(const T &input)
     {
-        BufferNode *node = new BufferNode;
+        BufferNode *node{new BufferNode};
         node->data = input;
         node->next.store(NULL, std::memory_order_relaxed);
 
-        BufferNode *prev_head = _head.exchange(node, std::memory_order_acq_rel);
-        prev_head->next.store(node, std::memory_order_release);
+        BufferNode *prevhead{head_.exchange(node, std::memory_order_acq_rel)};
+        prevhead->next.store(node, std::memory_order_release);
     }
 
     bool dequeue(T &output)
     {
-        BufferNode *tail = _tail.load(std::memory_order_relaxed);
+        BufferNode *tail = tail_.load(std::memory_order_relaxed);
         BufferNode *next = tail->next.load(std::memory_order_acquire);
 
         if (next == NULL)
@@ -77,7 +77,7 @@ class MpscQueue : public NonCopyable
         /// Immediately destroy some RAII objects in the next->data
         next->data = T();
 #endif
-        _tail.store(next, std::memory_order_release);
+        tail_.store(next, std::memory_order_release);
         delete tail;
         return true;
     }
@@ -89,8 +89,8 @@ class MpscQueue : public NonCopyable
         std::atomic<BufferNode *> next;
     };
 
-    std::atomic<BufferNode *> _head;
-    std::atomic<BufferNode *> _tail;
+    std::atomic<BufferNode *> head_;
+    std::atomic<BufferNode *> tail_;
 };
 
 }  // namespace trantor

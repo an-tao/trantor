@@ -88,7 +88,7 @@ void TimerQueue::handleRead()
     // safe to callback outside critical section
     for (auto const &timerPtr : expired)
     {
-        if (_timerIdSet.find(timerPtr->id()) != _timerIdSet.end())
+        if (timerIdSet_.find(timerPtr->id()) != timerIdSet_.end())
         {
             timerPtr->run();
         }
@@ -120,7 +120,7 @@ void TimerQueue::processTimers()
     // safe to callback outside critical section
     for (auto const &timerPtr : expired)
     {
-        if (_timerIdSet.find(timerPtr->id()) != _timerIdSet.end())
+        if (timerIdSet_.find(timerPtr->id()) != timerIdSet_.end())
         {
             timerPtr->run();
         }
@@ -204,7 +204,7 @@ TimerId TimerQueue::addTimer(TimerCallback &&cb,
 void TimerQueue::addTimerInLoop(const TimerPtr &timer)
 {
     _loop->assertInLoopThread();
-    _timerIdSet.insert(timer->id());
+    timerIdSet_.insert(timer->id());
     if (insert(timer))
     {
 // the earliest timer changed
@@ -216,7 +216,7 @@ void TimerQueue::addTimerInLoop(const TimerPtr &timer)
 
 void TimerQueue::invalidateTimer(TimerId id)
 {
-    _loop->runInLoop([=]() { _timerIdSet.erase(id); });
+    _loop->runInLoop([=]() { timerIdSet_.erase(id); });
 }
 
 bool TimerQueue::insert(const TimerPtr &timerPtr)
@@ -268,7 +268,7 @@ void TimerQueue::reset(const std::vector<TimerPtr> &expired, const Date &now)
     for (auto const &timerPtr : expired)
     {
         if (timerPtr->isRepeat() &&
-            _timerIdSet.find(timerPtr->id()) != _timerIdSet.end())
+            timerIdSet_.find(timerPtr->id()) != timerIdSet_.end())
         {
             timerPtr->restart(now);
             insert(timerPtr);

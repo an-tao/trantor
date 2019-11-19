@@ -30,7 +30,7 @@ class SerialTaskQueue : public TaskQueue
 
     virtual std::string getName() const
     {
-        return _queueName;
+        return queueName_;
     };
     void waitAllTasksFinished();
     SerialTaskQueue() = delete;
@@ -38,16 +38,16 @@ class SerialTaskQueue : public TaskQueue
     virtual ~SerialTaskQueue();
     bool isRuningTask()
     {
-        return _loopThread.getLoop()
-                   ? _loopThread.getLoop()->isCallingFunctions()
+        return loopThread_.getLoop()
+                   ? loopThread_.getLoop()->isCallingFunctions()
                    : false;
     }
     size_t getTaskCount();
     void stop();
 
   protected:
-    std::string _queueName;
-    EventLoopThread _loopThread;
-    bool _stop = false;
+    std::string queueName_;
+    EventLoopThread loopThread_;
+    bool stop_{false};
 };
 }  // namespace trantor

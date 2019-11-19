@@ -26,8 +26,8 @@
 
 namespace trantor
 {
-typedef std::shared_ptr<std::string> StringPtr;
-typedef std::queue<StringPtr> StringPtrQueue;
+using StringPtr = std::shared_ptr<std::string>;
+using StringPtrQueue = std::queue<StringPtr>;
 class AsyncFileLogger : NonCopyable
 {
   public:
@@ -43,14 +43,14 @@ class AsyncFileLogger : NonCopyable
                      const std::string &extName = ".log",
                      const std::string &path = "./")
     {
-        _fileBaseName = baseName;
-        extName[0] == '.' ? _fileExtName = extName
-                          : _fileExtName = std::string(".") + extName;
-        _filePath = path;
-        if (_filePath.length() == 0)
-            _filePath = "./";
-        if (_filePath[_filePath.length() - 1] != '/')
-            _filePath = _filePath + "/";
+        fileBaseName_ = baseName;
+        extName[0] == '.' ? fileExtName_ = extName
+                          : fileExtName_ = std::string(".") + extName;
+        filePath_ = path;
+        if (filePath_.length() == 0)
+            filePath_ = "./";
+        if (filePath_[filePath_.length() - 1] != '/')
+            filePath_ = filePath_ + "/";
     }
     ~AsyncFileLogger();
     AsyncFileLogger();
@@ -64,12 +64,12 @@ class AsyncFileLogger : NonCopyable
     StringPtrQueue tmpBuffers_;
     void writeLogToFile(const StringPtr buf);
     std::unique_ptr<std::thread> threadPtr_;
-    bool stopFlag_ = false;
+    bool stopFlag_{false};
     void logThreadFunc();
-    std::string _filePath = "./";
-    std::string _fileBaseName = "trantor";
-    std::string _fileExtName = ".log";
-    uint64_t sizeLimit_ = 20 * 1024 * 1024;
+    std::string filePath_{"./"};
+    std::string fileBaseName_{"trantor"};
+    std::string fileExtName_{".log"};
+    uint64_t sizeLimit_{20 * 1024 * 1024};
     class LoggerFile : NonCopyable
     {
       public:
@@ -81,22 +81,22 @@ class AsyncFileLogger : NonCopyable
         uint64_t getLength();
         explicit operator bool() const
         {
-            return _fp != NULL;
+            return fp_ != nullptr;
         }
         void flush();
 
       protected:
-        FILE *_fp = NULL;
-        Date _creationDate;
-        std::string _fileFullName;
-        std::string _filePath;
-        std::string _fileBaseName;
-        std::string _fileExtName;
-        static uint64_t _fileSeq;
+        FILE *fp_{nullptr};
+        Date creationDate_;
+        std::string fileFullName_;
+        std::string filePath_;
+        std::string fileBaseName_;
+        std::string fileExtName_;
+        static uint64_t fileSeq_;
     };
-    std::unique_ptr<LoggerFile> _loggerFilePtr;
+    std::unique_ptr<LoggerFile> loggerFilePtr_;
 
-    uint64_t _lostCounter = 0;
+    uint64_t lostCounter_{0};
     void swapBuffer();
 };
 

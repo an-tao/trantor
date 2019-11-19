@@ -20,52 +20,52 @@
 
 using namespace trantor;
 EventLoopThread::EventLoopThread(const std::string &threadName)
-    : _loop(nullptr),
-      _loopThreadName(threadName),
-      _thread([=]() { loopFuncs(); })
+    : loop_(nullptr),
+      loopThreadName_(threadName),
+      thread_([=]() { loopFuncs(); })
 {
-    auto f = _promiseForLoopPointer.get_future();
-    _loop = f.get();
+    auto f = promiseForLoopPointer_.get_future();
+    loop_ = f.get();
 }
 EventLoopThread::~EventLoopThread()
 {
     run();
-    if (_loop)
+    if (loop_)
     {
-        _loop->quit();
+        loop_->quit();
     }
-    if (_thread.joinable())
+    if (thread_.joinable())
     {
-        _thread.join();
+        thread_.join();
     }
 }
 // void EventLoopThread::stop() {
-//    if(_loop)
-//        _loop->quit();
+//    if(loop_)
+//        loop_->quit();
 //}
 void EventLoopThread::wait()
 {
-    _thread.join();
+    thread_.join();
 }
 void EventLoopThread::loopFuncs()
 {
 #ifdef __linux__
-    ::prctl(PR_SET_NAME, _loopThreadName.c_str());
+    ::prctl(PR_SET_NAME, loopThreadName_.c_str());
 #endif
     EventLoop loop;
-    loop.queueInLoop([=]() { _promiseForLoop.set_value(1); });
-    _promiseForLoopPointer.set_value(&loop);
-    auto f = _promiseForRun.get_future();
+    loop.queueInLoop([=]() { promiseForLoop_.set_value(1); });
+    promiseForLoopPointer_.set_value(&loop);
+    auto f = promiseForRun_.get_future();
     (void)f.get();
     loop.loop();
     // LOG_DEBUG << "loop out";
-    _loop = NULL;
+    loop_ = NULL;
 }
 void EventLoopThread::run()
 {
-    std::call_once(_once, [this]() {
-        auto f = _promiseForLoop.get_future();
-        _promiseForRun.set_value(1);
+    std::call_once(once_, [this]() {
+        auto f = promiseForLoop_.get_future();
+        promiseForRun_.set_value(1);
         // Make sure the event loop loops before returning.
         (void)f.get();
     });

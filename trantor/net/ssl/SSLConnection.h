@@ -17,6 +17,8 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/TcpConnection.h>
 #include <memory>
+#include <array>
+
 namespace trantor
 {
 enum class SSLStatus
@@ -51,21 +53,19 @@ class SSLConnection : public TcpConnectionImpl
 
   private:
     void doHandshaking();
-    SSLStatus _status = SSLStatus::Handshaking;
-
-  private:
+    SSLStatus statusOfSSL = SSLStatus::Handshaking;
     // OpenSSL
-    std::shared_ptr<SSLConn> _sslPtr;
-    bool _isServer;
+    std::shared_ptr<SSLConn> sslPtr_;
+    bool isServer_;
 
   protected:
     virtual void readCallback() override;
     virtual void writeCallback() override;
     virtual void connectEstablished() override;
     virtual ssize_t writeInLoop(const char *buffer, size_t length) override;
-    char _sendBuffer[8192];
+    std::array<char, 8192> sendBuffer_;
 };
 
-typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
+using SSLConnectionPtr = std::shared_ptr<SSLConnection>;
 
 }  // namespace trantor

@@ -24,32 +24,32 @@ enum TrantorError
     TrantorError_UnkownError
 };
 
-typedef std::function<void()> TimerCallback;
+using TimerCallback = std::function<void()>;
 
 // the data has been read to (buf, len)
 class TcpConnection;
 class SSLConnection;
 class MsgBuffer;
-typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
-typedef std::shared_ptr<SSLConnection> SSLConnectionPtr;
+using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
+using SSLConnectionPtr = std::shared_ptr<SSLConnection>;
 // tcp server and connection callback
-typedef std::function<void(const TcpConnectionPtr &, MsgBuffer *)>
-    RecvMessageCallback;
-typedef std::function<void()> ConnectionErrorCallback;
-typedef std::function<void(const TcpConnectionPtr &)> ConnectionCallback;
-typedef std::function<void(const TcpConnectionPtr &)> CloseCallback;
-typedef std::function<void(const TcpConnectionPtr &)> WriteCompleteCallback;
-typedef std::function<void(const TcpConnectionPtr &, const size_t)>
-    HighWaterMarkCallback;
+using RecvMessageCallback =
+    std::function<void(const TcpConnectionPtr &, MsgBuffer *)>;
+using ConnectionErrorCallback = std::function<void()>;
+using ConnectionCallback = std::function<void(const TcpConnectionPtr &)>;
+using CloseCallback = std::function<void(const TcpConnectionPtr &)>;
+using WriteCompleteCallback = std::function<void(const TcpConnectionPtr &)>;
+using HighWaterMarkCallback =
+    std::function<void(const TcpConnectionPtr &, const size_t)>;
 // ssl server and connection callback
-typedef std::function<void(const SSLConnectionPtr &, MsgBuffer *)>
-    SSLRecvMessageCallback;
-typedef std::function<void(const SSLConnectionPtr &)> SSLConnectionCallback;
-typedef std::function<void(const SSLConnectionPtr &)> SSLCloseCallback;
-typedef std::function<void(const SSLConnectionPtr &)> SSLWriteCompleteCallback;
-typedef std::function<void(const SSLConnectionPtr &, const size_t)>
-    SSLHighWaterMarkCallback;
+using SSLRecvMessageCallback =
+    std::function<void(const SSLConnectionPtr &, MsgBuffer *)>;
+using SSLConnectionCallback = std::function<void(const SSLConnectionPtr &)>;
+using SSLCloseCallback = std::function<void(const SSLConnectionPtr &)>;
+using SSLWriteCompleteCallback = std::function<void(const SSLConnectionPtr &)>;
+using SSLHighWaterMarkCallback =
+    std::function<void(const SSLConnectionPtr &, const size_t)>;
 
-typedef std::function<void(const TrantorError)> OperationCompleteCallback;
+using OperationCompleteCallback = std::function<void(const TrantorError)>;
 
 }  // namespace trantor

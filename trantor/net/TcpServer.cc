@@ -27,23 +27,23 @@ TcpServer::TcpServer(EventLoop *loop,
                      const std::string &name,
                      bool reUseAddr,
                      bool reUsePort)
-    : _loop(loop),
-      _acceptorPtr(new Acceptor(loop, address, reUseAddr, reUsePort)),
-      _serverName(name),
-      _recvMessageCallback([](const TcpConnectionPtr &, MsgBuffer *buffer) {
+    : loop_(loop),
+      acceptorPtr_(new Acceptor(loop, address, reUseAddr, reUsePort)),
+      serverName_(name),
+      recvMessageCallback_([](const TcpConnectionPtr &, MsgBuffer *buffer) {
           LOG_ERROR << "unhandled recv message [" << buffer->readableBytes()
                     << " bytes]";
           buffer->retrieveAll();
       })
 {
-    _acceptorPtr->setNewConnectionCallback(
+    acceptorPtr_->setNewConnectionCallback(
         std::bind(&TcpServer::newConnection, this, _1, _2));
 }
 
 TcpServer::~TcpServer()
 {
-    _loop->assertInLoopThread();
-    LOG_TRACE << "TcpServer::~TcpServer [" << _serverName << "] destructing";
+    loop_->assertInLoopThread();
+    LOG_TRACE << "TcpServer::~TcpServer [" << serverName_ << "] destructing";
 }
 
 void TcpServer::newConnection(int sockfd, const InetAddress &peer)
@@ -57,16 +57,16 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     //    LOG_TRACE<<"vector size:"<<str.size();
     //    size_t n=write(sockfd,&str[0],str.size());
     //    LOG_TRACE<<"write "<<n<<" bytes";
-    _loop->assertInLoopThread();
+    loop_->assertInLoopThread();
     EventLoop *ioLoop = NULL;
-    if (_loopPoolPtr && _loopPoolPtr->getLoopNum() > 0)
+    if (loopPoolPtr_ && loopPoolPtr_->getLoopNum() > 0)
     {
-        ioLoop = _loopPoolPtr->getNextLoop();
+        ioLoop = loopPoolPtr_->getNextLoop();
     }
     if (ioLoop == NULL)
-        ioLoop = _loop;
+        ioLoop = loop_;
     std::shared_ptr<TcpConnectionImpl> newPtr;
-    if (_sslCtxPtr)
+    if (sslCtxPtr_)
     {
         newPtr =
             std::make_shared<SSLConnection>(ioLoop,
@@ -74,7 +74,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
                                             InetAddress(
                                                 Socket::getLocalAddr(sockfd)),
                                             peer,
-                                            _sslCtxPtr);
+                                            sslCtxPtr_);
     }
     else
     {
@@ -82,70 +82,70 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
             ioLoop, sockfd, InetAddress(Socket::getLocalAddr(sockfd)), peer);
     }
 
-    if (_idleTimeout > 0)
+    if (idleTimeout_ > 0)
     {
-        assert(_timingWheelMap[ioLoop]);
-        newPtr->enableKickingOff(_idleTimeout, _timingWheelMap[ioLoop]);
+        assert(timingWheelMap_[ioLoop]);
+        newPtr->enableKickingOff(idleTimeout_, timingWheelMap_[ioLoop]);
     }
-    newPtr->setRecvMsgCallback(_recvMessageCallback);
+    newPtr->setRecvMsgCallback(recvMessageCallback_);
 
     newPtr->setConnectionCallback([=](const TcpConnectionPtr &connectionPtr) {
-        if (_connectionCallback)
-            _connectionCallback(connectionPtr);
+        if (connectionCallback_)
+            connectionCallback_(connectionPtr);
     });
     newPtr->setWriteCompleteCallback(
         [=](const TcpConnectionPtr &connectionPtr) {
-            if (_writeCompleteCallback)
-                _writeCompleteCallback(connectionPtr);
+            if (writeCompleteCallback_)
+                writeCompleteCallback_(connectionPtr);
         });
     newPtr->setCloseCallback(std::bind(&TcpServer::connectionClosed, this, _1));
-    _connSet.insert(newPtr);
+    connSet_.insert(newPtr);
     newPtr->connectEstablished();
 }
 
 void TcpServer::start()
 {
-    _loop->runInLoop([=]() {
-        assert(!_started);
-        _started = true;
-        if (_idleTimeout > 0)
+    loop_->runInLoop([=]() {
+        assert(!started_);
+        started_ = true;
+        if (idleTimeout_ > 0)
         {
-            _timingWheelMap[_loop] =
-                std::make_shared<TimingWheel>(_loop,
-                                              _idleTimeout,
+            timingWheelMap_[loop_] =
+                std::make_shared<TimingWheel>(loop_,
+                                              idleTimeout_,
                                               1,
-                                              _idleTimeout < 500
-                                                  ? _idleTimeout + 1
+                                              idleTimeout_ < 500
+                                                  ? idleTimeout_ + 1
                                                   : 100);
-            if (_loopPoolPtr)
+            if (loopPoolPtr_)
             {
-                auto loopNum = _loopPoolPtr->getLoopNum();
+                auto loopNum = loopPoolPtr_->getLoopNum();
                 while (loopNum > 0)
                 {
                     // LOG_TRACE << "new Wheel loopNum=" << loopNum;
-                    auto poolLoop = _loopPoolPtr->getNextLoop();
-                    _timingWheelMap[poolLoop] =
+                    auto poolLoop = loopPoolPtr_->getNextLoop();
+                    timingWheelMap_[poolLoop] =
                         std::make_shared<TimingWheel>(poolLoop,
-                                                      _idleTimeout,
+                                                      idleTimeout_,
                                                       1,
-                                                      _idleTimeout < 500
-                                                          ? _idleTimeout + 1
+                                                      idleTimeout_ < 500
+                                                          ? idleTimeout_ + 1
                                                           : 100);
                     loopNum--;
                 }
             }
         }
-        LOG_TRACE << "map size=" << _timingWheelMap.size();
-        _acceptorPtr->listen();
+        LOG_TRACE << "map size=" << timingWheelMap_.size();
+        acceptorPtr_->listen();
     });
 }
 
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
-    //_loop->assertInLoopThread();
-    _loop->runInLoop([=]() {
-        size_t n = _connSet.erase(connectionPtr);
+    // loop_->assertInLoopThread();
+    loop_->runInLoop([=]() {
+        size_t n = connSet_.erase(connectionPtr);
         (void)n;
         assert(n == 1);
     });
@@ -155,7 +155,7 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 
 const std::string TcpServer::ipPort() const
 {
-    return _acceptorPtr->addr().toIpPort();
+    return acceptorPtr_->addr().toIpPort();
 }
 
 void TcpServer::enableSSL(const std::string &certPath,
@@ -164,6 +164,6 @@ void TcpServer::enableSSL(const std::string &certPath,
     // init OpenSSL
     initOpenSSL();
     /* Create a new OpenSSL context */
-    _sslCtxPtr = newSSLContext();
-    initServerSSLContext(_sslCtxPtr, certPath, keyPath);
+    sslCtxPtr_ = newSSLContext();
+    initServerSSLContext(sslCtxPtr_, certPath, keyPath);
 }
