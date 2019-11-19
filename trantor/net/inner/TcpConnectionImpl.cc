@@ -659,7 +659,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     loop_->assertInLoopThread();
     assert(filePtr->sendFd_ >= 0);
 #ifdef __linux__
-    if (!_isSSLConn)
+    if (!isSSLConn_)
     {
         auto bytesSent = sendfile(socketPtr_->fd(),
                                   filePtr->sendFd_,
