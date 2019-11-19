@@ -37,7 +37,7 @@ void NormalResolver::resolve(const std::string &hostname,
         }
     }
 
-    _taskQueue.runTaskInQueue(
+    taskQueue_.runTaskInQueue(
         [thisPtr = shared_from_this(), callback, hostname]() {
 #ifdef __linux__
             struct hostent hent;
