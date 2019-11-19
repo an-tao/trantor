@@ -32,19 +32,19 @@ class EventLoopThread : NonCopyable
     void wait();
     EventLoop *getLoop() const
     {
-        return _loop;
+        return loop_;
     }
     void run();
 
   private:
-    EventLoop *_loop;
-    std::string _loopThreadName;
+    EventLoop *loop_;
+    std::string loopThreadName_;
     void loopFuncs();
-    std::promise<EventLoop *> _promiseForLoopPointer;
-    std::promise<int> _promiseForRun;
-    std::promise<int> _promiseForLoop;
-    std::once_flag _once;
-    std::thread _thread;
+    std::promise<EventLoop *> promiseForLoopPointer_;
+    std::promise<int> promiseForRun_;
+    std::promise<int> promiseForLoop_;
+    std::once_flag once_;
+    std::thread thread_;
 };
 
 }  // namespace trantor

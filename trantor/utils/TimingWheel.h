@@ -34,10 +34,10 @@
 
 namespace trantor
 {
-typedef std::shared_ptr<void> EntryPtr;
+using EntryPtr = std::shared_ptr<void>;
 
-typedef std::unordered_set<EntryPtr> EntryBucket;
-typedef std::deque<EntryBucket> BucketQueue;
+using EntryBucket = std::unordered_set<EntryPtr>;
+using BucketQueue = std::deque<EntryBucket>;
 
 class TimingWheel
 {
@@ -81,21 +81,21 @@ class TimingWheel
 
     EventLoop *getLoop()
     {
-        return _loop;
+        return loop_;
     }
 
     ~TimingWheel();
 
   private:
-    std::vector<BucketQueue> _wheels;
+    std::vector<BucketQueue> wheels_;
 
-    std::atomic<size_t> _ticksCounter = ATOMIC_VAR_INIT(0);
+    std::atomic<size_t> ticksCounter_{0};
 
-    trantor::TimerId _timerId;
-    trantor::EventLoop *_loop;
+    trantor::TimerId timerId_;
+    trantor::EventLoop *loop_;
 
-    float _tickInterval;
-    size_t _wheelsNum;
-    size_t _bucketsNumPerWheel;
+    float tickInterval_;
+    size_t wheelsNum_;
+    size_t bucketsNumPerWheel_;
 };
 }  // namespace trantor

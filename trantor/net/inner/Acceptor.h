@@ -23,7 +23,7 @@
 
 namespace trantor
 {
-typedef std::function<void(int fd, const InetAddress &)> NewConnectionCallback;
+using NewConnectionCallback = std::function<void(int fd, const InetAddress &)>;
 class Acceptor : NonCopyable
 {
   public:
@@ -34,21 +34,21 @@ class Acceptor : NonCopyable
     ~Acceptor();
     const InetAddress &addr() const
     {
-        return _addr;
+        return addr_;
     }
     void setNewConnectionCallback(const NewConnectionCallback &cb)
     {
-        _newConnectionCallback = cb;
+        newConnectionCallback_ = cb;
     };
     void listen();
 
   protected:
-    Socket _sock;
-    InetAddress _addr;
-    EventLoop *_loop;
-    NewConnectionCallback _newConnectionCallback;
-    Channel _acceptChannel;
-    int _idleFd;
+    Socket sock_;
+    InetAddress addr_;
+    EventLoop *loop_;
+    NewConnectionCallback newConnectionCallback_;
+    Channel acceptChannel_;
+    int idleFd_;
     void readCallback();
 };
 }  // namespace trantor

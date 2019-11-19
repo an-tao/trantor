@@ -18,43 +18,43 @@
 
 namespace trantor
 {
-std::atomic<TimerId> Timer::_timersCreated = ATOMIC_VAR_INIT(InvalidTimerId);
+std::atomic<TimerId> Timer::timersCreated_ = ATOMIC_VAR_INIT(InvalidTimerId);
 Timer::Timer(const TimerCallback &cb, const Date &when, double interval)
-    : _callback(cb),
-      _when(when),
-      _interval(interval),
-      _repeat(interval > 0.0),
-      _id(++_timersCreated)
+    : callback_(cb),
+      when_(when),
+      interval_(interval),
+      repeat_(interval > 0.0),
+      id_(++timersCreated_)
 {
 }
 Timer::Timer(TimerCallback &&cb, const Date &when, double interval)
-    : _callback(std::move(cb)),
-      _when(when),
-      _interval(interval),
-      _repeat(interval > 0.0),
-      _id(++_timersCreated)
+    : callback_(std::move(cb)),
+      when_(when),
+      interval_(interval),
+      repeat_(interval > 0.0),
+      id_(++timersCreated_)
 {
     // LOG_TRACE<<"Timer move contrustor";
 }
 void Timer::run() const
 {
-    _callback();
+    callback_();
 }
 void Timer::restart(const Date &now)
 {
-    if (_repeat)
+    if (repeat_)
     {
-        _when = now.after(_interval);
+        when_ = now.after(interval_);
     }
     else
-        _when = Date();
+        when_ = Date();
 }
 bool Timer::operator<(const Timer &t) const
 {
-    return _when < t._when;
+    return when_ < t.when_;
 }
 bool Timer::operator>(const Timer &t) const
 {
-    return _when > t._when;
+    return when_ > t.when_;
 }
 }  // namespace trantor

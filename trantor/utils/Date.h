@@ -145,6 +145,6 @@ class Date
     }
 
   private:
-    int64_t microSecondsSinceEpoch_ = 0;
+    int64_t microSecondsSinceEpoch_{0};
 };
 }  // namespace trantor

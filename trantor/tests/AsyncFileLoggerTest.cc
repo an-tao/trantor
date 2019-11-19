@@ -32,14 +32,14 @@ int main()
     int i = 0;
     while (i < 1000000)
     {
-        i++;
+        ++i;
         if (i % 100 == 0)
         {
             LOG_ERROR << "this is the " << i << "th log";
             continue;
         }
         LOG_INFO << "this is the " << i << "th log";
-        i++;
+        ++i;
         LOG_DEBUG << "this is the " << i << "th log";
     }
 }

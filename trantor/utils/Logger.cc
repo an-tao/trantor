@@ -55,12 +55,12 @@ inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
 }  // namespace trantor
 using namespace trantor;
 
-static thread_local uint64_t lastSecond_ = 0;
+static thread_local uint64_t lastSecond_{0};
 static thread_local char lastTimeString_[32] = {0};
 #ifdef __linux__
-static thread_local pid_t threadId_ = 0;
+static thread_local pid_t threadId_{0};
 #else
-static thread_local uint64_t threadId_ = 0;
+static thread_local uint64_t threadId_{0};
 #endif
 //   static thread_local LogStream logStream_;
 
@@ -135,9 +135,9 @@ Logger::Logger(SourceFile file, int line, bool)
 Logger::~Logger()
 {
     logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
-    Logger::_outputFunc()(logStream_.bufferData(), logStream_.bufferLength());
+    Logger::outputFunc_()(logStream_.bufferData(), logStream_.bufferLength());
     if (level_ >= ERROR)
-        Logger::_flushFunc()();
+        Logger::flushFunc_()();
     // logStream_.resetBuffer();
 }
 LogStream &Logger::stream()

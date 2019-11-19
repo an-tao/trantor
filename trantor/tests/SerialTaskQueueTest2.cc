@@ -12,22 +12,22 @@ int main()
     auto ft = pro.get_future();
     trantor::SerialTaskQueue queue("");
     queue.runTaskInQueue([&counter, &pro, &queue]() {
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 10000; ++i)
         {
             queue.runTaskInQueue([&counter, &pro]() {
-                counter++;
+                ++counter;
                 if (counter.load() == 110000)
                     pro.set_value(1);
             });
         }
     });
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 10; ++i)
     {
         std::thread([&counter, &queue, &pro]() {
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 10000; ++i)
             {
                 queue.runTaskInQueue([&counter, &pro]() {
-                    counter++;
+                    ++counter;
                     if (counter.load() == 110000)
                         pro.set_value(1);
                 });

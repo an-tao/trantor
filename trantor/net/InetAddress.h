@@ -45,18 +45,18 @@ class InetAddress
 
     /// Constructs an endpoint with given struct @c sockaddr_in
     /// Mostly used when accepting new connections
-    explicit InetAddress(const struct sockaddr_in &addr) : _addr(addr)
+    explicit InetAddress(const struct sockaddr_in &addr) : addr_(addr)
     {
     }
 
     explicit InetAddress(const struct sockaddr_in6 &addr)
-        : _addr6(addr), _isIpV6(true)
+        : addr6_(addr), isIpV6_(true)
     {
     }
 
     sa_family_t family() const
     {
-        return _addr.sin_family;
+        return addr_.sin_family;
     }
     std::string toIp() const;
     std::string toIpPort() const;
@@ -64,7 +64,7 @@ class InetAddress
 
     bool isIpV6() const
     {
-        return _isIpV6;
+        return isIpV6_;
     }
     // default copy/assignment are Okay
 
@@ -73,35 +73,31 @@ class InetAddress
 
     const struct sockaddr *getSockAddr() const
     {
-        return static_cast<const struct sockaddr *>((void *)(&_addr6));
+        return static_cast<const struct sockaddr *>((void *)(&addr6_));
     }
     void setSockAddrInet6(const struct sockaddr_in6 &addr6)
     {
-        _addr6 = addr6;
-        _isIpV6 = (_addr6.sin6_family == AF_INET6);
+        addr6_ = addr6;
+        isIpV6_ = (addr6_.sin6_family == AF_INET6);
     }
 
     uint32_t ipNetEndian() const;
     const uint32_t *ip6NetEndian() const;
     uint16_t portNetEndian() const
     {
-        return _addr.sin_port;
+        return addr_.sin_port;
     }
     void setPortNetEndian(uint16_t port)
     {
-        _addr.sin_port = port;
+        addr_.sin_port = port;
     }
 
   private:
     union {
-        struct sockaddr_in _addr;
-        struct sockaddr_in6 _addr6;
+        struct sockaddr_in addr_;
+        struct sockaddr_in6 addr6_;
     };
-    bool _isIpV6 = false;
-    static std::unordered_map<std::string,
-                              std::pair<struct in_addr, trantor::Date>>
-        _dnsCache;
-    static std::mutex _dnsMutex;
+    bool isIpV6_{false};
 };
 
 }  // namespace trantor

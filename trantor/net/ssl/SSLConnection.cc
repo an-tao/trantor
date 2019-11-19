@@ -126,26 +126,26 @@ SSLConnection::SSLConnection(EventLoop *loop,
                              const std::shared_ptr<SSLContext> &ctxPtr,
                              bool isServer)
     : TcpConnectionImpl(loop, socketfd, localAddr, peerAddr),
-      _sslPtr(std::make_shared<SSLConn>(ctxPtr->get())),
-      _isServer(isServer)
+      sslPtr_(std::make_shared<SSLConn>(ctxPtr->get())),
+      isServer_(isServer)
 {
-    assert(_sslPtr);
-    auto r = SSL_set_fd(_sslPtr->get(), socketfd);
+    assert(sslPtr_);
+    auto r = SSL_set_fd(sslPtr_->get(), socketfd);
     (void)r;
     assert(r);
-    _isSSLConn = true;
+    isSSLConn_ = true;
 }
 
 void SSLConnection::writeCallback()
 {
     LOG_TRACE << "write Callback";
-    _loop->assertInLoopThread();
-    if (_status == SSLStatus::Handshaking)
+    loop_->assertInLoopThread();
+    if (statusOfSSL_ == SSLStatus::Handshaking)
     {
         doHandshaking();
         return;
     }
-    else if (_status == SSLStatus::Connected)
+    else if (statusOfSSL_ == SSLStatus::Connected)
     {
         TcpConnectionImpl::writeCallback();
     }
@@ -154,26 +154,26 @@ void SSLConnection::writeCallback()
 void SSLConnection::readCallback()
 {
     LOG_TRACE << "read Callback";
-    _loop->assertInLoopThread();
-    if (_status == SSLStatus::Handshaking)
+    loop_->assertInLoopThread();
+    if (statusOfSSL_ == SSLStatus::Handshaking)
     {
         doHandshaking();
         return;
     }
-    else if (_status == SSLStatus::Connected)
+    else if (statusOfSSL_ == SSLStatus::Connected)
     {
         int rd;
         bool newDataFlag = false;
         size_t readLength;
         do
         {
-            _readBuffer.ensureWritableBytes(1024);
-            readLength = _readBuffer.writableBytes();
-            rd = SSL_read(_sslPtr->get(), _readBuffer.beginWrite(), readLength);
+            readBuffer_.ensureWritableBytes(1024);
+            readLength = readBuffer_.writableBytes();
+            rd = SSL_read(sslPtr_->get(), readBuffer_.beginWrite(), readLength);
             LOG_TRACE << "ssl read:" << rd << " bytes";
             if (rd <= 0)
             {
-                int sslerr = SSL_get_error(_sslPtr->get(), rd);
+                int sslerr = SSL_get_error(sslPtr_->get(), rd);
                 if (sslerr == SSL_ERROR_WANT_READ)
                 {
                     break;
@@ -181,68 +181,68 @@ void SSLConnection::readCallback()
                 else
                 {
                     LOG_TRACE << "ssl read err:" << sslerr;
-                    _status = SSLStatus::DisConnected;
+                    statusOfSSL_ = SSLStatus::DisConnected;
                     handleClose();
                     return;
                 }
             }
-            _readBuffer.hasWritten(rd);
+            readBuffer_.hasWritten(rd);
             newDataFlag = true;
         } while ((size_t)rd == readLength);
         if (newDataFlag)
         {
             // Run callback function
-            _recvMsgCallback(shared_from_this(), &_readBuffer);
+            recvMsgCallback_(shared_from_this(), &readBuffer_);
         }
     }
 }
 
 void SSLConnection::connectEstablished()
 {
-    _loop->runInLoop([=]() {
+    loop_->runInLoop([=]() {
         LOG_TRACE << "connectEstablished";
-        assert(_state == Connecting);
-        _ioChannelPtr->tie(shared_from_this());
-        _ioChannelPtr->enableReading();
-        _state = Connected;
-        if (_isServer)
+        assert(status_ == ConnStatus::Connecting);
+        ioChannelPtr_->tie(shared_from_this());
+        ioChannelPtr_->enableReading();
+        status_ = ConnStatus::Connected;
+        if (isServer_)
         {
-            SSL_set_accept_state(_sslPtr->get());
+            SSL_set_accept_state(sslPtr_->get());
         }
         else
         {
-            _ioChannelPtr->enableWriting();
-            SSL_set_connect_state(_sslPtr->get());
+            ioChannelPtr_->enableWriting();
+            SSL_set_connect_state(sslPtr_->get());
         }
     });
 }
 void SSLConnection::doHandshaking()
 {
-    assert(_status == SSLStatus::Handshaking);
-    int r = SSL_do_handshake(_sslPtr->get());
+    assert(statusOfSSL_ == SSLStatus::Handshaking);
+    int r = SSL_do_handshake(sslPtr_->get());
     if (r == 1)
     {
-        _status = SSLStatus::Connected;
-        _connectionCallback(shared_from_this());
+        statusOfSSL_ = SSLStatus::Connected;
+        connectionCallback_(shared_from_this());
         return;
     }
-    int err = SSL_get_error(_sslPtr->get(), r);
+    int err = SSL_get_error(sslPtr_->get(), r);
     if (err == SSL_ERROR_WANT_WRITE)
     {  // SSL want writable;
-        _ioChannelPtr->enableWriting();
-        _ioChannelPtr->disableReading();
+        ioChannelPtr_->enableWriting();
+        ioChannelPtr_->disableReading();
     }
     else if (err == SSL_ERROR_WANT_READ)
     {  // SSL want readable;
-        _ioChannelPtr->enableReading();
-        _ioChannelPtr->disableWriting();
+        ioChannelPtr_->enableReading();
+        ioChannelPtr_->disableWriting();
     }
     else
     {
         // ERR_print_errors(err);
         LOG_TRACE << "SSL handshake err: " << err;
-        _ioChannelPtr->disableReading();
-        _status = SSLStatus::DisConnected;
+        ioChannelPtr_->disableReading();
+        statusOfSSL_ = SSLStatus::DisConnected;
         forceClose();
     }
 }
@@ -250,13 +250,13 @@ void SSLConnection::doHandshaking()
 ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
 {
     LOG_TRACE << "send in loop";
-    _loop->assertInLoopThread();
-    if (_state != Connected)
+    loop_->assertInLoopThread();
+    if (status_ != ConnStatus::Connected)
     {
         LOG_WARN << "Connection is not connected,give up sending";
         return -1;
     }
-    if (_status != SSLStatus::Connected)
+    if (statusOfSSL_ != SSLStatus::Connected)
     {
         LOG_WARN << "SSL is not connected,give up sending";
         return -1;
@@ -266,16 +266,16 @@ ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
     while (sendTotalLen < length)
     {
         auto len = length - sendTotalLen;
-        if (len > sizeof(_sendBuffer))
+        if (len > sendBuffer_.size())
         {
-            len = sizeof(_sendBuffer);
+            len = sendBuffer_.size();
         }
-        memcpy(_sendBuffer, buffer + sendTotalLen, len);
+        memcpy(sendBuffer_.data(), buffer + sendTotalLen, len);
         ERR_clear_error();
-        auto sendLen = SSL_write(_sslPtr->get(), _sendBuffer, len);
+        auto sendLen = SSL_write(sslPtr_->get(), sendBuffer_.data(), len);
         if (sendLen <= 0)
         {
-            int sslerr = SSL_get_error(_sslPtr->get(), sendLen);
+            int sslerr = SSL_get_error(sslPtr_->get(), sendLen);
             if (sslerr != SSL_ERROR_WANT_WRITE && sslerr != SSL_ERROR_WANT_READ)
             {
                 LOG_ERROR << "ssl write error:" << sslerr;

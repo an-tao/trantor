@@ -24,7 +24,7 @@ ConcurrentTaskQueue::ConcurrentTaskQueue(size_t threadNum,
     : queueCount_(threadNum), queueName_(name), stop_(false)
 {
     assert(threadNum > 0);
-    for (unsigned int i = 0; i < queueCount_; i++)
+    for (unsigned int i = 0; i < queueCount_; ++i)
     {
         threads_.push_back(
             std::thread(std::bind(&ConcurrentTaskQueue::queueFunc, this, i)));

@@ -41,82 +41,82 @@ class TcpServer : NonCopyable
     void start();
     void setIoLoopNum(size_t num)
     {
-        assert(!_started);
-        _loopPoolPtr = std::make_shared<EventLoopThreadPool>(num);
-        _loopPoolPtr->start();
+        assert(!started_);
+        loopPoolPtr_ = std::make_shared<EventLoopThreadPool>(num);
+        loopPoolPtr_->start();
     }
     void setIoLoopThreadPool(const std::shared_ptr<EventLoopThreadPool> &pool)
     {
         assert(pool->getLoopNum() > 0);
-        assert(!_started);
-        _loopPoolPtr = pool;
-        _loopPoolPtr->start();
+        assert(!started_);
+        loopPoolPtr_ = pool;
+        loopPoolPtr_->start();
     }
     void setRecvMessageCallback(const RecvMessageCallback &cb)
     {
-        _recvMessageCallback = cb;
+        recvMessageCallback_ = cb;
     }
     void setConnectionCallback(const ConnectionCallback &cb)
     {
-        _connectionCallback = cb;
+        connectionCallback_ = cb;
     }
     void setWriteCompleteCallback(const WriteCompleteCallback &cb)
     {
-        _writeCompleteCallback = cb;
+        writeCompleteCallback_ = cb;
     }
 
     void setRecvMessageCallback(RecvMessageCallback &&cb)
     {
-        _recvMessageCallback = std::move(cb);
+        recvMessageCallback_ = std::move(cb);
     }
     void setConnectionCallback(ConnectionCallback &&cb)
     {
-        _connectionCallback = std::move(cb);
+        connectionCallback_ = std::move(cb);
     }
     void setWriteCompleteCallback(WriteCompleteCallback &&cb)
     {
-        _writeCompleteCallback = std::move(cb);
+        writeCompleteCallback_ = std::move(cb);
     }
     const std::string &name() const
     {
-        return _serverName;
+        return serverName_;
     }
     const std::string ipPort() const;
     EventLoop *getLoop() const
     {
-        return _loop;
+        return loop_;
     }
     std::vector<EventLoop *> getIoLoops() const
     {
-        return _loopPoolPtr->getLoops();
+        return loopPoolPtr_->getLoops();
     }
     // An idle connection is a connection that has no read or write,
     // kick off it after timeout ;
     void kickoffIdleConnections(size_t timeout)
     {
-        _loop->runInLoop([=]() {
-            assert(!_started);
-            _idleTimeout = timeout;
+        loop_->runInLoop([=]() {
+            assert(!started_);
+            idleTimeout_ = timeout;
         });
     }
 
     void enableSSL(const std::string &certPath, const std::string &keyPath);
 
   private:
-    EventLoop *_loop;
-    std::unique_ptr<Acceptor> _acceptorPtr;
+    EventLoop *loop_;
+    std::unique_ptr<Acceptor> acceptorPtr_;
     void newConnection(int fd, const InetAddress &peer);
-    std::string _serverName;
-    std::set<TcpConnectionPtr> _connSet;
+    std::string serverName_;
+    std::set<TcpConnectionPtr> connSet_;
 
-    RecvMessageCallback _recvMessageCallback;
-    ConnectionCallback _connectionCallback;
-    WriteCompleteCallback _writeCompleteCallback;
+    RecvMessageCallback recvMessageCallback_;
+    ConnectionCallback connectionCallback_;
+    WriteCompleteCallback writeCompleteCallback_;
 
-    size_t _idleTimeout = 0;
-    std::map<EventLoop *, std::shared_ptr<TimingWheel>> _timingWheelMap;
+    size_t idleTimeout_{0};
+    std::map<EventLoop *, std::shared_ptr<TimingWheel>> timingWheelMap_;
     void connectionClosed(const TcpConnectionPtr &connectionPtr);
-    std::shared_ptr<EventLoopThreadPool> _loopPoolPtr;
+    std::shared_ptr<EventLoopThreadPool> loopPoolPtr_;
     class IgnoreSigPipe
     {
       public:
@@ -129,10 +129,10 @@ class TcpServer : NonCopyable
 
     IgnoreSigPipe initObj;
 
-    bool _started = false;
+    bool started_{false};
 
     // OpenSSL SSL context Object;
-    std::shared_ptr<SSLContext> _sslCtxPtr;
+    std::shared_ptr<SSLContext> sslCtxPtr_;
 };
 
 }  // namespace trantor

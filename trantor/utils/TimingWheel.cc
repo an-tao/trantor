@@ -20,29 +20,29 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
                          size_t maxTimeout,
                          float tickInterval,
                          size_t bucketsNumPerWheel)
-    : _loop(loop),
-      _tickInterval(tickInterval),
-      _bucketsNumPerWheel(bucketsNumPerWheel)
+    : loop_(loop),
+      tickInterval_(tickInterval),
+      bucketsNumPerWheel_(bucketsNumPerWheel)
 {
     assert(maxTimeout > 1);
     assert(tickInterval > 0);
     size_t maxTickNum = maxTimeout / tickInterval;
-    _wheelsNum = 1;
-    while (maxTickNum > _bucketsNumPerWheel)
+    wheelsNum_ = 1;
+    while (maxTickNum > bucketsNumPerWheel_)
     {
-        _wheelsNum++;
-        maxTickNum = maxTickNum / _bucketsNumPerWheel;
+        ++wheelsNum_;
+        maxTickNum = maxTickNum / bucketsNumPerWheel_;
     }
-    _wheels.resize(_wheelsNum);
-    for (size_t i = 0; i < _wheelsNum; i++)
+    wheels_.resize(wheelsNum_);
+    for (size_t i = 0; i < wheelsNum_; ++i)
     {
-        _wheels[i].resize(_bucketsNumPerWheel);
+        wheels_[i].resize(bucketsNumPerWheel_);
     }
-    _timerId = _loop->runEvery(_tickInterval, [=]() {
-        _ticksCounter++;
-        size_t t = _ticksCounter;
+    timerId_ = loop_->runEvery(tickInterval_, [=]() {
+        ++ticksCounter_;
+        size_t t = ticksCounter_;
         size_t pow = 1;
-        for (size_t i = 0; i < _wheelsNum; i++)
+        for (size_t i = 0; i < wheelsNum_; ++i)
         {
             if ((t % pow) == 0)
             {
@@ -50,23 +50,23 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
                 {
                     // use tmp val to make this critical area as short as
                     // possible.
-                    _wheels[i].front().swap(tmp);
-                    _wheels[i].pop_front();
-                    _wheels[i].push_back(EntryBucket());
+                    wheels_[i].front().swap(tmp);
+                    wheels_[i].pop_front();
+                    wheels_[i].push_back(EntryBucket());
                 }
             }
-            pow = pow * _bucketsNumPerWheel;
+            pow = pow * bucketsNumPerWheel_;
         }
     });
 }
 
 TimingWheel::~TimingWheel()
 {
-    _loop->invalidateTimer(_timerId);
+    loop_->invalidateTimer(timerId_);
 
-    for (int i = _wheels.size() - 1; i >= 0; i--)
+    for (int i = wheels_.size() - 1; i >= 0; --i)
     {
-        _wheels[i].clear();
+        wheels_[i].clear();
     }
 
     LOG_TRACE << "TimingWheel destruct!";
@@ -78,37 +78,37 @@ void TimingWheel::insertEntry(size_t delay, EntryPtr entryPtr)
         return;
     if (!entryPtr)
         return;
-    if (_loop->isInLoopThread())
+    if (loop_->isInLoopThread())
     {
         insertEntryInloop(delay, entryPtr);
     }
     else
     {
-        _loop->runInLoop([=]() { insertEntryInloop(delay, entryPtr); });
+        loop_->runInLoop([=]() { insertEntryInloop(delay, entryPtr); });
     }
 }
 
 void TimingWheel::insertEntryInloop(size_t delay, EntryPtr entryPtr)
 {
     // protected by bucketMutex;
-    _loop->assertInLoopThread();
+    loop_->assertInLoopThread();
 
-    delay = delay / _tickInterval + 1;
-    size_t t = _ticksCounter;
-    for (size_t i = 0; i < _wheelsNum; i++)
+    delay = delay / tickInterval_ + 1;
+    size_t t = ticksCounter_;
+    for (size_t i = 0; i < wheelsNum_; ++i)
     {
-        if (delay <= _bucketsNumPerWheel)
+        if (delay <= bucketsNumPerWheel_)
         {
-            _wheels[i][delay - 1].insert(entryPtr);
+            wheels_[i][delay - 1].insert(entryPtr);
             break;
         }
-        if (i < (_wheelsNum - 1))
+        if (i < (wheelsNum_ - 1))
         {
             entryPtr = std::make_shared<CallbackEntry>([=]() {
                 if (delay > 0)
                 {
-                    _wheels[i][(delay + (t % _bucketsNumPerWheel) - 1) %
-                               _bucketsNumPerWheel]
+                    wheels_[i][(delay + (t % bucketsNumPerWheel_) - 1) %
+                               bucketsNumPerWheel_]
                         .insert(entryPtr);
                 }
             });
@@ -116,9 +116,9 @@ void TimingWheel::insertEntryInloop(size_t delay, EntryPtr entryPtr)
         else
         {
             // delay is too long to put entry at valid position in wheels;
-            _wheels[i][_bucketsNumPerWheel - 1].insert(entryPtr);
+            wheels_[i][bucketsNumPerWheel_ - 1].insert(entryPtr);
         }
-        delay = (delay + (t % _bucketsNumPerWheel) - 1) / _bucketsNumPerWheel;
-        t = t / _bucketsNumPerWheel;
+        delay = (delay + (t % bucketsNumPerWheel_) - 1) / bucketsNumPerWheel_;
+        t = t / bucketsNumPerWheel_;
     }
 }

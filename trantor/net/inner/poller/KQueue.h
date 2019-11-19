@@ -23,7 +23,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-typedef std::vector<struct kevent> EventList;
+using EventList = std::vector<struct kevent>;
 #endif
 namespace trantor
 {
@@ -42,10 +42,10 @@ class KQueue : public Poller
   private:
 #ifdef USE_KQUEUE
     static const int kInitEventListSize = 16;
-    int _kqfd;
-    EventList _events;
-    typedef std::unordered_map<int, std::pair<int, Channel *>> ChannelMap;
-    ChannelMap _channels;
+    int kqfd_;
+    EventList events_;
+    using ChannelMap = std::unordered_map<int, std::pair<int, Channel *>>;
+    ChannelMap channels_;
 
     void fillActiveChannels(int numEvents, ChannelList *activeChannels) const;
     void update(Channel *channel);

@@ -25,8 +25,8 @@ class Connector : public NonCopyable,
                   public std::enable_shared_from_this<Connector>
 {
   public:
-    typedef std::function<void(int sockfd)> NewConnectionCallback;
-    typedef std::function<void()> ConnectionErrorCallback;
+    using NewConnectionCallback = std::function<void(int sockfd)>;
+    using ConnectionErrorCallback = std::function<void()>;
     Connector(EventLoop *loop, const InetAddress &addr, bool retry = true);
     Connector(EventLoop *loop, InetAddress &&addr, bool retry = true);
     void setNewConnectionCallback(const NewConnectionCallback &cb)
@@ -39,15 +39,15 @@ class Connector : public NonCopyable,
     }
     void setErrorCallback(const ConnectionErrorCallback &cb)
     {
-        _errorCallback = cb;
+        errorCallback_ = cb;
     }
     void setErrorCallback(ConnectionErrorCallback &&cb)
     {
-        _errorCallback = std::move(cb);
+        errorCallback_ = std::move(cb);
     }
     const InetAddress &serverAddress() const
     {
-        return _serverAddr;
+        return serverAddr_;
     }
     void start();
     void restart();
@@ -55,26 +55,26 @@ class Connector : public NonCopyable,
 
   private:
     NewConnectionCallback newConnectionCallback_;
-    ConnectionErrorCallback _errorCallback;
-    enum States
+    ConnectionErrorCallback errorCallback_;
+    enum class Status
     {
-        kDisconnected,
-        kConnecting,
-        kConnected
+        Disconnected,
+        Connecting,
+        Connected
     };
-    static const int kMaxRetryDelayMs = 30 * 1000;
-    static const int kInitRetryDelayMs = 500;
-    std::shared_ptr<Channel> _channelPtr;
-    EventLoop *_loop;
-    InetAddress _serverAddr;
+    static constexpr int kMaxRetryDelayMs = 30 * 1000;
+    static constexpr int kInitRetryDelayMs = 500;
+    std::shared_ptr<Channel> channelPtr_;
+    EventLoop *loop_;
+    InetAddress serverAddr_;
 
-    std::atomic_bool _connect;
-    std::atomic<States> _state;
+    std::atomic_bool connect_{false};
+    std::atomic<Status> status_{Status::Disconnected};
 
-    int _retryInterval;
-    int _maxRetryInterval;
+    int retryInterval_{kInitRetryDelayMs};
+    int maxRetryInterval_{kMaxRetryDelayMs};
 
-    bool _retry;
+    bool retry_;
 
     void startInLoop();
     void connect();

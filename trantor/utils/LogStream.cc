@@ -86,8 +86,8 @@ template class FixedBuffer<kLargeBuffer>;
 template <int SIZE>
 const char *FixedBuffer<SIZE>::debugString()
 {
-    *_cur = '\0';
-    return _data;
+    *cur_ = '\0';
+    return data_;
 }
 
 template <int SIZE>
@@ -104,23 +104,23 @@ template <typename T>
 void LogStream::formatInteger(T v)
 {
     constexpr static int kMaxNumericSize = std::numeric_limits<T>::digits10 + 4;
-    if (_exBuffer.empty())
+    if (exBuffer_.empty())
     {
-        if (_buffer.avail() >= kMaxNumericSize)
+        if (buffer_.avail() >= kMaxNumericSize)
         {
-            size_t len = convert(_buffer.current(), v);
-            _buffer.add(len);
+            size_t len = convert(buffer_.current(), v);
+            buffer_.add(len);
             return;
         }
         else
         {
-            _exBuffer.append(_buffer.data(), _buffer.length());
+            exBuffer_.append(buffer_.data(), buffer_.length());
         }
     }
-    auto oldLen = _exBuffer.length();
-    _exBuffer.resize(oldLen + kMaxNumericSize);
-    size_t len = convert(&_exBuffer[oldLen], v);
-    _exBuffer.resize(oldLen + len);
+    auto oldLen = exBuffer_.length();
+    exBuffer_.resize(oldLen + kMaxNumericSize);
+    size_t len = convert(&exBuffer_[oldLen], v);
+    exBuffer_.resize(oldLen + len);
 }
 
 LogStream &LogStream::operator<<(short v)
@@ -176,29 +176,29 @@ LogStream &LogStream::operator<<(const void *p)
     uintptr_t v = reinterpret_cast<uintptr_t>(p);
     constexpr static int kMaxNumericSize =
         std::numeric_limits<uintptr_t>::digits / 4 + 4;
-    if (_exBuffer.empty())
+    if (exBuffer_.empty())
     {
-        if (_buffer.avail() >= kMaxNumericSize)
+        if (buffer_.avail() >= kMaxNumericSize)
         {
-            char *buf = _buffer.current();
+            char *buf = buffer_.current();
             buf[0] = '0';
             buf[1] = 'x';
             size_t len = convertHex(buf + 2, v);
-            _buffer.add(len + 2);
+            buffer_.add(len + 2);
             return *this;
         }
         else
         {
-            _exBuffer.append(_buffer.data(), _buffer.length());
+            exBuffer_.append(buffer_.data(), buffer_.length());
         }
     }
-    auto oldLen = _exBuffer.length();
-    _exBuffer.resize(oldLen + kMaxNumericSize);
-    char *buf = &_exBuffer[oldLen];
+    auto oldLen = exBuffer_.length();
+    exBuffer_.resize(oldLen + kMaxNumericSize);
+    char *buf = &exBuffer_[oldLen];
     buf[0] = '0';
     buf[1] = 'x';
     size_t len = convertHex(buf + 2, v);
-    _exBuffer.resize(oldLen + len + 2);
+    exBuffer_.resize(oldLen + len + 2);
     return *this;
 }
 
@@ -206,54 +206,54 @@ LogStream &LogStream::operator<<(const void *p)
 LogStream &LogStream::operator<<(const double &v)
 {
     constexpr static int kMaxNumericSize = 32;
-    if (_exBuffer.empty())
+    if (exBuffer_.empty())
     {
-        if (_buffer.avail() >= kMaxNumericSize)
+        if (buffer_.avail() >= kMaxNumericSize)
         {
-            int len = snprintf(_buffer.current(), kMaxNumericSize, "%.12g", v);
-            _buffer.add(len);
+            int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12g", v);
+            buffer_.add(len);
             return *this;
         }
         else
         {
-            _exBuffer.append(_buffer.data(), _buffer.length());
+            exBuffer_.append(buffer_.data(), buffer_.length());
         }
     }
-    auto oldLen = _exBuffer.length();
-    _exBuffer.resize(oldLen + kMaxNumericSize);
-    int len = snprintf(&(_exBuffer[oldLen]), kMaxNumericSize, "%.12g", v);
-    _exBuffer.resize(oldLen + len);
+    auto oldLen = exBuffer_.length();
+    exBuffer_.resize(oldLen + kMaxNumericSize);
+    int len = snprintf(&(exBuffer_[oldLen]), kMaxNumericSize, "%.12g", v);
+    exBuffer_.resize(oldLen + len);
     return *this;
 }
 
 LogStream &LogStream::operator<<(const long double &v)
 {
     constexpr static int kMaxNumericSize = 48;
-    if (_exBuffer.empty())
+    if (exBuffer_.empty())
     {
-        if (_buffer.avail() >= kMaxNumericSize)
+        if (buffer_.avail() >= kMaxNumericSize)
         {
-            int len = snprintf(_buffer.current(), kMaxNumericSize, "%.12Lg", v);
-            _buffer.add(len);
+            int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12Lg", v);
+            buffer_.add(len);
             return *this;
         }
         else
         {
-            _exBuffer.append(_buffer.data(), _buffer.length());
+            exBuffer_.append(buffer_.data(), buffer_.length());
         }
     }
-    auto oldLen = _exBuffer.length();
-    _exBuffer.resize(oldLen + kMaxNumericSize);
-    int len = snprintf(&(_exBuffer[oldLen]), kMaxNumericSize, "%.12Lg", v);
-    _exBuffer.resize(oldLen + len);
+    auto oldLen = exBuffer_.length();
+    exBuffer_.resize(oldLen + kMaxNumericSize);
+    int len = snprintf(&(exBuffer_[oldLen]), kMaxNumericSize, "%.12Lg", v);
+    exBuffer_.resize(oldLen + len);
     return *this;
 }
 
 template <typename T>
 Fmt::Fmt(const char *fmt, T val)
 {
-    _length = snprintf(_buf, sizeof _buf, fmt, val);
-    assert(static_cast<size_t>(_length) < sizeof _buf);
+    length_ = snprintf(buf_, sizeof buf_, fmt, val);
+    assert(static_cast<size_t>(length_) < sizeof buf_);
 }
 
 // Explicit instantiations

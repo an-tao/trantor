@@ -9,7 +9,7 @@ int main()
     auto id = loop.runAt(begin, [=, &loop]() {
         LOG_DEBUG << "test begin:";
         srand((unsigned int)time(NULL));
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 10000; ++i)
         {
             int aa = rand() % 10000;
             double s = (double)aa / 1000.0 + 1;

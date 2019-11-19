@@ -27,7 +27,7 @@ namespace trantor
 // class Timer;
 class EventLoop;
 class Channel;
-typedef std::shared_ptr<Timer> TimerPtr;
+using TimerPtr = std::shared_ptr<Timer>;
 struct comp
 {
     bool operator()(const TimerPtr &x, const TimerPtr &y) const
@@ -69,6 +69,6 @@ class TimerQueue : NonCopyable
     std::vector<TimerPtr> getExpired(const Date &now);
 
   private:
-    std::unordered_set<uint64_t> _timerIdSet;
+    std::unordered_set<uint64_t> timerIdSet_;
 };
 }  // namespace trantor

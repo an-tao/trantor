@@ -32,13 +32,13 @@ class ObjectPool : public NonCopyable,
         static_assert(!std::is_pointer<T>::value,
                       "The parameter type of the ObjectPool template can't be "
                       "pointer type");
-        T *p = nullptr;
+        T *p{nullptr};
         {
-            std::lock_guard<std::mutex> lock(_mtx);
-            if (!_objs.empty())
+            std::lock_guard<std::mutex> lock(mtx_);
+            if (!objs_.empty())
             {
-                p = _objs.back();
-                _objs.pop_back();
+                p = objs_.back();
+                objs_.pop_back();
             }
         }
 
@@ -53,8 +53,8 @@ class ObjectPool : public NonCopyable,
             auto self = weakPtr.lock();
             if (self)
             {
-                std::lock_guard<std::mutex> lock(self->_mtx);
-                self->_objs.push_back(ptr);
+                std::lock_guard<std::mutex> lock(self->mtx_);
+                self->objs_.push_back(ptr);
             }
             else
             {
@@ -65,7 +65,7 @@ class ObjectPool : public NonCopyable,
     }
 
   private:
-    std::vector<T *> _objs;
-    std::mutex _mtx;
+    std::vector<T *> objs_;
+    std::mutex mtx_;
 };
 }  // namespace trantor

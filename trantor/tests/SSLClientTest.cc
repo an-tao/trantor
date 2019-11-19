@@ -19,7 +19,7 @@ int main()
     std::shared_ptr<trantor::TcpClient> client[10];
     std::atomic_int connCount;
     connCount = 1;
-    for (int i = 0; i < connCount; i++)
+    for (int i = 0; i < connCount; ++i)
     {
         client[i] = std::make_shared<trantor::TcpClient>(&loop,
                                                          serverAddr,

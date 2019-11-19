@@ -25,12 +25,12 @@ using namespace trantor;
 using namespace std::placeholders;
 
 // TcpClient::TcpClient(EventLoop* loop)
-//   : _loop(loop)
+//   : loop_(loop)
 // {
 // }
 
 // TcpClient::TcpClient(EventLoop* loop, const string& host, uint16_t port)
-//   : _loop(CHECK_NOTNULL(loop)),
+//   : loop_(CHECK_NOTNULL(loop)),
 //     serverAddr_(host, port)
 // {
 // }
@@ -63,39 +63,39 @@ static void defaultMessageCallback(const TcpConnectionPtr &, MsgBuffer *buf)
 TcpClient::TcpClient(EventLoop *loop,
                      const InetAddress &serverAddr,
                      const std::string &nameArg)
-    : _loop(loop),
-      _connector(new Connector(loop, serverAddr, false)),
-      _name(nameArg),
-      _connectionCallback(defaultConnectionCallback),
-      _messageCallback(defaultMessageCallback),
-      _retry(false),
-      _connect(true)
+    : loop_(loop),
+      connector_(new Connector(loop, serverAddr, false)),
+      name_(nameArg),
+      connectionCallback_(defaultConnectionCallback),
+      messageCallback_(defaultMessageCallback),
+      retry_(false),
+      connect_(true)
 {
-    _connector->setNewConnectionCallback(
+    connector_->setNewConnectionCallback(
         std::bind(&TcpClient::newConnection, this, _1));
-    _connector->setErrorCallback([=]() {
-        if (_connectionErrorCallback)
+    connector_->setErrorCallback([=]() {
+        if (connectionErrorCallback_)
         {
-            _connectionErrorCallback();
+            connectionErrorCallback_();
         }
     });
-    LOG_TRACE << "TcpClient::TcpClient[" << _name << "] - connector ";
+    LOG_TRACE << "TcpClient::TcpClient[" << name_ << "] - connector ";
 }
 
 TcpClient::~TcpClient()
 {
-    LOG_TRACE << "TcpClient::~TcpClient[" << _name << "] - connector ";
+    LOG_TRACE << "TcpClient::~TcpClient[" << name_ << "] - connector ";
     TcpConnectionImplPtr conn;
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-        conn = std::dynamic_pointer_cast<TcpConnectionImpl>(_connection);
+        std::lock_guard<std::mutex> lock(mutex_);
+        conn = std::dynamic_pointer_cast<TcpConnectionImpl>(connection_);
     }
     if (conn)
     {
-        assert(_loop == conn->getLoop());
+        assert(loop_ == conn->getLoop());
         // TODO: not 100% safe, if we are in different thread
-        auto loop = _loop;
-        _loop->runInLoop([conn, loop]() {
+        auto loop = loop_;
+        loop_->runInLoop([conn, loop]() {
             conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
                 loop->queueInLoop([connPtr]() {
                     static_cast<TcpConnectionImpl *>(connPtr.get())
@@ -108,89 +108,89 @@ TcpClient::~TcpClient()
     else
     {
         /// TODO need test in this condition
-        _connector->stop();
-        _loop->runAfter(1, [=]() { trantor::removeConnector(_connector); });
+        connector_->stop();
+        loop_->runAfter(1, [=]() { trantor::removeConnector(connector_); });
     }
 }
 
 void TcpClient::connect()
 {
     // TODO: check state
-    LOG_TRACE << "TcpClient::connect[" << _name << "] - connecting to "
-              << _connector->serverAddress().toIpPort();
-    _connect = true;
-    _connector->start();
+    LOG_TRACE << "TcpClient::connect[" << name_ << "] - connecting to "
+              << connector_->serverAddress().toIpPort();
+    connect_ = true;
+    connector_->start();
 }
 
 void TcpClient::disconnect()
 {
-    _connect = false;
+    connect_ = false;
 
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-        if (_connection)
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (connection_)
         {
-            _connection->shutdown();
+            connection_->shutdown();
         }
     }
 }
 
 void TcpClient::stop()
 {
-    _connect = false;
-    _connector->stop();
+    connect_ = false;
+    connector_->stop();
 }
 
 void TcpClient::newConnection(int sockfd)
 {
-    _loop->assertInLoopThread();
+    loop_->assertInLoopThread();
     InetAddress peerAddr(Socket::getPeerAddr(sockfd));
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
     // TODO poll with zero timeout to double confirm the new connection
     // TODO use make_shared if necessary
     std::shared_ptr<TcpConnectionImpl> conn;
-    if (_sslCtxPtr)
+    if (sslCtxPtr_)
     {
         conn = std::make_shared<SSLConnection>(
-            _loop, sockfd, localAddr, peerAddr, _sslCtxPtr, false);
+            loop_, sockfd, localAddr, peerAddr, sslCtxPtr_, false);
     }
     else
     {
-        conn = std::make_shared<TcpConnectionImpl>(_loop,
+        conn = std::make_shared<TcpConnectionImpl>(loop_,
                                                    sockfd,
                                                    localAddr,
                                                    peerAddr);
     }
-    conn->setConnectionCallback(_connectionCallback);
-    conn->setRecvMsgCallback(_messageCallback);
-    conn->setWriteCompleteCallback(_writeCompleteCallback);
+    conn->setConnectionCallback(connectionCallback_);
+    conn->setRecvMsgCallback(messageCallback_);
+    conn->setWriteCompleteCallback(writeCompleteCallback_);
     conn->setCloseCallback(std::bind(&TcpClient::removeConnection, this, _1));
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-        _connection = conn;
+        std::lock_guard<std::mutex> lock(mutex_);
+        connection_ = conn;
     }
     conn->connectEstablished();
 }
 
 void TcpClient::removeConnection(const TcpConnectionPtr &conn)
 {
-    _loop->assertInLoopThread();
-    assert(_loop == conn->getLoop());
+    loop_->assertInLoopThread();
+    assert(loop_ == conn->getLoop());
 
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-        assert(_connection == conn);
-        _connection.reset();
+        std::lock_guard<std::mutex> lock(mutex_);
+        assert(connection_ == conn);
+        connection_.reset();
     }
 
-    _loop->queueInLoop(
+    loop_->queueInLoop(
         std::bind(&TcpConnectionImpl::connectDestroyed,
                   std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
-    if (_retry && _connect)
+    if (retry_ && connect_)
     {
-        LOG_TRACE << "TcpClient::connect[" << _name << "] - Reconnecting to "
-                  << _connector->serverAddress().toIpPort();
-        _connector->restart();
+        LOG_TRACE << "TcpClient::connect[" << name_ << "] - Reconnecting to "
+                  << connector_->serverAddress().toIpPort();
+        connector_->restart();
     }
 }
 
@@ -199,5 +199,5 @@ void TcpClient::enableSSL()
     // init OpenSSL
     initOpenSSL();
     /* Create a new OpenSSL context */
-    _sslCtxPtr = newSSLContext();
+    sslCtxPtr_ = newSSLContext();
 }

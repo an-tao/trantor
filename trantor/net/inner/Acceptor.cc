@@ -18,40 +18,40 @@ Acceptor::Acceptor(EventLoop *loop,
                    const InetAddress &addr,
                    bool reUseAddr,
                    bool reUsePort)
-    : _sock(
+    : sock_(
           Socket::createNonblockingSocketOrDie(addr.getSockAddr()->sa_family)),
-      _addr(addr),
-      _loop(loop),
-      _acceptChannel(loop, _sock.fd()),
-      _idleFd(::open("/dev/null", O_RDONLY | O_CLOEXEC))
+      addr_(addr),
+      loop_(loop),
+      acceptChannel_(loop, sock_.fd()),
+      idleFd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
 {
-    _sock.setReuseAddr(reUseAddr);
-    _sock.setReusePort(reUsePort);
-    _sock.bindAddress(_addr);
-    _acceptChannel.setReadCallback(std::bind(&Acceptor::readCallback, this));
+    sock_.setReuseAddr(reUseAddr);
+    sock_.setReusePort(reUsePort);
+    sock_.bindAddress(addr_);
+    acceptChannel_.setReadCallback(std::bind(&Acceptor::readCallback, this));
 }
 Acceptor::~Acceptor()
 {
-    _acceptChannel.disableAll();
-    _acceptChannel.remove();
-    ::close(_idleFd);
+    acceptChannel_.disableAll();
+    acceptChannel_.remove();
+    ::close(idleFd_);
 }
 void Acceptor::listen()
 {
-    _loop->assertInLoopThread();
-    _sock.listen();
-    _acceptChannel.enableReading();
+    loop_->assertInLoopThread();
+    sock_.listen();
+    acceptChannel_.enableReading();
 }
 
 void Acceptor::readCallback()
 {
     InetAddress peer;
-    int newsock = _sock.accept(&peer);
+    int newsock = sock_.accept(&peer);
     if (newsock >= 0)
     {
-        if (_newConnectionCallback)
+        if (newConnectionCallback_)
         {
-            _newConnectionCallback(newsock, peer);
+            newConnectionCallback_(newsock, peer);
         }
         else
         {
@@ -67,10 +67,10 @@ void Acceptor::readCallback()
         /// errno is thread safe
         if (errno == EMFILE)
         {
-            ::close(_idleFd);
-            _idleFd = _sock.accept(&peer);
-            ::close(_idleFd);
-            _idleFd = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+            ::close(idleFd_);
+            idleFd_ = sock_.accept(&peer);
+            ::close(idleFd_);
+            idleFd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
         }
     }
 }

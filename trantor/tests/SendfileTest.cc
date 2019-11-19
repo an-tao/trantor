@@ -56,22 +56,22 @@ int main(int argc, char *argv[])
             {
                 LOG_DEBUG << "New connection";
                 std::thread t([=, &counter]() {
-                    for (int i = 0; i < 5; i++)
+                    for (int i = 0; i < 5; ++i)
                     {
                         connPtr->sendFile(argv[1]);
                         char str[64];
-                        counter++;
+                        ++counter;
                         sprintf(str, "\n%d files sent!\n", counter);
                         connPtr->send(str, strlen(str));
                     }
                 });
                 t.detach();
 
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 3; ++i)
                 {
                     connPtr->sendFile(argv[1]);
                     char str[64];
-                    counter++;
+                    ++counter;
                     sprintf(str, "\n%d files sent!\n", counter);
                     connPtr->send(str, strlen(str));
                 }

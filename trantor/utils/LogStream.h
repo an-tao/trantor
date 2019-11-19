@@ -27,14 +27,14 @@ namespace trantor
 {
 namespace detail
 {
-const int kSmallBuffer = 4000;
-const int kLargeBuffer = 4000 * 1000;
+static constexpr size_t kSmallBuffer{4000};
+static constexpr size_t kLargeBuffer{4000 * 1000};
 
 template <int SIZE>
 class FixedBuffer : NonCopyable
 {
   public:
-    FixedBuffer() : _cur(_data)
+    FixedBuffer() : cur_(data_)
     {
         setCookie(cookieStart);
     }
@@ -48,8 +48,8 @@ class FixedBuffer : NonCopyable
     {
         if ((size_t)(avail()) > len)
         {
-            memcpy(_cur, buf, len);
-            _cur += len;
+            memcpy(cur_, buf, len);
+            cur_ += len;
             return true;
         }
         return false;
@@ -57,34 +57,34 @@ class FixedBuffer : NonCopyable
 
     const char *data() const
     {
-        return _data;
+        return data_;
     }
     int length() const
     {
-        return static_cast<int>(_cur - _data);
+        return static_cast<int>(cur_ - data_);
     }
 
-    // write to _data directly
+    // write to data_ directly
     char *current()
     {
-        return _cur;
+        return cur_;
     }
     int avail() const
     {
-        return static_cast<int>(end() - _cur);
+        return static_cast<int>(end() - cur_);
     }
     void add(size_t len)
     {
-        _cur += len;
+        cur_ += len;
     }
 
     void reset()
     {
-        _cur = _data;
+        cur_ = data_;
     }
     void bzero()
     {
-        memset(_data, 0, sizeof(_data));
+        memset(data_, 0, sizeof(data_));
     }
 
     // for used by GDB
@@ -96,33 +96,33 @@ class FixedBuffer : NonCopyable
     // for used by unit test
     std::string toString() const
     {
-        return std::string(_data, length());
+        return std::string(data_, length());
     }
-    // StringPiece toStringPiece() const { return StringPiece(_data, length());
+    // StringPiece toStringPiece() const { return StringPiece(data_, length());
     // }
 
   private:
     const char *end() const
     {
-        return _data + sizeof _data;
+        return data_ + sizeof data_;
     }
     // Must be outline function for cookies.
     static void cookieStart();
     static void cookieEnd();
 
     void (*cookie_)();
-    char _data[SIZE];
-    char *_cur;
+    char data_[SIZE];
+    char *cur_;
 };
 
 }  // namespace detail
 
 class LogStream : NonCopyable
 {
-    typedef LogStream self;
+    using self = LogStream;
 
   public:
-    typedef detail::FixedBuffer<detail::kSmallBuffer> Buffer;
+    using Buffer = detail::FixedBuffer<detail::kSmallBuffer>;
 
     self &operator<<(bool v)
     {
@@ -214,49 +214,49 @@ class LogStream : NonCopyable
 
     void append(const char *data, int len)
     {
-        if (_exBuffer.empty())
+        if (exBuffer_.empty())
         {
-            if (!_buffer.append(data, len))
+            if (!buffer_.append(data, len))
             {
-                _exBuffer.append(_buffer.data(), _buffer.length());
-                _exBuffer.append(data, len);
+                exBuffer_.append(buffer_.data(), buffer_.length());
+                exBuffer_.append(data, len);
             }
         }
         else
         {
-            _exBuffer.append(data, len);
+            exBuffer_.append(data, len);
         }
     }
-    // const Buffer& buffer() const { return _buffer; }
+    // const Buffer& buffer() const { return buffer_; }
     const char *bufferData() const
     {
-        if (!_exBuffer.empty())
+        if (!exBuffer_.empty())
         {
-            return _exBuffer.data();
+            return exBuffer_.data();
         }
-        return _buffer.data();
+        return buffer_.data();
     }
 
     size_t bufferLength() const
     {
-        if (!_exBuffer.empty())
+        if (!exBuffer_.empty())
         {
-            return _exBuffer.length();
+            return exBuffer_.length();
         }
-        return _buffer.length();
+        return buffer_.length();
     }
     void resetBuffer()
     {
-        _buffer.reset();
-        _exBuffer.clear();
+        buffer_.reset();
+        exBuffer_.clear();
     }
 
   private:
     template <typename T>
     void formatInteger(T);
 
-    Buffer _buffer;
-    std::string _exBuffer;
+    Buffer buffer_;
+    std::string exBuffer_;
 };
 
 class Fmt  // : boost::noncopyable
@@ -267,16 +267,16 @@ class Fmt  // : boost::noncopyable
 
     const char *data() const
     {
-        return _buf;
+        return buf_;
     }
     int length() const
     {
-        return _length;
+        return length_;
     }
 
   private:
-    char _buf[48];
-    int _length;
+    char buf_[48];
+    int length_;
 };
 
 inline LogStream &operator<<(LogStream &s, const Fmt &fmt)

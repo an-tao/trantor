@@ -54,35 +54,35 @@ using namespace trantor;
 */
 
 InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
-    : _isIpV6(ipv6)
+    : isIpV6_(ipv6)
 {
     if (ipv6)
     {
-        memset(&_addr6, 0, sizeof(_addr6));
-        _addr6.sin6_family = AF_INET6;
+        memset(&addr6_, 0, sizeof(addr6_));
+        addr6_.sin6_family = AF_INET6;
         in6_addr ip = loopbackOnly ? in6addr_loopback : in6addr_any;
-        _addr6.sin6_addr = ip;
-        _addr6.sin6_port = htons(port);
+        addr6_.sin6_addr = ip;
+        addr6_.sin6_port = htons(port);
     }
     else
     {
-        memset(&_addr, 0, sizeof(_addr));
-        _addr.sin_family = AF_INET;
+        memset(&addr_, 0, sizeof(addr_));
+        addr_.sin_family = AF_INET;
         in_addr_t ip = loopbackOnly ? kInaddrLoopback : kInaddrAny;
-        _addr.sin_addr.s_addr = htonl(ip);
-        _addr.sin_port = htons(port);
+        addr_.sin_addr.s_addr = htonl(ip);
+        addr_.sin_port = htons(port);
     }
 }
 
 InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
-    : _isIpV6(ipv6)
+    : isIpV6_(ipv6)
 {
     if (ipv6)
     {
-        memset(&_addr6, 0, sizeof(_addr6));
-        _addr6.sin6_family = AF_INET6;
-        _addr6.sin6_port = htons(port);
-        if (::inet_pton(AF_INET6, ip.c_str(), &_addr6.sin6_addr) <= 0)
+        memset(&addr6_, 0, sizeof(addr6_));
+        addr6_.sin6_family = AF_INET6;
+        addr6_.sin6_port = htons(port);
+        if (::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr) <= 0)
         {
             // LOG_SYSERR << "sockets::fromIpPort";
             // abort();
@@ -90,10 +90,10 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
     }
     else
     {
-        memset(&_addr, 0, sizeof(_addr));
-        _addr.sin_family = AF_INET;
-        _addr.sin_port = htons(port);
-        if (::inet_pton(AF_INET, ip.c_str(), &_addr.sin_addr) <= 0)
+        memset(&addr_, 0, sizeof(addr_));
+        addr_.sin_family = AF_INET;
+        addr_.sin_port = htons(port);
+        if (::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)
         {
             // LOG_SYSERR << "sockets::fromIpPort";
             // abort();
@@ -104,15 +104,15 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
 std::string InetAddress::toIpPort() const
 {
     char buf[64] = "";
-    uint16_t port = ntohs(_addr.sin_port);
+    uint16_t port = ntohs(addr_.sin_port);
     sprintf(buf, ":%u", port);
     return toIp() + std::string(buf);
 }
 bool InetAddress::isIntranetIp() const
 {
-    if (_addr.sin_family == AF_INET)
+    if (addr_.sin_family == AF_INET)
     {
-        uint32_t ip_addr = ntohl(_addr.sin_addr.s_addr);
+        uint32_t ip_addr = ntohl(addr_.sin_addr.s_addr);
         if ((ip_addr >= 0x0A000000 && ip_addr <= 0x0AFFFFFF) ||
             (ip_addr >= 0xAC100000 && ip_addr <= 0xAC1FFFFF) ||
             (ip_addr >= 0xC0A80000 && ip_addr <= 0xC0A8FFFF) ||
@@ -154,7 +154,7 @@ bool InetAddress::isLoopbackIp() const
 {
     if (!isIpV6())
     {
-        uint32_t ip_addr = ntohl(_addr.sin_addr.s_addr);
+        uint32_t ip_addr = ntohl(addr_.sin_addr.s_addr);
         if (ip_addr == 0x7f000001)
         {
             return true;
@@ -177,13 +177,13 @@ bool InetAddress::isLoopbackIp() const
 std::string InetAddress::toIp() const
 {
     char buf[64];
-    if (_addr.sin_family == AF_INET)
+    if (addr_.sin_family == AF_INET)
     {
-        ::inet_ntop(AF_INET, &_addr.sin_addr, buf, sizeof(buf));
+        ::inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
     }
-    else if (_addr.sin_family == AF_INET6)
+    else if (addr_.sin_family == AF_INET6)
     {
-        ::inet_ntop(AF_INET6, &_addr6.sin6_addr, buf, sizeof(buf));
+        ::inet_ntop(AF_INET6, &addr6_.sin6_addr, buf, sizeof(buf));
     }
 
     return buf;
@@ -192,16 +192,16 @@ std::string InetAddress::toIp() const
 uint32_t InetAddress::ipNetEndian() const
 {
     // assert(family() == AF_INET);
-    return _addr.sin_addr.s_addr;
+    return addr_.sin_addr.s_addr;
 }
 
 const uint32_t *InetAddress::ip6NetEndian() const
 {
 // assert(family() == AF_INET6);
 #ifdef __linux__
-    return _addr6.sin6_addr.s6_addr32;
+    return addr6_.sin6_addr.s6_addr32;
 #else
-    return _addr6.sin6_addr.__u6_addr.__u6_addr32;
+    return addr6_.sin6_addr.__u6_addr.__u6_addr32;
 #endif
 }
 uint16_t InetAddress::toPort() const

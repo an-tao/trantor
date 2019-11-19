@@ -74,17 +74,17 @@ class Logger : public NonCopyable
         std::function<void(const char *msg, const uint64_t len)> outputFunc,
         std::function<void()> flushFunc)
     {
-        _outputFunc() = outputFunc;
-        _flushFunc() = flushFunc;
+        outputFunc_() = outputFunc;
+        flushFunc_() = flushFunc;
     }
 
     static void setLogLevel(LogLevel level)
     {
-        _logLevel() = level;
+        logLevel_() = level;
     }
     static LogLevel logLevel()
     {
-        return _logLevel();
+        return logLevel_();
     }
 
   protected:
@@ -97,7 +97,7 @@ class Logger : public NonCopyable
         fflush(stdout);
     }
     void formatTime();
-    static LogLevel &_logLevel()
+    static LogLevel &logLevel_()
     {
 #ifdef RELEASE
         static LogLevel logLevel = LogLevel::INFO;
@@ -107,19 +107,19 @@ class Logger : public NonCopyable
         return logLevel;
     }
     static std::function<void(const char *msg, const uint64_t len)>
-        &_outputFunc()
+        &outputFunc_()
     {
         static std::function<void(const char *msg, const uint64_t len)>
             outputFunc = Logger::defaultOutputFunction;
         return outputFunc;
     }
-    static std::function<void()> &_flushFunc()
+    static std::function<void()> &flushFunc_()
     {
         static std::function<void()> flushFunc = Logger::defaultFlushFunction;
         return flushFunc;
     }
     LogStream logStream_;
-    Date date_ = Date::date();
+    Date date_{Date::now()};
     SourceFile sourceFile_;
     int fileLine_;
     LogLevel level_;

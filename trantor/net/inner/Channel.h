@@ -25,125 +25,125 @@ class EventLoop;
 class Channel : NonCopyable
 {
   public:
-    typedef std::function<void()> EventCallback;
+    using EventCallback = std::function<void()>;
     Channel(EventLoop *loop, int fd);
     void handleEvent();
     void setReadCallback(const EventCallback &cb)
     {
-        _readCallback = cb;
+        readCallback_ = cb;
     };
     void setWriteCallback(const EventCallback &cb)
     {
-        _writeCallback = cb;
+        writeCallback_ = cb;
     };
     void setCloseCallback(const EventCallback &cb)
     {
-        _closeCallback = cb;
+        closeCallback_ = cb;
     }
     void setErrorCallback(const EventCallback &cb)
     {
-        _errorCallback = cb;
+        errorCallback_ = cb;
     }
     void setEventCallback(const EventCallback &cb)
     {
-        _eventCallback = cb;
+        eventCallback_ = cb;
     }
 
     void setReadCallback(EventCallback &&cb)
     {
-        _readCallback = std::move(cb);
+        readCallback_ = std::move(cb);
     }
     void setWriteCallback(EventCallback &&cb)
     {
-        _writeCallback = std::move(cb);
+        writeCallback_ = std::move(cb);
     }
     void setCloseCallback(EventCallback &&cb)
     {
-        _closeCallback = std::move(cb);
+        closeCallback_ = std::move(cb);
     }
     void setErrorCallback(EventCallback &&cb)
     {
-        _errorCallback = std::move(cb);
+        errorCallback_ = std::move(cb);
     }
     void setEventCallback(EventCallback &&cb)
     {
-        _eventCallback = std::move(cb);
+        eventCallback_ = std::move(cb);
     }
 
     int fd() const
     {
-        return _fd;
+        return fd_;
     }
     int events() const
     {
-        return _events;
+        return events_;
     }
     int revents() const
     {
-        return _revents;
+        return revents_;
     }
     int setRevents(int revt)
     {
         // LOG_TRACE<<"revents="<<revt;
-        _revents = revt;
+        revents_ = revt;
         return revt;
     };
     bool isNoneEvent() const
     {
-        return _events == kNoneEvent;
+        return events_ == kNoneEvent;
     };
     int index()
     {
-        return _index;
+        return index_;
     };
     void setIndex(int index)
     {
-        _index = index;
+        index_ = index;
     };
     void disableAll()
     {
-        _events = kNoneEvent;
+        events_ = kNoneEvent;
         update();
     }
     void remove();
     void tie(const std::shared_ptr<void> &obj)
     {
-        _tie = obj;
-        _tied = true;
+        tie_ = obj;
+        tied_ = true;
     }
     EventLoop *ownerLoop()
     {
-        return _loop;
+        return loop_;
     };
 
     void enableReading()
     {
-        _events |= kReadEvent;
+        events_ |= kReadEvent;
         update();
     }
     void disableReading()
     {
-        _events &= ~kReadEvent;
+        events_ &= ~kReadEvent;
         update();
     }
     void enableWriting()
     {
-        _events |= kWriteEvent;
+        events_ |= kWriteEvent;
         update();
     }
     void disableWriting()
     {
-        _events &= ~kWriteEvent;
+        events_ &= ~kWriteEvent;
         update();
     }
 
     bool isWriting() const
     {
-        return _events & kWriteEvent;
+        return events_ & kWriteEvent;
     }
     bool isReading() const
     {
-        return _events & kReadEvent;
+        return events_ & kReadEvent;
     }
 
     static const int kNoneEvent;
@@ -153,18 +153,18 @@ class Channel : NonCopyable
   private:
     void update();
     void handleEventSafely();
-    EventLoop *_loop;
-    const int _fd;
-    int _events;
-    int _revents;
-    int _index;
-    bool _addedToLoop = false;
-    EventCallback _readCallback;
-    EventCallback _writeCallback;
-    EventCallback _errorCallback;
-    EventCallback _closeCallback;
-    EventCallback _eventCallback;
-    std::weak_ptr<void> _tie;
-    bool _tied;
+    EventLoop *loop_;
+    const int fd_;
+    int events_;
+    int revents_;
+    int index_;
+    bool addedToLoop_{false};
+    EventCallback readCallback_;
+    EventCallback writeCallback_;
+    EventCallback errorCallback_;
+    EventCallback closeCallback_;
+    EventCallback eventCallback_;
+    std::weak_ptr<void> tie_;
+    bool tied_;
 };
 }  // namespace trantor

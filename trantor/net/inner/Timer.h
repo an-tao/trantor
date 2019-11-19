@@ -23,7 +23,7 @@
 
 namespace trantor
 {
-typedef uint64_t TimerId;
+using TimerId = uint64_t;
 
 class Timer : public NonCopyable
 {
@@ -40,24 +40,24 @@ class Timer : public NonCopyable
     bool operator>(const Timer &t) const;
     const Date &when() const
     {
-        return _when;
+        return when_;
     }
     bool isRepeat()
     {
-        return _repeat;
+        return repeat_;
     }
     TimerId id()
     {
-        return _id;
+        return id_;
     }
 
   private:
-    TimerCallback _callback;
-    Date _when;
-    const double _interval;
-    const bool _repeat;
-    const TimerId _id;
-    static std::atomic<TimerId> _timersCreated;
+    TimerCallback callback_;
+    Date when_;
+    const double interval_;
+    const bool repeat_;
+    const TimerId id_;
+    static std::atomic<TimerId> timersCreated_;
 };
 
 }  // namespace trantor
