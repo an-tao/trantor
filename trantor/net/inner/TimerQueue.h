@@ -16,7 +16,6 @@
 
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/callbacks.h>
-#include <trantor/utils/Date.h>
 #include "Timer.h"
 #include <queue>
 #include <memory>
@@ -42,15 +41,17 @@ class TimerQueue : NonCopyable
     explicit TimerQueue(EventLoop *loop);
     ~TimerQueue();
     TimerId addTimer(const TimerCallback &cb,
-                     const Date &when,
-                     double interval);
-    TimerId addTimer(TimerCallback &&cb, const Date &when, double interval);
+                     const TimePoint &when,
+                     const TimeInterval &interval);
+    TimerId addTimer(TimerCallback &&cb,
+                     const TimePoint &when,
+                     const TimeInterval &interval);
     void addTimerInLoop(const TimerPtr &timer);
     void invalidateTimer(TimerId id);
 #ifdef __linux__
     void reset();
 #else
-    int getTimeout() const;
+    int64_t getTimeout() const;
     void processTimers();
 #endif
   protected:
@@ -65,8 +66,8 @@ class TimerQueue : NonCopyable
     bool callingExpiredTimers_;
     bool insert(const TimerPtr &timePtr);
     std::vector<TimerPtr> getExpired();
-    void reset(const std::vector<TimerPtr> &expired, const Date &now);
-    std::vector<TimerPtr> getExpired(const Date &now);
+    void reset(const std::vector<TimerPtr> &expired, const TimePoint &now);
+    std::vector<TimerPtr> getExpired(const TimePoint &now);
 
   private:
     std::unordered_set<uint64_t> timerIdSet_;

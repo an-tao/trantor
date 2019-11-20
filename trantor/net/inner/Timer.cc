@@ -19,19 +19,23 @@
 namespace trantor
 {
 std::atomic<TimerId> Timer::timersCreated_ = ATOMIC_VAR_INIT(InvalidTimerId);
-Timer::Timer(const TimerCallback &cb, const Date &when, double interval)
+Timer::Timer(const TimerCallback &cb,
+             const TimePoint &when,
+             const TimeInterval &interval)
     : callback_(cb),
       when_(when),
       interval_(interval),
-      repeat_(interval > 0.0),
+      repeat_(interval.count() > 0),
       id_(++timersCreated_)
 {
 }
-Timer::Timer(TimerCallback &&cb, const Date &when, double interval)
+Timer::Timer(TimerCallback &&cb,
+             const TimePoint &when,
+             const TimeInterval &interval)
     : callback_(std::move(cb)),
       when_(when),
       interval_(interval),
-      repeat_(interval > 0.0),
+      repeat_(interval.count() > 0),
       id_(++timersCreated_)
 {
     // LOG_TRACE<<"Timer move contrustor";
@@ -40,14 +44,14 @@ void Timer::run() const
 {
     callback_();
 }
-void Timer::restart(const Date &now)
+void Timer::restart(const TimePoint &now)
 {
     if (repeat_)
     {
-        when_ = now.after(interval_);
+        when_ = now + interval_;
     }
     else
-        when_ = Date();
+        when_ = std::chrono::steady_clock::now();
 }
 bool Timer::operator<(const Timer &t) const
 {

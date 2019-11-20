@@ -26,5 +26,7 @@ int main()
     loop.runAfter(5, []() { std::cout << "runAt 5s later" << std::endl; });
     loop.runEvery(1, []() { std::cout << "runEvery 1s" << std::endl; });
     loop.runAfter(4, []() { std::cout << "runAfter 4s" << std::endl; });
+    loop.runAfter(10min,
+                  []() { std::cout << "*********** run after 10 min\n"; });
     loop.loop();
 }

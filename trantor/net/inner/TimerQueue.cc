@@ -35,10 +35,11 @@ int createTimerfd()
     return timerfd;
 }
 
-struct timespec howMuchTimeFromNow(const Date &when)
+struct timespec howMuchTimeFromNow(const TimePoint &when)
 {
-    int64_t microseconds =
-        when.microSecondsSinceEpoch() - Date::date().microSecondsSinceEpoch();
+    auto microSeconds = std::chrono::duration_cast<std::chrono::microseconds>(
+                            when - std::chrono::steady_clock::now())
+                            .count();
     if (microseconds < 100)
     {
         microseconds = 100;
@@ -48,7 +49,7 @@ struct timespec howMuchTimeFromNow(const Date &when)
     ts.tv_nsec = static_cast<long>((microseconds % 1000000) * 1000);
     return ts;
 }
-void resetTimerfd(int timerfd, const Date &expiration)
+void resetTimerfd(int timerfd, const TimePoint &expiration)
 {
     // wake up loop by timerfd_settime()
     struct itimerspec newValue;
@@ -62,12 +63,10 @@ void resetTimerfd(int timerfd, const Date &expiration)
         // LOG_SYSERR << "timerfd_settime()";
     }
 }
-void readTimerfd(int timerfd, const Date &now)
+void readTimerfd(int timerfd, const TimePoint &now)
 {
     uint64_t howmany;
     ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
-    LOG_TRACE << "TimerQueue::handleRead() " << howmany << " at "
-              << now.toFormattedString(true);
     if (n != sizeof howmany)
     {
         LOG_ERROR << "TimerQueue::handleRead() reads " << n
@@ -78,7 +77,7 @@ void readTimerfd(int timerfd, const Date &now)
 void TimerQueue::handleRead()
 {
     loop_->assertInLoopThread();
-    const Date now = Date::date();
+    const auto now = std::chrono::steady_clock::now();
     readTimerfd(timerfd_, now);
 
     std::vector<TimerPtr> expired = getExpired(now);
@@ -98,20 +97,21 @@ void TimerQueue::handleRead()
     reset(expired, now);
 }
 #else
-int howMuchTimeFromNow(const Date &when)
+int64_t howMuchTimeFromNow(const TimePoint &when)
 {
-    int64_t microSeconds =
-        when.microSecondsSinceEpoch() - Date::date().microSecondsSinceEpoch();
+    auto microSeconds = std::chrono::duration_cast<std::chrono::microseconds>(
+                            when - std::chrono::steady_clock::now())
+                            .count();
     if (microSeconds < 1000)
     {
         microSeconds = 1000;
     }
-    return static_cast<int>(microSeconds / 1000);
+    return microSeconds / 1000;
 }
 void TimerQueue::processTimers()
 {
     loop_->assertInLoopThread();
-    const Date now = Date::date();
+    const auto now = std::chrono::steady_clock::now();
 
     std::vector<TimerPtr> expired = getExpired(now);
 
@@ -162,7 +162,7 @@ void TimerQueue::reset()
         timerfdChannelPtr_->enableReading();
         if (!timers_.empty())
         {
-            const Date nextExpire = timers_.top()->when();
+            const auto nextExpire = timers_.top()->when();
             resetTimerfd(timerfd_, nextExpire);
         }
     });
@@ -182,8 +182,8 @@ TimerQueue::~TimerQueue()
 }
 
 TimerId TimerQueue::addTimer(const TimerCallback &cb,
-                             const Date &when,
-                             double interval)
+                             const TimePoint &when,
+                             const TimeInterval &interval)
 {
     std::shared_ptr<Timer> timerPtr =
         std::make_shared<Timer>(cb, when, interval);
@@ -192,8 +192,8 @@ TimerId TimerQueue::addTimer(const TimerCallback &cb,
     return timerPtr->id();
 }
 TimerId TimerQueue::addTimer(TimerCallback &&cb,
-                             const Date &when,
-                             double interval)
+                             const TimePoint &when,
+                             const TimeInterval &interval)
 {
     std::shared_ptr<Timer> timerPtr =
         std::make_shared<Timer>(std::move(cb), when, interval);
@@ -233,7 +233,7 @@ bool TimerQueue::insert(const TimerPtr &timerPtr)
     return earliestChanged;
 }
 #ifndef __linux__
-int TimerQueue::getTimeout() const
+int64_t TimerQueue::getTimeout() const
 {
     loop_->assertInLoopThread();
     if (timers_.empty())
@@ -247,7 +247,7 @@ int TimerQueue::getTimeout() const
 }
 #endif
 
-std::vector<TimerPtr> TimerQueue::getExpired(const Date &now)
+std::vector<TimerPtr> TimerQueue::getExpired(const TimePoint &now)
 {
     std::vector<TimerPtr> expired;
     while (!timers_.empty())
@@ -262,7 +262,8 @@ std::vector<TimerPtr> TimerQueue::getExpired(const Date &now)
     }
     return expired;
 }
-void TimerQueue::reset(const std::vector<TimerPtr> &expired, const Date &now)
+void TimerQueue::reset(const std::vector<TimerPtr> &expired,
+                       const TimePoint &now)
 {
     loop_->assertInLoopThread();
     for (auto const &timerPtr : expired)
@@ -277,7 +278,7 @@ void TimerQueue::reset(const std::vector<TimerPtr> &expired, const Date &now)
 #ifdef __linux__
     if (!timers_.empty())
     {
-        const Date nextExpire = timers_.top()->when();
+        const auto nextExpire = timers_.top()->when();
         resetTimerfd(timerfd_, nextExpire);
     }
 #endif
