@@ -66,11 +66,11 @@ void NormalResolver::resolve(const std::string &hostname,
             if (ret == 0 && he != NULL)
 #else
             /// Multi-threads safety
-            static std::mutex _mutex;
+            static std::mutex mutex_;
             struct hostent *he = NULL;
             struct hostent hent;
             {
-                std::lock_guard<std::mutex> guard(_mutex);
+                std::lock_guard<std::mutex> guard(mutex_);
                 auto result = gethostbyname(hostname.c_str());
                 if (result != NULL)
                 {

@@ -54,15 +54,15 @@ class TimerQueue : NonCopyable
     void processTimers();
 #endif
   protected:
-    EventLoop *_loop;
+    EventLoop *loop_;
 #ifdef __linux__
-    int _timerfd;
-    std::shared_ptr<Channel> _timerfdChannelPtr;
+    int timerfd_;
+    std::shared_ptr<Channel> timerfdChannelPtr_;
     void handleRead();
 #endif
-    std::priority_queue<TimerPtr, std::vector<TimerPtr>, comp> _timers;
+    std::priority_queue<TimerPtr, std::vector<TimerPtr>, comp> timers_;
 
-    bool _callingExpiredTimers;
+    bool callingExpiredTimers_;
     bool insert(const TimerPtr &timePtr);
     std::vector<TimerPtr> getExpired();
     void reset(const std::vector<TimerPtr> &expired, const Date &now);

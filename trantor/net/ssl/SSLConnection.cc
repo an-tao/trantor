@@ -44,46 +44,46 @@ class SSLContext
   public:
     SSLContext()
     {
-        _ctxPtr = SSL_CTX_new(SSLv23_method());
-        // SSL_CTX_set_mode(_ctxPtr, SSL_MODE_ENABLE_PARTIAL_WRITE);
+        ctxPtr_ = SSL_CTX_new(SSLv23_method());
+        // SSL_CTX_set_mode(ctxPtr_, SSL_MODE_ENABLE_PARTIAL_WRITE);
     }
     ~SSLContext()
     {
-        if (_ctxPtr)
+        if (ctxPtr_)
         {
-            SSL_CTX_free(_ctxPtr);
+            SSL_CTX_free(ctxPtr_);
         }
     }
 
     SSL_CTX *get()
     {
-        return _ctxPtr;
+        return ctxPtr_;
     }
 
   private:
-    SSL_CTX *_ctxPtr;
+    SSL_CTX *ctxPtr_;
 };
 class SSLConn
 {
   public:
     explicit SSLConn(SSL_CTX *ctx)
     {
-        _SSL = SSL_new(ctx);
+        SSL_ = SSL_new(ctx);
     }
     ~SSLConn()
     {
-        if (_SSL)
+        if (SSL_)
         {
-            SSL_free(_SSL);
+            SSL_free(SSL_);
         }
     }
     SSL *get()
     {
-        return _SSL;
+        return SSL_;
     }
 
   private:
-    SSL *_SSL;
+    SSL *SSL_;
 };
 
 std::shared_ptr<SSLContext> newSSLContext()
