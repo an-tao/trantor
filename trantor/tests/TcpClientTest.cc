@@ -36,7 +36,7 @@ int main()
                 else
                 {
                     LOG_DEBUG << i << " disconnected";
-                    connCount--;
+                    --connCount;
                     if (connCount == 0)
                         loop.quit();
                 }

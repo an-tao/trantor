@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc7] - 2019-11-21
+
+### Changed
+
+- Modify some code styles
+
 ## [1.0.0-rc6] - 2019-10-4
 
 ### API change list
@@ -67,7 +73,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc6...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc7...HEAD
+
+[1.0.0-rc6]: https://github.com/an-tao/trantor/compare/v1.0.0-rc6...v1.0.0-rc7
 
 [1.0.0-rc6]: https://github.com/an-tao/trantor/compare/v1.0.0-rc5...v1.0.0-rc6
 

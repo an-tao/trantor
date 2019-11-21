@@ -131,7 +131,7 @@ void TcpServer::start()
                                                       idleTimeout_ < 500
                                                           ? idleTimeout_ + 1
                                                           : 100);
-                    loopNum--;
+                    --loopNum;
                 }
             }
         }
