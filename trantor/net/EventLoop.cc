@@ -219,11 +219,23 @@ void EventLoop::queueInLoop(Func &&cb)
 
 TimerId EventLoop::runAt(const Date &time, const Func &cb)
 {
-    return timerQueue_->addTimer(cb, time, 0);
+    auto microSeconds =
+        time.microSecondsSinceEpoch() - Date::now().microSecondsSinceEpoch();
+    std::chrono::steady_clock::time_point tp =
+        std::chrono::steady_clock::now() +
+        std::chrono::microseconds(microSeconds);
+    return timerQueue_->addTimer(cb, tp, std::chrono::microseconds(0));
 }
 TimerId EventLoop::runAt(const Date &time, Func &&cb)
 {
-    return timerQueue_->addTimer(std::move(cb), time, 0);
+    auto microSeconds =
+        time.microSecondsSinceEpoch() - Date::now().microSecondsSinceEpoch();
+    std::chrono::steady_clock::time_point tp =
+        std::chrono::steady_clock::now() +
+        std::chrono::microseconds(microSeconds);
+    return timerQueue_->addTimer(std::move(cb),
+                                 tp,
+                                 std::chrono::microseconds(0));
 }
 TimerId EventLoop::runAfter(double delay, const Func &cb)
 {
@@ -235,13 +247,17 @@ TimerId EventLoop::runAfter(double delay, Func &&cb)
 }
 TimerId EventLoop::runEvery(double interval, const Func &cb)
 {
-    return timerQueue_->addTimer(cb, Date::date().after(interval), interval);
+    std::chrono::microseconds dur(
+        static_cast<std::chrono::microseconds::rep>(interval * 1000000));
+    auto tp = std::chrono::steady_clock::now() + dur;
+    return timerQueue_->addTimer(cb, tp, dur);
 }
 TimerId EventLoop::runEvery(double interval, Func &&cb)
 {
-    return timerQueue_->addTimer(std::move(cb),
-                                 Date::date().after(interval),
-                                 interval);
+    std::chrono::microseconds dur(
+        static_cast<std::chrono::microseconds::rep>(interval * 1000000));
+    auto tp = std::chrono::steady_clock::now() + dur;
+    return timerQueue_->addTimer(std::move(cb), tp, dur);
 }
 void EventLoop::invalidateTimer(TimerId id)
 {
