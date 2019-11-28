@@ -40,13 +40,13 @@ struct timespec howMuchTimeFromNow(const TimePoint &when)
     auto microSeconds = std::chrono::duration_cast<std::chrono::microseconds>(
                             when - std::chrono::steady_clock::now())
                             .count();
-    if (microseconds < 100)
+    if (microSeconds < 100)
     {
-        microseconds = 100;
+        microSeconds = 100;
     }
     struct timespec ts;
-    ts.tv_sec = static_cast<time_t>(microseconds / 1000000);
-    ts.tv_nsec = static_cast<long>((microseconds % 1000000) * 1000);
+    ts.tv_sec = static_cast<time_t>(microSeconds / 1000000);
+    ts.tv_nsec = static_cast<long>((microSeconds % 1000000) * 1000);
     return ts;
 }
 void resetTimerfd(int timerfd, const TimePoint &expiration)
