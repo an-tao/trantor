@@ -50,6 +50,10 @@ class SSLConnection : public TcpConnectionImpl
     virtual ~SSLConnection()
     {
     }
+    virtual bool isSSLConnection() const override
+    {
+        return true;
+    }
 
   private:
     void doHandshaking();

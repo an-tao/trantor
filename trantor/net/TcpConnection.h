@@ -94,6 +94,11 @@ class TcpConnection
     virtual size_t bytesSent() const = 0;
     virtual size_t bytesReceived() const = 0;
 
+    virtual bool isSSLConnection() const
+    {
+        return false;
+    }
+
   private:
     std::shared_ptr<void> contextPtr_;
 };
