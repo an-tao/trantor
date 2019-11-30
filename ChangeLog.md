@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc8] - 2019-11-30
+
+### API change list
+
+- Add the isSSLConnection() method to the TcpConnection class
+
+### Changed
+
+- Use the std::chrono::steady_clock for timers
+
+
 ## [1.0.0-rc7] - 2019-11-21
 
 ### Changed
@@ -73,9 +84,11 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc7...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc8...HEAD
 
-[1.0.0-rc6]: https://github.com/an-tao/trantor/compare/v1.0.0-rc6...v1.0.0-rc7
+[1.0.0-rc8]: https://github.com/an-tao/trantor/compare/v1.0.0-rc7...v1.0.0-rc8
+
+[1.0.0-rc7]: https://github.com/an-tao/trantor/compare/v1.0.0-rc6...v1.0.0-rc7
 
 [1.0.0-rc6]: https://github.com/an-tao/trantor/compare/v1.0.0-rc5...v1.0.0-rc6
 
