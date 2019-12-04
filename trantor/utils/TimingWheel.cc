@@ -27,11 +27,12 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
     assert(maxTimeout > 1);
     assert(tickInterval > 0);
     size_t maxTickNum = maxTimeout / tickInterval;
+    auto tickNum = bucketsNumPerWheel;
     wheelsNum_ = 1;
-    while (maxTickNum > bucketsNumPerWheel_)
+    while (maxTickNum > tickNum)
     {
         ++wheelsNum_;
-        maxTickNum = maxTickNum / bucketsNumPerWheel_;
+        tickNum *= bucketsNumPerWheel_;
     }
     wheels_.resize(wheelsNum_);
     for (size_t i = 0; i < wheelsNum_; ++i)
@@ -90,7 +91,6 @@ void TimingWheel::insertEntry(size_t delay, EntryPtr entryPtr)
 
 void TimingWheel::insertEntryInloop(size_t delay, EntryPtr entryPtr)
 {
-    // protected by bucketMutex;
     loop_->assertInLoopThread();
 
     delay = delay / tickInterval_ + 1;

@@ -29,8 +29,8 @@
 #define TIMING_BUCKET_NUM_PER_WHEEL 100
 #define TIMING_TICK_INTERVAL 1.0
 
-// Four wheels with 200 buckets per wheel means the cache map can work with
-// a timeout up to 200^4 seconds,about 50 years;
+// Four wheels with 200 buckets per wheel means the timing wheel can work with
+// a timeout up to 200^4 seconds, about 50 years;
 
 namespace trantor
 {
