@@ -29,8 +29,8 @@
 #define TIMING_BUCKET_NUM_PER_WHEEL 100
 #define TIMING_TICK_INTERVAL 1.0
 
-// Four wheels with 200 buckets per wheel means the cache map can work with
-// a timeout up to 200^4 seconds,about 50 years;
+// Four wheels with 200 buckets per wheel means the timing wheel can work with
+// a timeout up to 200^4 seconds, about 50 years;
 
 namespace trantor
 {
@@ -60,17 +60,17 @@ class TimingWheel
     /// constructor
     /// @param loop
     /// eventloop pointer
-    /// @param tickInterval
+    /// @param ticksInterval
     /// second
     /// @param wheelsNum
     /// number of wheels
     /// @param bucketsNumPerWheel
     /// buckets number per wheel
     /// The max delay of the CacheMap is about
-    /// tickInterval*(bucketsNumPerWheel^wheelsNum) seconds.
+    /// ticksInterval*(bucketsNumPerWheel^wheelsNum) seconds.
     TimingWheel(trantor::EventLoop *loop,
                 size_t maxTimeout,
-                float tickInterval = TIMING_TICK_INTERVAL,
+                float ticksInterval = TIMING_TICK_INTERVAL,
                 size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL);
 
     // If timeout>0, the value will be erased within the 'timeout' seconds after
@@ -94,7 +94,7 @@ class TimingWheel
     trantor::TimerId timerId_;
     trantor::EventLoop *loop_;
 
-    float tickInterval_;
+    float ticksInterval_;
     size_t wheelsNum_;
     size_t bucketsNumPerWheel_;
 };
