@@ -5,7 +5,7 @@
 #include <trantor/utils/Logger.h>
 int main()
 {
-    trantor::Logger::setLogLevel(trantor::Logger::TRACE);
+    trantor::Logger::setLogLevel(trantor::Logger::TRANTOR_TRACE);
     trantor::SerialTaskQueue queue1("test queue1");
     trantor::SerialTaskQueue queue2("");
     queue1.runTaskInQueue([&]() {

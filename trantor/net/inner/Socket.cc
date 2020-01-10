@@ -16,8 +16,12 @@
 #include "Socket.h"
 #include <assert.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#endif
 
 using namespace trantor;
 
@@ -136,7 +140,12 @@ struct sockaddr_in6 Socket::getPeerAddr(int sockfd)
 
 void Socket::setTcpNoDelay(bool on)
 {
+
+#ifdef _WIN32
+    char optval = on ? 1 : 0;
+#else
     int optval = on ? 1 : 0;
+#endif
     ::setsockopt(sockFd_,
                  IPPROTO_TCP,
                  TCP_NODELAY,
@@ -147,7 +156,11 @@ void Socket::setTcpNoDelay(bool on)
 
 void Socket::setReuseAddr(bool on)
 {
+#ifdef _WIN32
+    char optval = on ? 1 : 0;
+#else
     int optval = on ? 1 : 0;
+#endif
     ::setsockopt(sockFd_,
                  SOL_SOCKET,
                  SO_REUSEADDR,
@@ -159,7 +172,11 @@ void Socket::setReuseAddr(bool on)
 void Socket::setReusePort(bool on)
 {
 #ifdef SO_REUSEPORT
+#ifdef _WIN32
+    char optval = on ? 1 : 0;
+#else
     int optval = on ? 1 : 0;
+#endif
     int ret = ::setsockopt(sockFd_,
                            SOL_SOCKET,
                            SO_REUSEPORT,
@@ -179,7 +196,11 @@ void Socket::setReusePort(bool on)
 
 void Socket::setKeepAlive(bool on)
 {
+#ifdef _WIN32
+    char optval = on ? 1 : 0;
+#else
     int optval = on ? 1 : 0;
+#endif
     ::setsockopt(sockFd_,
                  SOL_SOCKET,
                  SO_KEEPALIVE,
@@ -190,7 +211,11 @@ void Socket::setKeepAlive(bool on)
 
 int Socket::getSocketError()
 {
-    int optval;
+#ifdef _WIN32
+    	char optval;
+#else
+        int optval;
+#endif
     socklen_t optlen = static_cast<socklen_t>(sizeof optval);
 
     if (::getsockopt(sockFd_, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)

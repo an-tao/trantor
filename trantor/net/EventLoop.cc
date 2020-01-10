@@ -24,7 +24,11 @@
 
 #include <thread>
 #include <assert.h>
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <poll.h>
+#endif
 #include <iostream>
 #ifdef __linux__
 #include <sys/eventfd.h>
@@ -70,6 +74,12 @@ EventLoop::EventLoop()
     assert(t_loopInThisThread == 0);
     t_loopInThisThread = this;
 #ifdef __linux__
+#elif defined _WIN32
+    //TODO will his work ? do we need to set  O_NONBLOCK ?
+    auto r =_pipe(wakeupFd_,65536, _O_BINARY | _O_NOINHERIT);
+    assert(r == 0);
+    wakeupChannelPtr_ =
+        std::unique_ptr<Channel>(new Channel(this, wakeupFd_[0]));
 #else
     auto r = pipe(wakeupFd_);
     (void)r;

@@ -46,7 +46,12 @@ class Socket : NonCopyable
 
     static int getSocketError(int sockfd)
     {
+#ifdef _WIN32
+    	char optval;
+#else
         int optval;
+#endif
+
         socklen_t optlen = static_cast<socklen_t>(sizeof optval);
 
         if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
@@ -119,6 +124,9 @@ class Socket : NonCopyable
     // taken from muduo
     static void setNonBlockAndCloseOnExec(int sockfd)
     {
+#ifdef _WIN32
+//TODO Implement a Windows version of this
+#else
         // non-block
         int flags = ::fcntl(sockfd, F_GETFL, 0);
         flags |= O_NONBLOCK;
@@ -132,6 +140,7 @@ class Socket : NonCopyable
         // TODO check
 
         (void)ret;
+#endif
     }
 };
 

@@ -15,9 +15,13 @@
 #include <trantor/utils/MsgBuffer.h>
 #include <trantor/utils/Funcs.h>
 #include <string.h>
+#ifndef _WIN32
 #include <sys/uio.h>
-#include <errno.h>
 #include <netinet/in.h>
+#else
+#include <WindowsSupport.h>
+#endif
+#include <errno.h>
 #include <assert.h>
 
 using namespace trantor;

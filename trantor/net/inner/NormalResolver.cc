@@ -1,9 +1,14 @@
 #include "NormalResolver.h"
 #include <trantor/utils/Logger.h>
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
 #include <netdb.h>
-#include <strings.h>  // memset
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#endif
+#include <strings.h>  // memset
+
 
 using namespace trantor;
 

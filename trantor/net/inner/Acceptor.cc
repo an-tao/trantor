@@ -14,6 +14,11 @@
 
 #include "Acceptor.h"
 using namespace trantor;
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC O_NOINHERIT
+#endif
+
 Acceptor::Acceptor(EventLoop *loop,
                    const InetAddress &addr,
                    bool reUseAddr,

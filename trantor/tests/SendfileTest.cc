@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 
     LOG_DEBUG << "test start";
 
-    Logger::setLogLevel(Logger::TRACE);
+    Logger::setLogLevel(Logger::TRANTOR_TRACE);
     EventLoopThread loopThread;
     loopThread.run();
 

@@ -12,6 +12,8 @@ set(TRANTOR_MINOR_VERSION 0)
 set(TRANTOR_PATCH_VERSION 0)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
+	
+add_definitions(-D_POSIX_THREAD_SAFE_FUNCTIONS -D_POSIX -D_POSIX_SOURCE)
 
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
@@ -38,6 +40,8 @@ foreach(p
   endif()
 endforeach()
 
+add_subdirectory(wepoll)
+
 # include directories
 target_include_directories(${PROJECT_NAME}
                            PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
@@ -45,7 +49,8 @@ target_include_directories(${PROJECT_NAME}
                            PRIVATE ${PROJECT_SOURCE_DIR}
                                    ${PROJECT_SOURCE_DIR}/trantor/utils
                                    ${PROJECT_SOURCE_DIR}/trantor/net
-                                   ${PROJECT_SOURCE_DIR}/trantor/net/inner)
+                                   ${PROJECT_SOURCE_DIR}/trantor/net/inner
+				   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/wepoll>)
 
 set(TRANTOR_SOURCES
     trantor/utils/AsyncFileLogger.cc
@@ -73,6 +78,10 @@ set(TRANTOR_SOURCES
     trantor/net/inner/poller/EpollPoller.cc
     trantor/net/inner/poller/KQueue.cc)
 
+set(TRANTOR_SOURCES
+	${TRANTOR_SOURCES}
+    trantor/utils/WindowsSupport.cc)
+
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
@@ -93,7 +102,7 @@ else()
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
 endif()
 target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
-target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
+target_link_libraries(${PROJECT_NAME} PRIVATE pthread ws2_32 Rpcrt4 wepoll)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)

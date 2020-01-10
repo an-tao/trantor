@@ -14,7 +14,11 @@
 
 #pragma once
 
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <netinet/in.h>
+#endif
 namespace trantor
 {
 inline uint64_t hton64(uint64_t n)

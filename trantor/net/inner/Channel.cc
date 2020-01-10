@@ -14,7 +14,11 @@
 
 #include "Channel.h"
 #include <trantor/net/EventLoop.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <poll.h>
+#endif
 #include <iostream>
 namespace trantor
 {

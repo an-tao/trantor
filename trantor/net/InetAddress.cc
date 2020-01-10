@@ -11,10 +11,20 @@
 #include <trantor/utils/Logger.h>
 //#include <muduo/net/Endian.h>
 
-#include <netdb.h>
+
 #include <strings.h>  // memset
-#include <netinet/in.h>
+#ifdef _WIN32
+struct in6_addr_uint {
+  union {
+    u_char Byte[16];
+    u_short Word[8];
+    uint32_t __s6_addr32[4];
+  } uext;
+};
+#else
 #include <netinet/tcp.h>
+#include <netdb.h>
+#endif
 
 // INADDR_ANY use (type)value casting.
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -200,6 +210,10 @@ const uint32_t *InetAddress::ip6NetEndian() const
 // assert(family() == AF_INET6);
 #ifdef __linux__
     return addr6_.sin6_addr.s6_addr32;
+#elif defined _WIN32
+    //TODO is this OK ?
+    const struct in6_addr_uint *addr_temp = reinterpret_cast <const struct in6_addr_uint *>(&addr6_.sin6_addr);
+    return (*addr_temp).uext.__s6_addr32;
 #else
     return addr6_.sin6_addr.__u6_addr.__u6_addr32;
 #endif

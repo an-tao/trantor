@@ -6,7 +6,7 @@ using namespace std::literals;
 
 int main()
 {
-    trantor::Logger::setLogLevel(trantor::Logger::TRACE);
+    trantor::Logger::setLogLevel(trantor::Logger::TRANTOR_TRACE);
     trantor::EventLoop loop;
     auto id1 = loop.runAfter(1s, []() {
         LOG_ERROR << "This info shouldn't be displayed!";

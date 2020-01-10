@@ -8,10 +8,13 @@
 #include "AresResolver.h"
 #include <trantor/net/inner/Channel.h>
 #include <ares.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <netdb.h>
 #include <arpa/inet.h>  // inet_ntop
 #include <netinet/in.h>
-
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -221,7 +224,7 @@ void AresResolver::ares_hostcallback_(void* data,
     delete query;
 }
 
-int AresResolver::ares_sock_createcallback_(int sockfd, int type, void* data)
+int AresResolver::ares_sock_createcallback_(long long unsigned int sockfd, int type, void* data)
 {
     LOG_TRACE << "sockfd=" << sockfd << " type=" << getSocketType(type);
     static_cast<AresResolver*>(data)->onSockCreate(sockfd, type);
@@ -229,7 +232,7 @@ int AresResolver::ares_sock_createcallback_(int sockfd, int type, void* data)
 }
 
 void AresResolver::ares_sock_statecallback_(void* data,
-                                            int sockfd,
+                                            long long unsigned int sockfd,
                                             int read,
                                             int write)
 {
