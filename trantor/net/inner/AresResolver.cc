@@ -224,7 +224,11 @@ void AresResolver::ares_hostcallback_(void* data,
     delete query;
 }
 
+#ifdef _WIN32
 int AresResolver::ares_sock_createcallback_(long long unsigned int sockfd, int type, void* data)
+#else
+int AresResolver::ares_sock_createcallback_(int sockfd, int type, void* data)
+#endif
 {
     LOG_TRACE << "sockfd=" << sockfd << " type=" << getSocketType(type);
     static_cast<AresResolver*>(data)->onSockCreate(sockfd, type);
@@ -232,7 +236,11 @@ int AresResolver::ares_sock_createcallback_(long long unsigned int sockfd, int t
 }
 
 void AresResolver::ares_sock_statecallback_(void* data,
+#ifdef _WIN32
                                             long long unsigned int sockfd,
+#else
+                                            int sockfd,
+#endif
                                             int read,
                                             int write)
 {

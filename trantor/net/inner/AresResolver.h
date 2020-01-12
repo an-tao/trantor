@@ -92,9 +92,17 @@ class AresResolver : public Resolver,
                                    int status,
                                    int timeouts,
                                    struct hostent* hostent);
-    static int ares_sock_createcallback_(long long unsigned int, int type, void* data);
+#ifdef _WIN32
+    static int ares_sock_createcallback_(long long unsigned int sockfd, int type, void* data);
+#else
+    static int ares_sock_createcallback_(int sockfd, int type, void* data);
+#endif
     static void ares_sock_statecallback_(void* data,
+#ifdef _WIN32
                                          long long unsigned int sockfd,
+#else
+                                         int sockfd,
+#endif
                                          int read,
                                          int write);
 };

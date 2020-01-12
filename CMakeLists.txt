@@ -13,7 +13,9 @@ set(TRANTOR_PATCH_VERSION 0)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
 	
+if(WIN32)
 add_definitions(-D_POSIX_THREAD_SAFE_FUNCTIONS -D_POSIX -D_POSIX_SOURCE)
+endif(WIN32)
 
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
@@ -40,7 +42,9 @@ foreach(p
   endif()
 endforeach()
 
+if(WIN32)
 add_subdirectory(wepoll)
+endif(WIN32)
 
 # include directories
 target_include_directories(${PROJECT_NAME}
@@ -50,7 +54,7 @@ target_include_directories(${PROJECT_NAME}
                                    ${PROJECT_SOURCE_DIR}/trantor/utils
                                    ${PROJECT_SOURCE_DIR}/trantor/net
                                    ${PROJECT_SOURCE_DIR}/trantor/net/inner
-				   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/wepoll>)
+                                   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/wepoll>)
 
 set(TRANTOR_SOURCES
     trantor/utils/AsyncFileLogger.cc
@@ -78,9 +82,12 @@ set(TRANTOR_SOURCES
     trantor/net/inner/poller/EpollPoller.cc
     trantor/net/inner/poller/KQueue.cc)
 
-set(TRANTOR_SOURCES
-	${TRANTOR_SOURCES}
-    trantor/utils/WindowsSupport.cc)
+if(WIN32)
+  set(TRANTOR_SOURCES
+                       ${TRANTOR_SOURCES}
+                       trantor/utils/WindowsSupport.cc)
+endif(WIN32)
+
 
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
@@ -102,7 +109,11 @@ else()
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
 endif()
 target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
-target_link_libraries(${PROJECT_NAME} PRIVATE pthread ws2_32 Rpcrt4 wepoll)
+target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
+
+if(WIN32)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 Rpcrt4 wepoll)
+endif(WIN32)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
