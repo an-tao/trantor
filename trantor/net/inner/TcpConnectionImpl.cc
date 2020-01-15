@@ -19,7 +19,10 @@
 #include <sys/sendfile.h>
 #endif
 #include <sys/types.h>
+#ifndef _WIN32
 #include <unistd.h>
+#include <WinSock2.h>
+#endif
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -758,5 +761,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
 ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 {
     bytesSent_ += length;
+#ifndef _WIN32
     return write(socketPtr_->fd(), buffer, length);
+#else
+    return send(sockerPtr_->fd(), buffer, length, 0);
+#endif
 }

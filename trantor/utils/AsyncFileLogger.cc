@@ -13,7 +13,7 @@
  */
 
 #include <trantor/utils/AsyncFileLogger.h>
-#ifndef __WINDOWS__
+#ifndef _WIN32
 #include <unistd.h>
 #ifdef __linux__
 #include <sys/prctl.h>

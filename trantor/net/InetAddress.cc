@@ -12,7 +12,6 @@
 //#include <muduo/net/Endian.h>
 
 
-#include <strings.h>  // memset
 #ifdef _WIN32
 struct in6_addr_uint {
   union {
@@ -22,6 +21,7 @@ struct in6_addr_uint {
   } uext;
 };
 #else
+#include <strings.h>  // memset
 #include <netinet/tcp.h>
 #include <netdb.h>
 #endif

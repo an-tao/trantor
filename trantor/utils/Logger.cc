@@ -15,8 +15,8 @@
 #include <trantor/utils/Logger.h>
 #include <stdio.h>
 #include <thread>
-#include <unistd.h>
 #ifndef _WIN32
+#include <unistd.h>
 #include <sys/syscall.h>
 #else
 #include <processthreadsapi.h>

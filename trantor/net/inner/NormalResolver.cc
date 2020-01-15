@@ -6,8 +6,8 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#endif
 #include <strings.h>  // memset
+#endif
 
 
 using namespace trantor;

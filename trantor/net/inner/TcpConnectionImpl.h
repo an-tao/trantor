@@ -17,7 +17,9 @@
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/TimingWheel.h>
 #include <list>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <thread>
 
 namespace trantor
@@ -187,7 +189,11 @@ class TcpConnectionImpl : public TcpConnection,
         ~BufferNode()
         {
             if (sendFd_ >= 0)
+#ifndef _WIN32
                 close(sendFd_);
+#else
+                closesocket(sendFd_);
+#endif
         }
     };
     using BufferNodePtr = std::shared_ptr<BufferNode>;

@@ -25,7 +25,6 @@
 #elif defined _WIN32
 #include "Wepoll.h"
 #include <assert.h>
-#include <strings.h>
 #include <iostream>
 #include <winsock2.h>
 #include <fcntl.h>

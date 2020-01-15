@@ -26,6 +26,7 @@
 #include <assert.h>
 #ifdef _WIN32
 #include <io.h>
+using ssize_t = std::intptr_t;
 #else
 #include <poll.h>
 #endif
@@ -34,7 +35,9 @@
 #include <sys/eventfd.h>
 #endif
 #include <functional>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <algorithm>
 #include <signal.h>
 #include <fcntl.h>

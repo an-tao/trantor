@@ -23,12 +23,16 @@ Acceptor::Acceptor(EventLoop *loop,
                    const InetAddress &addr,
                    bool reUseAddr,
                    bool reUsePort)
-    : sock_(
+
+    :
+#ifndef _WIN32
+      idleFd_(::open("/dev/null", O_RDONLY | O_CLOEXEC)),
+#endif
+      sock_(
           Socket::createNonblockingSocketOrDie(addr.getSockAddr()->sa_family)),
       addr_(addr),
       loop_(loop),
-      acceptChannel_(loop, sock_.fd()),
-      idleFd_(::open("/dev/null", O_RDONLY | O_CLOEXEC))
+      acceptChannel_(loop, sock_.fd())
 {
     sock_.setReuseAddr(reUseAddr);
     sock_.setReusePort(reUsePort);
@@ -39,7 +43,9 @@ Acceptor::~Acceptor()
 {
     acceptChannel_.disableAll();
     acceptChannel_.remove();
+#ifndef _WIN32
     ::close(idleFd_);
+#endif
 }
 void Acceptor::listen()
 {
@@ -60,16 +66,21 @@ void Acceptor::readCallback()
         }
         else
         {
-            close(newsock);
+#ifndef _WIN32
+            ::close(newsock);
+#else
+            closesocket(newsock);
+#endif
         }
     }
     else
     {
         LOG_SYSERR << "Accpetor::readCallback";
-        // Read the section named "The special problem of
-        // accept()ing when you can't" in libev's doc.
-        // By Marc Lehmann, author of libev.
-        /// errno is thread safe
+// Read the section named "The special problem of
+// accept()ing when you can't" in libev's doc.
+// By Marc Lehmann, author of libev.
+/// errno is thread safe
+#ifndef _WIN32
         if (errno == EMFILE)
         {
             ::close(idleFd_);
@@ -77,5 +88,6 @@ void Acceptor::readCallback()
             ::close(idleFd_);
             idleFd_ = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
         }
+#endif
     }
 }

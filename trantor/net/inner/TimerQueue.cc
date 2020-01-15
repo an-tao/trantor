@@ -21,7 +21,9 @@
 #endif
 #include <string.h>
 #include <iostream>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 using namespace trantor;
 #ifdef __linux__

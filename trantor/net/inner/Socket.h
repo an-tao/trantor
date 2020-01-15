@@ -18,7 +18,9 @@
 #include <trantor/net/InetAddress.h>
 #include <trantor/utils/Logger.h>
 #include <string>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 
 namespace trantor
