@@ -196,9 +196,9 @@ class TcpConnectionImpl : public TcpConnection,
         std::shared_ptr<MsgBuffer> msgBuffer_;
         ~BufferNode()
         {
-#ifndef _WIN32 if (sendFd_ >= 0)
-
-            close(sendFd_);
+#ifndef _WIN32
+            if (sendFd_ >= 0)
+                close(sendFd_);
 #else
             if (sendFp_)
                 fclose(sendFp_);

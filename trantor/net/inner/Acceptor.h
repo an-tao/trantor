@@ -43,7 +43,7 @@ class Acceptor : NonCopyable
     void listen();
 
   protected:
-#ifndef idleFd_;
+#ifndef _WIN32
     int idleFd_;
 #endif
     Socket sock_;

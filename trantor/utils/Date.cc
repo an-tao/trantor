@@ -26,6 +26,7 @@
 
 namespace trantor
 {
+#ifdef _WIN32
 int gettimeofday(timeval *tp, void *tzp)
 {
     time_t clock;
@@ -46,6 +47,7 @@ int gettimeofday(timeval *tp, void *tzp)
 
     return (0);
 }
+#endif
 const Date Date::date()
 {
 #ifndef _WIN32

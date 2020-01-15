@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #ifndef _WIN32
 #include <unistd.h>
+#else
 #include <WinSock2.h>
 #endif
 #include <sys/stat.h>
