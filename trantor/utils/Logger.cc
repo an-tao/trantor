@@ -105,7 +105,7 @@ void Logger::formatTime()
 #endif
     logStream_ << threadId_;
 }
-static const char *logLevelStr[Logger::LogLevel::TRANTOR_NUM_LOG_LEVELS] = {
+static const char *logLevelStr[Logger::LogLevel::kNumberOfLogLevels] = {
     " TRACE ",
     " DEBUG ",
     " INFO  ",
@@ -114,7 +114,7 @@ static const char *logLevelStr[Logger::LogLevel::TRANTOR_NUM_LOG_LEVELS] = {
     " FATAL ",
 };
 Logger::Logger(SourceFile file, int line)
-    : sourceFile_(file), fileLine_(line), level_(TRANTOR_INFO)
+    : sourceFile_(file), fileLine_(line), level_(kInfo)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
@@ -132,7 +132,7 @@ Logger::Logger(SourceFile file, int line, LogLevel level, const char *func)
     logStream_ << T(logLevelStr[level_], 7) << "[" << func << "] ";
 }
 Logger::Logger(SourceFile file, int line, bool)
-    : sourceFile_(file), fileLine_(line), level_(TRANTOR_FATAL)
+    : sourceFile_(file), fileLine_(line), level_(kFatal)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
@@ -145,7 +145,7 @@ Logger::~Logger()
 {
     logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
     Logger::outputFunc_()(logStream_.bufferData(), logStream_.bufferLength());
-    if (level_ >= TRANTOR_ERROR)
+    if (level_ >= kError)
         Logger::flushFunc_()();
     // logStream_.resetBuffer();
 }

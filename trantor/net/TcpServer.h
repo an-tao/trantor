@@ -117,6 +117,7 @@ class TcpServer : NonCopyable
     std::map<EventLoop *, std::shared_ptr<TimingWheel>> timingWheelMap_;
     void connectionClosed(const TcpConnectionPtr &connectionPtr);
     std::shared_ptr<EventLoopThreadPool> loopPoolPtr_;
+#ifndef _WIN32
     class IgnoreSigPipe
     {
       public:
@@ -128,7 +129,7 @@ class TcpServer : NonCopyable
     };
 
     IgnoreSigPipe initObj;
-
+#endif
     bool started_{false};
 
     // OpenSSL SSL context Object;

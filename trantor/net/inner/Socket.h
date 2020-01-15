@@ -43,6 +43,7 @@ class Socket : NonCopyable
             LOG_SYSERR << "sockets::createNonblockingOrDie";
             exit(1);
         }
+        LOG_TRACE << "sock=" << sock;
         return sock;
     }
 

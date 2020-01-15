@@ -14,7 +14,7 @@ set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
 	
 if(WIN32)
-add_definitions(-D_POSIX_THREAD_SAFE_FUNCTIONS -D_POSIX -D_POSIX_SOURCE)
+add_definitions(-D_AMD64_)
 endif(WIN32)
 
 # Offer the user the choice of overriding the installation directories
@@ -43,7 +43,7 @@ foreach(p
 endforeach()
 
 if(WIN32)
-add_subdirectory(wepoll)
+add_subdirectory(third_party/wepoll)
 endif(WIN32)
 
 # include directories
@@ -54,7 +54,7 @@ target_include_directories(${PROJECT_NAME}
                                    ${PROJECT_SOURCE_DIR}/trantor/utils
                                    ${PROJECT_SOURCE_DIR}/trantor/net
                                    ${PROJECT_SOURCE_DIR}/trantor/net/inner
-                                   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/wepoll>)
+                                   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/wepoll>)
 
 set(TRANTOR_SOURCES
     trantor/utils/AsyncFileLogger.cc
@@ -109,10 +109,11 @@ else()
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
 endif()
 target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
-target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 Rpcrt4 wepoll)
+else()
+  target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 endif(WIN32)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
@@ -120,7 +121,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_NAME Trantor)
 
-if(MAKETEST STREQUAL YES)
+if(BUILD_TESTING)
   add_subdirectory(trantor/tests)
   find_package(GTest)
   if(GTest_FOUND)

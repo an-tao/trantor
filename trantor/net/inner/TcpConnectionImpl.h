@@ -159,7 +159,11 @@ class TcpConnectionImpl : public TcpConnection,
         timingWheelPtr_->insertEntry(timeout, entry);
     }
     void extendLife();
+#ifndef _WIN32
     void sendFile(int sfd, size_t offset = 0, size_t length = 0);
+#else
+    void sendFile(FILE *fp, size_t offset = 0, size_t length = 0);
+#endif
     void setRecvMsgCallback(const RecvMessageCallback &cb)
     {
         recvMsgCallback_ = cb;
@@ -182,17 +186,22 @@ class TcpConnectionImpl : public TcpConnection,
   protected:
     struct BufferNode
     {
+#ifndef _WIN32
         int sendFd_{-1};
+#else
+        FILE *sendFp_{nullptr};
+#endif
         ssize_t fileBytesToSend_;
         off_t offset_;
         std::shared_ptr<MsgBuffer> msgBuffer_;
         ~BufferNode()
         {
-            if (sendFd_ >= 0)
-#ifndef _WIN32
-                close(sendFd_);
+#ifndef _WIN32 if (sendFd_ >= 0)
+
+            close(sendFd_);
 #else
-                closesocket(sendFd_);
+            if (sendFp_)
+                fclose(sendFp_);
 #endif
         }
     };

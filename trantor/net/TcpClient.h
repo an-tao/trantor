@@ -124,6 +124,7 @@ class TcpClient : NonCopyable
     mutable std::mutex mutex_;
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
     std::shared_ptr<SSLContext> sslCtxPtr_;
+#ifndef _WIN32
     class IgnoreSigPipe
     {
       public:
@@ -134,6 +135,7 @@ class TcpClient : NonCopyable
     };
 
     static IgnoreSigPipe initObj;
+#endif
 };
 
 }  // namespace trantor

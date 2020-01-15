@@ -14,6 +14,10 @@
 
 #pragma once
 
+//#ifdef _WIN32
+//#include <windows.h>
+//#endif
+
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
 #include <trantor/utils/LogStream.h>
@@ -27,13 +31,13 @@ class Logger : public NonCopyable
   public:
     enum LogLevel
     {
-        TRANTOR_TRACE = 0,
-		TRANTOR_DEBUG,
-		TRANTOR_INFO,
-		TRANTOR_WARN,
-		TRANTOR_ERROR,
-		TRANTOR_FATAL,
-		TRANTOR_NUM_LOG_LEVELS
+        kTrace=0,
+        kDebug,
+        kInfo,
+        kWarn,
+        kError,
+        kFatal,
+        kNumberOfLogLevels
     };
     // compile time calculation of basename of source file
     class SourceFile
@@ -100,9 +104,9 @@ class Logger : public NonCopyable
     static LogLevel &logLevel_()
     {
 #ifdef RELEASE
-        static LogLevel logLevel = LogLevel::TRANTOR_INFO;
+        static LogLevel logLevel = LogLevel::kInfo;
 #else
-        static LogLevel logLevel = LogLevel::TRANTOR_DEBUG;
+        static LogLevel logLevel = LogLevel::kDebug;
 #endif
         return logLevel;
     }
@@ -127,27 +131,27 @@ class Logger : public NonCopyable
 #ifdef NDEBUG
 #define LOG_TRACE                                                         \
     if (0)                                                                \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRANTOR_TRACE, __func__) \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #else
 #define LOG_TRACE                                                         \
-    if (trantor::Logger::logLevel() <= trantor::Logger::TRANTOR_TRACE)            \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRANTOR_TRACE, __func__) \
+    if (trantor::Logger::logLevel() <= trantor::Logger::kTrace)            \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #endif
 #define LOG_DEBUG                                                         \
-    if (trantor::Logger::logLevel() <= trantor::Logger::TRANTOR_DEBUG)            \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRANTOR_DEBUG, __func__) \
+    if (trantor::Logger::logLevel() <= trantor::Logger::kDebug)            \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
         .stream()
 #define LOG_INFO                                              \
-    if (trantor::Logger::logLevel() <= trantor::Logger::TRANTOR_INFO) \
+    if (trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
     trantor::Logger(__FILE__, __LINE__).stream()
 #define LOG_WARN \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRANTOR_WARN).stream()
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn).stream()
 #define LOG_ERROR \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRANTOR_ERROR).stream()
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kError).stream()
 #define LOG_FATAL \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::TRANTOR_FATAL).stream()
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
 #define LOG_SYSERR trantor::Logger(__FILE__, __LINE__, true).stream()
 
 const char *strerror_tl(int savedErrno);

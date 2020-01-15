@@ -41,8 +41,9 @@ void removeConnector(const ConnectorPtr &)
 {
     // connector->
 }
-
+#ifndef _WIN32
 TcpClient::IgnoreSigPipe TcpClient::initObj;
+#endif
 
 static void defaultConnectionCallback(const TcpConnectionPtr &conn)
 {

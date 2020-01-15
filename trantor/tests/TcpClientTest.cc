@@ -8,7 +8,7 @@ using namespace trantor;
 #define USE_IPV6 0
 int main()
 {
-    trantor::Logger::setLogLevel(trantor::Logger::TRANTOR_TRACE);
+    trantor::Logger::setLogLevel(trantor::Logger::kTrace);
     LOG_DEBUG << "TcpClient class test!";
     EventLoop loop;
 #if USE_IPV6

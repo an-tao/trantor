@@ -8,7 +8,7 @@ using namespace trantor;
 int main()
 {
     LOG_DEBUG << "test start";
-    Logger::setLogLevel(Logger::TRANTOR_TRACE);
+    Logger::setLogLevel(Logger::kTrace);
     EventLoop loop;
 #if USE_IPV6
     InetAddress addr(8888, true, true);
