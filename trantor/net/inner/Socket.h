@@ -50,7 +50,7 @@ class Socket : NonCopyable
     static int getSocketError(int sockfd)
     {
 #ifdef _WIN32
-    	char optval;
+        char optval;
 #else
         int optval;
 #endif
@@ -124,11 +124,15 @@ class Socket : NonCopyable
 
   protected:
     int sockFd_;
+
+  public:
     // taken from muduo
     static void setNonBlockAndCloseOnExec(int sockfd)
     {
 #ifdef _WIN32
-//TODO Implement a Windows version of this
+        // TODO how to set FD_CLOEXEC on windows? is it necessary?
+        u_long arg = 1;
+        ioctlsocket(sockfd, (long)FIONBIO, &arg);
 #else
         // non-block
         int flags = ::fcntl(sockfd, F_GETFL, 0);
