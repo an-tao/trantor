@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 add_library(${PROJECT_NAME} STATIC)
-# if(MSVC)
-#   target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-# else()
-#   target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic)
+# if(MSVC) target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX) else()
+# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic)
 # endif()
 
 set(TRANTOR_MAJOR_VERSION 1)
@@ -12,9 +10,9 @@ set(TRANTOR_MINOR_VERSION 0)
 set(TRANTOR_PATCH_VERSION 0)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
-	
+
 if(WIN32)
-add_definitions(-D_AMD64_)
+  add_definitions(-D_AMD64_)
 endif(WIN32)
 
 # Offer the user the choice of overriding the installation directories
@@ -43,18 +41,19 @@ foreach(p
 endforeach()
 
 if(WIN32)
-add_subdirectory(third_party/wepoll)
+  add_subdirectory(third_party/wepoll)
 endif(WIN32)
 
 # include directories
-target_include_directories(${PROJECT_NAME}
-                           PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-                                  $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
-                           PRIVATE ${PROJECT_SOURCE_DIR}
-                                   ${PROJECT_SOURCE_DIR}/trantor/utils
-                                   ${PROJECT_SOURCE_DIR}/trantor/net
-                                   ${PROJECT_SOURCE_DIR}/trantor/net/inner
-                                   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/wepoll>)
+target_include_directories(
+  ${PROJECT_NAME}
+  PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+         $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
+  PRIVATE ${PROJECT_SOURCE_DIR}
+          ${PROJECT_SOURCE_DIR}/trantor/utils
+          ${PROJECT_SOURCE_DIR}/trantor/net
+          ${PROJECT_SOURCE_DIR}/trantor/net/inner
+          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/wepoll>)
 
 set(TRANTOR_SOURCES
     trantor/utils/AsyncFileLogger.cc
@@ -83,11 +82,8 @@ set(TRANTOR_SOURCES
     trantor/net/inner/poller/KQueue.cc)
 
 if(WIN32)
-  set(TRANTOR_SOURCES
-                       ${TRANTOR_SOURCES}
-                       trantor/utils/WindowsSupport.cc)
+  set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/utils/WindowsSupport.cc)
 endif(WIN32)
-
 
 find_package(OpenSSL)
 if(OpenSSL_FOUND)

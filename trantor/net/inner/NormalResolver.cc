@@ -9,7 +9,6 @@
 #include <strings.h>  // memset
 #endif
 
-
 using namespace trantor;
 
 std::shared_ptr<Resolver> Resolver::newResolver(trantor::EventLoop *loop,

@@ -53,7 +53,7 @@ const int kDeleted = 2;
 EpollPoller::EpollPoller(EventLoop *loop)
     : Poller(loop),
 #ifdef _WIN32
-	  //wepoll does not suppor flags
+      // wepoll does not suppor flags
       epollfd_(::epoll_create1(0)),
 #else
       epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
@@ -64,7 +64,7 @@ EpollPoller::EpollPoller(EventLoop *loop)
 EpollPoller::~EpollPoller()
 {
 #ifdef _WIN32
-	epoll_close(epollfd_);
+    epoll_close(epollfd_);
 #else
     close(epollfd_);
 #endif

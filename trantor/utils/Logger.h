@@ -31,7 +31,7 @@ class Logger : public NonCopyable
   public:
     enum LogLevel
     {
-        kTrace=0,
+        kTrace = 0,
         kDebug,
         kInfo,
         kWarn,
@@ -129,21 +129,21 @@ class Logger : public NonCopyable
     LogLevel level_;
 };
 #ifdef NDEBUG
-#define LOG_TRACE                                                         \
-    if (0)                                                                \
+#define LOG_TRACE                                                          \
+    if (0)                                                                 \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #else
-#define LOG_TRACE                                                         \
+#define LOG_TRACE                                                          \
     if (trantor::Logger::logLevel() <= trantor::Logger::kTrace)            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #endif
-#define LOG_DEBUG                                                         \
+#define LOG_DEBUG                                                          \
     if (trantor::Logger::logLevel() <= trantor::Logger::kDebug)            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
         .stream()
-#define LOG_INFO                                              \
+#define LOG_INFO                                               \
     if (trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
     trantor::Logger(__FILE__, __LINE__).stream()
 #define LOG_WARN \

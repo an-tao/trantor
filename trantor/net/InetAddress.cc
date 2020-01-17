@@ -11,14 +11,14 @@
 #include <trantor/utils/Logger.h>
 //#include <muduo/net/Endian.h>
 
-
 #ifdef _WIN32
-struct in6_addr_uint {
-  union {
-    u_char Byte[16];
-    u_short Word[8];
-    uint32_t __s6_addr32[4];
-  } uext;
+struct in6_addr_uint
+{
+    union {
+        u_char Byte[16];
+        u_short Word[8];
+        uint32_t __s6_addr32[4];
+    } uext;
 };
 #else
 #include <strings.h>  // memset
@@ -211,8 +211,9 @@ const uint32_t *InetAddress::ip6NetEndian() const
 #ifdef __linux__
     return addr6_.sin6_addr.s6_addr32;
 #elif defined _WIN32
-    //TODO is this OK ?
-    const struct in6_addr_uint *addr_temp = reinterpret_cast <const struct in6_addr_uint *>(&addr6_.sin6_addr);
+    // TODO is this OK ?
+    const struct in6_addr_uint *addr_temp =
+        reinterpret_cast<const struct in6_addr_uint *>(&addr6_.sin6_addr);
     return (*addr_temp).uext.__s6_addr32;
 #else
     return addr6_.sin6_addr.__u6_addr.__u6_addr32;

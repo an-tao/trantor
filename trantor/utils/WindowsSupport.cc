@@ -15,29 +15,37 @@
 #include <trantor/utils/WindowsSupport.h>
 #include <winsock2.h>
 
-//from polipo
+// from polipo
 int win32_read_socket(int fd, void *buf, int n)
 {
-    int rc = recv(fd, reinterpret_cast<char*>(buf), n, 0);
-    if(rc == SOCKET_ERROR) {
-    	_set_errno(WSAGetLastError());
+    int rc = recv(fd, reinterpret_cast<char *>(buf), n, 0);
+    if (rc == SOCKET_ERROR)
+    {
+        _set_errno(WSAGetLastError());
     }
     return rc;
 }
 
 int readv(int fd, const struct iovec *vector, int count)
 {
-    int ret = 0;                     /* Return value */
+    int ret = 0; /* Return value */
     int i;
-    for(i = 0; i < count; i++) {
+    for (i = 0; i < count; i++)
+    {
         int n = vector[i].iov_len;
         int rc = win32_read_socket(fd, vector[i].iov_base, n);
-        if(rc == n) {
+        if (rc == n)
+        {
             ret += rc;
-        } else {
-            if(rc < 0) {
+        }
+        else
+        {
+            if (rc < 0)
+            {
                 ret = (ret == 0 ? rc : ret);
-            } else {
+            }
+            else
+            {
                 ret += rc;
             }
             break;

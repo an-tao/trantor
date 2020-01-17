@@ -40,7 +40,7 @@ class EpollPoller : public Poller
 #if defined __linux__ || defined _WIN32
     static const int kInitEventListSize = 16;
 #ifdef _WIN32
-    void* epollfd_;
+    void *epollfd_;
 #else
     int epollfd_;
 #endif
