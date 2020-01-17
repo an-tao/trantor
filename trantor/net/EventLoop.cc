@@ -89,6 +89,11 @@ EventLoop::EventLoop()
         std::unique_ptr<Channel>(new Channel(this, wakeupFd_[0]));
     wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
     wakeupChannelPtr_->enableReading();
+#else
+    poller_->setEventCallback([](uint64_t event) {
+        assert(event == 1);
+        LOG_TRACE << "wake up";
+    });
 #endif
 }
 #ifdef __linux__

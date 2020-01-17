@@ -22,7 +22,9 @@
 namespace trantor
 {
 class Channel;
-
+#ifdef _WIN32
+using EventCallback = std::function<void(uint64_t)>;
+#endif
 class Poller : NonCopyable
 {
   public:
@@ -39,6 +41,7 @@ class Poller : NonCopyable
     virtual void removeChannel(Channel *channel) = 0;
 #ifdef _WIN32
     virtual void postEvent(uint64_t event) = 0;
+    virtual void setEventCallback(const EventCallback &cb) = 0;
 #endif
     virtual void resetAfterFork()
     {
