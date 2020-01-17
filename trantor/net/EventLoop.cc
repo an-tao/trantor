@@ -77,13 +77,9 @@ EventLoop::EventLoop()
     assert(t_loopInThisThread == 0);
     t_loopInThisThread = this;
 #ifdef __linux__
-#elif defined _WIN32
-    // TODO will his work ? do we need to set  O_NONBLOCK ?
-    auto r = _pipe(wakeupFd_, 65536, _O_BINARY | _O_NOINHERIT);
-    assert(r == 0);
-    wakeupChannelPtr_ =
-        std::unique_ptr<Channel>(new Channel(this, wakeupFd_[0]));
-#else
+    wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
+    wakeupChannelPtr_->enableReading();
+#elif un_defined _WIN32
     auto r = pipe(wakeupFd_);
     (void)r;
     assert(!r);
@@ -91,10 +87,9 @@ EventLoop::EventLoop()
     fcntl(wakeupFd_[1], F_SETFL, O_NONBLOCK | O_CLOEXEC);
     wakeupChannelPtr_ =
         std::unique_ptr<Channel>(new Channel(this, wakeupFd_[0]));
-
-#endif
     wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
     wakeupChannelPtr_->enableReading();
+#endif
 }
 #ifdef __linux__
 void EventLoop::resetTimerQueue()
@@ -114,6 +109,7 @@ EventLoop::~EventLoop()
     t_loopInThisThread = nullptr;
 #ifdef __linux__
     close(wakeupFd_);
+#elif defined _WIN32
 #else
     close(wakeupFd_[0]);
     close(wakeupFd_[1]);
@@ -296,13 +292,11 @@ void EventLoop::wakeup()
     uint64_t tmp = 1;
 #ifdef __linux__
     int ret = write(wakeupFd_, &tmp, sizeof(tmp));
+#elif defined _WIN32
+    poller_->postEvent(1);
 #else
     int ret = write(wakeupFd_[1], &tmp, sizeof(tmp));
 #endif
-    if (ret < 0)
-    {
-        // LOG_SYSERR << "wakeup error";
-    }
 }
 void EventLoop::wakeupRead()
 {
@@ -310,6 +304,7 @@ void EventLoop::wakeupRead()
     ssize_t ret = 0;
 #ifdef __linux__
     ret = read(wakeupFd_, &tmp, sizeof(tmp));
+#elif defined _WIN32
 #else
     ret = read(wakeupFd_[0], &tmp, sizeof(tmp));
 #endif

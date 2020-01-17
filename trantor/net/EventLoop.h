@@ -168,10 +168,12 @@ class EventLoop : NonCopyable
     bool callingFuncs_{false};
 #ifdef __linux__
     int wakeupFd_;
+    std::unique_ptr<Channel> wakeupChannelPtr_;
+#elif defined _WIN32
 #else
     int wakeupFd_[2];
-#endif
     std::unique_ptr<Channel> wakeupChannelPtr_;
+#endif
 
     void doRunInLoopFuncs();
     size_t index_{std::numeric_limits<size_t>::max()};

@@ -69,6 +69,12 @@ EpollPoller::~EpollPoller()
     close(epollfd_);
 #endif
 }
+#ifdef _WIN32
+void EpollPoller::postEvent(uint64_t event)
+{
+    epoll_post_signal(epollfd_, event);
+}
+#endif
 void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
 {
     int numEvents = ::epoll_wait(epollfd_,
@@ -107,6 +113,13 @@ void EpollPoller::fillActiveChannels(int numEvents,
     assert(static_cast<size_t>(numEvents) <= events_.size());
     for (int i = 0; i < numEvents; ++i)
     {
+#ifdef _WIN32
+        if (events_[i].events == EPOLLEVENT)
+        {
+            eventCallback_(events_[i].data.u64);
+            continue;
+        }
+#endif
         Channel *channel = static_cast<Channel *>(events_[i].data.ptr);
 #ifndef NDEBUG
         int fd = channel->fd();
@@ -223,5 +236,6 @@ void EpollPoller::updateChannel(Channel *)
 void EpollPoller::removeChannel(Channel *)
 {
 }
+
 #endif
 }  // namespace trantor

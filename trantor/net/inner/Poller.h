@@ -37,6 +37,9 @@ class Poller : NonCopyable
     virtual void poll(int timeoutMs, ChannelList *activeChannels) = 0;
     virtual void updateChannel(Channel *channel) = 0;
     virtual void removeChannel(Channel *channel) = 0;
+#ifdef _WIN32
+    virtual void postEvent(uint64_t event) = 0;
+#endif
     virtual void resetAfterFork()
     {
     }
