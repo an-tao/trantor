@@ -79,7 +79,7 @@ EventLoop::EventLoop()
 #ifdef __linux__
     wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
     wakeupChannelPtr_->enableReading();
-#elif un_defined _WIN32
+#elif !defined _WIN32
     auto r = pipe(wakeupFd_);
     (void)r;
     assert(!r);
