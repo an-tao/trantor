@@ -132,7 +132,11 @@ class Socket : NonCopyable
 #ifdef _WIN32
         // TODO how to set FD_CLOEXEC on windows? is it necessary?
         u_long arg = 1;
-        ioctlsocket(sockfd, (long)FIONBIO, &arg);
+        auto ret = ioctlsocket(sockfd, (long)FIONBIO, &arg);
+        if (ret)
+        {
+            LOG_ERROR << "ioctlsocket error";
+        }
 #else
         // non-block
         int flags = ::fcntl(sockfd, F_GETFL, 0);

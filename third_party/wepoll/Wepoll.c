@@ -1258,12 +1258,10 @@ static int port__feed_events(port_state_t* port_state,
             ev->events = EPOLLEVENT;
             continue;
         }
-        if (iocp_events[i].lpOverlapped)
-        {
-            OVERLAPPED* overlapped = iocp_events[i].lpOverlapped;
-            struct epoll_event* ev = &epoll_events[epoll_event_count];
-            epoll_event_count += sock_feed_event(port_state, overlapped, ev);
-        }
+
+        OVERLAPPED* overlapped = iocp_events[i].lpOverlapped;
+        struct epoll_event* ev = &epoll_events[epoll_event_count];
+        epoll_event_count += sock_feed_event(port_state, overlapped, ev);
     }
 
     return epoll_event_count;

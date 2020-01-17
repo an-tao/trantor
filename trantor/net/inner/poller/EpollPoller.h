@@ -37,7 +37,7 @@ class EpollPoller : public Poller
     virtual void removeChannel(Channel *channel) override;
 #ifdef _WIN32
     virtual void postEvent(uint64_t event) override;
-    virtual void setEventCallback(const EventCallback &cb) override;
+    virtual void setEventCallback(const EventCallback &cb) override
     {
         eventCallback_ = cb;
     }
