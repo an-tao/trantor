@@ -84,6 +84,8 @@ void TcpConnectionImpl::readCallback()
         }
 #endif
         LOG_SYSERR << "read socket error";
+        handleClose();
+        return;
     }
     extendLife();
     if (n > 0)
