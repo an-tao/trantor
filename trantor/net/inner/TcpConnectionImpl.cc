@@ -72,9 +72,17 @@ void TcpConnectionImpl::readCallback()
     {
         if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
         {
-            LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
+            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
             return;
         }
+#ifdef _WIN32
+        if (errno == WSAECONNABORTED)
+        {
+            LOG_DEBUG << "WSAECONNABORTED, errno=" << errno;
+            handleClose();
+            return;
+        }
+#endif
         LOG_SYSERR << "read socket error";
     }
     extendLife();

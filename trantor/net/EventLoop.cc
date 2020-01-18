@@ -90,9 +90,7 @@ EventLoop::EventLoop()
     wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
     wakeupChannelPtr_->enableReading();
 #else
-    poller_->setEventCallback([](uint64_t event) {
-        assert(event == 1);
-    });
+    poller_->setEventCallback([](uint64_t event) { assert(event == 1); });
 #endif
 }
 #ifdef __linux__

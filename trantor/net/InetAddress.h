@@ -100,7 +100,8 @@ class InetAddress
     }
 
   private:
-    union {
+    union
+    {
         struct sockaddr_in addr_;
         struct sockaddr_in6 addr6_;
     };
