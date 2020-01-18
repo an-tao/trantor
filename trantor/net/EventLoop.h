@@ -176,7 +176,11 @@ class EventLoop : NonCopyable
 #endif
 
     void doRunInLoopFuncs();
+#ifdef _WIN32
+    size_t index_{size_t(-1)};
+#else
     size_t index_{std::numeric_limits<size_t>::max()};
+#endif
 };
 
 }  // namespace trantor

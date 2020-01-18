@@ -20,9 +20,7 @@
 #include <assert.h>
 #include <string.h>  // memcpy
 #include <string>
-#if __cplusplus >= 201703L
-#include <string_view>
-#endif
+
 namespace trantor
 {
 namespace detail
@@ -191,16 +189,6 @@ class LogStream : NonCopyable
         return *this;
     }
 
-#if __cplusplus >= 201703L
-    self &operator<<(const std::string_view &buf)
-    {
-        if (!buf.empty())
-        {
-            append(buf.data(), buf.length());
-        }
-        return *this;
-    }
-#endif
     self &operator<<(const unsigned char *str)
     {
         return operator<<(reinterpret_cast<const char *>(str));
