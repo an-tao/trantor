@@ -49,15 +49,14 @@ class Socket : NonCopyable
 
     static int getSocketError(int sockfd)
     {
-#ifdef _WIN32
-        char optval;
-#else
         int optval;
-#endif
-
         socklen_t optlen = static_cast<socklen_t>(sizeof optval);
-
+#ifdef _WIN32
+        if (::getsockopt(
+                sockfd, SOL_SOCKET, SO_ERROR, (char *)&optval, &optlen) < 0)
+#else
         if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+#endif
         {
             return errno;
         }

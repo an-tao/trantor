@@ -45,7 +45,6 @@ class SSLContext
     SSLContext()
     {
         ctxPtr_ = SSL_CTX_new(SSLv23_method());
-        // SSL_CTX_set_mode(ctxPtr_, SSL_MODE_ENABLE_PARTIAL_WRITE);
     }
     ~SSLContext()
     {
