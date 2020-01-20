@@ -161,7 +161,11 @@ void TcpConnectionImpl::writeCallback()
                 }
                 else
                 {
+#ifdef _WIN32
+                    if (errno != 0 && errno != EWOULDBLOCK)
+#else
                     if (errno != EWOULDBLOCK)
+#endif
                     {
                         // TODO: any others?
                         if (errno == EPIPE || errno == ECONNRESET)
@@ -211,7 +215,11 @@ void TcpConnectionImpl::writeCallback()
                         }
                         else
                         {
+#ifdef _WIN32
+                            if (errno != 0 && errno != EWOULDBLOCK)
+#else
                             if (errno != EWOULDBLOCK)
+#endif
                             {
                                 // TODO: any others?
                                 if (errno == EPIPE || errno == ECONNRESET)
@@ -352,7 +360,11 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         if (sendLen < 0)
         {
             // error
+#ifdef _WIN32
+            if (errno != 0 && errno != EWOULDBLOCK)
+#else
             if (errno != EWOULDBLOCK)
+#endif
             {
                 if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
                 {
@@ -803,7 +815,11 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             }
             if (nSend < 0)
             {
+#ifdef _WIN32
+                if (errno != 0 && errno != EWOULDBLOCK)
+#else
                 if (errno != EWOULDBLOCK)
+#endif
                 {
                     // TODO: any others?
                     if (errno == EPIPE || errno == ECONNRESET)
@@ -842,6 +858,7 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 #ifndef _WIN32
     return write(socketPtr_->fd(), buffer, length);
 #else
+    errno = 0;
     return ::send(socketPtr_->fd(), buffer, length, 0);
 #endif
 }
