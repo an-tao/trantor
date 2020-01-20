@@ -11,9 +11,6 @@ set(TRANTOR_PATCH_VERSION 0)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
 
-if(WIN32)
-  add_definitions(-D_AMD64_)
-endif(WIN32)
 
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")

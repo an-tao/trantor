@@ -14,10 +14,6 @@
 
 #pragma once
 
-//#ifdef _WIN32
-//#include <windows.h>
-//#endif
-
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
 #include <trantor/utils/LogStream.h>

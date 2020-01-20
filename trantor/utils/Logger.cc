@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #else
-#include <processthreadsapi.h>
+#include <sstream>
 #endif
 #ifdef __FreeBSD__
 #include <pthread_np.h>
@@ -95,7 +95,9 @@ void Logger::formatTime()
 #elif defined _WIN32
     if (threadId_ == 0)
     {
-        threadId_ = GetCurrentThreadId();
+        std::stringstream ss;
+        ss << std::this_thread::get_id();
+        threadId_ = std::stoull(ss.str());
     }
 #else
     if (threadId_ == 0)
