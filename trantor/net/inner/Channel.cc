@@ -95,7 +95,11 @@ void Channel::handleEventSafely()
         if (readCallback_)
             readCallback_();
     }
+#ifdef _WIN32
+    if ((revents_ & POLLOUT) && !(revents_ & POLLHUP))
+#else
     if (revents_ & POLLOUT)
+#endif
     {
         // LOG_TRACE<<"handle write";
         if (writeCallback_)

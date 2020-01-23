@@ -268,7 +268,7 @@ void TcpConnectionImpl::connectEstablished()
 }
 void TcpConnectionImpl::handleClose()
 {
-    LOG_TRACE << "connection closed";
+    LOG_TRACE << "connection closed, fd=" << socketPtr_->fd();
     loop_->assertInLoopThread();
     status_ = ConnStatus::Disconnected;
     ioChannelPtr_->disableAll();
@@ -378,7 +378,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         }
         remainLen -= sendLen;
     }
-    if (remainLen > 0)
+    if (remainLen > 0 && status_ == ConnStatus::Connected)
     {
         if (writeBufferList_.empty())
         {

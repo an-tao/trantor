@@ -277,7 +277,7 @@ ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
             int sslerr = SSL_get_error(sslPtr_->get(), sendLen);
             if (sslerr != SSL_ERROR_WANT_WRITE && sslerr != SSL_ERROR_WANT_READ)
             {
-                LOG_ERROR << "ssl write error:" << sslerr;
+                //LOG_ERROR << "ssl write error:" << sslerr;
                 forceClose();
                 return -1;
             }
