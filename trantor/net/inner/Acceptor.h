@@ -43,12 +43,14 @@ class Acceptor : NonCopyable
     void listen();
 
   protected:
+#ifndef _WIN32
+    int idleFd_;
+#endif
     Socket sock_;
     InetAddress addr_;
     EventLoop *loop_;
     NewConnectionCallback newConnectionCallback_;
     Channel acceptChannel_;
-    int idleFd_;
     void readCallback();
 };
 }  // namespace trantor

@@ -13,9 +13,16 @@
 
 #include <trantor/utils/Date.h>
 
+#ifdef _WIN32
+#include <ws2tcpip.h>
+using sa_family_t = unsigned short;
+using in_addr_t = uint32_t;
+using uint16_t = unsigned short;
+#else
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#endif
 #include <string>
 #include <unordered_map>
 #include <mutex>

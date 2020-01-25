@@ -3,15 +3,19 @@
 //
 
 #include <trantor/net/EventLoop.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #include <iostream>
 #include <thread>
+#include <chrono>
+using namespace std::chrono_literals;
 int main()
 {
     trantor::EventLoop loop;
     std::thread thread([&loop]() {
-        sleep(3);
+        std::this_thread::sleep_for(3s);
         loop.runInLoop([&loop]() {
             std::cout << "runInLoop called in other thread" << std::endl;
             loop.queueInLoop(

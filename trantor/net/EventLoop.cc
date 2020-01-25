@@ -24,13 +24,20 @@
 
 #include <thread>
 #include <assert.h>
+#ifdef _WIN32
+#include <io.h>
+using ssize_t = std::intptr_t;
+#else
 #include <poll.h>
+#endif
 #include <iostream>
 #ifdef __linux__
 #include <sys/eventfd.h>
 #endif
 #include <functional>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <algorithm>
 #include <signal.h>
 #include <fcntl.h>
@@ -70,7 +77,9 @@ EventLoop::EventLoop()
     assert(t_loopInThisThread == 0);
     t_loopInThisThread = this;
 #ifdef __linux__
-#else
+    wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
+    wakeupChannelPtr_->enableReading();
+#elif !defined _WIN32
     auto r = pipe(wakeupFd_);
     (void)r;
     assert(!r);
@@ -78,10 +87,11 @@ EventLoop::EventLoop()
     fcntl(wakeupFd_[1], F_SETFL, O_NONBLOCK | O_CLOEXEC);
     wakeupChannelPtr_ =
         std::unique_ptr<Channel>(new Channel(this, wakeupFd_[0]));
-
-#endif
     wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
     wakeupChannelPtr_->enableReading();
+#else
+    poller_->setEventCallback([](uint64_t event) { assert(event == 1); });
+#endif
 }
 #ifdef __linux__
 void EventLoop::resetTimerQueue()
@@ -101,6 +111,7 @@ EventLoop::~EventLoop()
     t_loopInThisThread = nullptr;
 #ifdef __linux__
     close(wakeupFd_);
+#elif defined _WIN32
 #else
     close(wakeupFd_[0]);
     close(wakeupFd_[1]);
@@ -283,13 +294,11 @@ void EventLoop::wakeup()
     uint64_t tmp = 1;
 #ifdef __linux__
     int ret = write(wakeupFd_, &tmp, sizeof(tmp));
+#elif defined _WIN32
+    poller_->postEvent(1);
 #else
     int ret = write(wakeupFd_[1], &tmp, sizeof(tmp));
 #endif
-    if (ret < 0)
-    {
-        // LOG_SYSERR << "wakeup error";
-    }
 }
 void EventLoop::wakeupRead()
 {
@@ -297,6 +306,7 @@ void EventLoop::wakeupRead()
     ssize_t ret = 0;
 #ifdef __linux__
     ret = read(wakeupFd_, &tmp, sizeof(tmp));
+#elif defined _WIN32
 #else
     ret = read(wakeupFd_[0], &tmp, sizeof(tmp));
 #endif

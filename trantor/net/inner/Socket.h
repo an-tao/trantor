@@ -18,7 +18,9 @@
 #include <trantor/net/InetAddress.h>
 #include <trantor/utils/Logger.h>
 #include <string>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 
 namespace trantor
@@ -41,6 +43,7 @@ class Socket : NonCopyable
             LOG_SYSERR << "sockets::createNonblockingOrDie";
             exit(1);
         }
+        LOG_TRACE << "sock=" << sock;
         return sock;
     }
 
@@ -48,8 +51,12 @@ class Socket : NonCopyable
     {
         int optval;
         socklen_t optlen = static_cast<socklen_t>(sizeof optval);
-
+#ifdef _WIN32
+        if (::getsockopt(
+                sockfd, SOL_SOCKET, SO_ERROR, (char *)&optval, &optlen) < 0)
+#else
         if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+#endif
         {
             return errno;
         }
@@ -116,9 +123,20 @@ class Socket : NonCopyable
 
   protected:
     int sockFd_;
+
+  public:
     // taken from muduo
     static void setNonBlockAndCloseOnExec(int sockfd)
     {
+#ifdef _WIN32
+        // TODO how to set FD_CLOEXEC on windows? is it necessary?
+        u_long arg = 1;
+        auto ret = ioctlsocket(sockfd, (long)FIONBIO, &arg);
+        if (ret)
+        {
+            LOG_ERROR << "ioctlsocket error";
+        }
+#else
         // non-block
         int flags = ::fcntl(sockfd, F_GETFL, 0);
         flags |= O_NONBLOCK;
@@ -132,6 +150,7 @@ class Socket : NonCopyable
         // TODO check
 
         (void)ret;
+#endif
     }
 };
 

@@ -16,8 +16,12 @@
 #include "Socket.h"
 #include <assert.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#endif
 
 using namespace trantor;
 
@@ -96,14 +100,22 @@ int Socket::accept(InetAddress *peeraddr)
 }
 void Socket::closeWrite()
 {
+#ifndef _WIN32
     if (::shutdown(sockFd_, SHUT_WR) < 0)
+#else
+    if (::shutdown(sockFd_, SD_SEND) < 0)
+#endif
     {
         LOG_SYSERR << "sockets::shutdownWrite";
     }
 }
 int Socket::read(char *buffer, uint64_t len)
 {
+#ifndef _WIN32
     return ::read(sockFd_, buffer, len);
+#else
+    return recv(sockFd_, buffer, len, 0);
+#endif
 }
 
 struct sockaddr_in6 Socket::getLocalAddr(int sockfd)
@@ -136,7 +148,11 @@ struct sockaddr_in6 Socket::getPeerAddr(int sockfd)
 
 void Socket::setTcpNoDelay(bool on)
 {
+#ifdef _WIN32
+    char optval = on ? 1 : 0;
+#else
     int optval = on ? 1 : 0;
+#endif
     ::setsockopt(sockFd_,
                  IPPROTO_TCP,
                  TCP_NODELAY,
@@ -147,7 +163,11 @@ void Socket::setTcpNoDelay(bool on)
 
 void Socket::setReuseAddr(bool on)
 {
+#ifdef _WIN32
+    char optval = on ? 1 : 0;
+#else
     int optval = on ? 1 : 0;
+#endif
     ::setsockopt(sockFd_,
                  SOL_SOCKET,
                  SO_REUSEADDR,
@@ -159,7 +179,11 @@ void Socket::setReuseAddr(bool on)
 void Socket::setReusePort(bool on)
 {
 #ifdef SO_REUSEPORT
+#ifdef _WIN32
+    char optval = on ? 1 : 0;
+#else
     int optval = on ? 1 : 0;
+#endif
     int ret = ::setsockopt(sockFd_,
                            SOL_SOCKET,
                            SO_REUSEPORT,
@@ -179,7 +203,11 @@ void Socket::setReusePort(bool on)
 
 void Socket::setKeepAlive(bool on)
 {
+#ifdef _WIN32
+    char optval = on ? 1 : 0;
+#else
     int optval = on ? 1 : 0;
+#endif
     ::setsockopt(sockFd_,
                  SOL_SOCKET,
                  SO_KEEPALIVE,
@@ -190,7 +218,11 @@ void Socket::setKeepAlive(bool on)
 
 int Socket::getSocketError()
 {
+#ifdef _WIN32
+    char optval;
+#else
     int optval;
+#endif
     socklen_t optlen = static_cast<socklen_t>(sizeof optval);
 
     if (::getsockopt(sockFd_, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
@@ -207,5 +239,9 @@ Socket::~Socket()
 {
     LOG_TRACE << "Socket deconstructed:" << sockFd_;
     if (sockFd_ >= 0)
+#ifndef _WIN32
         close(sockFd_);
+#else
+        closesocket(sockFd_);
+#endif
 }

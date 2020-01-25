@@ -15,6 +15,7 @@
 #include "Connector.h"
 #include "Channel.h"
 #include "Socket.h"
+
 using namespace trantor;
 
 Connector::Connector(EventLoop *loop, const InetAddress &addr, bool retry)
@@ -54,6 +55,7 @@ void Connector::startInLoop()
 void Connector::connect()
 {
     int sockfd = Socket::createNonblockingSocketOrDie(serverAddr_.family());
+    errno = 0;
     int ret = Socket::connect(sockfd, serverAddr_);
     int savedErrno = (ret == 0) ? 0 : errno;
     switch (savedErrno)
@@ -83,7 +85,11 @@ void Connector::connect()
         case ENOTSOCK:
             LOG_SYSERR << "connect error in Connector::startInLoop "
                        << savedErrno;
+#ifndef _WIN32
             ::close(sockfd);
+#else
+            closesocket(sockfd);
+#endif
             if (errorCallback_)
                 errorCallback_();
             break;
@@ -91,7 +97,11 @@ void Connector::connect()
         default:
             LOG_SYSERR << "Unexpected error in Connector::startInLoop "
                        << savedErrno;
+#ifndef _WIN32
             ::close(sockfd);
+#else
+            closesocket(sockfd);
+#endif
             if (errorCallback_)
                 errorCallback_();
             break;
@@ -139,7 +149,11 @@ void Connector::handleWrite()
             }
             else
             {
+#ifndef _WIN32
                 ::close(sockfd);
+#else
+                closesocket(sockfd);
+#endif
             }
             if (errorCallback_)
             {
@@ -155,7 +169,11 @@ void Connector::handleWrite()
             }
             else
             {
+#ifndef _WIN32
                 ::close(sockfd);
+#else
+                closesocket(sockfd);
+#endif
             }
             if (errorCallback_)
             {
@@ -171,7 +189,11 @@ void Connector::handleWrite()
             }
             else
             {
+#ifndef _WIN32
                 ::close(sockfd);
+#else
+                closesocket(sockfd);
+#endif
             }
         }
     }
@@ -196,7 +218,11 @@ void Connector::handleError()
         }
         else
         {
+#ifndef _WIN32
             ::close(sockfd);
+#else
+            closesocket(sockfd);
+#endif
         }
         if (errorCallback_)
         {
@@ -208,7 +234,11 @@ void Connector::handleError()
 void Connector::retry(int sockfd)
 {
     assert(retry_);
+#ifndef _WIN32
     ::close(sockfd);
+#else
+    closesocket(sockfd);
+#endif
     status_ = Status::Disconnected;
     if (connect_)
     {
@@ -217,7 +247,9 @@ void Connector::retry(int sockfd)
                  << " milliseconds. ";
         loop_->runAfter(retryInterval_ / 1000.0,
                         std::bind(&Connector::startInLoop, shared_from_this()));
-        retryInterval_ = std::min(retryInterval_ * 2, maxRetryInterval_);
+        retryInterval_ = retryInterval_ * 2;
+        if (retryInterval_ > maxRetryInterval_)
+            retryInterval_ = maxRetryInterval_;
     }
     else
     {

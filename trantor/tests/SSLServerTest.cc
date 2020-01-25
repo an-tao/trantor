@@ -8,7 +8,7 @@ using namespace trantor;
 int main()
 {
     LOG_DEBUG << "test start";
-    Logger::setLogLevel(Logger::TRACE);
+    Logger::setLogLevel(Logger::kTrace);
     EventLoopThread loopThread;
     loopThread.run();
 #if USE_IPV6

@@ -1,7 +1,10 @@
 #include <trantor/utils/Logger.h>
 #include <trantor/utils/AsyncFileLogger.h>
-#include <unistd.h>
+#include <thread>
+#include <chrono>
 #include <stdlib.h>
+
+using namespace std::chrono_literals;
 int main()
 {
     trantor::AsyncFileLogger asyncFileLogger;
@@ -25,6 +28,6 @@ int main()
         LOG_INFO << "this is the " << i << "th log";
         ++i;
         LOG_DEBUG << "this is the " << i << "th log";
-        sleep(1);
+        std::this_thread::sleep_for(1s);
     }
 }

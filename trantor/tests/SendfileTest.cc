@@ -6,7 +6,9 @@
 #include <thread>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 using namespace trantor;
 #define USE_IPV6 0
@@ -25,17 +27,19 @@ int main(int argc, char *argv[])
         exit(1);
     }
     std::cout << "file len=" << filestat.st_size << std::endl;
-    int fd = open(argv[1], O_RDONLY);
-    if (fd < 0)
+
+    auto fp = fopen(argv[1], "rb");
+
+    if (fp == nullptr)
     {
         perror("");
         exit(1);
     }
-    close(fd);
+    fclose(fp);
 
     LOG_DEBUG << "test start";
 
-    Logger::setLogLevel(Logger::TRACE);
+    Logger::setLogLevel(Logger::kTrace);
     EventLoopThread loopThread;
     loopThread.run();
 

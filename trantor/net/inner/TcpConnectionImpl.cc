@@ -19,7 +19,11 @@
 #include <sys/sendfile.h>
 #endif
 #include <sys/types.h>
+#ifndef _WIN32
 #include <unistd.h>
+#else
+#include <WinSock2.h>
+#endif
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -68,10 +72,20 @@ void TcpConnectionImpl::readCallback()
     {
         if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
         {
-            LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
+            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
             return;
         }
+#ifdef _WIN32
+        if (errno == WSAECONNABORTED)
+        {
+            LOG_DEBUG << "WSAECONNABORTED, errno=" << errno;
+            handleClose();
+            return;
+        }
+#endif
         LOG_SYSERR << "read socket error";
+        handleClose();
+        return;
     }
     extendLife();
     if (n > 0)
@@ -106,7 +120,11 @@ void TcpConnectionImpl::writeCallback()
     {
         assert(!writeBufferList_.empty());
         auto writeBuffer_ = writeBufferList_.front();
+#ifndef _WIN32
         if (writeBuffer_->sendFd_ < 0)
+#else
+        if (writeBuffer_->sendFp_ == nullptr)
+#endif
         {
             if (writeBuffer_->msgBuffer_->readableBytes() <= 0)
             {
@@ -125,7 +143,11 @@ void TcpConnectionImpl::writeCallback()
                 else
                 {
                     auto fileNode = writeBufferList_.front();
+#ifndef _WIN32
                     assert(fileNode->sendFd_ >= 0);
+#else
+                    assert(fileNode->sendFp_);
+#endif
                     sendFileInLoop(fileNode);
                 }
             }
@@ -139,7 +161,11 @@ void TcpConnectionImpl::writeCallback()
                 }
                 else
                 {
+#ifdef _WIN32
+                    if (errno != 0 && errno != EWOULDBLOCK)
+#else
                     if (errno != EWOULDBLOCK)
+#endif
                     {
                         // TODO: any others?
                         if (errno == EPIPE || errno == ECONNRESET)
@@ -171,7 +197,11 @@ void TcpConnectionImpl::writeCallback()
                 }
                 else
                 {
+#ifndef _WIN32
                     if (writeBufferList_.front()->sendFd_ < 0)
+#else
+                    if (writeBufferList_.front()->sendFp_ == nullptr)
+#endif
                     {
                         // There is data to be sent in the buffer.
                         auto n = writeInLoop(
@@ -185,7 +215,11 @@ void TcpConnectionImpl::writeCallback()
                         }
                         else
                         {
+#ifdef _WIN32
+                            if (errno != 0 && errno != EWOULDBLOCK)
+#else
                             if (errno != EWOULDBLOCK)
+#endif
                             {
                                 // TODO: any others?
                                 if (errno == EPIPE || errno == ECONNRESET)
@@ -234,7 +268,7 @@ void TcpConnectionImpl::connectEstablished()
 }
 void TcpConnectionImpl::handleClose()
 {
-    LOG_TRACE << "connection closed";
+    LOG_TRACE << "connection closed, fd=" << socketPtr_->fd();
     loop_->assertInLoopThread();
     status_ = ConnStatus::Disconnected;
     ioChannelPtr_->disableAll();
@@ -326,7 +360,11 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         if (sendLen < 0)
         {
             // error
+#ifdef _WIN32
+            if (errno != 0 && errno != EWOULDBLOCK)
+#else
             if (errno != EWOULDBLOCK)
+#endif
             {
                 if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
                 {
@@ -340,7 +378,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         }
         remainLen -= sendLen;
     }
-    if (remainLen > 0)
+    if (remainLen > 0 && status_ == ConnStatus::Connected)
     {
         if (writeBufferList_.empty())
         {
@@ -348,7 +386,11 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             node->msgBuffer_ = std::shared_ptr<MsgBuffer>(new MsgBuffer);
             writeBufferList_.push_back(std::move(node));
         }
+#ifndef _WIN32
         else if (writeBufferList_.back()->sendFd_ >= 0)
+#else
+        else if (writeBufferList_.back()->sendFp_)
+#endif
         {
             BufferNodePtr node(new BufferNode);
             node->msgBuffer_ = std::shared_ptr<MsgBuffer>(new MsgBuffer);
@@ -570,7 +612,7 @@ void TcpConnectionImpl::sendFile(const char *fileName,
                                  size_t length)
 {
     assert(fileName);
-
+#ifndef _WIN32
     int fd = open(fileName, O_RDONLY);
 
     if (fd < 0)
@@ -592,14 +634,47 @@ void TcpConnectionImpl::sendFile(const char *fileName,
     }
 
     sendFile(fd, offset, length);
+#else
+    auto fp = fopen(fileName, "rb");
+
+    if (fp == nullptr)
+    {
+        LOG_SYSERR << fileName << " open error";
+        return;
+    }
+
+    if (length == 0)
+    {
+        struct stat filestat;
+        if (stat(fileName, &filestat) < 0)
+        {
+            LOG_SYSERR << fileName << " stat error";
+            fclose(fp);
+            return;
+        }
+        length = filestat.st_size;
+    }
+
+    sendFile(fp, offset, length);
+#endif
 }
+
+#ifndef _WIN32
 void TcpConnectionImpl::sendFile(int sfd, size_t offset, size_t length)
+#else
+void TcpConnectionImpl::sendFile(FILE *fp, size_t offset, size_t length)
+#endif
 {
     assert(length > 0);
+#ifndef _WIN32
     assert(sfd >= 0);
-
     BufferNodePtr node(new BufferNode);
     node->sendFd_ = sfd;
+#else
+    assert(fp);
+    BufferNodePtr node(new BufferNode);
+    node->sendFp_ = fp;
+#endif
     node->offset_ = offset;
     node->fileBytesToSend_ = length;
     if (loop_->isInLoopThread())
@@ -657,7 +732,11 @@ void TcpConnectionImpl::sendFile(int sfd, size_t offset, size_t length)
 void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
 {
     loop_->assertInLoopThread();
+#ifndef _WIN32
     assert(filePtr->sendFd_ >= 0);
+#else
+    assert(filePtr->sendFp_);
+#endif
 #ifdef __linux__
     if (!isSSLConn_)
     {
@@ -692,6 +771,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         return;
     }
 #endif
+#ifndef _WIN32
     lseek(filePtr->sendFd_, filePtr->offset_, SEEK_SET);
     if (!fileBufferPtr_)
     {
@@ -702,6 +782,19 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         auto n = read(filePtr->sendFd_,
                       &(*fileBufferPtr_)[0],
                       fileBufferPtr_->size());
+#else
+    fseek(filePtr->sendFp_, filePtr->offset_, SEEK_SET);
+    if (!fileBufferPtr_)
+    {
+        fileBufferPtr_ = std::make_unique<std::vector<char>>(16 * 1024);
+    }
+    while (filePtr->fileBytesToSend_ > 0)
+    {
+        auto n = fread(&(*fileBufferPtr_)[0],
+                       fileBufferPtr_->size(),
+                       1,
+                       filePtr->sendFp_);
+#endif
         if (n > 0)
         {
             auto nSend = writeInLoop(&(*fileBufferPtr_)[0], n);
@@ -722,7 +815,11 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             }
             if (nSend < 0)
             {
+#ifdef _WIN32
+                if (errno != 0 && errno != EWOULDBLOCK)
+#else
                 if (errno != EWOULDBLOCK)
+#endif
                 {
                     // TODO: any others?
                     if (errno == EPIPE || errno == ECONNRESET)
@@ -758,5 +855,10 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
 ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 {
     bytesSent_ += length;
+#ifndef _WIN32
     return write(socketPtr_->fd(), buffer, length);
+#else
+    errno = 0;
+    return ::send(socketPtr_->fd(), buffer, length, 0);
+#endif
 }

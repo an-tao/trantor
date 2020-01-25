@@ -15,8 +15,12 @@
 #include <trantor/utils/Logger.h>
 #include <stdio.h>
 #include <thread>
+#ifndef _WIN32
 #include <unistd.h>
 #include <sys/syscall.h>
+#else
+#include <sstream>
+#endif
 #ifdef __FreeBSD__
 #include <pthread_np.h>
 #endif
@@ -88,6 +92,13 @@ void Logger::formatTime()
     {
         threadId_ = pthread_getthreadid_np();
     }
+#elif defined _WIN32
+    if (threadId_ == 0)
+    {
+        std::stringstream ss;
+        ss << std::this_thread::get_id();
+        threadId_ = std::stoull(ss.str());
+    }
 #else
     if (threadId_ == 0)
     {
@@ -96,7 +107,7 @@ void Logger::formatTime()
 #endif
     logStream_ << threadId_;
 }
-static const char *logLevelStr[Logger::LogLevel::NUM_LOG_LEVELS] = {
+static const char *logLevelStr[Logger::LogLevel::kNumberOfLogLevels] = {
     " TRACE ",
     " DEBUG ",
     " INFO  ",
@@ -105,7 +116,7 @@ static const char *logLevelStr[Logger::LogLevel::NUM_LOG_LEVELS] = {
     " FATAL ",
 };
 Logger::Logger(SourceFile file, int line)
-    : sourceFile_(file), fileLine_(line), level_(INFO)
+    : sourceFile_(file), fileLine_(line), level_(kInfo)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
@@ -123,7 +134,7 @@ Logger::Logger(SourceFile file, int line, LogLevel level, const char *func)
     logStream_ << T(logLevelStr[level_], 7) << "[" << func << "] ";
 }
 Logger::Logger(SourceFile file, int line, bool)
-    : sourceFile_(file), fileLine_(line), level_(FATAL)
+    : sourceFile_(file), fileLine_(line), level_(kFatal)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
@@ -136,7 +147,7 @@ Logger::~Logger()
 {
     logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
     Logger::outputFunc_()(logStream_.bufferData(), logStream_.bufferLength());
-    if (level_ >= ERROR)
+    if (level_ >= kError)
         Logger::flushFunc_()();
     // logStream_.resetBuffer();
 }

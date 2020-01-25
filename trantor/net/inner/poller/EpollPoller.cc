@@ -22,16 +22,26 @@
 #include <assert.h>
 #include <strings.h>
 #include <iostream>
+#elif defined _WIN32
+#include "Wepoll.h"
+#include <assert.h>
+#include <iostream>
+#include <winsock2.h>
+#include <fcntl.h>
+#define EPOLL_CLOEXEC _O_NOINHERIT
 #endif
 namespace trantor
 {
-#ifdef __linux__
+#if defined __linux__ || defined _WIN32
+
+#if defined __linux__
 static_assert(EPOLLIN == POLLIN, "EPOLLIN != POLLIN");
 static_assert(EPOLLPRI == POLLPRI, "EPOLLPRI != POLLPRI");
 static_assert(EPOLLOUT == POLLOUT, "EPOLLOUT != POLLOUT");
 static_assert(EPOLLRDHUP == POLLRDHUP, "EPOLLRDHUP != POLLRDHUP");
 static_assert(EPOLLERR == POLLERR, "EPOLLERR != POLLERR");
 static_assert(EPOLLHUP == POLLHUP, "EPOLLHUP != POLLHUP");
+#endif
 
 namespace
 {
@@ -42,14 +52,29 @@ const int kDeleted = 2;
 
 EpollPoller::EpollPoller(EventLoop *loop)
     : Poller(loop),
+#ifdef _WIN32
+      // wepoll does not suppor flags
+      epollfd_(::epoll_create1(0)),
+#else
       epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
+#endif
       events_(kInitEventListSize)
 {
 }
 EpollPoller::~EpollPoller()
 {
+#ifdef _WIN32
+    epoll_close(epollfd_);
+#else
     close(epollfd_);
+#endif
 }
+#ifdef _WIN32
+void EpollPoller::postEvent(uint64_t event)
+{
+    epoll_post_signal(epollfd_, event);
+}
+#endif
 void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
 {
     int numEvents = ::epoll_wait(epollfd_,
@@ -88,6 +113,13 @@ void EpollPoller::fillActiveChannels(int numEvents,
     assert(static_cast<size_t>(numEvents) <= events_.size());
     for (int i = 0; i < numEvents; ++i)
     {
+#ifdef _WIN32
+        if (events_[i].events == EPOLLEVENT)
+        {
+            eventCallback_(events_[i].data.u64);
+            continue;
+        }
+#endif
         Channel *channel = static_cast<Channel *>(events_[i].data.ptr);
 #ifndef NDEBUG
         int fd = channel->fd();
@@ -204,5 +236,6 @@ void EpollPoller::updateChannel(Channel *)
 void EpollPoller::removeChannel(Channel *)
 {
 }
+
 #endif
 }  // namespace trantor

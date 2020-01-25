@@ -2,7 +2,9 @@
 #include <iostream>
 #include <atomic>
 #include <future>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 int main()
 {

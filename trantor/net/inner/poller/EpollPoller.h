@@ -18,7 +18,7 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/EventLoop.h>
 
-#ifdef __linux__
+#if defined __linux__ || defined _WIN32
 #include <memory>
 #include <map>
 using EventList = std::vector<struct epoll_event>;
@@ -35,11 +35,23 @@ class EpollPoller : public Poller
     virtual void poll(int timeoutMs, ChannelList *activeChannels) override;
     virtual void updateChannel(Channel *channel) override;
     virtual void removeChannel(Channel *channel) override;
+#ifdef _WIN32
+    virtual void postEvent(uint64_t event) override;
+    virtual void setEventCallback(const EventCallback &cb) override
+    {
+        eventCallback_ = cb;
+    }
+#endif
 
   private:
-#ifdef __linux__
+#if defined __linux__ || defined _WIN32
     static const int kInitEventListSize = 16;
+#ifdef _WIN32
+    void *epollfd_;
+    EventCallback eventCallback_{[](uint64_t event) {}};
+#else
     int epollfd_;
+#endif
     EventList events_;
     void update(int operation, Channel *channel);
 #ifndef NDEBUG

@@ -1,12 +1,13 @@
 #include <trantor/net/EventLoop.h>
 #include <trantor/utils/Logger.h>
 #include <iostream>
-#include <unistd.h>
+#include <thread>
+#include <chrono>
 using namespace std::literals;
 
 int main()
 {
-    trantor::Logger::setLogLevel(trantor::Logger::TRACE);
+    trantor::Logger::setLogLevel(trantor::Logger::kTrace);
     trantor::EventLoop loop;
     auto id1 = loop.runAfter(1s, []() {
         LOG_ERROR << "This info shouldn't be displayed!";
@@ -16,7 +17,7 @@ int main()
         LOG_ERROR << "This timer will be invalidated after 3 second;";
     });
     std::thread thread([id2, &loop]() {
-        sleep(3);
+        std::this_thread::sleep_for(3s);
         loop.invalidateTimer(id2);
     });
     thread.detach();

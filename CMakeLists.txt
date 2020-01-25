@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 add_library(${PROJECT_NAME} STATIC)
-# if(MSVC)
-#   target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
-# else()
-#   target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic)
+# if(MSVC) target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX) else()
+# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic)
 # endif()
 
 set(TRANTOR_MAJOR_VERSION 1)
@@ -12,6 +10,7 @@ set(TRANTOR_MINOR_VERSION 0)
 set(TRANTOR_PATCH_VERSION 0)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
+
 
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
@@ -38,14 +37,20 @@ foreach(p
   endif()
 endforeach()
 
+if(WIN32)
+  add_subdirectory(third_party/wepoll)
+endif(WIN32)
+
 # include directories
-target_include_directories(${PROJECT_NAME}
-                           PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-                                  $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
-                           PRIVATE ${PROJECT_SOURCE_DIR}
-                                   ${PROJECT_SOURCE_DIR}/trantor/utils
-                                   ${PROJECT_SOURCE_DIR}/trantor/net
-                                   ${PROJECT_SOURCE_DIR}/trantor/net/inner)
+target_include_directories(
+  ${PROJECT_NAME}
+  PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+         $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
+  PRIVATE ${PROJECT_SOURCE_DIR}
+          ${PROJECT_SOURCE_DIR}/trantor/utils
+          ${PROJECT_SOURCE_DIR}/trantor/net
+          ${PROJECT_SOURCE_DIR}/trantor/net/inner
+          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/wepoll>)
 
 set(TRANTOR_SOURCES
     trantor/utils/AsyncFileLogger.cc
@@ -73,6 +78,10 @@ set(TRANTOR_SOURCES
     trantor/net/inner/poller/EpollPoller.cc
     trantor/net/inner/poller/KQueue.cc)
 
+if(WIN32)
+  set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/utils/WindowsSupport.cc)
+endif(WIN32)
+
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
@@ -93,17 +102,23 @@ else()
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
 endif()
 target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
-target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
+
+if(WIN32)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 Rpcrt4 wepoll)
+else()
+  target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
+endif(WIN32)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_NAME Trantor)
 
-if(MAKETEST STREQUAL YES)
+if(BUILD_TESTING)
   add_subdirectory(trantor/tests)
   find_package(GTest)
   if(GTest_FOUND)
+    enable_testing()
     add_subdirectory(trantor/unittests)
   endif()
 endif()

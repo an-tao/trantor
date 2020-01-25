@@ -13,19 +13,54 @@
  */
 
 #include "Date.h"
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
+#ifdef _WIN32
+#include <WinSock2.h>
+#include <time.h>
+#endif
 
 namespace trantor
 {
+#ifdef _WIN32
+int gettimeofday(timeval *tp, void *tzp)
+{
+    time_t clock;
+    struct tm tm;
+    SYSTEMTIME wtm;
+
+    GetLocalTime(&wtm);
+    tm.tm_year = wtm.wYear - 1900;
+    tm.tm_mon = wtm.wMonth - 1;
+    tm.tm_mday = wtm.wDay;
+    tm.tm_hour = wtm.wHour;
+    tm.tm_min = wtm.wMinute;
+    tm.tm_sec = wtm.wSecond;
+    tm.tm_isdst = -1;
+    clock = mktime(&tm);
+    tp->tv_sec = clock;
+    tp->tv_usec = wtm.wMilliseconds * 1000;
+
+    return (0);
+}
+#endif
 const Date Date::date()
 {
+#ifndef _WIN32
     struct timeval tv;
     gettimeofday(&tv, NULL);
     int64_t seconds = tv.tv_sec;
     return Date(seconds * MICRO_SECONDS_PRE_SEC + tv.tv_usec);
+#else
+    timeval tv;
+    gettimeofday(&tv, NULL);
+    int64_t seconds = tv.tv_sec;
+    return Date(seconds * MICRO_SECONDS_PRE_SEC + tv.tv_usec);
+#endif
 }
 const Date Date::after(double second) const
 {
@@ -41,7 +76,11 @@ const Date Date::roundDay() const
     struct tm t;
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+#ifndef _WIN32
     localtime_r(&seconds, &t);
+#else
+    localtime_s(&t, &seconds);
+#endif
     t.tm_hour = 0;
     t.tm_min = 0;
     t.tm_sec = 0;
@@ -52,7 +91,11 @@ struct tm Date::tmStruct() const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
+#ifndef _WIN32
     gmtime_r(&seconds, &tm_time);
+#else
+    gmtime_s(&tm_time, &seconds);
+#endif
     return tm_time;
 }
 std::string Date::toFormattedString(bool showMicroseconds) const
@@ -62,7 +105,11 @@ std::string Date::toFormattedString(bool showMicroseconds) const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
+#ifndef _WIN32
     gmtime_r(&seconds, &tm_time);
+#else
+    gmtime_s(&tm_time, &seconds);
+#endif
 
     if (showMicroseconds)
     {
@@ -100,7 +147,11 @@ std::string Date::toCustomedFormattedString(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
+#ifndef _WIN32
     gmtime_r(&seconds, &tm_time);
+#else
+    gmtime_s(&tm_time, &seconds);
+#endif
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
     if (!showMicroseconds)
         return std::string(buf);
@@ -118,7 +169,11 @@ void Date::toCustomedFormattedString(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
+#ifndef _WIN32
     gmtime_r(&seconds, &tm_time);
+#else
+    gmtime_s(&tm_time, &seconds);
+#endif
     strftime(str, len, fmtStr.c_str(), &tm_time);
 }
 std::string Date::toFormattedStringLocal(bool showMicroseconds) const
@@ -128,7 +183,11 @@ std::string Date::toFormattedStringLocal(bool showMicroseconds) const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
+#ifndef _WIN32
     localtime_r(&seconds, &tm_time);
+#else
+    localtime_s(&tm_time, &seconds);
+#endif
 
     if (showMicroseconds)
     {
@@ -165,7 +224,11 @@ std::string Date::toDbStringLocal() const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
+#ifndef _WIN32
     localtime_r(&seconds, &tm_time);
+#else
+    localtime_s(&tm_time, &seconds);
+#endif
     bool showMicroseconds =
         (microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC != 0);
     if (showMicroseconds)
@@ -216,7 +279,11 @@ std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
     struct tm tm_time;
+#ifndef _WIN32
     localtime_r(&seconds, &tm_time);
+#else
+    localtime_s(&tm_time, &seconds);
+#endif
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
     if (!showMicroseconds)
         return std::string(buf);
