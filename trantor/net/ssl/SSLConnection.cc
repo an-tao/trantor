@@ -93,9 +93,11 @@ void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
                           const std::string &certPath,
                           const std::string &keyPath)
 {
-    auto r = SSL_CTX_use_certificate_file(ctx->get(),
+    /*auto r = SSL_CTX_use_certificate_file(ctx->get(),
                                           certPath.c_str(),
-                                          SSL_FILETYPE_PEM);
+                                          SSL_FILETYPE_PEM);*/
+
+    auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
     if (!r)
     {
         LOG_FATAL << strerror(errno);
@@ -277,7 +279,7 @@ ssize_t SSLConnection::writeInLoop(const char *buffer, size_t length)
             int sslerr = SSL_get_error(sslPtr_->get(), sendLen);
             if (sslerr != SSL_ERROR_WANT_WRITE && sslerr != SSL_ERROR_WANT_READ)
             {
-                //LOG_ERROR << "ssl write error:" << sslerr;
+                // LOG_ERROR << "ssl write error:" << sslerr;
                 forceClose();
                 return -1;
             }
