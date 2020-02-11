@@ -39,9 +39,11 @@ class SSLContext;
 class SSLConn;
 
 std::shared_ptr<SSLContext> newSSLContext();
-void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
-                          const std::string &certPath,
-                          const std::string &keyPath);
+std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
+                                                const std::string &keyPath);
+// void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
+//                           const std::string &certPath,
+//                           const std::string &keyPath);
 #endif
 class Channel;
 class Socket;
@@ -164,6 +166,13 @@ class TcpConnectionImpl : public TcpConnection,
     {
         return bytesReceived_;
     }
+    virtual bool startClientEncryption(std::function<void()> callback) override;
+    virtual bool startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
+                                       std::function<void()> callback) override;
+    virtual bool isSSLConnection() const override
+    {
+        return isEncrypted_;
+    }
 
   private:
     /// Internal use only.
@@ -276,19 +285,20 @@ class TcpConnectionImpl : public TcpConnection,
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
 
 #ifdef USE_OPENSSL
-  public:
-    virtual bool isSSLConnection() const override
-    {
-        return isEncrypted_;
-    }
-
   private:
     void doHandshaking();
-    SSLStatus statusOfSSL_ = SSLStatus::Handshaking;
-    // OpenSSL
-    std::unique_ptr<SSLConn> sslPtr_;
-    bool isServer_ = false;
-    std::unique_ptr<std::array<char, 8192>> sendBufferPtr_;
+    struct SSLEncryption
+    {
+        SSLStatus statusOfSSL_ = SSLStatus::Handshaking;
+        // OpenSSL
+        std::shared_ptr<SSLContext> sslCtxPtr_;
+        std::unique_ptr<SSLConn> sslPtr_;
+        std::unique_ptr<std::array<char, 8192>> sendBufferPtr_;
+        bool isServer_ = false;
+        bool isUpgrade_ = false;
+        std::function<void()> upgradeCallback_;
+    };
+    std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
 #endif
 };
 

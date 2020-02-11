@@ -167,6 +167,5 @@ void TcpServer::enableSSL(const std::string &certPath,
     // init OpenSSL
     initOpenSSL();
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLContext();
-    initServerSSLContext(sslCtxPtr_, certPath, keyPath);
+    sslCtxPtr_ = newSSLServerContext(certPath, keyPath);
 }
