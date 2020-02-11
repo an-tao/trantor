@@ -21,9 +21,28 @@
 #include <unistd.h>
 #endif
 #include <thread>
+#include <array>
 
 namespace trantor
 {
+#ifdef USE_OPENSSL
+enum class SSLStatus
+{
+    Handshaking,
+    Connecting,
+    Connected,
+    DisConnecting,
+    DisConnected
+};
+void initOpenSSL();
+class SSLContext;
+class SSLConn;
+
+std::shared_ptr<SSLContext> newSSLContext();
+void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
+                          const std::string &certPath,
+                          const std::string &keyPath);
+#endif
 class Channel;
 class Socket;
 class TcpServer;
@@ -66,6 +85,14 @@ class TcpConnectionImpl : public TcpConnection,
                       int socketfd,
                       const InetAddress &localAddr,
                       const InetAddress &peerAddr);
+#ifdef USE_OPENSSL
+    TcpConnectionImpl(EventLoop *loop,
+                      int socketfd,
+                      const InetAddress &localAddr,
+                      const InetAddress &peerAddr,
+                      const std::shared_ptr<SSLContext> &ctxPtr,
+                      bool isServer = true);
+#endif
     virtual ~TcpConnectionImpl();
     virtual void send(const char *msg, uint64_t len) override;
     virtual void send(const std::string &msg) override;
@@ -213,14 +240,14 @@ class TcpConnectionImpl : public TcpConnection,
         Connected,
         Disconnecting
     };
-    bool isSSLConn_{false};
+    bool isEncrypted_{false};
     EventLoop *loop_;
     std::unique_ptr<Channel> ioChannelPtr_;
     std::unique_ptr<Socket> socketPtr_;
     MsgBuffer readBuffer_;
     std::list<BufferNodePtr> writeBufferList_;
-    virtual void readCallback();
-    virtual void writeCallback();
+    void readCallback();
+    void writeCallback();
     InetAddress localAddr_, peerAddr_;
     ConnStatus status_{ConnStatus::Connecting};
     // callbacks
@@ -236,7 +263,7 @@ class TcpConnectionImpl : public TcpConnection,
 
     void sendFileInLoop(const BufferNodePtr &file);
 
-    virtual ssize_t writeInLoop(const char *buffer, size_t length);
+    ssize_t writeInLoop(const char *buffer, size_t length);
     size_t highWaterMarkLen_;
     std::string name_;
 
@@ -247,6 +274,22 @@ class TcpConnectionImpl : public TcpConnection,
     size_t bytesReceived_{0};
 
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
+
+#ifdef USE_OPENSSL
+  public:
+    virtual bool isSSLConnection() const override
+    {
+        return isEncrypted_;
+    }
+
+  private:
+    void doHandshaking();
+    SSLStatus statusOfSSL_ = SSLStatus::Handshaking;
+    // OpenSSL
+    std::unique_ptr<SSLConn> sslPtr_;
+    bool isServer_ = false;
+    std::unique_ptr<std::array<char, 8192>> sendBufferPtr_;
+#endif
 };
 
 using TcpConnectionImplPtr = std::shared_ptr<TcpConnectionImpl>;

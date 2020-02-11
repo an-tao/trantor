@@ -86,10 +86,7 @@ find_package(OpenSSL)
 if(OpenSSL_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
-  set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/ssl/SSLConnection.cc)
-else()
-  set(TRANTOR_SOURCES ${TRANTOR_SOURCES}
-                      trantor/net/ssl/SSLConnectionSkipped.cc)
+  add_definitions(-DUSE_OPENSSL)
 endif()
 
 find_path(CARES_INCLUDE_DIR ares.h)

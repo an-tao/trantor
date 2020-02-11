@@ -28,10 +28,8 @@ using TimerCallback = std::function<void()>;
 
 // the data has been read to (buf, len)
 class TcpConnection;
-class SSLConnection;
 class MsgBuffer;
 using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
-using SSLConnectionPtr = std::shared_ptr<SSLConnection>;
 // tcp server and connection callback
 using RecvMessageCallback =
     std::function<void(const TcpConnectionPtr &, MsgBuffer *)>;
@@ -41,14 +39,6 @@ using CloseCallback = std::function<void(const TcpConnectionPtr &)>;
 using WriteCompleteCallback = std::function<void(const TcpConnectionPtr &)>;
 using HighWaterMarkCallback =
     std::function<void(const TcpConnectionPtr &, const size_t)>;
-// ssl server and connection callback
-using SSLRecvMessageCallback =
-    std::function<void(const SSLConnectionPtr &, MsgBuffer *)>;
-using SSLConnectionCallback = std::function<void(const SSLConnectionPtr &)>;
-using SSLCloseCallback = std::function<void(const SSLConnectionPtr &)>;
-using SSLWriteCompleteCallback = std::function<void(const SSLConnectionPtr &)>;
-using SSLHighWaterMarkCallback =
-    std::function<void(const SSLConnectionPtr &, const size_t)>;
 
 using OperationCompleteCallback = std::function<void(const TrantorError)>;
 
