@@ -98,15 +98,13 @@ class SSLConn
 };
 
 std::shared_ptr<SSLContext> newSSLContext()
-{
+{  // init OpenSSL
+    initOpenSSL();
     return std::make_shared<SSLContext>();
 }
 std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
                                                 const std::string &keyPath)
 {
-    /*auto r = SSL_CTX_use_certificate_file(ctx->get(),
-                                          certPath.c_str(),
-                                          SSL_FILETYPE_PEM);*/
     auto ctx = newSSLContext();
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
     if (!r)
@@ -159,7 +157,60 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 TcpConnectionImpl::~TcpConnectionImpl()
 {
 }
-bool TcpConnectionImpl::startServerEncryption(
+#ifdef USE_OPENSSL
+void TcpConnectionImpl::startClientEncryptionInLoop(
+    std::function<void()> &&callback)
+{
+    loop_->assertInLoopThread();
+    if (isEncrypted_)
+    {
+        LOG_WARN << "This connection is already encrypted";
+        return;
+    }
+    sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
+    sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
+    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext();
+    sslEncryptionPtr_->sslPtr_ =
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+    isEncrypted_ = true;
+    sslEncryptionPtr_->isUpgrade_ = true;
+    auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
+    (void)r;
+    assert(r);
+    sslEncryptionPtr_->sendBufferPtr_ =
+        std::make_unique<std::array<char, 8192>>();
+    LOG_TRACE << "connectEstablished";
+    ioChannelPtr_->enableWriting();
+    SSL_set_connect_state(sslEncryptionPtr_->sslPtr_->get());
+}
+void TcpConnectionImpl::startServerEncryptionInLoop(
+    const std::shared_ptr<SSLContext> &ctx,
+    std::function<void()> &&callback)
+{
+    loop_->assertInLoopThread();
+    if (isEncrypted_)
+    {
+        LOG_WARN << "This connection is already encrypted";
+        return;
+    }
+    sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
+    sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
+    sslEncryptionPtr_->sslCtxPtr_ = ctx;
+    sslEncryptionPtr_->isServer_ = true;
+    sslEncryptionPtr_->sslPtr_ =
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+    isEncrypted_ = true;
+    sslEncryptionPtr_->isUpgrade_ = true;
+    auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
+    (void)r;
+    assert(r);
+    sslEncryptionPtr_->sendBufferPtr_ =
+        std::make_unique<std::array<char, 8192>>();
+    LOG_TRACE << "upgrade to ssl";
+    SSL_set_accept_state(sslEncryptionPtr_->sslPtr_->get());
+}
+#endif
+void TcpConnectionImpl::startServerEncryption(
     const std::shared_ptr<SSLContext> &ctx,
     std::function<void()> callback)
 {
@@ -167,61 +218,38 @@ bool TcpConnectionImpl::startServerEncryption(
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #else
-    sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
-    sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
-    sslEncryptionPtr_->sslCtxPtr_ = ctx;
-    sslEncryptionPtr_->isServer_ = true;
-    loop_->runInLoop([thisPtr = shared_from_this()]() mutable {
-        if (thisPtr->isEncrypted_)
-        {
-            LOG_WARN << "This connection is already encrypted";
-            return;
-        }
-        auto &encryption = thisPtr->sslEncryptionPtr_;
-        encryption->sslPtr_ =
-            std::make_unique<SSLConn>(encryption->sslCtxPtr_->get());
-        thisPtr->isEncrypted_ = true;
-        encryption->isUpgrade_ = true;
-        auto r =
-            SSL_set_fd(encryption->sslPtr_->get(), thisPtr->socketPtr_->fd());
-        (void)r;
-        assert(r);
-        encryption->sendBufferPtr_ = std::make_unique<std::array<char, 8192>>();
-        LOG_TRACE << "connectEstablished";
-        SSL_set_accept_state(encryption->sslPtr_->get());
-    });
+    if (loop_->isInLoopThread())
+    {
+        startServerEncryptionInLoop(ctx, std::move(callback));
+    }
+    else
+    {
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            ctx,
+                            callback = std::move(callback)]() mutable {
+            thisPtr->startServerEncryptionInLoop(ctx, std::move(callback));
+        });
+    }
+
 #endif
 }
-bool TcpConnectionImpl::startClientEncryption(std::function<void()> callback)
+void TcpConnectionImpl::startClientEncryption(std::function<void()> callback)
 {
 #ifndef USE_OPENSSL
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #else
-    sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
-    sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
-    loop_->runInLoop([thisPtr = shared_from_this()]() mutable {
-        if (thisPtr->isEncrypted_)
-        {
-            LOG_WARN << "This connection is already encrypted";
-            return;
-        }
-
-        auto &encryption = thisPtr->sslEncryptionPtr_;
-        encryption->sslCtxPtr_ = newSSLContext();
-        encryption->sslPtr_ =
-            std::make_unique<SSLConn>(encryption->sslCtxPtr_->get());
-        thisPtr->isEncrypted_ = true;
-        encryption->isUpgrade_ = true;
-        auto r =
-            SSL_set_fd(encryption->sslPtr_->get(), thisPtr->socketPtr_->fd());
-        (void)r;
-        assert(r);
-        encryption->sendBufferPtr_ = std::make_unique<std::array<char, 8192>>();
-        LOG_TRACE << "connectEstablished";
-        thisPtr->ioChannelPtr_->enableWriting();
-        SSL_set_connect_state(encryption->sslPtr_->get());
-    });
+    if (loop_->isInLoopThread())
+    {
+        startClientEncryptionInLoop(std::move(callback));
+    }
+    else
+    {
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            callback = std::move(callback)]() mutable {
+            thisPtr->startClientEncryptionInLoop(std::move(callback));
+        });
+    }
 #endif
 }
 void TcpConnectionImpl::readCallback()
@@ -1233,7 +1261,9 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 void TcpConnectionImpl::doHandshaking()
 {
     assert(sslEncryptionPtr_->statusOfSSL_ == SSLStatus::Handshaking);
+
     int r = SSL_do_handshake(sslEncryptionPtr_->sslPtr_->get());
+    LOG_TRACE << "hand shaking: " << r;
     if (r == 1)
     {
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::Connected;
@@ -1248,15 +1278,19 @@ void TcpConnectionImpl::doHandshaking()
         return;
     }
     int err = SSL_get_error(sslEncryptionPtr_->sslPtr_->get(), r);
+    LOG_TRACE << "hand shaking: " << err;
     if (err == SSL_ERROR_WANT_WRITE)
     {  // SSL want writable;
-        ioChannelPtr_->enableWriting();
-        ioChannelPtr_->disableReading();
+        if (!ioChannelPtr_->isWriting())
+            ioChannelPtr_->enableWriting();
+        // ioChannelPtr_->disableReading();
     }
     else if (err == SSL_ERROR_WANT_READ)
     {  // SSL want readable;
-        ioChannelPtr_->enableReading();
-        ioChannelPtr_->disableWriting();
+        if (!ioChannelPtr_->isReading())
+            ioChannelPtr_->enableReading();
+        if (ioChannelPtr_->isWriting())
+            ioChannelPtr_->disableWriting();
     }
     else
     {

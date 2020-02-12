@@ -99,8 +99,8 @@ class TcpConnection
 
     virtual bool isSSLConnection() const = 0;
 
-    virtual bool startClientEncryption(std::function<void()> callback) = 0;
-    virtual bool startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
+    virtual void startClientEncryption(std::function<void()> callback) = 0;
+    virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
                                        std::function<void()> callback) = 0;
 
   private:

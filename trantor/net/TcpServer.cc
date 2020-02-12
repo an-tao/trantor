@@ -164,8 +164,6 @@ const std::string TcpServer::ipPort() const
 void TcpServer::enableSSL(const std::string &certPath,
                           const std::string &keyPath)
 {
-    // init OpenSSL
-    initOpenSSL();
     /* Create a new OpenSSL context */
     sslCtxPtr_ = newSSLServerContext(certPath, keyPath);
 }

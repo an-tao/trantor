@@ -201,8 +201,6 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
 
 void TcpClient::enableSSL()
 {
-    // init OpenSSL
-    initOpenSSL();
     /* Create a new OpenSSL context */
     sslCtxPtr_ = newSSLContext();
 }

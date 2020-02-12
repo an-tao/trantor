@@ -34,7 +34,6 @@ enum class SSLStatus
     DisConnecting,
     DisConnected
 };
-void initOpenSSL();
 class SSLContext;
 class SSLConn;
 
@@ -166,8 +165,8 @@ class TcpConnectionImpl : public TcpConnection,
     {
         return bytesReceived_;
     }
-    virtual bool startClientEncryption(std::function<void()> callback) override;
-    virtual bool startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
+    virtual void startClientEncryption(std::function<void()> callback) override;
+    virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
                                        std::function<void()> callback) override;
     virtual bool isSSLConnection() const override
     {
@@ -294,11 +293,14 @@ class TcpConnectionImpl : public TcpConnection,
         std::shared_ptr<SSLContext> sslCtxPtr_;
         std::unique_ptr<SSLConn> sslPtr_;
         std::unique_ptr<std::array<char, 8192>> sendBufferPtr_;
-        bool isServer_ = false;
-        bool isUpgrade_ = false;
+        bool isServer_{false};
+        bool isUpgrade_{false};
         std::function<void()> upgradeCallback_;
     };
     std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
+    void startClientEncryptionInLoop(std::function<void()> &&callback);
+    void startServerEncryptionInLoop(const std::shared_ptr<SSLContext> &ctx,
+                                     std::function<void()> &&callback);
 #endif
 };
 
