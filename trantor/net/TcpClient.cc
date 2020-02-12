@@ -201,6 +201,11 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
 
 void TcpClient::enableSSL()
 {
+#ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
     sslCtxPtr_ = newSSLContext();
+#else
+    LOG_FATAL << "OpenSSL is not found in your system!";
+    abort();
+#endif
 }
