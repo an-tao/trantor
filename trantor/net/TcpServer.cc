@@ -14,7 +14,6 @@
 
 #include "Acceptor.h"
 #include "inner/TcpConnectionImpl.h"
-#include "ssl/SSLConnection.h"
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
 #include <functional>
@@ -68,13 +67,17 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     std::shared_ptr<TcpConnectionImpl> newPtr;
     if (sslCtxPtr_)
     {
-        newPtr =
-            std::make_shared<SSLConnection>(ioLoop,
-                                            sockfd,
-                                            InetAddress(
-                                                Socket::getLocalAddr(sockfd)),
-                                            peer,
-                                            sslCtxPtr_);
+#ifdef USE_OPENSSL
+        newPtr = std::make_shared<TcpConnectionImpl>(
+            ioLoop,
+            sockfd,
+            InetAddress(Socket::getLocalAddr(sockfd)),
+            peer,
+            sslCtxPtr_);
+#else
+        LOG_FATAL << "OpenSSL is not found in your system!";
+        abort();
+#endif
     }
     else
     {
@@ -161,9 +164,11 @@ const std::string TcpServer::ipPort() const
 void TcpServer::enableSSL(const std::string &certPath,
                           const std::string &keyPath)
 {
-    // init OpenSSL
-    initOpenSSL();
+#ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLContext();
-    initServerSSLContext(sslCtxPtr_, certPath, keyPath);
+    sslCtxPtr_ = newSSLServerContext(certPath, keyPath);
+#else
+    LOG_FATAL << "OpenSSL is not found in your system!";
+    abort();
+#endif
 }

@@ -26,8 +26,110 @@
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef USE_OPENSSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
 
 using namespace trantor;
+
+#ifdef USE_OPENSSL
+namespace trantor
+{
+void initOpenSSL()
+{
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
+    (defined(LIBRESSL_VERSION_NUMBER) &&      \
+     LIBRESSL_VERSION_NUMBER < 0x20700000L)
+    // Initialize OpenSSL once;
+    static std::once_flag once;
+    std::call_once(once, []() {
+        SSL_library_init();
+        ERR_load_crypto_strings();
+        SSL_load_error_strings();
+        OpenSSL_add_all_algorithms();
+    });
+#endif
+}
+class SSLContext
+{
+  public:
+    SSLContext()
+    {
+        ctxPtr_ = SSL_CTX_new(SSLv23_method());
+    }
+    ~SSLContext()
+    {
+        if (ctxPtr_)
+        {
+            SSL_CTX_free(ctxPtr_);
+        }
+    }
+
+    SSL_CTX *get()
+    {
+        return ctxPtr_;
+    }
+
+  private:
+    SSL_CTX *ctxPtr_;
+};
+class SSLConn
+{
+  public:
+    explicit SSLConn(SSL_CTX *ctx)
+    {
+        SSL_ = SSL_new(ctx);
+    }
+    ~SSLConn()
+    {
+        if (SSL_)
+        {
+            SSL_free(SSL_);
+        }
+    }
+    SSL *get()
+    {
+        return SSL_;
+    }
+
+  private:
+    SSL *SSL_;
+};
+
+std::shared_ptr<SSLContext> newSSLContext()
+{  // init OpenSSL
+    initOpenSSL();
+    return std::make_shared<SSLContext>();
+}
+std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
+                                                const std::string &keyPath)
+{
+    auto ctx = newSSLContext();
+    auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
+    if (!r)
+    {
+        LOG_FATAL << strerror(errno);
+        abort();
+    }
+    r = SSL_CTX_use_PrivateKey_file(ctx->get(),
+                                    keyPath.c_str(),
+                                    SSL_FILETYPE_PEM);
+    if (!r)
+    {
+        LOG_FATAL << strerror(errno);
+        abort();
+    }
+    r = SSL_CTX_check_private_key(ctx->get());
+    if (!r)
+    {
+        LOG_FATAL << strerror(errno);
+        abort();
+    }
+    return ctx;
+}
+}  // namespace trantor
+#endif
 
 TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
@@ -55,47 +157,198 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 TcpConnectionImpl::~TcpConnectionImpl()
 {
 }
+#ifdef USE_OPENSSL
+void TcpConnectionImpl::startClientEncryptionInLoop(
+    std::function<void()> &&callback)
+{
+    loop_->assertInLoopThread();
+    if (isEncrypted_)
+    {
+        LOG_WARN << "This connection is already encrypted";
+        return;
+    }
+    sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
+    sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
+    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext();
+    sslEncryptionPtr_->sslPtr_ =
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+    isEncrypted_ = true;
+    sslEncryptionPtr_->isUpgrade_ = true;
+    auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
+    (void)r;
+    assert(r);
+    sslEncryptionPtr_->sendBufferPtr_ =
+        std::make_unique<std::array<char, 8192>>();
+    LOG_TRACE << "connectEstablished";
+    ioChannelPtr_->enableWriting();
+    SSL_set_connect_state(sslEncryptionPtr_->sslPtr_->get());
+}
+void TcpConnectionImpl::startServerEncryptionInLoop(
+    const std::shared_ptr<SSLContext> &ctx,
+    std::function<void()> &&callback)
+{
+    loop_->assertInLoopThread();
+    if (isEncrypted_)
+    {
+        LOG_WARN << "This connection is already encrypted";
+        return;
+    }
+    sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
+    sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
+    sslEncryptionPtr_->sslCtxPtr_ = ctx;
+    sslEncryptionPtr_->isServer_ = true;
+    sslEncryptionPtr_->sslPtr_ =
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+    isEncrypted_ = true;
+    sslEncryptionPtr_->isUpgrade_ = true;
+    auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
+    (void)r;
+    assert(r);
+    sslEncryptionPtr_->sendBufferPtr_ =
+        std::make_unique<std::array<char, 8192>>();
+    LOG_TRACE << "upgrade to ssl";
+    SSL_set_accept_state(sslEncryptionPtr_->sslPtr_->get());
+}
+#endif
+void TcpConnectionImpl::startServerEncryption(
+    const std::shared_ptr<SSLContext> &ctx,
+    std::function<void()> callback)
+{
+#ifndef USE_OPENSSL
+    LOG_FATAL << "OpenSSL is not found in your system!";
+    abort();
+#else
+    if (loop_->isInLoopThread())
+    {
+        startServerEncryptionInLoop(ctx, std::move(callback));
+    }
+    else
+    {
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            ctx,
+                            callback = std::move(callback)]() mutable {
+            thisPtr->startServerEncryptionInLoop(ctx, std::move(callback));
+        });
+    }
+
+#endif
+}
+void TcpConnectionImpl::startClientEncryption(std::function<void()> callback)
+{
+#ifndef USE_OPENSSL
+    LOG_FATAL << "OpenSSL is not found in your system!";
+    abort();
+#else
+    if (loop_->isInLoopThread())
+    {
+        startClientEncryptionInLoop(std::move(callback));
+    }
+    else
+    {
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            callback = std::move(callback)]() mutable {
+            thisPtr->startClientEncryptionInLoop(std::move(callback));
+        });
+    }
+#endif
+}
 void TcpConnectionImpl::readCallback()
 {
-    // LOG_TRACE<<"read Callback";
-    loop_->assertInLoopThread();
-    int ret = 0;
+// LOG_TRACE<<"read Callback";
+#ifdef USE_OPENSSL
+    if (!isEncrypted_)
+    {
+#endif
+        loop_->assertInLoopThread();
+        int ret = 0;
 
-    ssize_t n = readBuffer_.readFd(socketPtr_->fd(), &ret);
-    // LOG_TRACE<<"read "<<n<<" bytes from socket";
-    if (n == 0)
-    {
-        // socket closed by peer
-        handleClose();
-    }
-    else if (n < 0)
-    {
-        if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
+        ssize_t n = readBuffer_.readFd(socketPtr_->fd(), &ret);
+        // LOG_TRACE<<"read "<<n<<" bytes from socket";
+        if (n == 0)
         {
-            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
-            return;
+            // socket closed by peer
+            handleClose();
         }
-#ifdef _WIN32
-        if (errno == WSAECONNABORTED)
+        else if (n < 0)
         {
-            LOG_DEBUG << "WSAECONNABORTED, errno=" << errno;
+            if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
+            {
+                LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+                return;
+            }
+#ifdef _WIN32
+            if (errno == WSAECONNABORTED)
+            {
+                LOG_DEBUG << "WSAECONNABORTED, errno=" << errno;
+                handleClose();
+                return;
+            }
+#endif
+            LOG_SYSERR << "read socket error";
             handleClose();
             return;
         }
-#endif
-        LOG_SYSERR << "read socket error";
-        handleClose();
-        return;
-    }
-    extendLife();
-    if (n > 0)
-    {
-        bytesReceived_ += n;
-        if (recvMsgCallback_)
+        extendLife();
+        if (n > 0)
         {
-            recvMsgCallback_(shared_from_this(), &readBuffer_);
+            bytesReceived_ += n;
+            if (recvMsgCallback_)
+            {
+                recvMsgCallback_(shared_from_this(), &readBuffer_);
+            }
+        }
+#ifdef USE_OPENSSL
+    }
+    else
+    {
+        LOG_TRACE << "read Callback";
+        loop_->assertInLoopThread();
+        if (sslEncryptionPtr_->statusOfSSL_ == SSLStatus::Handshaking)
+        {
+            doHandshaking();
+            return;
+        }
+        else if (sslEncryptionPtr_->statusOfSSL_ == SSLStatus::Connected)
+        {
+            int rd;
+            bool newDataFlag = false;
+            size_t readLength;
+            do
+            {
+                readBuffer_.ensureWritableBytes(1024);
+                readLength = readBuffer_.writableBytes();
+                rd = SSL_read(sslEncryptionPtr_->sslPtr_->get(),
+                              readBuffer_.beginWrite(),
+                              readLength);
+                LOG_TRACE << "ssl read:" << rd << " bytes";
+                if (rd <= 0)
+                {
+                    int sslerr =
+                        SSL_get_error(sslEncryptionPtr_->sslPtr_->get(), rd);
+                    if (sslerr == SSL_ERROR_WANT_READ)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        LOG_TRACE << "ssl read err:" << sslerr;
+                        sslEncryptionPtr_->statusOfSSL_ =
+                            SSLStatus::DisConnected;
+                        handleClose();
+                        return;
+                    }
+                }
+                readBuffer_.hasWritten(rd);
+                newDataFlag = true;
+            } while ((size_t)rd == readLength);
+            if (newDataFlag)
+            {
+                // Run callback function
+                recvMsgCallback_(shared_from_this(), &readBuffer_);
+            }
         }
     }
+#endif
 }
 void TcpConnectionImpl::extendLife()
 {
@@ -114,157 +367,206 @@ void TcpConnectionImpl::extendLife()
 }
 void TcpConnectionImpl::writeCallback()
 {
-    loop_->assertInLoopThread();
-    extendLife();
-    if (ioChannelPtr_->isWriting())
+#ifdef USE_OPENSSL
+    if (!isEncrypted_ ||
+        (sslEncryptionPtr_ &&
+         sslEncryptionPtr_->statusOfSSL_ == SSLStatus::Connected))
     {
-        assert(!writeBufferList_.empty());
-        auto writeBuffer_ = writeBufferList_.front();
+#endif
+        loop_->assertInLoopThread();
+        extendLife();
+        if (ioChannelPtr_->isWriting())
+        {
+            assert(!writeBufferList_.empty());
+            auto writeBuffer_ = writeBufferList_.front();
 #ifndef _WIN32
-        if (writeBuffer_->sendFd_ < 0)
+            if (writeBuffer_->sendFd_ < 0)
 #else
         if (writeBuffer_->sendFp_ == nullptr)
 #endif
-        {
-            if (writeBuffer_->msgBuffer_->readableBytes() <= 0)
             {
-                writeBufferList_.pop_front();
-                if (writeBufferList_.empty())
+                if (writeBuffer_->msgBuffer_->readableBytes() <= 0)
                 {
-                    ioChannelPtr_->disableWriting();
-                    //
-                    if (writeCompleteCallback_)
-                        writeCompleteCallback_(shared_from_this());
-                    if (status_ == ConnStatus::Disconnecting)
+                    writeBufferList_.pop_front();
+                    if (writeBufferList_.empty())
                     {
-                        socketPtr_->closeWrite();
+                        ioChannelPtr_->disableWriting();
+                        //
+                        if (writeCompleteCallback_)
+                            writeCompleteCallback_(shared_from_this());
+                        if (status_ == ConnStatus::Disconnecting)
+                        {
+                            socketPtr_->closeWrite();
+                        }
+                    }
+                    else
+                    {
+                        auto fileNode = writeBufferList_.front();
+#ifndef _WIN32
+                        assert(fileNode->sendFd_ >= 0);
+#else
+                    assert(fileNode->sendFp_);
+#endif
+                        sendFileInLoop(fileNode);
                     }
                 }
                 else
                 {
-                    auto fileNode = writeBufferList_.front();
-#ifndef _WIN32
-                    assert(fileNode->sendFd_ >= 0);
+                    auto n =
+                        writeInLoop(writeBuffer_->msgBuffer_->peek(),
+                                    writeBuffer_->msgBuffer_->readableBytes());
+                    if (n >= 0)
+                    {
+                        writeBuffer_->msgBuffer_->retrieve(n);
+                    }
+                    else
+                    {
+#ifdef _WIN32
+                        if (errno != 0 && errno != EWOULDBLOCK)
 #else
-                    assert(fileNode->sendFp_);
+                    if (errno != EWOULDBLOCK)
 #endif
-                    sendFileInLoop(fileNode);
+                        {
+                            // TODO: any others?
+                            if (errno == EPIPE || errno == ECONNRESET)
+                            {
+                                LOG_DEBUG << "EPIPE or ECONNRESET, erron="
+                                          << errno;
+                                return;
+                            }
+                            LOG_SYSERR << "Unexpected error(" << errno << ")";
+                            return;
+                        }
+                    }
                 }
             }
             else
             {
-                auto n = writeInLoop(writeBuffer_->msgBuffer_->peek(),
-                                     writeBuffer_->msgBuffer_->readableBytes());
-                if (n >= 0)
+                // file
+                if (writeBuffer_->fileBytesToSend_ <= 0)
                 {
-                    writeBuffer_->msgBuffer_->retrieve(n);
+                    writeBufferList_.pop_front();
+                    if (writeBufferList_.empty())
+                    {
+                        ioChannelPtr_->disableWriting();
+                        if (writeCompleteCallback_)
+                            writeCompleteCallback_(shared_from_this());
+                        if (status_ == ConnStatus::Disconnecting)
+                        {
+                            socketPtr_->closeWrite();
+                        }
+                    }
+                    else
+                    {
+#ifndef _WIN32
+                        if (writeBufferList_.front()->sendFd_ < 0)
+#else
+                    if (writeBufferList_.front()->sendFp_ == nullptr)
+#endif
+                        {
+                            // There is data to be sent in the buffer.
+                            auto n = writeInLoop(
+                                writeBufferList_.front()->msgBuffer_->peek(),
+                                writeBufferList_.front()
+                                    ->msgBuffer_->readableBytes());
+                            writeBufferList_.front()->msgBuffer_->retrieve(n);
+                            if (n >= 0)
+                            {
+                                writeBufferList_.front()->msgBuffer_->retrieve(
+                                    n);
+                            }
+                            else
+                            {
+#ifdef _WIN32
+                                if (errno != 0 && errno != EWOULDBLOCK)
+#else
+                            if (errno != EWOULDBLOCK)
+#endif
+                                {
+                                    // TODO: any others?
+                                    if (errno == EPIPE || errno == ECONNRESET)
+                                    {
+                                        LOG_DEBUG
+                                            << "EPIPE or ECONNRESET, erron="
+                                            << errno;
+                                        return;
+                                    }
+                                    LOG_SYSERR << "Unexpected error(" << errno
+                                               << ")";
+                                    return;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // more file
+                            sendFileInLoop(writeBufferList_.front());
+                        }
+                    }
                 }
                 else
                 {
-#ifdef _WIN32
-                    if (errno != 0 && errno != EWOULDBLOCK)
-#else
-                    if (errno != EWOULDBLOCK)
-#endif
-                    {
-                        // TODO: any others?
-                        if (errno == EPIPE || errno == ECONNRESET)
-                        {
-                            LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
-                            return;
-                        }
-                        LOG_SYSERR << "Unexpected error(" << errno << ")";
-                        return;
-                    }
+                    sendFileInLoop(writeBuffer_);
                 }
             }
         }
         else
         {
-            // file
-            if (writeBuffer_->fileBytesToSend_ <= 0)
-            {
-                writeBufferList_.pop_front();
-                if (writeBufferList_.empty())
-                {
-                    ioChannelPtr_->disableWriting();
-                    if (writeCompleteCallback_)
-                        writeCompleteCallback_(shared_from_this());
-                    if (status_ == ConnStatus::Disconnecting)
-                    {
-                        socketPtr_->closeWrite();
-                    }
-                }
-                else
-                {
-#ifndef _WIN32
-                    if (writeBufferList_.front()->sendFd_ < 0)
-#else
-                    if (writeBufferList_.front()->sendFp_ == nullptr)
-#endif
-                    {
-                        // There is data to be sent in the buffer.
-                        auto n = writeInLoop(
-                            writeBufferList_.front()->msgBuffer_->peek(),
-                            writeBufferList_.front()
-                                ->msgBuffer_->readableBytes());
-                        writeBufferList_.front()->msgBuffer_->retrieve(n);
-                        if (n >= 0)
-                        {
-                            writeBufferList_.front()->msgBuffer_->retrieve(n);
-                        }
-                        else
-                        {
-#ifdef _WIN32
-                            if (errno != 0 && errno != EWOULDBLOCK)
-#else
-                            if (errno != EWOULDBLOCK)
-#endif
-                            {
-                                // TODO: any others?
-                                if (errno == EPIPE || errno == ECONNRESET)
-                                {
-                                    LOG_DEBUG << "EPIPE or ECONNRESET, erron="
-                                              << errno;
-                                    return;
-                                }
-                                LOG_SYSERR << "Unexpected error(" << errno
-                                           << ")";
-                                return;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // more file
-                        sendFileInLoop(writeBufferList_.front());
-                    }
-                }
-            }
-            else
-            {
-                sendFileInLoop(writeBuffer_);
-            }
+            LOG_SYSERR << "no writing but call write callback";
         }
+#ifdef USE_OPENSSL
     }
     else
     {
-        LOG_SYSERR << "no writing but call write callback";
+        LOG_TRACE << "write Callback";
+        loop_->assertInLoopThread();
+        if (sslEncryptionPtr_->statusOfSSL_ == SSLStatus::Handshaking)
+        {
+            doHandshaking();
+            return;
+        }
     }
+#endif
 }
 void TcpConnectionImpl::connectEstablished()
 {
-    // loop_->assertInLoopThread();
-    auto thisPtr = shared_from_this();
-    loop_->runInLoop([thisPtr]() {
-        LOG_TRACE << "connectEstablished";
-        assert(thisPtr->status_ == ConnStatus::Connecting);
-        thisPtr->ioChannelPtr_->tie(thisPtr);
-        thisPtr->ioChannelPtr_->enableReading();
-        thisPtr->status_ = ConnStatus::Connected;
-        if (thisPtr->connectionCallback_)
-            thisPtr->connectionCallback_(thisPtr);
-    });
+// loop_->assertInLoopThread();
+#ifdef USE_OPENSSL
+    if (!isEncrypted_)
+    {
+#endif
+        auto thisPtr = shared_from_this();
+        loop_->runInLoop([thisPtr]() {
+            LOG_TRACE << "connectEstablished";
+            assert(thisPtr->status_ == ConnStatus::Connecting);
+            thisPtr->ioChannelPtr_->tie(thisPtr);
+            thisPtr->ioChannelPtr_->enableReading();
+            thisPtr->status_ = ConnStatus::Connected;
+            if (thisPtr->connectionCallback_)
+                thisPtr->connectionCallback_(thisPtr);
+        });
+#ifdef USE_OPENSSL
+    }
+    else
+    {
+        loop_->runInLoop([=]() {
+            LOG_TRACE << "connectEstablished";
+            assert(status_ == ConnStatus::Connecting);
+            ioChannelPtr_->tie(shared_from_this());
+            ioChannelPtr_->enableReading();
+            status_ = ConnStatus::Connected;
+            if (sslEncryptionPtr_->isServer_)
+            {
+                SSL_set_accept_state(sslEncryptionPtr_->sslPtr_->get());
+            }
+            else
+            {
+                ioChannelPtr_->enableWriting();
+                SSL_set_connect_state(sslEncryptionPtr_->sslPtr_->get());
+            }
+        });
+    }
+#endif
 }
 void TcpConnectionImpl::handleClose()
 {
@@ -738,7 +1040,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     assert(filePtr->sendFp_);
 #endif
 #ifdef __linux__
-    if (!isSSLConn_)
+    if (!isEncrypted_)
     {
         auto bytesSent = sendfile(socketPtr_->fd(),
                                   filePtr->sendFd_,
@@ -854,11 +1156,150 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
 
 ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 {
-    bytesSent_ += length;
+#ifdef USE_OPENSSL
+    if (!isEncrypted_)
+    {
+#endif
+        bytesSent_ += length;
 #ifndef _WIN32
-    return write(socketPtr_->fd(), buffer, length);
+        return write(socketPtr_->fd(), buffer, length);
 #else
     errno = 0;
     return ::send(socketPtr_->fd(), buffer, length, 0);
 #endif
+#ifdef USE_OPENSSL
+    }
+    else
+    {
+        LOG_TRACE << "send in loop";
+        loop_->assertInLoopThread();
+        if (status_ != ConnStatus::Connected)
+        {
+            LOG_WARN << "Connection is not connected,give up sending";
+            return -1;
+        }
+        if (sslEncryptionPtr_->statusOfSSL_ != SSLStatus::Connected)
+        {
+            LOG_WARN << "SSL is not connected,give up sending";
+            return -1;
+        }
+        // send directly
+        size_t sendTotalLen = 0;
+        while (sendTotalLen < length)
+        {
+            auto len = length - sendTotalLen;
+            if (len > sslEncryptionPtr_->sendBufferPtr_->size())
+            {
+                len = sslEncryptionPtr_->sendBufferPtr_->size();
+            }
+            memcpy(sslEncryptionPtr_->sendBufferPtr_->data(),
+                   buffer + sendTotalLen,
+                   len);
+            ERR_clear_error();
+            auto sendLen = SSL_write(sslEncryptionPtr_->sslPtr_->get(),
+                                     sslEncryptionPtr_->sendBufferPtr_->data(),
+                                     len);
+            if (sendLen <= 0)
+            {
+                int sslerr =
+                    SSL_get_error(sslEncryptionPtr_->sslPtr_->get(), sendLen);
+                if (sslerr != SSL_ERROR_WANT_WRITE &&
+                    sslerr != SSL_ERROR_WANT_READ)
+                {
+                    // LOG_ERROR << "ssl write error:" << sslerr;
+                    forceClose();
+                    return -1;
+                }
+                return sendTotalLen;
+            }
+            sendTotalLen += sendLen;
+        }
+        return sendTotalLen;
+    }
+#endif
 }
+
+#ifdef USE_OPENSSL
+
+TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
+                                     int socketfd,
+                                     const InetAddress &localAddr,
+                                     const InetAddress &peerAddr,
+                                     const std::shared_ptr<SSLContext> &ctxPtr,
+                                     bool isServer)
+    : loop_(loop),
+      ioChannelPtr_(new Channel(loop, socketfd)),
+      socketPtr_(new Socket(socketfd)),
+      localAddr_(localAddr),
+      peerAddr_(peerAddr),
+      isEncrypted_(true)
+{
+    LOG_TRACE << "new connection:" << peerAddr.toIpPort() << "->"
+              << localAddr.toIpPort();
+    ioChannelPtr_->setReadCallback(
+        std::bind(&TcpConnectionImpl::readCallback, this));
+    ioChannelPtr_->setWriteCallback(
+        std::bind(&TcpConnectionImpl::writeCallback, this));
+    ioChannelPtr_->setCloseCallback(
+        std::bind(&TcpConnectionImpl::handleClose, this));
+    ioChannelPtr_->setErrorCallback(
+        std::bind(&TcpConnectionImpl::handleError, this));
+    socketPtr_->setKeepAlive(true);
+    name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
+    sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
+    sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get());
+    sslEncryptionPtr_->isServer_ = isServer;
+    assert(sslEncryptionPtr_->sslPtr_);
+    auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketfd);
+    (void)r;
+    assert(r);
+    isEncrypted_ = true;
+    sslEncryptionPtr_->sendBufferPtr_ =
+        std::make_unique<std::array<char, 8192>>();
+}
+
+void TcpConnectionImpl::doHandshaking()
+{
+    assert(sslEncryptionPtr_->statusOfSSL_ == SSLStatus::Handshaking);
+
+    int r = SSL_do_handshake(sslEncryptionPtr_->sslPtr_->get());
+    LOG_TRACE << "hand shaking: " << r;
+    if (r == 1)
+    {
+        sslEncryptionPtr_->statusOfSSL_ = SSLStatus::Connected;
+        if (sslEncryptionPtr_->isUpgrade_)
+        {
+            sslEncryptionPtr_->upgradeCallback_();
+        }
+        else
+        {
+            connectionCallback_(shared_from_this());
+        }
+        return;
+    }
+    int err = SSL_get_error(sslEncryptionPtr_->sslPtr_->get(), r);
+    LOG_TRACE << "hand shaking: " << err;
+    if (err == SSL_ERROR_WANT_WRITE)
+    {  // SSL want writable;
+        if (!ioChannelPtr_->isWriting())
+            ioChannelPtr_->enableWriting();
+        // ioChannelPtr_->disableReading();
+    }
+    else if (err == SSL_ERROR_WANT_READ)
+    {  // SSL want readable;
+        if (!ioChannelPtr_->isReading())
+            ioChannelPtr_->enableReading();
+        if (ioChannelPtr_->isWriting())
+            ioChannelPtr_->disableWriting();
+    }
+    else
+    {
+        // ERR_print_errors(err);
+        LOG_TRACE << "SSL handshake err: " << err;
+        ioChannelPtr_->disableReading();
+        sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
+        forceClose();
+    }
+}
+
+#endif

@@ -24,6 +24,9 @@
 
 namespace trantor
 {
+class SSLContext;
+std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
+                                                const std::string &keyPath);
 class TcpConnection
 {
   public:
@@ -94,10 +97,11 @@ class TcpConnection
     virtual size_t bytesSent() const = 0;
     virtual size_t bytesReceived() const = 0;
 
-    virtual bool isSSLConnection() const
-    {
-        return false;
-    }
+    virtual bool isSSLConnection() const = 0;
+
+    virtual void startClientEncryption(std::function<void()> callback) = 0;
+    virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
+                                       std::function<void()> callback) = 0;
 
   private:
     std::shared_ptr<void> contextPtr_;

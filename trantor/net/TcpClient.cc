@@ -12,7 +12,6 @@
 #include <trantor/net/TcpClient.h>
 
 #include <trantor/utils/Logger.h>
-#include "ssl/SSLConnection.h"
 #include "Connector.h"
 #include "inner/TcpConnectionImpl.h"
 #include <trantor/net/EventLoop.h>
@@ -152,8 +151,13 @@ void TcpClient::newConnection(int sockfd)
     std::shared_ptr<TcpConnectionImpl> conn;
     if (sslCtxPtr_)
     {
-        conn = std::make_shared<SSLConnection>(
+#ifdef USE_OPENSSL
+        conn = std::make_shared<TcpConnectionImpl>(
             loop_, sockfd, localAddr, peerAddr, sslCtxPtr_, false);
+#else
+        LOG_FATAL << "OpenSSL is not found in your system!";
+        abort();
+#endif
     }
     else
     {
@@ -197,8 +201,11 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
 
 void TcpClient::enableSSL()
 {
-    // init OpenSSL
-    initOpenSSL();
+#ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
     sslCtxPtr_ = newSSLContext();
+#else
+    LOG_FATAL << "OpenSSL is not found in your system!";
+    abort();
+#endif
 }
