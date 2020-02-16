@@ -34,6 +34,7 @@ class EventLoopThreadPool : NonCopyable
         return loopThreadVector_.size();
     }
     EventLoop *getNextLoop();
+    EventLoop *getLoop(size_t id);
     std::vector<EventLoop *> getLoops() const;
 
   private:

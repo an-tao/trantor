@@ -53,9 +53,14 @@ EventLoop *EventLoopThreadPool::getNextLoop()
             loopIndex_ = 0;
         return loop;
     }
-    return NULL;
+    return nullptr;
 }
-
+EventLoop *EventLoopThreadPool::getLoop(size_t id)
+{
+    if (id < loopThreadVector_.size())
+        return loopThreadVector_[id]->getLoop();
+    return nullptr;
+}
 std::vector<EventLoop *> EventLoopThreadPool::getLoops() const
 {
     std::vector<EventLoop *> ret;
