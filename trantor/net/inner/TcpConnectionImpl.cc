@@ -129,6 +129,16 @@ std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
     return ctx;
 }
 }  // namespace trantor
+#else
+namespace trantor
+{
+std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
+                                                const std::string &keyPath)
+{
+    LOG_FATAL << "OpenSSL is not found in your system!";
+    abort();
+}
+}  // namespace trantor
 #endif
 
 TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
