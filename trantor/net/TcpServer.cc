@@ -58,7 +58,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     //    LOG_TRACE<<"write "<<n<<" bytes";
     loop_->assertInLoopThread();
     EventLoop *ioLoop = NULL;
-    if (loopPoolPtr_ && loopPoolPtr_->getLoopNum() > 0)
+    if (loopPoolPtr_ && loopPoolPtr_->size() > 0)
     {
         ioLoop = loopPoolPtr_->getNextLoop();
     }
@@ -122,7 +122,7 @@ void TcpServer::start()
                                                   : 100);
             if (loopPoolPtr_)
             {
-                auto loopNum = loopPoolPtr_->getLoopNum();
+                auto loopNum = loopPoolPtr_->size();
                 while (loopNum > 0)
                 {
                     // LOG_TRACE << "new Wheel loopNum=" << loopNum;

@@ -47,7 +47,7 @@ class TcpServer : NonCopyable
     }
     void setIoLoopThreadPool(const std::shared_ptr<EventLoopThreadPool> &pool)
     {
-        assert(pool->getLoopNum() > 0);
+        assert(pool->size() > 0);
         assert(!started_);
         loopPoolPtr_ = pool;
         loopPoolPtr_->start();

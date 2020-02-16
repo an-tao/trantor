@@ -29,7 +29,7 @@ class EventLoopThreadPool : NonCopyable
     void start();
     // void stop();
     void wait();
-    size_t getLoopNum()
+    size_t size()
     {
         return loopThreadVector_.size();
     }
