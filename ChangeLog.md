@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc9] - 2020-2-17
+
+### API change list
+
+- Add support for a delayed SSL handshake
+
+- Change a method name of EventLoopThreadPool(getLoopNum() -> size())
+
+### Changed
+
+- Port Trantor to Windows
+
+- Use SSL_CTX_use_certificate_chain_file instead of SSL_CTX_use_certificate_file()
+
 ## [1.0.0-rc8] - 2019-11-30
 
 ### API change list
@@ -84,7 +98,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc8...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc9...HEAD
+
+[1.0.0-rc9]: https://github.com/an-tao/trantor/compare/v1.0.0-rc8...v1.0.0-rc9
 
 [1.0.0-rc8]: https://github.com/an-tao/trantor/compare/v1.0.0-rc7...v1.0.0-rc8
 
