@@ -2,7 +2,7 @@
 # It defines the following variables
 #  TRANTOR_INCLUDE_DIRS - include directories for Trantor
 #  TRANTOR_LIBRARIES    - libraries to link against
-#  TRANTOR_FOUND
+#  Trantor_FOUND
 # This module defines the following IMPORTED target:
 # Trantor::Trantor
 
@@ -16,6 +16,5 @@ if(NOT TARGET Trantor::Trantor)
   include("${TRANTOR_CMAKE_DIR}/TrantorTargets.cmake")
 endif()
 
-set(TRANTOR_FOUND TRUE)
 get_target_property(TRANTOR_INCLUDE_DIRS Trantor::Trantor INTERFACE_INCLUDE_DIRECTORIES)
 set(TRANTOR_LIBRARIES Trantor::Trantor)
