@@ -189,11 +189,11 @@ std::string InetAddress::toIp() const
     char buf[64];
     if (addr_.sin_family == AF_INET)
     {
-        ::inet_ntop(AF_INET, (PVOID)&addr_.sin_addr, buf, sizeof(buf));
+        ::inet_ntop(AF_INET, static_cast<void*>(&addr_.sin_addr), buf, sizeof(buf));
     }
     else if (addr_.sin_family == AF_INET6)
     {
-        ::inet_ntop(AF_INET6, (PVOID)&addr6_.sin6_addr, buf, sizeof(buf));
+        ::inet_ntop(AF_INET6, static_cast<void*>(&addr6_.sin6_addr), buf, sizeof(buf));
     }
 
     return buf;
