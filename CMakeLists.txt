@@ -17,11 +17,7 @@ set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 set(INSTALL_INCLUDE_DIR
     include
     CACHE PATH "Installation directory for header files")
-if(WIN32 AND NOT CYGWIN)
-  set(DEF_INSTALL_TRANTOR_CMAKE_DIR cmake)
-else()
-  set(DEF_INSTALL_TRANTOR_CMAKE_DIR lib/cmake/Trantor)
-endif()
+set(DEF_INSTALL_TRANTOR_CMAKE_DIR lib/cmake/Trantor)
 set(INSTALL_TRANTOR_CMAKE_DIR
     ${DEF_INSTALL_TRANTOR_CMAKE_DIR}
     CACHE PATH "Installation directory for cmake files")
@@ -36,10 +32,6 @@ foreach(p
     set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
   endif()
 endforeach()
-
-if(WIN32)
-  add_subdirectory(third_party/wepoll)
-endif(WIN32)
 
 # include directories
 target_include_directories(
@@ -80,6 +72,7 @@ set(TRANTOR_SOURCES
 
 if(WIN32)
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/utils/WindowsSupport.cc)
+  set(TRANTOR_SOURCES ${TRANTOR_SOURCES} third_party/wepoll/Wepoll.c)
 endif(WIN32)
 
 find_package(OpenSSL)
@@ -101,7 +94,7 @@ endif()
 target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
 
 if(WIN32)
-  target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 Rpcrt4 wepoll)
+  target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 Rpcrt4)
 else()
   target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 endif(WIN32)
