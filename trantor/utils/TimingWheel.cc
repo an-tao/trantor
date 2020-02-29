@@ -65,12 +65,10 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
 TimingWheel::~TimingWheel()
 {
     loop_->invalidateTimer(timerId_);
-
-    for (auto i = wheels_.size() - 1; i >= 0; --i)
+    for (auto iter = wheels_.rbegin(); iter != wheels_.rend(); ++iter)
     {
-        wheels_[i].clear();
+        iter->clear();
     }
-
     LOG_TRACE << "TimingWheel destruct!";
 }
 
