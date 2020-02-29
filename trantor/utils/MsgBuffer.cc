@@ -20,6 +20,7 @@
 #include <netinet/in.h>
 #else
 #include <WindowsSupport.h>
+#include <winsock2.h>
 #endif
 #include <errno.h>
 #include <assert.h>
