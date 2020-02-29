@@ -19,7 +19,7 @@
 struct iovec
 {
     void *iov_base; /* Starting address */
-    size_t iov_len; /* Number of bytes */
+    int iov_len; /* Number of bytes */
 };
 
 int readv(int fd, const struct iovec *vector, int count);

@@ -89,7 +89,8 @@ int Socket::accept(InetAddress *peeraddr)
                            &size,
                            SOCK_NONBLOCK | SOCK_CLOEXEC);
 #else
-    int connfd = ::accept(sockFd_, (struct sockaddr *)&addr6, &size);
+    int connfd =
+        static_cast<int>(::accept(sockFd_, (struct sockaddr *)&addr6, &size));
     setNonBlockAndCloseOnExec(connfd);
 #endif
     if (connfd >= 0)
@@ -114,7 +115,7 @@ int Socket::read(char *buffer, uint64_t len)
 #ifndef _WIN32
     return ::read(sockFd_, buffer, len);
 #else
-    return recv(sockFd_, buffer, len, 0);
+    return recv(sockFd_, buffer, static_cast<int>(len), 0);
 #endif
 }
 

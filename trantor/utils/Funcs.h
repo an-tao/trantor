@@ -13,20 +13,21 @@
  */
 
 #pragma once
-
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#include <netinet/in.h>
-#endif
+#include <algorithm>
 namespace trantor
 {
 inline uint64_t hton64(uint64_t n)
 {
-    return (((uint64_t)htonl(n)) << 32) | htonl(n >> 32);
+    static const int one = 1;
+    static const char sig = *(char*)&one;
+    if (sig == 0)
+        return n;  // for big endian machine just return the input
+    char* ptr = reinterpret_cast<char*>(&n);
+    std::reverse(ptr, ptr + sizeof(uint64_t));
+    return n;
 }
 inline uint64_t ntoh64(uint64_t n)
 {
-    return (((uint64_t)ntohl(n)) << 32) | ntohl(n >> 32);
+    return hton64(n);
 }
 }  // namespace trantor

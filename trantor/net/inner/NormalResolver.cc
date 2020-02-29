@@ -26,8 +26,8 @@ void NormalResolver::resolve(const std::string &hostname,
         if (iter != globalCache().end())
         {
             auto &cachedAddr = iter->second;
-            if (timeout_ == 0 ||
-                cachedAddr.second.after(timeout_) > trantor::Date::date())
+            if (timeout_ == 0 || cachedAddr.second.after(static_cast<double>(
+                                     timeout_)) > trantor::Date::date())
             {
                 struct sockaddr_in addr;
                 memset(&addr, 0, sizeof addr);

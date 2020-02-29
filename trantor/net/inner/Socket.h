@@ -35,7 +35,7 @@ class Socket : NonCopyable
                             SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
                             IPPROTO_TCP);
 #else
-        int sock = ::socket(family, SOCK_STREAM, IPPROTO_TCP);
+        int sock = static_cast<int>(::socket(family, SOCK_STREAM, IPPROTO_TCP));
         setNonBlockAndCloseOnExec(sock);
 #endif
         if (sock < 0)

@@ -200,7 +200,7 @@ class LogStream : NonCopyable
         return *this;
     }
 
-    void append(const char *data, int len)
+    void append(const char *data, size_t len)
     {
         if (exBuffer_.empty())
         {

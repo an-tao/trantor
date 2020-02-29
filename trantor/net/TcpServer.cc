@@ -116,7 +116,7 @@ void TcpServer::start()
             timingWheelMap_[loop_] =
                 std::make_shared<TimingWheel>(loop_,
                                               idleTimeout_,
-                                              1,
+                                              1.0F,
                                               idleTimeout_ < 500
                                                   ? idleTimeout_ + 1
                                                   : 100);
@@ -130,7 +130,7 @@ void TcpServer::start()
                     timingWheelMap_[poolLoop] =
                         std::make_shared<TimingWheel>(poolLoop,
                                                       idleTimeout_,
-                                                      1,
+                                                      1.0F,
                                                       idleTimeout_ < 500
                                                           ? idleTimeout_ + 1
                                                           : 100);

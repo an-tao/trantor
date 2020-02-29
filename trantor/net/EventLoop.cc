@@ -164,7 +164,8 @@ void EventLoop::loop()
 #ifdef __linux__
         poller_->poll(kPollTimeMs, &activeChannels_);
 #else
-        poller_->poll(timerQueue_->getTimeout(), &activeChannels_);
+        poller_->poll(static_cast<int>(timerQueue_->getTimeout()),
+                      &activeChannels_);
         timerQueue_->processTimers();
 #endif
         // TODO sort channel by priority
@@ -302,12 +303,13 @@ void EventLoop::wakeup()
 }
 void EventLoop::wakeupRead()
 {
-    uint64_t tmp;
     ssize_t ret = 0;
 #ifdef __linux__
+    uint64_t tmp;
     ret = read(wakeupFd_, &tmp, sizeof(tmp));
 #elif defined _WIN32
 #else
+    uint64_t tmp;
     ret = read(wakeupFd_[0], &tmp, sizeof(tmp));
 #endif
     if (ret < 0)

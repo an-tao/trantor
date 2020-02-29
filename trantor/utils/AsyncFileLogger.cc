@@ -28,6 +28,7 @@ namespace trantor
 {
 static constexpr std::chrono::seconds kLogFlushTimeout{1};
 static constexpr size_t kMemBufferSize{4 * 1024 * 1024};
+extern const char *strerror_tl(int savedErrno);
 }  // namespace trantor
 
 using namespace trantor;
@@ -89,9 +90,10 @@ void AsyncFileLogger::output(const char *msg, const uint64_t len)
     {
         char logErr[128];
         auto strlen =
-            sprintf(logErr,
-                    "%llu log information is lost\n",
-                    static_cast<long long unsigned int>(lostCounter_));
+            snprintf(logErr,
+                     sizeof(logErr),
+                     "%llu log information is lost\n",
+                     static_cast<long long unsigned int>(lostCounter_));
         lostCounter_ = 0;
         logBufferPtr_->append(logErr, strlen);
     }
@@ -179,10 +181,17 @@ AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
       fileExtName_(fileExtName)
 {
     fileFullName_ = filePath + fileBaseName + fileExtName;
+#ifndef _MSC_VER
     fp_ = fopen(fileFullName_.c_str(), "a");
+#else
+    if (fopen_s(&fp_, fileFullName_.c_str(), "a") != 0)
+    {
+        fp_ = nullptr;
+    }
+#endif
     if (fp_ == nullptr)
     {
-        std::cout << strerror(errno) << std::endl;
+        std::cout << strerror_tl(errno) << std::endl;
     }
 }
 
@@ -216,10 +225,11 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
     if (fp_)
     {
         fclose(fp_);
-        char seq[10];
-        sprintf(seq,
-                ".%06llu",
-                static_cast<long long unsigned int>(fileSeq_ % 1000000));
+        char seq[12];
+        snprintf(seq,
+                 sizeof(seq),
+                 ".%06llu",
+                 static_cast<long long unsigned int>(fileSeq_ % 1000000));
         ++fileSeq_;
         std::string newName =
             filePath_ + fileBaseName_ + "." +
