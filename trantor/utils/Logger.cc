@@ -42,7 +42,13 @@ class T
 
 const char *strerror_tl(int savedErrno)
 {
+#ifndef _MSC_VER
     return strerror(savedErrno);
+#else
+    static thread_local char errMsg[64];
+    (void)strerror_s<sizeof errMsg>(errMsg, savedErrno);
+    return errMsg;
+#endif
 }
 
 inline LogStream &operator<<(LogStream &s, T v)
@@ -76,13 +82,23 @@ void Logger::formatTime()
     if (now != lastSecond_)
     {
         lastSecond_ = now;
+#ifndef _MSC_VER
         strncpy(lastTimeString_,
                 date_.toFormattedString(false).c_str(),
                 sizeof(lastTimeString_) - 1);
+#else
+        strncpy_s<sizeof lastTimeString_>(
+            lastTimeString_,
+            date_.toFormattedString(false).c_str(),
+            sizeof(lastTimeString_) - 1);
+#endif
     }
     logStream_ << T(lastTimeString_, 17);
     char tmp[32];
-    sprintf(tmp, ".%06llu UTC ", static_cast<long long unsigned int>(microSec));
+    snprintf(tmp,
+             sizeof(tmp),
+             ".%06llu UTC ",
+             static_cast<long long unsigned int>(microSec));
     logStream_ << T(tmp, 12);
 #ifdef __linux__
     if (threadId_ == 0)
@@ -140,7 +156,7 @@ Logger::Logger(SourceFile file, int line, bool)
     logStream_ << T(logLevelStr[level_], 7);
     if (errno != 0)
     {
-        logStream_ << strerror(errno) << " (errno=" << errno << ") ";
+        logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
     }
 }
 Logger::~Logger()

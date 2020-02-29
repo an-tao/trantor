@@ -109,7 +109,11 @@ std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
     if (!r)
     {
+#ifndef _MSC_VER
         LOG_FATAL << strerror(errno);
+#else
+        LOG_FATAL << strerror_tl(errno);
+#endif
         abort();
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
@@ -117,13 +121,21 @@ std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
                                     SSL_FILETYPE_PEM);
     if (!r)
     {
+#ifndef _MSC_VER
         LOG_FATAL << strerror(errno);
+#else
+        LOG_FATAL << strerror_tl(errno);
+#endif
         abort();
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
+#ifndef _MSC_VER
         LOG_FATAL << strerror(errno);
+#else
+        LOG_FATAL << strerror_tl(errno);
+#endif
         abort();
     }
     return ctx;
@@ -329,7 +341,7 @@ void TcpConnectionImpl::readCallback()
                 readLength = readBuffer_.writableBytes();
                 rd = SSL_read(sslEncryptionPtr_->sslPtr_->get(),
                               readBuffer_.beginWrite(),
-                              readLength);
+                              static_cast<int>(readLength));
                 LOG_TRACE << "ssl read:" << rd << " bytes";
                 if (rd <= 0)
                 {
@@ -947,8 +959,15 @@ void TcpConnectionImpl::sendFile(const char *fileName,
 
     sendFile(fd, offset, length);
 #else
+#ifndef _MSC_VER
     auto fp = fopen(fileName, "rb");
-
+#else
+    FILE *fp;
+    if (fopen_s(&fp, fileName, "rb") != 0)
+    {
+        fp = nullptr;
+    }
+#endif
     if (fp == nullptr)
     {
         LOG_SYSERR << fileName << " open error";
@@ -987,7 +1006,7 @@ void TcpConnectionImpl::sendFile(FILE *fp, size_t offset, size_t length)
     BufferNodePtr node(new BufferNode);
     node->sendFp_ = fp;
 #endif
-    node->offset_ = offset;
+    node->offset_ = static_cast<off_t>(offset);
     node->fileBytesToSend_ = length;
     if (loop_->isInLoopThread())
     {
@@ -1113,8 +1132,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             if (nSend >= 0)
             {
                 filePtr->fileBytesToSend_ -= nSend;
-                filePtr->offset_ += nSend;
-                if (nSend < n)
+                filePtr->offset_ += static_cast<off_t>(nSend);
+                if (static_cast<size_t>(nSend) < n)
                 {
                     if (!ioChannelPtr_->isWriting())
                     {
@@ -1175,7 +1194,7 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
         return write(socketPtr_->fd(), buffer, length);
 #else
     errno = 0;
-    return ::send(socketPtr_->fd(), buffer, length, 0);
+    return ::send(socketPtr_->fd(), buffer, static_cast<int>(length), 0);
 #endif
 #ifdef USE_OPENSSL
     }
@@ -1208,7 +1227,7 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
             ERR_clear_error();
             auto sendLen = SSL_write(sslEncryptionPtr_->sslPtr_->get(),
                                      sslEncryptionPtr_->sendBufferPtr_->data(),
-                                     len);
+                                     static_cast<int>(len));
             if (sendLen <= 0)
             {
                 int sslerr =

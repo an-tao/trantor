@@ -42,7 +42,7 @@ int gettimeofday(timeval *tp, void *tzp)
     tm.tm_sec = wtm.wSecond;
     tm.tm_isdst = -1;
     clock = mktime(&tm);
-    tp->tv_sec = clock;
+    tp->tv_sec = static_cast<long>(clock);
     tp->tv_usec = wtm.wMilliseconds * 1000;
 
     return (0);
@@ -64,7 +64,8 @@ const Date Date::date()
 }
 const Date Date::after(double second) const
 {
-    return Date(microSecondsSinceEpoch_ + second * MICRO_SECONDS_PRE_SEC);
+    return Date(static_cast<int64_t>(microSecondsSinceEpoch_ +
+                                     second * MICRO_SECONDS_PRE_SEC));
 }
 const Date Date::roundSecond() const
 {
@@ -155,10 +156,10 @@ std::string Date::toCustomedFormattedString(const std::string &fmtStr,
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
     if (!showMicroseconds)
         return std::string(buf);
-    char decimals[10] = {0};
+    char decimals[12] = {0};
     int microseconds =
         static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
-    sprintf(decimals, ".%06d", microseconds);
+    snprintf(decimals, sizeof(decimals), ".%06d", microseconds);
     return std::string(buf) + decimals;
 }
 void Date::toCustomedFormattedString(const std::string &fmtStr,
@@ -287,10 +288,10 @@ std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr,
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
     if (!showMicroseconds)
         return std::string(buf);
-    char decimals[10] = {0};
+    char decimals[12] = {0};
     int microseconds =
         static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
-    sprintf(decimals, ".%06d", microseconds);
+    snprintf(decimals, sizeof(decimals), ".%06d", microseconds);
     return std::string(buf) + decimals;
 }
 Date::Date(unsigned int year,

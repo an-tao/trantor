@@ -23,10 +23,11 @@ namespace trantor
 {
 inline uint64_t hton64(uint64_t n)
 {
-    return (((uint64_t)htonl(n)) << 32) | htonl(n >> 32);
+    return (((uint64_t)htonl(static_cast<u_long>(n))) << 32) |
+           htonl(static_cast<u_long>(n >> 32));
 }
 inline uint64_t ntoh64(uint64_t n)
 {
-    return (((uint64_t)ntohl(n)) << 32) | ntohl(n >> 32);
+    return hton64(n);
 }
 }  // namespace trantor

@@ -27,10 +27,8 @@ struct in6_addr_uint
 #endif
 
 // INADDR_ANY use (type)value casting.
-#pragma GCC diagnostic ignored "-Wold-style-cast"
 static const in_addr_t kInaddrAny = INADDR_ANY;
 static const in_addr_t kInaddrLoopback = INADDR_LOOPBACK;
-#pragma GCC diagnostic error "-Wold-style-cast"
 
 //     /* Structure describing an Internet socket address.  */
 //     struct sockaddr_in {
@@ -115,7 +113,7 @@ std::string InetAddress::toIpPort() const
 {
     char buf[64] = "";
     uint16_t port = ntohs(addr_.sin_port);
-    sprintf(buf, ":%u", port);
+    snprintf(buf, sizeof(buf), ":%u", port);
     return toIp() + std::string(buf);
 }
 bool InetAddress::isIntranetIp() const
