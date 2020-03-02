@@ -75,13 +75,11 @@ class MsgBuffer
     void append(const char (&buf)[N])
     {
         assert(strnlen(buf, N) == N - 1);
-        ensureWritableBytes(N - 1);
         append(buf, N - 1);
     }
     void append(const char *buf, size_t len);
     void append(const std::string &buf)
     {
-        ensureWritableBytes(buf.length());
         append(buf.c_str(), buf.length());
     }
 
