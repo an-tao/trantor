@@ -124,9 +124,10 @@ void AresResolver::resolveInLoop(const std::string& hostname,
     struct timeval* tvp = ares_timeout(ctx_, NULL, &tv);
     double timeout = getSeconds(tvp);
     // LOG_DEBUG << "timeout " << timeout << " active " << timerActive_;
-    if (!timerActive_)
+    if (!timerActive_ && timeout >= 0.0)
     {
-        loop_->runAfter(timeout, std::bind(&AresResolver::onTimer, this));
+        loop_->runAfter(timeout,
+                        std::bind(&AresResolver::onTimer, shared_from_this()));
         timerActive_ = true;
     }
     return;
@@ -151,7 +152,8 @@ void AresResolver::onTimer()
     }
     else
     {
-        loop_->runAfter(timeout, std::bind(&AresResolver::onTimer, this));
+        loop_->runAfter(timeout,
+                        std::bind(&AresResolver::onTimer, shared_from_this()));
     }
 }
 
