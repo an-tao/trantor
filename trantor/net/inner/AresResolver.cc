@@ -60,9 +60,8 @@ AresResolver::AresResolver(EventLoop* loop, size_t timeout)
 }
 void AresResolver::init()
 {
-    if (!hasInited_)
+    if (!ctx_)
     {
-        hasInited_ = true;
         struct ares_options options;
         int optmask = ARES_OPT_FLAGS;
         options.flags = ARES_FLAG_NOCHECKRESP;
@@ -88,7 +87,7 @@ void AresResolver::init()
 }
 AresResolver::~AresResolver()
 {
-    if (hasInited_)
+    if (ctx_)
         ares_destroy(ctx_);
 }
 

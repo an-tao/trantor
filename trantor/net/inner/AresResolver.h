@@ -71,7 +71,6 @@ class AresResolver : public Resolver,
     }
 
   private:
-    bool hasInited_{false};
     struct QueryData
     {
         AresResolver* owner_;
