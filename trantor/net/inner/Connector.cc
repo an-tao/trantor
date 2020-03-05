@@ -73,7 +73,10 @@ void Connector::connect()
         case EADDRNOTAVAIL:
         case ECONNREFUSED:
         case ENETUNREACH:
-            retry(sockfd);
+            if (retry_)
+            {
+                retry(sockfd);
+            }
             break;
 
         case EACCES:

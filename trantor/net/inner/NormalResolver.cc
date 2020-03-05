@@ -41,8 +41,29 @@ void NormalResolver::resolve(const std::string &hostname,
         }
     }
 
-    taskQueue_.runTaskInQueue(
+    concurrentTaskQueue().runTaskInQueue(
         [thisPtr = shared_from_this(), callback, hostname]() {
+            {
+                std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
+                auto iter = thisPtr->globalCache().find(hostname);
+                if (iter != thisPtr->globalCache().end())
+                {
+                    auto &cachedAddr = iter->second;
+                    if (thisPtr->timeout_ == 0 ||
+                        cachedAddr.second.after(static_cast<double>(thisPtr->timeout_)) >
+                            trantor::Date::date())
+                    {
+                        struct sockaddr_in addr;
+                        memset(&addr, 0, sizeof addr);
+                        addr.sin_family = AF_INET;
+                        addr.sin_port = 0;
+                        addr.sin_addr = cachedAddr.first;
+                        InetAddress inet(addr);
+                        callback(inet);
+                        return;
+                    }
+                }
+            }
 #ifdef __linux__
             struct hostent hent;
             struct hostent *he = NULL;
@@ -97,9 +118,9 @@ void NormalResolver::resolve(const std::string &hostname,
                 callback(inet);
                 {
                     std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
-                    thisPtr->globalCache()[hostname].first = addr.sin_addr;
-                    thisPtr->globalCache()[hostname].second =
-                        trantor::Date::date();
+                    auto &addrItem = thisPtr->globalCache()[hostname];
+                    addrItem.first = addr.sin_addr;
+                    addrItem.second = trantor::Date::date();
                 }
                 return;
             }

@@ -8,9 +8,10 @@
 #pragma once
 #include <trantor/net/Resolver.h>
 #include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/SerialTaskQueue.h>
+#include <trantor/utils/ConcurrentTaskQueue.h>
 #include <memory>
 #include <vector>
+#include <thread>
 
 namespace trantor
 {
@@ -45,7 +46,15 @@ class NormalResolver : public Resolver,
         static std::mutex mutex_;
         return mutex_;
     }
-    trantor::SerialTaskQueue taskQueue_{"Dns Queue"};
+    static trantor::ConcurrentTaskQueue& concurrentTaskQueue()
+    {
+        static trantor::ConcurrentTaskQueue queue(
+            std::thread::hardware_concurrency() < 8
+                ? 8
+                : std::thread::hardware_concurrency(),
+            "Dns Queue");
+        return queue;
+    }
     const size_t timeout_;
     std::vector<char> resolveBuffer_;
 };
