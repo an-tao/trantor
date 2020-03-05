@@ -11,6 +11,7 @@
 #include <trantor/net/EventLoopThread.h>
 #include <map>
 #include <memory>
+#include <string.h>
 
 extern "C"
 {
