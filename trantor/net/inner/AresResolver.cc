@@ -44,6 +44,17 @@ const char* getSocketType(int type)
 
 }  // namespace
 
+AresResolver::LibraryInitializer::LibraryInitializer()
+{
+    ares_library_init(ARES_LIB_INIT_ALL);
+}
+AresResolver::LibraryInitializer::~LibraryInitializer()
+{
+    ares_library_cleanup();
+}
+
+AresResolver::LibraryInitializer AresResolver::libraryInitializer_;
+
 std::shared_ptr<Resolver> Resolver::newResolver(trantor::EventLoop* loop,
                                                 size_t timeout)
 {

@@ -140,5 +140,11 @@ class AresResolver : public Resolver,
 #endif
                                          int read,
                                          int write);
+    struct LibraryInitializer
+    {
+        LibraryInitializer();
+        ~LibraryInitializer();
+    };
+    static LibraryInitializer libraryInitializer_;
 };
 }  // namespace trantor
