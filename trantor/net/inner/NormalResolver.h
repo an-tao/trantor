@@ -33,11 +33,11 @@ class NormalResolver : public Resolver,
 
   private:
     static std::unordered_map<std::string,
-                              std::pair<struct in_addr, trantor::Date>>&
+                              std::pair<trantor::InetAddress, trantor::Date>>&
     globalCache()
     {
         static std::unordered_map<std::string,
-                                  std::pair<struct in_addr, trantor::Date>>
+            std::pair<trantor::InetAddress, trantor::Date>>
             dnsCache_;
         return dnsCache_;
     }
