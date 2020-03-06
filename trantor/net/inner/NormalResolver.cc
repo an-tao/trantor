@@ -71,7 +71,7 @@ void NormalResolver::resolve(const std::string &hostname,
                 struct sockaddr_in addr;
                 memset(&addr, 0, sizeof addr);
                 addr = *reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
-                inet=InetAddress(addr);
+                inet = InetAddress(addr);
             }
             else if (res->ai_family == AF_INET6)
             {

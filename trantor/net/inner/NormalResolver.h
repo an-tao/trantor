@@ -36,7 +36,8 @@ class NormalResolver : public Resolver,
                               std::pair<trantor::InetAddress, trantor::Date>>&
     globalCache()
     {
-        static std::unordered_map<std::string,
+        static std::unordered_map<
+            std::string,
             std::pair<trantor::InetAddress, trantor::Date>>
             dnsCache_;
         return dnsCache_;
