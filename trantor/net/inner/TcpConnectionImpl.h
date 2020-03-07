@@ -101,6 +101,7 @@ class TcpConnectionImpl : public TcpConnection,
     virtual void send(const MsgBuffer &buffer) override;
     virtual void send(MsgBuffer &&buffer) override;
     virtual void send(const std::shared_ptr<std::string> &msgPtr) override;
+    virtual void send(const std::shared_ptr<MsgBuffer> &msgPtr) override;
     virtual void sendFile(const char *fileName,
                           size_t offset = 0,
                           size_t length = 0) override;
