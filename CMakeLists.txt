@@ -11,7 +11,6 @@ set(TRANTOR_PATCH_VERSION 0)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
 
-
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 set(INSTALL_INCLUDE_DIR
@@ -86,7 +85,7 @@ find_path(CARES_INCLUDE_DIR ares.h)
 find_library(CARES_LIBRARY NAMES cares)
 if(CARES_INCLUDE_DIR AND CARES_LIBRARY)
   target_include_directories(${PROJECT_NAME} PRIVATE ${CARES_INCLUDE_DIR})
-  target_link_libraries(${PROJECT_NAME} INTERFACE ${CARES_LIBRARY})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CARES_LIBRARY})
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/AresResolver.cc)
 else()
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)

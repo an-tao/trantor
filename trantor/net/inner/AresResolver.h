@@ -8,8 +8,10 @@
 #pragma once
 #include <trantor/net/Resolver.h>
 #include <trantor/utils/NonCopyable.h>
+#include <trantor/net/EventLoopThread.h>
 #include <map>
 #include <memory>
+#include <string.h>
 
 extern "C"
 {
@@ -30,6 +32,32 @@ class AresResolver : public Resolver,
     virtual void resolve(const std::string& hostname,
                          const Callback& cb) override
     {
+        bool cached = false;
+        InetAddress inet;
+        {
+            std::lock_guard<std::mutex> lock(globalMutex());
+            auto iter = globalCache().find(hostname);
+            if (iter != globalCache().end())
+            {
+                auto& cachedAddr = iter->second;
+                if (timeout_ == 0 ||
+                    cachedAddr.second.after(timeout_) > trantor::Date::date())
+                {
+                    struct sockaddr_in addr;
+                    memset(&addr, 0, sizeof addr);
+                    addr.sin_family = AF_INET;
+                    addr.sin_port = 0;
+                    addr.sin_addr = cachedAddr.first;
+                    inet = InetAddress(addr);
+                    cached = true;
+                }
+            }
+        }
+        if (cached)
+        {
+            cb(inet);
+            return;
+        }
         if (loop_->isInLoopThread())
         {
             resolveInLoop(hostname, cb);
@@ -56,7 +84,7 @@ class AresResolver : public Resolver,
         }
     };
     void resolveInLoop(const std::string& hostname, const Callback& cb);
-
+    void init();
     trantor::EventLoop* loop_;
     ares_channel ctx_{nullptr};
     bool timerActive_{false};
@@ -76,7 +104,12 @@ class AresResolver : public Resolver,
         static std::mutex mutex_;
         return mutex_;
     }
-
+    static EventLoop* getLoop()
+    {
+        static EventLoopThread loopThread;
+        loopThread.run();
+        return loopThread.getLoop();
+    }
     const size_t timeout_{60};
 
     void onRead(int sockfd);
@@ -107,5 +140,11 @@ class AresResolver : public Resolver,
 #endif
                                          int read,
                                          int write);
+    struct LibraryInitializer
+    {
+        LibraryInitializer();
+        ~LibraryInitializer();
+    };
+    static LibraryInitializer libraryInitializer_;
 };
 }  // namespace trantor

@@ -44,6 +44,17 @@ const char* getSocketType(int type)
 
 }  // namespace
 
+AresResolver::LibraryInitializer::LibraryInitializer()
+{
+    ares_library_init(ARES_LIB_INIT_ALL);
+}
+AresResolver::LibraryInitializer::~LibraryInitializer()
+{
+    ares_library_cleanup();
+}
+
+AresResolver::LibraryInitializer AresResolver::libraryInitializer_;
+
 std::shared_ptr<Resolver> Resolver::newResolver(trantor::EventLoop* loop,
                                                 size_t timeout)
 {
@@ -53,67 +64,49 @@ std::shared_ptr<Resolver> Resolver::newResolver(trantor::EventLoop* loop,
 AresResolver::AresResolver(EventLoop* loop, size_t timeout)
     : loop_(loop), timeout_(timeout)
 {
-    assert(loop_);
-    // static char lookups[] = "b";
-    struct ares_options options;
-    int optmask = ARES_OPT_FLAGS;
-    options.flags = ARES_FLAG_NOCHECKRESP;
-    options.flags |= ARES_FLAG_STAYOPEN;
-    options.flags |= ARES_FLAG_IGNTC;  // UDP only
-    optmask |= ARES_OPT_SOCK_STATE_CB;
-    options.sock_state_cb = &AresResolver::ares_sock_statecallback_;
-    options.sock_state_cb_data = this;
-    optmask |= ARES_OPT_TIMEOUT;
-    options.timeout = 2;
-    // optmask |= ARES_OPT_LOOKUPS;
-    // options.lookups = lookups;
-
-    int status = ares_init_options(&ctx_, &options, optmask);
-    if (status != ARES_SUCCESS)
+    if (!loop)
     {
-        assert(0);
+        loop_ = getLoop();
     }
-    ares_set_socket_callback(ctx_,
-                             &AresResolver::ares_sock_createcallback_,
-                             this);
 }
+void AresResolver::init()
+{
+    if (!ctx_)
+    {
+        struct ares_options options;
+        int optmask = ARES_OPT_FLAGS;
+        options.flags = ARES_FLAG_NOCHECKRESP;
+        options.flags |= ARES_FLAG_STAYOPEN;
+        options.flags |= ARES_FLAG_IGNTC;  // UDP only
+        optmask |= ARES_OPT_SOCK_STATE_CB;
+        options.sock_state_cb = &AresResolver::ares_sock_statecallback_;
+        options.sock_state_cb_data = this;
+        optmask |= ARES_OPT_TIMEOUT;
+        options.timeout = 2;
+        // optmask |= ARES_OPT_LOOKUPS;
+        // options.lookups = lookups;
 
+        int status = ares_init_options(&ctx_, &options, optmask);
+        if (status != ARES_SUCCESS)
+        {
+            assert(0);
+        }
+        ares_set_socket_callback(ctx_,
+                                 &AresResolver::ares_sock_createcallback_,
+                                 this);
+    }
+}
 AresResolver::~AresResolver()
 {
-    ares_destroy(ctx_);
+    if (ctx_)
+        ares_destroy(ctx_);
 }
 
 void AresResolver::resolveInLoop(const std::string& hostname,
                                  const Callback& cb)
 {
     loop_->assertInLoopThread();
-    bool cached = false;
-    InetAddress inet;
-    {
-        std::lock_guard<std::mutex> lock(globalMutex());
-        auto iter = globalCache().find(hostname);
-        if (iter != globalCache().end())
-        {
-            auto& cachedAddr = iter->second;
-            if (timeout_ == 0 ||
-                cachedAddr.second.after(timeout_) > trantor::Date::date())
-            {
-                struct sockaddr_in addr;
-                memset(&addr, 0, sizeof addr);
-                addr.sin_family = AF_INET;
-                addr.sin_port = 0;
-                addr.sin_addr = cachedAddr.first;
-                inet = InetAddress(addr);
-                cached = true;
-            }
-        }
-    }
-    if (cached)
-    {
-        cb(inet);
-        return;
-    }
-
+    init();
     QueryData* queryData = new QueryData(this, cb, hostname);
     ares_gethostbyname(ctx_,
                        hostname.c_str(),
@@ -124,9 +117,10 @@ void AresResolver::resolveInLoop(const std::string& hostname,
     struct timeval* tvp = ares_timeout(ctx_, NULL, &tv);
     double timeout = getSeconds(tvp);
     // LOG_DEBUG << "timeout " << timeout << " active " << timerActive_;
-    if (!timerActive_)
+    if (!timerActive_ && timeout >= 0.0)
     {
-        loop_->runAfter(timeout, std::bind(&AresResolver::onTimer, this));
+        loop_->runAfter(timeout,
+                        std::bind(&AresResolver::onTimer, shared_from_this()));
         timerActive_ = true;
     }
     return;
@@ -151,7 +145,8 @@ void AresResolver::onTimer()
     }
     else
     {
-        loop_->runAfter(timeout, std::bind(&AresResolver::onTimer, this));
+        loop_->runAfter(timeout,
+                        std::bind(&AresResolver::onTimer, shared_from_this()));
     }
 }
 
@@ -172,8 +167,9 @@ void AresResolver::onQueryResult(int status,
     InetAddress inet(addr);
     {
         std::lock_guard<std::mutex> lock(globalMutex());
-        globalCache()[hostname].first = addr.sin_addr;
-        globalCache()[hostname].second = trantor::Date::date();
+        auto& addrItem = globalCache()[hostname];
+        addrItem.first = addr.sin_addr;
+        addrItem.second = trantor::Date::date();
     }
     callback(inet);
 }

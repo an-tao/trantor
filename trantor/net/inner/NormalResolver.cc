@@ -3,6 +3,7 @@
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #else
+#include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -29,85 +30,63 @@ void NormalResolver::resolve(const std::string &hostname,
             if (timeout_ == 0 || cachedAddr.second.after(static_cast<double>(
                                      timeout_)) > trantor::Date::date())
             {
-                struct sockaddr_in addr;
-                memset(&addr, 0, sizeof addr);
-                addr.sin_family = AF_INET;
-                addr.sin_port = 0;
-                addr.sin_addr = cachedAddr.first;
-                InetAddress inet(addr);
-                callback(inet);
+                callback(cachedAddr.first);
                 return;
             }
         }
     }
 
-    taskQueue_.runTaskInQueue(
+    concurrentTaskQueue().runTaskInQueue(
         [thisPtr = shared_from_this(), callback, hostname]() {
-#ifdef __linux__
-            struct hostent hent;
-            struct hostent *he = NULL;
-            int herrno = 0;
-            memset(&hent, 0, sizeof(hent));
-            int ret;
-            while (1)
             {
-                ret = gethostbyname_r(hostname.c_str(),
-                                      &hent,
-                                      thisPtr->resolveBuffer_.data(),
-                                      thisPtr->resolveBuffer_.size(),
-                                      &he,
-                                      &herrno);
-                if (ret == ERANGE)
+                std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
+                auto iter = thisPtr->globalCache().find(hostname);
+                if (iter != thisPtr->globalCache().end())
                 {
-                    thisPtr->resolveBuffer_.resize(
-                        thisPtr->resolveBuffer_.size() * 2);
-                }
-                else
-                {
-                    break;
+                    auto &cachedAddr = iter->second;
+                    if (thisPtr->timeout_ == 0 ||
+                        cachedAddr.second.after(static_cast<double>(
+                            thisPtr->timeout_)) > trantor::Date::date())
+                    {
+                        callback(cachedAddr.first);
+                        return;
+                    }
                 }
             }
-            if (ret == 0 && he != NULL)
-#else
-            /// Multi-threads safety
-            static std::mutex mutex_;
-            struct hostent *he = NULL;
-            struct hostent hent;
-            {
-                std::lock_guard<std::mutex> guard(mutex_);
-                auto result = gethostbyname(hostname.c_str());
-                if (result != NULL)
-                {
-                    memcpy(&hent, result, sizeof(hent));
-                    he = &hent;
-                }
-            }
-            if (he != NULL)
-#endif
-            {
-                assert(he->h_addrtype == AF_INET &&
-                       he->h_length == sizeof(uint32_t));
-
-                struct sockaddr_in addr;
-                memset(&addr, 0, sizeof addr);
-                addr.sin_family = AF_INET;
-                addr.sin_port = 0;
-                addr.sin_addr = *reinterpret_cast<struct in_addr *>(he->h_addr);
-                InetAddress inet(addr);
-                callback(inet);
-                {
-                    std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
-                    thisPtr->globalCache()[hostname].first = addr.sin_addr;
-                    thisPtr->globalCache()[hostname].second =
-                        trantor::Date::date();
-                }
-                return;
-            }
-            else
+            struct addrinfo hints, *res;
+            memset(&hints, 0, sizeof(hints));
+            hints.ai_family = PF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_flags = AI_PASSIVE;
+            auto error = getaddrinfo(hostname.data(), nullptr, &hints, &res);
+            if (error == -1 || res == nullptr)
             {
                 LOG_SYSERR << "InetAddress::resolve";
                 callback(InetAddress{});
                 return;
             }
+            InetAddress inet;
+            if (res->ai_family == AF_INET)
+            {
+                struct sockaddr_in addr;
+                memset(&addr, 0, sizeof addr);
+                addr = *reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
+                inet = InetAddress(addr);
+            }
+            else if (res->ai_family == AF_INET6)
+            {
+                struct sockaddr_in6 addr;
+                memset(&addr, 0, sizeof addr);
+                addr = *reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
+                inet = InetAddress(addr);
+            }
+            callback(inet);
+            {
+                std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
+                auto &addrItem = thisPtr->globalCache()[hostname];
+                addrItem.first = inet;
+                addrItem.second = trantor::Date::date();
+            }
+            return;
         });
 }
