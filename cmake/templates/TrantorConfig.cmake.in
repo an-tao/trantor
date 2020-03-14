@@ -9,7 +9,7 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
-find_dependency(OpenSSL)
+find_dependency(OpenSSL QUIET)
 
 # Compute paths
 
