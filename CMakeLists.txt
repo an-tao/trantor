@@ -21,17 +21,6 @@ set(INSTALL_TRANTOR_CMAKE_DIR
     ${DEF_INSTALL_TRANTOR_CMAKE_DIR}
     CACHE PATH "Installation directory for cmake files")
 
-# Make relative paths absolute (needed later on)
-foreach(p
-        LIB
-        INCLUDE
-        TRANTOR_CMAKE)
-  set(var INSTALL_${p}_DIR)
-  if(NOT IS_ABSOLUTE "${${var}}")
-    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
-  endif()
-endforeach()
-
 # include directories
 target_include_directories(
   ${PROJECT_NAME}
@@ -76,8 +65,8 @@ endif(WIN32)
 
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
   add_definitions(-DUSE_OPENSSL)
 endif()
 

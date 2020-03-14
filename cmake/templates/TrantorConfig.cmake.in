@@ -8,6 +8,9 @@
 
 @PACKAGE_INIT@
 
+include(CMakeFindDependencyMacro)
+find_dependency(OpenSSL REQUIRED)
+
 # Compute paths
 
 # Our library dependencies (contains definitions for IMPORTED targets)
