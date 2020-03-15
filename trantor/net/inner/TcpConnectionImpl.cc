@@ -665,8 +665,11 @@ void TcpConnectionImpl::forceClose()
         }
     });
 }
-
+#ifndef _WIN32
+void TcpConnectionImpl::sendInLoop(const void *buffer, size_t length)
+#else
 void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
+#endif
 {
     loop_->assertInLoopThread();
     if (status_ != ConnStatus::Connected)
@@ -720,8 +723,8 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             node->msgBuffer_ = std::shared_ptr<MsgBuffer>(new MsgBuffer);
             writeBufferList_.push_back(std::move(node));
         }
-        writeBufferList_.back()->msgBuffer_->append(buffer + sendLen,
-                                                    remainLen);
+        writeBufferList_.back()->msgBuffer_->append(
+            static_cast<const char *>(buffer) + sendLen, remainLen);
         if (!ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
         if (highWaterMarkCallback_ &&
@@ -800,7 +803,7 @@ void TcpConnectionImpl::send(const std::shared_ptr<MsgBuffer> &msgPtr)
         });
     }
 }
-void TcpConnectionImpl::send(const char *msg, uint64_t len)
+void TcpConnectionImpl::send(const char *msg, size_t len)
 {
     if (loop_->isInLoopThread())
     {
@@ -824,6 +827,47 @@ void TcpConnectionImpl::send(const char *msg, uint64_t len)
     else
     {
         auto buffer = std::make_shared<std::string>(msg, len);
+        auto thisPtr = shared_from_this();
+        std::lock_guard<std::mutex> guard(sendNumMutex_);
+        ++sendNum_;
+        loop_->queueInLoop([thisPtr, buffer]() {
+            thisPtr->sendInLoop(buffer->data(), buffer->length());
+            std::lock_guard<std::mutex> guard1(thisPtr->sendNumMutex_);
+            --thisPtr->sendNum_;
+        });
+    }
+}
+void TcpConnectionImpl::send(const void *msg, size_t len)
+{
+    if (loop_->isInLoopThread())
+    {
+        std::lock_guard<std::mutex> guard(sendNumMutex_);
+        if (sendNum_ == 0)
+        {
+#ifndef _WIN32
+            sendInLoop(msg, len);
+#else
+            sendInLoop(static_cast<const char *>(msg), len);
+#endif
+        }
+        else
+        {
+            ++sendNum_;
+            auto buffer =
+                std::make_shared<std::string>(static_cast<const char *>(msg),
+                                              len);
+            auto thisPtr = shared_from_this();
+            loop_->queueInLoop([thisPtr, buffer]() {
+                thisPtr->sendInLoop(buffer->data(), buffer->length());
+                std::lock_guard<std::mutex> guard1(thisPtr->sendNumMutex_);
+                --thisPtr->sendNum_;
+            });
+        }
+    }
+    else
+    {
+        auto buffer =
+            std::make_shared<std::string>(static_cast<const char *>(msg), len);
         auto thisPtr = shared_from_this();
         std::lock_guard<std::mutex> guard(sendNumMutex_);
         ++sendNum_;
@@ -1215,8 +1259,11 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         ioChannelPtr_->enableWriting();
     }
 }
-
+#ifndef _WIN32
+ssize_t TcpConnectionImpl::writeInLoop(const void *buffer, size_t length)
+#else
 ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
+#endif
 {
 #ifdef USE_OPENSSL
     if (!isEncrypted_)
@@ -1255,7 +1302,7 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
                 len = sslEncryptionPtr_->sendBufferPtr_->size();
             }
             memcpy(sslEncryptionPtr_->sendBufferPtr_->data(),
-                   buffer + sendTotalLen,
+                   static_cast<const char *>(buffer) + sendTotalLen,
                    len);
             ERR_clear_error();
             auto sendLen = SSL_write(sslEncryptionPtr_->sslPtr_->get(),
