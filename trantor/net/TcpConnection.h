@@ -32,7 +32,8 @@ class TcpConnection
   public:
     TcpConnection() = default;
     virtual ~TcpConnection(){};
-    virtual void send(const char *msg, uint64_t len) = 0;
+    virtual void send(const char *msg, size_t len) = 0;
+    virtual void send(const void *msg, size_t len) = 0;
     virtual void send(const std::string &msg) = 0;
     virtual void send(std::string &&msg) = 0;
     virtual void send(const MsgBuffer &buffer) = 0;

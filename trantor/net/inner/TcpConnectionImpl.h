@@ -95,7 +95,8 @@ class TcpConnectionImpl : public TcpConnection,
                       bool isServer = true);
 #endif
     virtual ~TcpConnectionImpl();
-    virtual void send(const char *msg, uint64_t len) override;
+    virtual void send(const char *msg, size_t len) override;
+    virtual void send(const void *msg, size_t len) override;
     virtual void send(const std::string &msg) override;
     virtual void send(std::string &&msg) override;
     virtual void send(const MsgBuffer &buffer) override;
@@ -268,11 +269,11 @@ class TcpConnectionImpl : public TcpConnection,
     void handleClose();
     void handleError();
     // virtual void sendInLoop(const std::string &msg);
-    void sendInLoop(const char *buffer, size_t length);
+    void sendInLoop(const void *buffer, size_t length);
 
     void sendFileInLoop(const BufferNodePtr &file);
 
-    ssize_t writeInLoop(const char *buffer, size_t length);
+    ssize_t writeInLoop(const void *buffer, size_t length);
     size_t highWaterMarkLen_;
     std::string name_;
 
