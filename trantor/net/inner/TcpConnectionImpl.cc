@@ -844,7 +844,11 @@ void TcpConnectionImpl::send(const void *msg, size_t len)
         std::lock_guard<std::mutex> guard(sendNumMutex_);
         if (sendNum_ == 0)
         {
+#ifndef _WIN32
             sendInLoop(msg, len);
+#else
+            sendInLoop(static_cast<const char *>(msg), len);
+#endif
         }
         else
         {
