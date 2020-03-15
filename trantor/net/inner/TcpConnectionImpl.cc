@@ -665,8 +665,11 @@ void TcpConnectionImpl::forceClose()
         }
     });
 }
-
+#ifndef _WIN32
 void TcpConnectionImpl::sendInLoop(const void *buffer, size_t length)
+#else
+void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
+#endif
 {
     loop_->assertInLoopThread();
     if (status_ != ConnStatus::Connected)
@@ -1252,8 +1255,11 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         ioChannelPtr_->enableWriting();
     }
 }
-
+#ifndef _WIN32
 ssize_t TcpConnectionImpl::writeInLoop(const void *buffer, size_t length)
+#else
+ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
+#endif
 {
 #ifdef USE_OPENSSL
     if (!isEncrypted_)
