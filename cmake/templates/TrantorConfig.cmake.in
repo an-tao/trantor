@@ -9,8 +9,9 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
-find_dependency(OpenSSL QUIET)
-
+if(@OpenSSL_FOUND@)
+  find_dependency(OpenSSL)
+endif()
 # Compute paths
 
 # Our library dependencies (contains definitions for IMPORTED targets)

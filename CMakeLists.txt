@@ -67,7 +67,6 @@ find_package(OpenSSL)
 if(OpenSSL_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
-  add_definitions(-DUSE_OPENSSL)
 endif()
 
 find_path(CARES_INCLUDE_DIR ares.h)
