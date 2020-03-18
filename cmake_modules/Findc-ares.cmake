@@ -1,7 +1,9 @@
 # Try to find c-ares library Once done this will define
 #
-# c-ares_FOUND - system has c-ares C-ARES_INCLUDE_DIRS - the c-ares include
-# directory C-ARES_LIBRARIES - Link these to use c-ares
+# c-ares_FOUND - system has c-ares 
+# C-ARES_INCLUDE_DIRS - The c-ares include directory 
+# C-ARES_LIBRARIES - Link these to use c-ares
+# c-ares_lib - Imported Targets
 #
 # Copyright (c) 2020 antao <antao2002@gmail.com>
 #
