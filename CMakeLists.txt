@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 add_library(${PROJECT_NAME} STATIC)
-# if(MSVC) target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX) else()
-# target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -pedantic)
-# endif()
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
 set(TRANTOR_MAJOR_VERSION 1)
 set(TRANTOR_MINOR_VERSION 0)
@@ -20,17 +19,6 @@ set(DEF_INSTALL_TRANTOR_CMAKE_DIR lib/cmake/Trantor)
 set(INSTALL_TRANTOR_CMAKE_DIR
     ${DEF_INSTALL_TRANTOR_CMAKE_DIR}
     CACHE PATH "Installation directory for cmake files")
-
-# Make relative paths absolute (needed later on)
-foreach(p
-        LIB
-        INCLUDE
-        TRANTOR_CMAKE)
-  set(var INSTALL_${p}_DIR)
-  if(NOT IS_ABSOLUTE "${${var}}")
-    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
-  endif()
-endforeach()
 
 # include directories
 target_include_directories(
@@ -76,16 +64,14 @@ endif(WIN32)
 
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIR})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENSSL_LIBRARIES})
-  add_definitions(-DUSE_OPENSSL)
+  target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
 endif()
 
-find_path(CARES_INCLUDE_DIR ares.h)
-find_library(CARES_LIBRARY NAMES cares)
-if(CARES_INCLUDE_DIR AND CARES_LIBRARY)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${CARES_INCLUDE_DIR})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CARES_LIBRARY})
+find_package(c-ares)
+if(c-ares_FOUND)
+  message(STATUS "c-ares found!")
+  target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/AresResolver.cc)
 else()
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
@@ -172,6 +158,7 @@ install(
   FILES
     "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TrantorConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/TrantorConfigVersion.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/Findc-ares.cmake"
   DESTINATION "${INSTALL_TRANTOR_CMAKE_DIR}"
   COMPONENT dev)
 
