@@ -41,7 +41,7 @@ TcpServer::TcpServer(EventLoop *loop,
 
 TcpServer::~TcpServer()
 {
-    loop_->assertInLoopThread();
+    // loop_->assertInLoopThread();
     LOG_TRACE << "TcpServer::~TcpServer [" << serverName_ << "] destructing";
 }
 
@@ -149,6 +149,7 @@ void TcpServer::stop()
     {
         connection->forceClose();
     }
+    loopPoolPtr_.reset();
     for (auto iter : timingWheelMap_)
     {
         iter.second.reset();
