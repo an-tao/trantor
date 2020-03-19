@@ -39,6 +39,7 @@ class TcpServer : NonCopyable
               bool reUsePort = true);
     ~TcpServer();
     void start();
+    void stop();
     void setIoLoopNum(size_t num)
     {
         assert(!started_);

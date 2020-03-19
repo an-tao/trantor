@@ -179,7 +179,7 @@ class TcpConnectionImpl : public TcpConnection,
     /// Internal use only.
 
     std::weak_ptr<KickoffEntry> kickoffEntry_;
-    std::shared_ptr<TimingWheel> timingWheelPtr_;
+    std::weak_ptr<TimingWheel> timingWheelWeakPtr_;
     size_t idleTimeout_{0};
     Date lastTimingWheelUpdateTime_;
 
@@ -191,9 +191,9 @@ class TcpConnectionImpl : public TcpConnection,
         assert(timeout > 0);
         auto entry = std::make_shared<KickoffEntry>(shared_from_this());
         kickoffEntry_ = entry;
-        timingWheelPtr_ = timingWheel;
+        timingWheelWeakPtr_ = timingWheel;
         idleTimeout_ = timeout;
-        timingWheelPtr_->insertEntry(timeout, entry);
+        timingWheel->insertEntry(timeout, entry);
     }
     void extendLife();
 #ifndef _WIN32

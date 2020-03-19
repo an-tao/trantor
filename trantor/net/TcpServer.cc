@@ -142,7 +142,19 @@ void TcpServer::start()
         acceptorPtr_->listen();
     });
 }
-
+void TcpServer::stop()
+{
+    loop_->runInLoop([this]() { acceptorPtr_.reset(); });
+    for (auto connection : connSet_)
+    {
+        connection->forceClose();
+    }
+    for (auto iter : timingWheelMap_)
+    {
+        iter.second.reset();
+    }
+    timingWheelMap_.clear();
+}
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
