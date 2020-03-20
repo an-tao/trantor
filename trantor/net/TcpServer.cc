@@ -41,7 +41,7 @@ TcpServer::TcpServer(EventLoop *loop,
 
 TcpServer::~TcpServer()
 {
-    loop_->assertInLoopThread();
+    // loop_->assertInLoopThread();
     LOG_TRACE << "TcpServer::~TcpServer [" << serverName_ << "] destructing";
 }
 
@@ -142,7 +142,20 @@ void TcpServer::start()
         acceptorPtr_->listen();
     });
 }
-
+void TcpServer::stop()
+{
+    loop_->runInLoop([this]() { acceptorPtr_.reset(); });
+    for (auto connection : connSet_)
+    {
+        connection->forceClose();
+    }
+    loopPoolPtr_.reset();
+    for (auto iter : timingWheelMap_)
+    {
+        iter.second.reset();
+    }
+    timingWheelMap_.clear();
+}
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
