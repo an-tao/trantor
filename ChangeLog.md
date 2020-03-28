@@ -3,6 +3,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc10] - 2020-3-28
+
+### API Change list
+
+- Add the send(const void *, size_t) method to the TcpConnection class
+
+- Add the send(const MsgBufferPtr &) method to TcpConnection class
+
+- Add stop() method to the TcpServer class
+
+### Changed
+
+- Compile wepoll directly into trantor (Windows)
+
+- Add CI for Windows
+
+- Make CMake install files relocatable
+
+- Modify the Resolver class
+
 ## [1.0.0-rc9] - 2020-2-17
 
 ### API change list
@@ -98,7 +118,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc9...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc10...HEAD
+
+[1.0.0-rc10]: https://github.com/an-tao/trantor/compare/v1.0.0-rc9...v1.0.0-rc10
 
 [1.0.0-rc9]: https://github.com/an-tao/trantor/compare/v1.0.0-rc8...v1.0.0-rc9
 
