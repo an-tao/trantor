@@ -150,11 +150,16 @@ void TcpServer::stop()
         connection->forceClose();
     }
     loopPoolPtr_.reset();
-    for (auto iter : timingWheelMap_)
+    for (auto &iter : timingWheelMap_)
     {
-        iter.second.reset();
+        std::promise<int> pro;
+        auto f = pro.get_future();
+        iter.second->getLoop()->runInLoop([&iter, &pro]() mutable {
+            iter.second.reset();
+            pro.set_value(1);
+        });
+        f.get();
     }
-    timingWheelMap_.clear();
 }
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
