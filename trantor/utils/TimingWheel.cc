@@ -64,6 +64,7 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
 
 TimingWheel::~TimingWheel()
 {
+    loop_->assertInLoopThread();
     loop_->invalidateTimer(timerId_);
     for (auto iter = wheels_.rbegin(); iter != wheels_.rend(); ++iter)
     {
