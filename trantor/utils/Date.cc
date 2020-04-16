@@ -13,6 +13,7 @@
  */
 
 #include "Date.h"
+#include "Funcs.h"
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
