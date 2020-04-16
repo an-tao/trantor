@@ -30,4 +30,16 @@ inline uint64_t ntoh64(uint64_t n)
 {
     return hton64(n);
 }
+inline std::vector<std::string> strsplit(const std::string &s, const std::string &delimiter )
+{
+  size_t last = 0;
+  size_t next = 0;
+  std::vector<std::string> v;
+  while ((next = s.find(delimiter, last)) != std::string::npos) {
+    v.push_back(s.substr(last, next-last));
+    last = next + 1;
+  }
+  v.push_back(s.substr(last));
+  return std::move(v);
+}
 }  // namespace trantor
