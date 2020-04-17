@@ -40,7 +40,7 @@ inline std::vector<std::string> splitString(const std::string &s,
     while ((next = s.find(delimiter, last)) != std::string::npos)
     {
         v.push_back(s.substr(last, next - last));
-        last = next + 1;
+        last = next + delimiter.length();
     }
     v.push_back(s.substr(last));
     return std::move(v);
