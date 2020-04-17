@@ -35,6 +35,11 @@ TEST(splitString, split_string)
     EXPECT_EQ(out.size(), 2);
     EXPECT_STREQ(out[0].data(), "trantor");
     EXPECT_STREQ(out[1].data(), ":splitString");
+    originString = "trantor:::splitString";
+    out = splitString(originString, "trantor:::splitString");
+    EXPECT_EQ(out.size(), 2);
+    EXPECT_STREQ(out[0].data(), "");
+    EXPECT_STREQ(out[1].data(), "");
 }
 int main(int argc, char **argv)
 {
