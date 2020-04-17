@@ -22,7 +22,7 @@ function build_trantor() {
 
     echo "Start building trantor ..."
     if [ $1 -eq 1 ]; then
-        cmake .. -DMAKETEST=YES
+        cmake .. -DBUILD_TESTING=on
     else
         cmake ..
     fi
@@ -32,7 +32,7 @@ function build_trantor() {
         exit -1
     fi
     
-    make
+    make && make test
     
     #If errors then exit
     if [ "$?" != "0" ]; then
