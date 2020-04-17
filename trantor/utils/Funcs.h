@@ -31,7 +31,7 @@ inline uint64_t ntoh64(uint64_t n)
 {
     return hton64(n);
 }
-inline std::vector<std::string> strsplit(const std::string &s, const std::string &delimiter )
+inline std::vector<std::string> splitString(const std::string &s, const std::string &delimiter )
 {
   size_t last = 0;
   size_t next = 0;
