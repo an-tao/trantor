@@ -129,6 +129,12 @@ class Date
      */
     std::string toDbStringLocal() const;
 
+    // From DB string to trantor local time zone
+    /*
+     * Inverse of toDbStringLocal()
+     */
+    static Date fromDbStringLocal(const std::string &datetime);
+
     void toCustomedFormattedString(const std::string &fmtStr,
                                    char *str,
                                    size_t len) const;  // UTC

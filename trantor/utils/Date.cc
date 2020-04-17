@@ -13,6 +13,7 @@
  */
 
 #include "Date.h"
+#include "Funcs.h"
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
@@ -272,6 +273,36 @@ std::string Date::toDbStringLocal() const
         }
     }
     return buf;
+}
+Date Date::fromDbStringLocal(const std::string &datetime)
+{
+    unsigned int year = {0}, month = {0}, day = {0}, hour = {0}, minute = {0},
+                 second = {0}, microSecond = {0};
+    std::vector<std::string> &&v = splitString(datetime, " ");
+    if (2 == v.size())
+    {
+        // date
+        std::vector<std::string> date = splitString(v[0], "-");
+        if (3 == date.size())
+        {
+            year = std::stol(date[0]);
+            month = std::stol(date[1]);
+            day = std::stol(date[2]);
+            std::vector<std::string> time = splitString(v[1], ":");
+            if (2 < time.size())
+            {
+                hour = std::stol(time[0]);
+                minute = std::stol(time[1]);
+                second = std::stol(time[2]);
+                if (3 < time.size())
+                {
+                    microSecond = std::stol(time[3]);
+                }
+            }
+        }
+    }
+    return std::move(
+        trantor::Date(year, month, day, hour, minute, second, microSecond));
 }
 std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr,
                                                  bool showMicroseconds) const
