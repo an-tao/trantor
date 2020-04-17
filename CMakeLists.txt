@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
-add_library(${PROJECT_NAME} STATIC)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
@@ -19,6 +18,18 @@ set(DEF_INSTALL_TRANTOR_CMAKE_DIR lib/cmake/Trantor)
 set(INSTALL_TRANTOR_CMAKE_DIR
     ${DEF_INSTALL_TRANTOR_CMAKE_DIR}
     CACHE PATH "Installation directory for cmake files")
+
+if(BUILD_TRANTOR_SHARED)
+  set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+  list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
+            "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}" isSystemDir)
+  if("${isSystemDir}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
+  endif("${isSystemDir}" STREQUAL "-1")
+  add_library(${PROJECT_NAME} SHARED)
+else(BUILD_TRANTOR_SHARED)
+  add_library(${PROJECT_NAME} STATIC)
+endif(BUILD_TRANTOR_SHARED)
 
 # include directories
 target_include_directories(
