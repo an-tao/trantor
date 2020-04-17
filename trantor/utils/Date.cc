@@ -283,15 +283,15 @@ Date Date::fromDbStringLocal(const std::string &datetime )
               minute = {0},
               second = {0},
               microSecond = {0};
-  std::vector<std::string> &&v = strsplit(datetime, " ");
+  std::vector<std::string> &&v = splitString(datetime, " ");
   if ( 2 == v.size()){
     //date
-    std::vector<std::string> date = strsplit(v[0], "-");
+    std::vector<std::string> date = splitString(v[0], "-");
     if ( 3 == date.size()){
       year = std::stol(date[0]);
       month = std::stol(date[1]);
       day = std::stol(date[2]);
-      std::vector<std::string> time = strsplit(v[1], ":");
+      std::vector<std::string> time = splitString(v[1], ":");
       if ( 2 < time.size() ){
         hour = std::stol(time[0]);
         minute = std::stol(time[1]);
