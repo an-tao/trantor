@@ -106,6 +106,14 @@ void AresResolver::resolveInLoop(const std::string& hostname,
                                  const Callback& cb)
 {
     loop_->assertInLoopThread();
+#ifdef _WIN32
+    if (hostname == "localhost")
+    {
+        const static trantor::InetAddress localhost_{"127.0.0.1", 0};
+        cb(localhost_);
+        return;
+    }
+#endif
     init();
     QueryData* queryData = new QueryData(this, cb, hostname);
     ares_gethostbyname(ctx_,

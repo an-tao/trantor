@@ -14,7 +14,8 @@
 #ifdef _WIN32
 struct in6_addr_uint
 {
-    union {
+    union
+    {
         u_char Byte[16];
         u_short Word[8];
         uint32_t __s6_addr32[4];
