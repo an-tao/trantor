@@ -128,12 +128,12 @@ class Date
      * is zero 2018-01-01 10:10:25:102414   //If the microsecond is not zero
      */
     std::string toDbStringLocal() const;
-  
+
     // From DB string to trantor local time zone
     /*
-    * Inverse of toDbStringLocal()
-    */
-    static Date fromDbStringLocal( const std::string &datetime ); 
+     * Inverse of toDbStringLocal()
+     */
+    static Date fromDbStringLocal(const std::string &datetime);
 
     void toCustomedFormattedString(const std::string &fmtStr,
                                    char *str,
