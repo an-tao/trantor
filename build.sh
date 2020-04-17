@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#building trantor 
+#building trantor
 function build_trantor() {
 
     #Saving current directory
@@ -26,17 +26,21 @@ function build_trantor() {
     else
         cmake ..
     fi
-    
+
     #If errors then exit
     if [ "$?" != "0" ]; then
         exit -1
     fi
-    
-    make && make test
-    
+
+    make
+
+    if [ $1 -eq 1 ]; then
+        make test
+    fi
+
     #If errors then exit
     if [ "$?" != "0" ]; then
-        exit -1 
+        exit -1
     fi
 
     echo "Installing ..."
