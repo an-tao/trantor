@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc11] - 2020-4-27
+
+### API Change list
+
+- Add fromDbStringLocal() method to the Date class
+
+### Fixed
+
+- Fix a race condition of TimingWheel class
+
+- Fix localhost resolving on windows
+
 ## [1.0.0-rc10] - 2020-3-28
 
 ### API Change list
@@ -118,7 +130,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc10...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc11...HEAD
+
+[1.0.0-rc11]: https://github.com/an-tao/trantor/compare/v1.0.0-rc10...v1.0.0-rc11
 
 [1.0.0-rc10]: https://github.com/an-tao/trantor/compare/v1.0.0-rc9...v1.0.0-rc10
 
