@@ -1284,7 +1284,8 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
     {
         LOG_TRACE << "send in loop";
         loop_->assertInLoopThread();
-        if (status_ != ConnStatus::Connected)
+        if (status_ != ConnStatus::Connected &&
+            status_ != ConnStatus::Disconnecting)
         {
             LOG_WARN << "Connection is not connected,give up sending";
             return -1;
