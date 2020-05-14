@@ -48,6 +48,6 @@ inline std::vector<std::string> splitString(const std::string &s,
     }
     if (s.length() > last || acceptEmptyString)
         v.push_back(s.substr(last));
-    return std::move(v);
+    return v;
 }
 }  // namespace trantor
