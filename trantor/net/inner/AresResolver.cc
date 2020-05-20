@@ -44,6 +44,11 @@ const char* getSocketType(int type)
 
 }  // namespace
 
+bool Resolver::isCAresUsed()
+{
+    return true;
+}
+
 AresResolver::LibraryInitializer::LibraryInitializer()
 {
     ares_library_init(ARES_LIB_INIT_ALL);
