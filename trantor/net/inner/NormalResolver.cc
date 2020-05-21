@@ -17,7 +17,10 @@ std::shared_ptr<Resolver> Resolver::newResolver(trantor::EventLoop *loop,
 {
     return std::make_shared<NormalResolver>(timeout);
 }
-
+bool Resolver::isCAresUsed()
+{
+    return false;
+}
 void NormalResolver::resolve(const std::string &hostname,
                              const Callback &callback)
 {

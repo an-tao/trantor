@@ -23,5 +23,6 @@ class Resolver
     virtual ~Resolver()
     {
     }
+    static bool isCAresUsed();
 };
 }  // namespace trantor
