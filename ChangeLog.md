@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc12] - 2020-5-22
+
+### API change list
+
+- Add a method to show if the c-ares library is used
+
+### Fixed
+
+- Fix a bug in SSL mode (#85)
+
+- Use SOCKET type in windows for x86-windows compilation
+
+- Use env to find bash in build.sh script to support FreeBSD
+
 ## [1.0.0-rc11] - 2020-4-27
 
 ### API Change list
@@ -130,7 +144,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc11...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc12...HEAD
+
+[1.0.0-rc12]: https://github.com/an-tao/trantor/compare/v1.0.0-rc11...v1.0.0-rc12
 
 [1.0.0-rc11]: https://github.com/an-tao/trantor/compare/v1.0.0-rc10...v1.0.0-rc11
 
