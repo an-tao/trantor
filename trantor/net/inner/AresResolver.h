@@ -134,7 +134,7 @@ class AresResolver : public Resolver,
 #endif
     static void ares_sock_statecallback_(void* data,
 #ifdef _WIN32
-                                         long long unsigned int sockfd,
+                                         SOCKET sockfd,
 #else
                                          int sockfd,
 #endif
