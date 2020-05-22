@@ -234,7 +234,7 @@ void AresResolver::ares_hostcallback_(void* data,
 }
 
 #ifdef _WIN32
-int AresResolver::ares_sock_createcallback_(long long unsigned int sockfd,
+int AresResolver::ares_sock_createcallback_(SOCKET sockfd,
                                             int type,
                                             void* data)
 #else
@@ -248,7 +248,7 @@ int AresResolver::ares_sock_createcallback_(int sockfd, int type, void* data)
 
 void AresResolver::ares_sock_statecallback_(void* data,
 #ifdef _WIN32
-                                            long long unsigned int sockfd,
+                                            SOCKET sockfd,
 #else
                                             int sockfd,
 #endif
