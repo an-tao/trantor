@@ -126,7 +126,7 @@ class AresResolver : public Resolver,
                                    int timeouts,
                                    struct hostent* hostent);
 #ifdef _WIN32
-    static int ares_sock_createcallback_(long long unsigned int sockfd,
+    static int ares_sock_createcallback_(SOCKET sockfd,
                                          int type,
                                          void* data);
 #else
