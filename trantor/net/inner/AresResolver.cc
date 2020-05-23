@@ -6,7 +6,7 @@
 // Author: Tao An
 
 #include "AresResolver.h"
-#include <trantor/net/inner/Channel.h>
+#include <trantor/net/Channel.h>
 #include <ares.h>
 #ifdef _WIN32
 #include <winsock2.h>
