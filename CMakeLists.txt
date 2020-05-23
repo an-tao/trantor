@@ -57,8 +57,8 @@ set(TRANTOR_SOURCES
     trantor/net/InetAddress.cc
     trantor/net/TcpClient.cc
     trantor/net/TcpServer.cc
+    trantor/net/Channel.cc
     trantor/net/inner/Acceptor.cc
-    trantor/net/inner/Channel.cc
     trantor/net/inner/Connector.cc
     trantor/net/inner/Poller.cc
     trantor/net/inner/Socket.cc
@@ -118,7 +118,8 @@ set(public_net_headers
     trantor/net/TcpConnection.h
     trantor/net/TcpServer.h
     trantor/net/callbacks.h
-    trantor/net/Resolver.h)
+    trantor/net/Resolver.h
+    trantor/net/Channel.h)
 
 set(public_utils_headers
     trantor/utils/AsyncFileLogger.h
