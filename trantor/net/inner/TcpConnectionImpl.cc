@@ -1201,8 +1201,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     while (filePtr->fileBytesToSend_ > 0)
     {
         auto n = fread(&(*fileBufferPtr_)[0],
-                       fileBufferPtr_->size(),
                        1,
+                       fileBufferPtr_->size(),
                        filePtr->sendFp_);
 #endif
         if (n > 0)
@@ -1253,7 +1253,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         if (n == 0)
         {
             LOG_SYSERR << "read";
-            break;
+            return;
         }
     }
     if (!ioChannelPtr_->isWriting())
