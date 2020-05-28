@@ -1240,7 +1240,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                     LOG_SYSERR << "Unexpected error(" << errno << ")";
                     return;
                 }
-                return;
+                break;
             }
         }
         if (n < 0)
