@@ -234,9 +234,7 @@ void AresResolver::ares_hostcallback_(void* data,
 }
 
 #ifdef _WIN32
-int AresResolver::ares_sock_createcallback_(SOCKET sockfd,
-                                            int type,
-                                            void* data)
+int AresResolver::ares_sock_createcallback_(SOCKET sockfd, int type, void* data)
 #else
 int AresResolver::ares_sock_createcallback_(int sockfd, int type, void* data)
 #endif
