@@ -67,14 +67,19 @@ EventLoop::EventLoop()
       poller_(Poller::newPoller(this)),
       currentActiveChannel_(nullptr),
       eventHandling_(false),
-      timerQueue_(new TimerQueue(this))
+      timerQueue_(new TimerQueue(this)),
+      threadLocalLoopPtr_(&t_loopInThisThread)
 #ifdef __linux__
       ,
       wakeupFd_(createEventfd()),
       wakeupChannelPtr_(new Channel(this, wakeupFd_))
 #endif
 {
-    assert(t_loopInThisThread == 0);
+    if (t_loopInThisThread)
+    {
+        LOG_FATAL << "There is already an EventLoop in this thread";
+        exit(-1);
+    }
     t_loopInThisThread = this;
 #ifdef __linux__
     wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
@@ -315,4 +320,29 @@ void EventLoop::wakeupRead()
     if (ret < 0)
         LOG_SYSERR << "wakeup read error";
 }
+
+void EventLoop::moveToCurrentThread()
+{
+    if (isRunning())
+    {
+        LOG_FATAL << "EventLoop cannot be moved when running";
+        exit(-1);
+    }
+    if (isInLoopThread())
+    {
+        LOG_WARN << "This EventLoop is already in the current thread";
+        return;
+    }
+    if (t_loopInThisThread)
+    {
+        LOG_FATAL << "There is already an EventLoop in this thread, you cannot "
+                     "move another in";
+        exit(-1);
+    }
+    *threadLocalLoopPtr_ = nullptr;
+    t_loopInThisThread = this;
+    threadLocalLoopPtr_ = &t_loopInThisThread;
+    threadId_ = std::this_thread::get_id();
+}
+
 }  // namespace trantor
