@@ -151,11 +151,17 @@ class EventLoop : NonCopyable
     {
         return callingFuncs_;
     }
+    /**
+     * @brief Move the EventLoop to the current thread, this method must be
+     * called before the loop is running.
+     *
+     */
+    void moveToCurrentThread();
 
   private:
     void abortNotInLoopThread();
     bool looping_;
-    const std::thread::id threadId_;
+    std::thread::id threadId_;
     bool quit_;
     std::unique_ptr<Poller> poller_;
 
@@ -181,6 +187,7 @@ class EventLoop : NonCopyable
 #else
     size_t index_{std::numeric_limits<size_t>::max()};
 #endif
+    EventLoop **threadLocalLoopPtr_;
 };
 
 }  // namespace trantor
