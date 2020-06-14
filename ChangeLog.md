@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc14] - 2020-6-14
+
+### API change list
+
+- Add the moveToCurrentThread() method to EventLoop.
+
+### Changed
+
+- Optimized LockFreeQueue by Reducing Object Construction.
+
+### Fixed
+
+- Fix a bug when sending a file.
+
 ## [1.0.0-rc13] - 2020-5-23
 
 ### API change list
@@ -150,7 +164,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc13...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc14...HEAD
+
+[1.0.0-rc14]: https://github.com/an-tao/trantor/compare/v1.0.0-rc13...v1.0.0-rc14
 
 [1.0.0-rc13]: https://github.com/an-tao/trantor/compare/v1.0.0-rc12...v1.0.0-rc13
 
