@@ -144,7 +144,8 @@ source_group("Public API"
 install(TARGETS trantor
                 # IMPORTANT: Add the trantor library to the "export-set"
         EXPORT TrantorTargets
-        ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib)
+        ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib)
 
 install(FILES ${public_net_headers}
         DESTINATION ${INSTALL_INCLUDE_DIR}/trantor/net)
