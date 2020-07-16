@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc15] - 2020-7-16
+
+### Fixed
+
+- Fix installation errors of shared library.
+
 ## [1.0.0-rc14] - 2020-6-14
 
 ### API change list
@@ -164,7 +170,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc14...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc15...HEAD
+
+[1.0.0-rc15]: https://github.com/an-tao/trantor/compare/v1.0.0-rc14...v1.0.0-rc15
 
 [1.0.0-rc14]: https://github.com/an-tao/trantor/compare/v1.0.0-rc13...v1.0.0-rc14
 
