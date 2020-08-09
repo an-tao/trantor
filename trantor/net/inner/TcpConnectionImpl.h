@@ -225,11 +225,12 @@ class TcpConnectionImpl : public TcpConnection,
     {
 #ifndef _WIN32
         int sendFd_{-1};
+        off_t offset_;
 #else
         FILE *sendFp_{nullptr};
+        long long offset_;
 #endif
         ssize_t fileBytesToSend_;
-        size_t offset_;
         std::shared_ptr<MsgBuffer> msgBuffer_;
         ~BufferNode()
         {
