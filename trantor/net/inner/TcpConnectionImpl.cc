@@ -30,6 +30,9 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #endif
+#ifdef _WIN32
+#define stat _stati64
+#endif
 
 using namespace trantor;
 
@@ -712,7 +715,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         if (writeBufferList_.empty())
         {
             BufferNodePtr node(new BufferNode);
-            node->msgBuffer_ = std::shared_ptr<MsgBuffer>(new MsgBuffer);
+            node->msgBuffer_ = std::make_shared<MsgBuffer>();
             writeBufferList_.push_back(std::move(node));
         }
 #ifndef _WIN32
@@ -722,7 +725,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
 #endif
         {
             BufferNodePtr node(new BufferNode);
-            node->msgBuffer_ = std::shared_ptr<MsgBuffer>(new MsgBuffer);
+            node->msgBuffer_ = std::make_shared<MsgBuffer>();
             writeBufferList_.push_back(std::move(node));
         }
         writeBufferList_.back()->msgBuffer_->append(
@@ -1193,7 +1196,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                       &(*fileBufferPtr_)[0],
                       fileBufferPtr_->size());
 #else
-    fseek(filePtr->sendFp_, filePtr->offset_, SEEK_SET);
+    _fseeki64(filePtr->sendFp_, filePtr->offset_, SEEK_SET);
     if (!fileBufferPtr_)
     {
         fileBufferPtr_ = std::make_unique<std::vector<char>>(16 * 1024);

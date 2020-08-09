@@ -229,7 +229,7 @@ class TcpConnectionImpl : public TcpConnection,
         FILE *sendFp_{nullptr};
 #endif
         ssize_t fileBytesToSend_;
-        off_t offset_;
+        size_t offset_;
         std::shared_ptr<MsgBuffer> msgBuffer_;
         ~BufferNode()
         {
