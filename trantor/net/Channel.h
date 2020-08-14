@@ -146,6 +146,11 @@ class Channel : NonCopyable
         return events_ & kReadEvent;
     }
 
+    void updateEvents(int events)
+    {
+        events_ = events;
+        update();
+    }
     static const int kNoneEvent;
     static const int kReadEvent;
     static const int kWriteEvent;
