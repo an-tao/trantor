@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0-rc16] - 2020-8-15
+
+### Fixed
+
+- Fix a bug when sending big files on Windows.
+
+### API change list
+
+- Add updateEvents() method to the Channel class.
+
 ## [1.0.0-rc15] - 2020-7-16
 
 ### Fixed
@@ -170,7 +180,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc15...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc16...HEAD
+
+[1.0.0-rc16]: https://github.com/an-tao/trantor/compare/v1.0.0-rc15...v1.0.0-rc16
 
 [1.0.0-rc15]: https://github.com/an-tao/trantor/compare/v1.0.0-rc14...v1.0.0-rc15
 
