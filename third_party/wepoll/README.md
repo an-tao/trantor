@@ -30,16 +30,12 @@ diff wepoll.c Wepoll.c
 >             ev->events = EPOLLEVENT;
 >             continue;
 >         }
-2441a2451,2460
+2441a2451,2457
 > void epoll_post_signal(HANDLE port_handle, uint64_t event)
-> 
 > {
 >     ULONG_PTR ev;
-> 
 >     ev = (ULONG_PTR)event;
-> 
 >     PostQueuedCompletionStatus(port_handle, 1, ev, NULL);
 > }
 > 
-
 ```

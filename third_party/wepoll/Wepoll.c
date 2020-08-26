@@ -2449,12 +2449,9 @@ static inline SOCKET ws__ioctl_get_bsp_socket(SOCKET socket, DWORD ioctl)
 }
 
 void epoll_post_signal(HANDLE port_handle, uint64_t event)
-
 {
     ULONG_PTR ev;
-
     ev = (ULONG_PTR)event;
-
     PostQueuedCompletionStatus(port_handle, 1, ev, NULL);
 }
 
