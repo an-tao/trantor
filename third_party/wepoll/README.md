@@ -1,7 +1,8 @@
 ## wepoll
 
-This library is based on [wepoll commit](https://github.com/piscisaureus/wepoll/commit/d87deefada8d61a59164b4c032b04f22c8480707)
-A eventfd-like mechanism is added to it. with the changes we could wake up the `EventLoop` from blocking in the epoll_wait() function.
+This library is based on [wepoll v1.5.8](https://github.com/piscisaureus/wepoll/commit/0598a791bf9cbbf480793d778930fc635b044980).
+
+A eventfd-like mechanism is added to it. After making the changes, we can wake up `trantor::EventLoop` from the epoll_wait() function.
 
 ## Modifications
 
