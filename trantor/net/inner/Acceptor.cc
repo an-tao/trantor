@@ -38,6 +38,10 @@ Acceptor::Acceptor(EventLoop *loop,
     sock_.setReusePort(reUsePort);
     sock_.bindAddress(addr_);
     acceptChannel_.setReadCallback(std::bind(&Acceptor::readCallback, this));
+    if (addr_.toPort() == 0)
+    {
+        addr_ = InetAddress{Socket::getLocalAddr(sock_.fd())};
+    }
 }
 Acceptor::~Acceptor()
 {

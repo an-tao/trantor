@@ -179,6 +179,11 @@ const std::string TcpServer::ipPort() const
     return acceptorPtr_->addr().toIpPort();
 }
 
+const trantor::InetAddress &TcpServer::address() const
+{
+    return acceptorPtr_->addr();
+}
+
 void TcpServer::enableSSL(const std::string &certPath,
                           const std::string &keyPath)
 {
