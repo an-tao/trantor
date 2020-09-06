@@ -83,6 +83,7 @@ class TcpServer : NonCopyable
         return serverName_;
     }
     const std::string ipPort() const;
+    const trantor::InetAddress &address() const;
     EventLoop *getLoop() const
     {
         return loop_;
