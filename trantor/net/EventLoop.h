@@ -41,6 +41,15 @@ enum
     InvalidTimerId = 0
 };
 
+/**
+ * @brief As the name implies, this class represents an event loop that runs in
+ * a perticular thread. The event loop can handle network I/O events and timers
+ * in asynchronous mode.
+ * @note An event loop object always belongs to a separate thread, and there is
+ * one event loop object at most in a thread. We can call an event loop object
+ * the event loop of the thread it belongs to, or call that thread the thread of
+ * the event loop.
+ */
 class EventLoop : NonCopyable
 {
   public:
@@ -48,6 +57,10 @@ class EventLoop : NonCopyable
     ~EventLoop();
     void loop();
     void quit();
+    /**
+     * @brief Assertion that the current thread is the thread to which the event
+     * loop belongs. If the assertion fails, the program aborts.
+     */
     void assertInLoopThread()
     {
         if (!isInLoopThread())
@@ -56,13 +69,34 @@ class EventLoop : NonCopyable
         }
     };
 #ifdef __linux__
+    /**
+     * @brief Make the timer queue works after calling the fork() function.
+     *
+     */
     void resetTimerQueue();
 #endif
+    /**
+     * @brief Make the event loop works after calling the fork() function.
+     *
+     */
     void resetAfterFork();
+    /**
+     * @brief Return true if the current thread is the thread to which the event
+     * loop belongs.
+     *
+     * @return true
+     * @return false
+     */
     bool isInLoopThread() const
     {
         return threadId_ == std::this_thread::get_id();
     };
+    /**
+     * @brief Get the event loop of the current thread. Return nullptr if there
+     * is no event loop in the current thread.
+     *
+     * @return EventLoop*
+     */
     static EventLoop *getEventLoopOfCurrentThread();
     void updateChannel(Channel *chl);
     void removeChannel(Channel *chl);
