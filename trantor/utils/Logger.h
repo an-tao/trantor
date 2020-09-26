@@ -1,7 +1,7 @@
 /**
  *
- *  Logger.h
- *  An Tao
+ *  @file Logger.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -20,8 +20,13 @@
 #include <string.h>
 #include <functional>
 #include <iostream>
+
 namespace trantor
 {
+/**
+ * @brief This class implements log functions.
+ *
+ */
 class Logger : public NonCopyable
 {
   public:
@@ -35,7 +40,11 @@ class Logger : public NonCopyable
         kFatal,
         kNumberOfLogLevels
     };
-    // compile time calculation of basename of source file
+
+    /**
+     * @brief Calculate of basename of source files in compile time.
+     *
+     */
     class SourceFile
     {
       public:
@@ -70,6 +79,14 @@ class Logger : public NonCopyable
     Logger(SourceFile file, int line, LogLevel level, const char *func);
     ~Logger();
     LogStream &stream();
+
+    /**
+     * @brief Set the output function.
+     *
+     * @param outputFunc The function to output a log message.
+     * @param flushFunc The function to flush.
+     * @note Logs are output to the standard output by default.
+     */
     static void setOutputFunction(
         std::function<void(const char *msg, const uint64_t len)> outputFunc,
         std::function<void()> flushFunc)
@@ -78,10 +95,21 @@ class Logger : public NonCopyable
         flushFunc_() = flushFunc;
     }
 
+    /**
+     * @brief Set the log level. Logs below the level are not printed.
+     *
+     * @param level
+     */
     static void setLogLevel(LogLevel level)
     {
         logLevel_() = level;
     }
+
+    /**
+     * @brief Get the current log level.
+     *
+     * @return LogLevel
+     */
     static LogLevel logLevel()
     {
         return logLevel_();

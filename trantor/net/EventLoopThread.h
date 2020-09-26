@@ -1,7 +1,7 @@
 /**
  *
- *  EventLoopThread.h
- *  An Tao
+ *  @file EventLoopThread.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -24,16 +24,37 @@
 
 namespace trantor
 {
+/**
+ * @brief This class represents an event loop thread.
+ *
+ */
 class EventLoopThread : NonCopyable
 {
   public:
     explicit EventLoopThread(const std::string &threadName = "EventLoopThread");
     ~EventLoopThread();
+
+    /**
+     * @brief Wait for the event loop to exit.
+     * @note This method blocks the current thread until the event loop exits.
+     */
     void wait();
+
+    /**
+     * @brief Get the pointer of the event loop of the thread.
+     *
+     * @return EventLoop*
+     */
     EventLoop *getLoop() const
     {
         return loop_;
     }
+
+    /**
+     * @brief Run the event loop of the thread. This method doesn't block the
+     * current thread.
+     *
+     */
     void run();
 
   private:

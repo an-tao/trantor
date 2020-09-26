@@ -1,7 +1,7 @@
 /**
  *
- *  Channel.h
- *  An Tao
+ *  @file Channel.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
