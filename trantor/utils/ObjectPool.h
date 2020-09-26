@@ -1,7 +1,7 @@
 /**
  *
- *  ObjectPool.h
- *  An Tao
+ *  @file ObjectPool.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -22,6 +22,11 @@
 
 namespace trantor
 {
+/**
+ * @brief This class template represents a object pool.
+ *
+ * @tparam T
+ */
 template <typename T>
 class ObjectPool : public NonCopyable,
                    public std::enable_shared_from_this<ObjectPool<T>>

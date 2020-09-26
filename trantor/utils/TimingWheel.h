@@ -1,7 +1,7 @@
 /**
  *
- *  TimingWheel.h
- *  An Tao
+ *  @file TimingWheel.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -29,9 +29,6 @@
 #define TIMING_BUCKET_NUM_PER_WHEEL 100
 #define TIMING_TICK_INTERVAL 1.0
 
-// Four wheels with 200 buckets per wheel means the timing wheel can work with
-// a timeout up to 200^4 seconds, about 50 years;
-
 namespace trantor
 {
 using EntryPtr = std::shared_ptr<void>;
@@ -39,6 +36,11 @@ using EntryPtr = std::shared_ptr<void>;
 using EntryBucket = std::unordered_set<EntryPtr>;
 using BucketQueue = std::deque<EntryBucket>;
 
+/**
+ * @brief This class implements a timer strategy with high performance and low
+ * accuracy. This is usually used internally.
+ *
+ */
 class TimingWheel
 {
   public:
@@ -57,24 +59,24 @@ class TimingWheel
         std::function<void()> cb_;
     };
 
-    /// constructor
-    /// @param loop
-    /// eventloop pointer
-    /// @param ticksInterval
-    /// second
-    /// @param wheelsNum
-    /// number of wheels
-    /// @param bucketsNumPerWheel
-    /// buckets number per wheel
-    /// The max delay of the CacheMap is about
-    /// ticksInterval*(bucketsNumPerWheel^wheelsNum) seconds.
+    /**
+     * @brief Construct a new timing wheel instance.
+     *
+     * @param loop The event loop in which the timing wheel runs.
+     * @param maxTimeout The maximum timeout of the timing wheel.
+     * @param ticksInterval The internal timer tick interval.  It affects the
+     * accuracy of the timing wheel.
+     * @param bucketsNumPerWheel The number of buckets per wheel.
+     * @note The max delay of the timing wheel is about
+     * ticksInterval*(bucketsNumPerWheel^wheelsNum) seconds.
+     * @example Four wheels with 200 buckets per wheel means the timing wheel
+     * can work with a timeout up to 200^4 seconds, about 50 years;
+     */
     TimingWheel(trantor::EventLoop *loop,
                 size_t maxTimeout,
                 float ticksInterval = TIMING_TICK_INTERVAL,
                 size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL);
 
-    // If timeout>0, the value will be erased within the 'timeout' seconds after
-    // the last access
     void insertEntry(size_t delay, EntryPtr entryPtr);
 
     void insertEntryInloop(size_t delay, EntryPtr entryPtr);

@@ -1,7 +1,7 @@
 /**
  *
- *  TaskQueue.h
- *  An Tao
+ *  @file TaskQueue.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -20,6 +20,11 @@
 #include <string>
 namespace trantor
 {
+/**
+ * @brief This class is a pure virtual class that can be implemented as a
+ * SerialTaskQueue or a ConcurrentTaskQueue.
+ *
+ */
 class TaskQueue : public NonCopyable
 {
   public:
@@ -29,6 +34,13 @@ class TaskQueue : public NonCopyable
     {
         return "";
     };
+
+    /**
+     * @brief Run a task in the queue sychronously. This means that the task is
+     * executed before the method returns.
+     *
+     * @param task
+     */
     void syncTaskInQueue(const std::function<void()> &task)
     {
         std::promise<int> prom;

@@ -1,7 +1,7 @@
 /**
  *
- *  WindowsSupport.h
- *  An Tao
+ *  @file WindowsSupport.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *

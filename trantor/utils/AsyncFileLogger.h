@@ -1,7 +1,7 @@
 /**
  *
- *  AsyncFileLogger.h
- *  An Tao
+ *  @file AsyncFileLogger.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -28,17 +28,53 @@ namespace trantor
 {
 using StringPtr = std::shared_ptr<std::string>;
 using StringPtrQueue = std::queue<StringPtr>;
+
+/**
+ * @brief This class implements utility functions for writing logs to files
+ * asynchronously.
+ *
+ */
 class AsyncFileLogger : NonCopyable
 {
   public:
-    // static AsyncFileLogger* getInstance();
+    /**
+     * @brief Write the message to the log file.
+     *
+     * @param msg
+     * @param len
+     */
     void output(const char *msg, const uint64_t len);
+
+    /**
+     * @brief Flush data from memory buffer to the log file.
+     *
+     */
     void flush();
+
+    /**
+     * @brief Start writing log files.
+     *
+     */
     void startLogging();
+
+    /**
+     * @brief Set the size limit of log files. When the log file size reaches
+     * the limit, the log file is switched.
+     *
+     * @param limit
+     */
     void setFileSizeLimit(uint64_t limit)
     {
         sizeLimit_ = limit;
     }
+
+    /**
+     * @brief Set the log file name.
+     *
+     * @param baseName The base name of the log file.
+     * @param extName The extended name of the log file.
+     * @param path The location where the log file is stored.
+     */
     void setFileName(const std::string &baseName,
                      const std::string &extName = ".log",
                      const std::string &path = "./")

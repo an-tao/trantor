@@ -29,80 +29,156 @@ namespace trantor
 class Connector;
 using ConnectorPtr = std::shared_ptr<Connector>;
 class SSLContext;
+/**
+ * @brief This class represents a TCP client.
+ *
+ */
 class TcpClient : NonCopyable
 {
   public:
-    // TcpClient(EventLoop* loop);
-    // TcpClient(EventLoop* loop, const string& host, uint16_t port);
+    /**
+     * @brief Construct a new TCP client instance.
+     *
+     * @param loop The event loop in which the client runs.
+     * @param serverAddr The address of the server.
+     * @param nameArg The name of the client.
+     */
     TcpClient(EventLoop *loop,
               const InetAddress &serverAddr,
               const std::string &nameArg);
-    ~TcpClient();  // force out-line dtor, for scoped_ptr members.
+    ~TcpClient();
 
+    /**
+     * @brief Connect to the server.
+     *
+     */
     void connect();
+
+    /**
+     * @brief Disconnect from the server.
+     *
+     */
     void disconnect();
+
+    /**
+     * @brief Stop connecting to the server.
+     *
+     */
     void stop();
 
+    /**
+     * @brief Get the TCP connection to the server.
+     *
+     * @return TcpConnectionPtr
+     */
     TcpConnectionPtr connection() const
     {
         std::lock_guard<std::mutex> lock(mutex_);
         return connection_;
     }
 
+    /**
+     * @brief Get the event loop.
+     *
+     * @return EventLoop*
+     */
     EventLoop *getLoop() const
     {
         return loop_;
     }
+
+    /**
+     * @brief Check whether the client re-connect to the server.
+     *
+     * @return true
+     * @return false
+     */
     bool retry() const
     {
         return retry_;
     }
+
+    /**
+     * @brief Enable retrying.
+     *
+     */
     void enableRetry()
     {
         retry_ = true;
     }
 
+    /**
+     * @brief Get the name of the client.
+     *
+     * @return const std::string&
+     */
     const std::string &name() const
     {
         return name_;
     }
 
-    /// Set connection callback.
-    /// Not thread safe.
+    /**
+     * @brief Set the connection callback.
+     *
+     * @param cb The callback is called when the connection to the server is
+     * established or closed.
+     */
     void setConnectionCallback(const ConnectionCallback &cb)
     {
         connectionCallback_ = cb;
     }
+    void setConnectionCallback(ConnectionCallback &&cb)
+    {
+        connectionCallback_ = std::move(cb);
+    }
+
+    /**
+     * @brief Set the connection error callback.
+     *
+     * @param cb The callback is called when an error occurs during connecting
+     * to the server.
+     */
     void setConnectionErrorCallback(const ConnectionErrorCallback &cb)
     {
         connectionErrorCallback_ = cb;
     }
-    /// Set message callback.
-    /// Not thread safe.
+
+    /**
+     * @brief Set the message callback.
+     *
+     * @param cb The callback is called when some data is received from the
+     * server.
+     */
     void setMessageCallback(const RecvMessageCallback &cb)
     {
         messageCallback_ = cb;
-    }
-
-    /// Set write complete callback.
-    /// Not thread safe.
-    void setWriteCompleteCallback(const WriteCompleteCallback &cb)
-    {
-        writeCompleteCallback_ = cb;
-    }
-
-    void setConnectionCallback(ConnectionCallback &&cb)
-    {
-        connectionCallback_ = std::move(cb);
     }
     void setMessageCallback(RecvMessageCallback &&cb)
     {
         messageCallback_ = std::move(cb);
     }
+    /// Set write complete callback.
+    /// Not thread safe.
+
+    /**
+     * @brief Set the write complete callback.
+     *
+     * @param cb The callback is called when data to send is written to the
+     * socket.
+     */
+    void setWriteCompleteCallback(const WriteCompleteCallback &cb)
+    {
+        writeCompleteCallback_ = cb;
+    }
     void setWriteCompleteCallback(WriteCompleteCallback &&cb)
     {
         writeCompleteCallback_ = std::move(cb);
     }
+
+    /**
+     * @brief Enable SSL encryption.
+     *
+     */
     void enableSSL();
 
   private:

@@ -1,7 +1,7 @@
 /**
  *
- *  LogStream.h
- *  An Tao
+ *  @file LogStream.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -14,7 +14,7 @@
 
 #pragma once
 
-// token from muduo lib
+// Taken from muduo lib and modified. Classes in this file are used internally.
 #include <trantor/utils/NonCopyable.h>
 
 #include <assert.h>
