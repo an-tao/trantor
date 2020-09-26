@@ -68,9 +68,9 @@ class TimingWheel
      * accuracy of the timing wheel.
      * @param bucketsNumPerWheel The number of buckets per wheel.
      * @note The max delay of the timing wheel is about
-     * ticksInterval*(bucketsNumPerWheel^wheelsNum) seconds. Four wheels with
-     * 200 buckets per wheel means the timing wheel can work with a timeout up
-     * to 200^4 seconds, about 50 years;
+     * ticksInterval*(bucketsNumPerWheel^wheelsNum) seconds.
+     * @example Four wheels with 200 buckets per wheel means the timing wheel
+     * can work with a timeout up to 200^4 seconds, about 50 years;
      */
     TimingWheel(trantor::EventLoop *loop,
                 size_t maxTimeout,

@@ -30,23 +30,24 @@ class EventLoopThreadPool : NonCopyable
     EventLoopThreadPool() = delete;
 
     /**
-     * @brief Construct a new Event Loop Thread Pool object
+     * @brief Construct a new event loop thread pool instance.
      *
      * @param threadNum The number of threads
-     * @param name The name of the EventLoopThread objects.
+     * @param name The name of the EventLoopThreadPool object.
      */
     EventLoopThreadPool(size_t threadNum,
                         const std::string &name = "EventLoopThreadPool");
 
     /**
      * @brief Run all event loops in the pool.
-     * @note This function doesn't block current thread.
+     * @note This function doesn't block the current thread.
      */
     void start();
 
     /**
      * @brief Wait for all event loops in the pool to quit.
      *
+     * @note This function blocks the current thread.
      */
     void wait();
 
