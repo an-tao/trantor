@@ -3,13 +3,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### [1.0.0] - 2020-9-27
+
+### API changes list
+
+- Add the address() method to the TcpServer class.
+
+- Change some internal methods from public to private in the Channel class.
+
+### Changed
+
+- Update the wepoll library.
+
+- Add comments in public header files.
+
 ## [1.0.0-rc16] - 2020-8-15
 
 ### Fixed
 
 - Fix a bug when sending big files on Windows.
 
-### API change list
+### API changes list
 
 - Add updateEvents() method to the Channel class.
 
@@ -21,7 +35,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc14] - 2020-6-14
 
-### API change list
+### API changes list
 
 - Add the moveToCurrentThread() method to EventLoop.
 
@@ -35,13 +49,13 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc13] - 2020-5-23
 
-### API change list
+### API changes list
 
 - Make the Channel class as a part of the public API.
 
 ## [1.0.0-rc12] - 2020-5-22
 
-### API change list
+### API changes list
 
 - Add a method to show if the c-ares library is used
 
@@ -55,7 +69,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc11] - 2020-4-27
 
-### API Change list
+### API changes list
 
 - Add fromDbStringLocal() method to the Date class
 
@@ -67,7 +81,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc10] - 2020-3-28
 
-### API Change list
+### API changes list
 
 - Add the send(const void *, size_t) method to the TcpConnection class
 
@@ -87,7 +101,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc9] - 2020-2-17
 
-### API change list
+### API changes list
 
 - Add support for a delayed SSL handshake
 
@@ -101,7 +115,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc8] - 2019-11-30
 
-### API change list
+### API changes list
 
 - Add the isSSLConnection() method to the TcpConnection class
 
@@ -118,7 +132,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc6] - 2019-10-4
 
-### API change list
+### API changes list
 
 - Add index() interface to the EventLoop class.
 
@@ -130,7 +144,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc5] - 2019-08-24
 
-### API change list
+### API changes list
 
 - Remove the resolve method from the InetAddress class.
 
@@ -141,7 +155,7 @@ All notable changes to this project will be documented in this file.
   
 ## [1.0.0-rc4] - 2019-08-08
 
-### API change list
+### API changes list
 
 - None
 
@@ -155,7 +169,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc3] - 2019-07-30
 
-### API change list
+### API changes list
 
 - TcpConnection::setContext, TcpConnection::getContext, etc.
 - Remove the config.h from public API.
@@ -180,7 +194,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc16...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0...HEAD
+
+[1.0.0]: https://github.com/an-tao/trantor/compare/v1.0.0-rc16...v1.0.0
 
 [1.0.0-rc16]: https://github.com/an-tao/trantor/compare/v1.0.0-rc15...v1.0.0-rc16
 
