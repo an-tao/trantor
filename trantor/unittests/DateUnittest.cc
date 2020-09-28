@@ -23,6 +23,15 @@ TEST(Date, constructorTest)
                      .toCustomedFormattedStringLocal("%Y-%m-%d %H:%M:%S", true)
                      .c_str());
 }
+TEST(Date, DatabaseStringTest)
+{
+    auto now = trantor::Date::now();
+    EXPECT_EQ(now, trantor::Date::fromDbStringLocal(now.toDbStringLocal()));
+    std::string dbString = "2018-01-01 00:00:00.123";
+    auto dbDate = trantor::Date::fromDbStringLocal(dbString);
+    auto ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
+    EXPECT_EQ(ms, 123);
+}
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);

@@ -293,10 +293,19 @@ Date Date::fromDbStringLocal(const std::string &datetime)
             {
                 hour = std::stol(time[0]);
                 minute = std::stol(time[1]);
-                second = std::stol(time[2]);
-                if (3 < time.size())
+                auto seconds = splitString(time[2], ".");
+                second = std::stol(seconds[0]);
+                if (1 < seconds.size())
                 {
-                    microSecond = std::stol(time[3]);
+                    if (seconds[1].length() > 6)
+                    {
+                        seconds[1].resize(6);
+                    }
+                    else if (seconds[1].length() < 6)
+                    {
+                        seconds[1].append(6 - seconds[1].length(), '0');
+                    }
+                    microSecond = std::stol(seconds[1]);
                 }
             }
         }
