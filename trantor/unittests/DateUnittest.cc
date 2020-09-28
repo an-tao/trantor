@@ -31,6 +31,10 @@ TEST(Date, DatabaseStringTest)
     auto dbDate = trantor::Date::fromDbStringLocal(dbString);
     auto ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
     EXPECT_EQ(ms, 123);
+    dbString = "2018-01-01 00:00:00";
+    dbDate = trantor::Date::fromDbStringLocal(dbString);
+    ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
+    EXPECT_EQ(ms, 0);
 }
 int main(int argc, char **argv)
 {
