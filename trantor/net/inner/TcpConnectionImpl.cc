@@ -60,8 +60,10 @@ class SSLContext
     explicit SSLContext(bool useOldTLS)
     {
         ctxPtr_ = SSL_CTX_new(SSLv23_method());
+#ifdef TLS1_2_VERSION
         if (!useOldTLS)
             SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
+#endif
     }
     ~SSLContext()
     {
