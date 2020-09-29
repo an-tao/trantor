@@ -177,9 +177,12 @@ class TcpClient : NonCopyable
 
     /**
      * @brief Enable SSL encryption.
-     *
+     * @param useOldTLS If true, the TLS 1.0 and 1.1 are supported by the
+     * client.
+     * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
+     * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-    void enableSSL();
+    void enableSSL(bool useOldTLS = false);
 
   private:
     /// Not thread safe, but in loop

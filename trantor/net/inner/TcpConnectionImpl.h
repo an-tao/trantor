@@ -1,7 +1,7 @@
 /**
  *
- *  TcpConnectionImpl.h
- *  An Tao
+ *  @file TcpConnectionImpl.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -37,9 +37,10 @@ enum class SSLStatus
 class SSLContext;
 class SSLConn;
 
-std::shared_ptr<SSLContext> newSSLContext();
+std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS);
 std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
-                                                const std::string &keyPath);
+                                                const std::string &keyPath,
+                                                bool useOldTLS);
 // void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
 //                           const std::string &certPath,
 //                           const std::string &keyPath);
@@ -167,7 +168,8 @@ class TcpConnectionImpl : public TcpConnection,
     {
         return bytesReceived_;
     }
-    virtual void startClientEncryption(std::function<void()> callback) override;
+    virtual void startClientEncryption(std::function<void()> callback,
+                                       bool useOldTLS = false) override;
     virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
                                        std::function<void()> callback) override;
     virtual bool isSSLConnection() const override
@@ -305,7 +307,8 @@ class TcpConnectionImpl : public TcpConnection,
         std::function<void()> upgradeCallback_;
     };
     std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
-    void startClientEncryptionInLoop(std::function<void()> &&callback);
+    void startClientEncryptionInLoop(std::function<void()> &&callback,
+                                     bool useOldTLS);
     void startServerEncryptionInLoop(const std::shared_ptr<SSLContext> &ctx,
                                      std::function<void()> &&callback);
 #endif

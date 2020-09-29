@@ -26,7 +26,8 @@ namespace trantor
 {
 class SSLContext;
 std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
-                                                const std::string &keyPath);
+                                                const std::string &keyPath,
+                                                bool useOldTLS = false);
 /**
  * @brief This class represents a TCP connection.
  *
@@ -225,13 +226,14 @@ class TcpConnection
      * @param callback The callback is called when the SSL connection is
      * established.
      */
-    virtual void startClientEncryption(std::function<void()> callback) = 0;
+    virtual void startClientEncryption(std::function<void()> callback,
+                                       bool useOldTLS = false) = 0;
 
     /**
      * @brief Start the SSL encryption on the connection (as a server).
      *
      * @param ctx The SSL context.
-     * @param callback The callback is called when the SSL connection is is
+     * @param callback The callback is called when the SSL connection is
      * established.
      */
     virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,

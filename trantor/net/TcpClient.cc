@@ -199,11 +199,11 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
     }
 }
 
-void TcpClient::enableSSL()
+void TcpClient::enableSSL(bool useOldTLS)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLContext();
+    sslCtxPtr_ = newSSLContext(useOldTLS);
 #else
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
