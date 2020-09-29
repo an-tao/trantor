@@ -59,10 +59,29 @@ class SSLContext
   public:
     explicit SSLContext(bool useOldTLS)
     {
-        ctxPtr_ = SSL_CTX_new(SSLv23_method());
-#ifdef TLS1_2_VERSION
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+        ctxPtr_ = SSL_CTX_new(TLS_method());
         if (!useOldTLS)
             SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
+        else
+        {
+            LOG_WARN << "TLS 1.0/1.1 are enabled. They are considered "
+                        "obsolete, insecure standards and should only be "
+                        "used for legacy purpose.";
+        }
+#else
+        ctxPtr_ = SSL_CTX_new(SSLv23_method());
+        if (!useOldTLS)
+        {
+            SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1);
+            SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1_1);
+        }
+        else
+        {
+            LOG_WARN << "TLS 1.0/1.1 are enabled. They are considered "
+                        "obsolete, insecure standards and should only be "
+                        "used for legacy purpose.";
+        }
 #endif
     }
     ~SSLContext()
