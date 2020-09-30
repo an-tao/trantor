@@ -1,7 +1,7 @@
 /**
  *
- *  TcpConnectionImpl.cc
- *  An Tao
+ *  @file TcpConnectionImpl.cc
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -57,9 +57,32 @@ void initOpenSSL()
 class SSLContext
 {
   public:
-    SSLContext()
+    explicit SSLContext(bool useOldTLS)
     {
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+        ctxPtr_ = SSL_CTX_new(TLS_method());
+        if (!useOldTLS)
+            SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
+        else
+        {
+            LOG_WARN << "TLS 1.0/1.1 are enabled. They are considered "
+                        "obsolete, insecure standards and should only be "
+                        "used for legacy purpose.";
+        }
+#else
         ctxPtr_ = SSL_CTX_new(SSLv23_method());
+        if (!useOldTLS)
+        {
+            SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1);
+            SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1_1);
+        }
+        else
+        {
+            LOG_WARN << "TLS 1.0/1.1 are enabled. They are considered "
+                        "obsolete, insecure standards and should only be "
+                        "used for legacy purpose.";
+        }
+#endif
     }
     ~SSLContext()
     {
@@ -100,15 +123,16 @@ class SSLConn
     SSL *SSL_;
 };
 
-std::shared_ptr<SSLContext> newSSLContext()
+std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS)
 {  // init OpenSSL
     initOpenSSL();
-    return std::make_shared<SSLContext>();
+    return std::make_shared<SSLContext>(useOldTLS);
 }
 std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
-                                                const std::string &keyPath)
+                                                const std::string &keyPath,
+                                                bool useOldTLS)
 {
-    auto ctx = newSSLContext();
+    auto ctx = newSSLContext(useOldTLS);
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
     if (!r)
     {
@@ -148,7 +172,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
 namespace trantor
 {
 std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
-                                                const std::string &keyPath)
+                                                const std::string &keyPath,
+                                                bool useOldTLS)
 {
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
@@ -184,7 +209,8 @@ TcpConnectionImpl::~TcpConnectionImpl()
 }
 #ifdef USE_OPENSSL
 void TcpConnectionImpl::startClientEncryptionInLoop(
-    std::function<void()> &&callback)
+    std::function<void()> &&callback,
+    bool useOldTLS)
 {
     loop_->assertInLoopThread();
     if (isEncrypted_)
@@ -194,7 +220,7 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     }
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
     sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
-    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext();
+    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext(useOldTLS);
     sslEncryptionPtr_->sslPtr_ =
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
     isEncrypted_ = true;
@@ -258,7 +284,8 @@ void TcpConnectionImpl::startServerEncryption(
 
 #endif
 }
-void TcpConnectionImpl::startClientEncryption(std::function<void()> callback)
+void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
+                                              bool useOldTLS)
 {
 #ifndef USE_OPENSSL
     LOG_FATAL << "OpenSSL is not found in your system!";
@@ -266,13 +293,15 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback)
 #else
     if (loop_->isInLoopThread())
     {
-        startClientEncryptionInLoop(std::move(callback));
+        startClientEncryptionInLoop(std::move(callback), useOldTLS);
     }
     else
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
-                            callback = std::move(callback)]() mutable {
-            thisPtr->startClientEncryptionInLoop(std::move(callback));
+                            callback = std::move(callback),
+                            useOldTLS]() mutable {
+            thisPtr->startClientEncryptionInLoop(std::move(callback),
+                                                 useOldTLS);
         });
     }
 #endif

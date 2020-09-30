@@ -199,8 +199,14 @@ class TcpServer : NonCopyable
      *
      * @param certPath The path of the certificate file.
      * @param keyPath The path of the private key file.
+     * @param useOldTLS If true, the TLS 1.0 and 1.1 are supported by the
+     * server.
+     * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
+     * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-    void enableSSL(const std::string &certPath, const std::string &keyPath);
+    void enableSSL(const std::string &certPath,
+                   const std::string &keyPath,
+                   bool useOldTLS = false);
 
   private:
     EventLoop *loop_;

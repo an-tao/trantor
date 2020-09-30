@@ -1,7 +1,7 @@
 /**
  *
- *  TcpServer.cc
- *  An Tao
+ *  @file TcpServer.cc
+ *  @author An Tao
  *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  https://github.com/an-tao/trantor
@@ -185,11 +185,12 @@ const trantor::InetAddress &TcpServer::address() const
 }
 
 void TcpServer::enableSSL(const std::string &certPath,
-                          const std::string &keyPath)
+                          const std::string &keyPath,
+                          bool useOldTLS)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLServerContext(certPath, keyPath);
+    sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS);
 #else
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
