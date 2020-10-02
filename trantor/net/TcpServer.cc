@@ -92,12 +92,13 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     }
     newPtr->setRecvMsgCallback(recvMessageCallback_);
 
-    newPtr->setConnectionCallback([=](const TcpConnectionPtr &connectionPtr) {
-        if (connectionCallback_)
-            connectionCallback_(connectionPtr);
-    });
+    newPtr->setConnectionCallback(
+        [this](const TcpConnectionPtr &connectionPtr) {
+            if (connectionCallback_)
+                connectionCallback_(connectionPtr);
+        });
     newPtr->setWriteCompleteCallback(
-        [=](const TcpConnectionPtr &connectionPtr) {
+        [this](const TcpConnectionPtr &connectionPtr) {
             if (writeCompleteCallback_)
                 writeCompleteCallback_(connectionPtr);
         });
@@ -108,7 +109,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 
 void TcpServer::start()
 {
-    loop_->runInLoop([=]() {
+    loop_->runInLoop([this]() {
         assert(!started_);
         started_ = true;
         if (idleTimeout_ > 0)
@@ -165,7 +166,7 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
     // loop_->assertInLoopThread();
-    loop_->runInLoop([=]() {
+    loop_->runInLoop([this, connectionPtr]() {
         size_t n = connSet_.erase(connectionPtr);
         (void)n;
         assert(n == 1);

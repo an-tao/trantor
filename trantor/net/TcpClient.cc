@@ -23,23 +23,12 @@
 using namespace trantor;
 using namespace std::placeholders;
 
-// TcpClient::TcpClient(EventLoop* loop)
-//   : loop_(loop)
-// {
-// }
-
-// TcpClient::TcpClient(EventLoop* loop, const string& host, uint16_t port)
-//   : loop_(CHECK_NOTNULL(loop)),
-//     serverAddr_(host, port)
-// {
-// }
-
 namespace trantor
 {
-void removeConnector(const ConnectorPtr &)
-{
-    // connector->
-}
+// void removeConnector(const ConnectorPtr &)
+// {
+//     // connector->
+// }
 #ifndef _WIN32
 TcpClient::IgnoreSigPipe TcpClient::initObj;
 #endif
@@ -73,7 +62,7 @@ TcpClient::TcpClient(EventLoop *loop,
 {
     connector_->setNewConnectionCallback(
         std::bind(&TcpClient::newConnection, this, _1));
-    connector_->setErrorCallback([=]() {
+    connector_->setErrorCallback([this]() {
         if (connectionErrorCallback_)
         {
             connectionErrorCallback_();
@@ -109,7 +98,6 @@ TcpClient::~TcpClient()
     {
         /// TODO need test in this condition
         connector_->stop();
-        loop_->runAfter(1, [=]() { trantor::removeConnector(connector_); });
     }
 }
 
