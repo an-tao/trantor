@@ -55,11 +55,11 @@ int main(int argc, char *argv[])
         });
     int counter = 0;
     server.setConnectionCallback(
-        [=, &counter](const TcpConnectionPtr &connPtr) {
+        [argv, &counter](const TcpConnectionPtr &connPtr) {
             if (connPtr->connected())
             {
                 LOG_DEBUG << "New connection";
-                std::thread t([=, &counter]() {
+                std::thread t([connPtr, argv, &counter]() {
                     for (int i = 0; i < 5; ++i)
                     {
                         connPtr->sendFile(argv[1]);

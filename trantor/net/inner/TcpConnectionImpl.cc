@@ -605,20 +605,22 @@ void TcpConnectionImpl::connectEstablished()
     }
     else
     {
-        loop_->runInLoop([=]() {
+        loop_->runInLoop([thisPtr = shared_from_this()]() {
             LOG_TRACE << "connectEstablished";
-            assert(status_ == ConnStatus::Connecting);
-            ioChannelPtr_->tie(shared_from_this());
-            ioChannelPtr_->enableReading();
-            status_ = ConnStatus::Connected;
-            if (sslEncryptionPtr_->isServer_)
+            assert(thisPtr->status_ == ConnStatus::Connecting);
+            thisPtr->ioChannelPtr_->tie(thisPtr);
+            thisPtr->ioChannelPtr_->enableReading();
+            thisPtr->status_ = ConnStatus::Connected;
+            if (thisPtr->sslEncryptionPtr_->isServer_)
             {
-                SSL_set_accept_state(sslEncryptionPtr_->sslPtr_->get());
+                SSL_set_accept_state(
+                    thisPtr->sslEncryptionPtr_->sslPtr_->get());
             }
             else
             {
-                ioChannelPtr_->enableWriting();
-                SSL_set_connect_state(sslEncryptionPtr_->sslPtr_->get());
+                thisPtr->ioChannelPtr_->enableWriting();
+                SSL_set_connect_state(
+                    thisPtr->sslEncryptionPtr_->sslPtr_->get());
             }
         });
     }

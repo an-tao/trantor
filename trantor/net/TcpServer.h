@@ -188,7 +188,7 @@ class TcpServer : NonCopyable
      */
     void kickoffIdleConnections(size_t timeout)
     {
-        loop_->runInLoop([=]() {
+        loop_->runInLoop([this, timeout]() {
             assert(!started_);
             idleTimeout_ = timeout;
         });

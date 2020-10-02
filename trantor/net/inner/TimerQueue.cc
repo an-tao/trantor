@@ -1,7 +1,7 @@
 /**
  *
- *  TimerQueue.cc
- *  An Tao
+ *  @file TimerQueue.cc
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -190,7 +190,7 @@ TimerId TimerQueue::addTimer(const TimerCallback &cb,
     std::shared_ptr<Timer> timerPtr =
         std::make_shared<Timer>(cb, when, interval);
 
-    loop_->runInLoop([=]() { addTimerInLoop(timerPtr); });
+    loop_->runInLoop([this, timerPtr]() { addTimerInLoop(timerPtr); });
     return timerPtr->id();
 }
 TimerId TimerQueue::addTimer(TimerCallback &&cb,
@@ -200,7 +200,7 @@ TimerId TimerQueue::addTimer(TimerCallback &&cb,
     std::shared_ptr<Timer> timerPtr =
         std::make_shared<Timer>(std::move(cb), when, interval);
 
-    loop_->runInLoop([=]() { addTimerInLoop(timerPtr); });
+    loop_->runInLoop([this, timerPtr]() { addTimerInLoop(timerPtr); });
     return timerPtr->id();
 }
 void TimerQueue::addTimerInLoop(const TimerPtr &timer)
@@ -218,7 +218,7 @@ void TimerQueue::addTimerInLoop(const TimerPtr &timer)
 
 void TimerQueue::invalidateTimer(TimerId id)
 {
-    loop_->runInLoop([=]() { timerIdSet_.erase(id); });
+    loop_->runInLoop([this, id]() { timerIdSet_.erase(id); });
 }
 
 bool TimerQueue::insert(const TimerPtr &timerPtr)
