@@ -17,7 +17,7 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/net/EventLoop.h>
 
-#if (defined(__unix__) && !defined(__linux__)) || \
+#if (defined(__unix__) && !defined(__linux__) && !defined(__sun)) || \
     (defined(__APPLE__) && defined(__MACH__))
 #define USE_KQUEUE
 #include <memory>

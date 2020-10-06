@@ -352,7 +352,8 @@ Date::Date(unsigned int year,
     tm.tm_min = minute;
     tm.tm_sec = second;
     epoch = mktime(&tm);
-    microSecondsSinceEpoch_ = epoch * MICRO_SECONDS_PRE_SEC + microSecond;
+    microSecondsSinceEpoch_ =
+        static_cast<int64_t>(epoch) * MICRO_SECONDS_PRE_SEC + microSecond;
 }
 
 }  // namespace trantor

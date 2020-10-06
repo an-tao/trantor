@@ -228,7 +228,9 @@ void KQueue::update(Channel *channel)
 #else
 KQueue::KQueue(EventLoop *loop) : Poller(loop)
 {
+#ifndef __sun
     assert(false);
+#endif
 }
 KQueue::~KQueue()
 {

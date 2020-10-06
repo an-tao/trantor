@@ -92,7 +92,7 @@ target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 Rpcrt4)
 else()
-  target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
+  target_link_libraries(${PROJECT_NAME} PRIVATE pthread $<$<PLATFORM_ID:SunOS>:socket>)
 endif(WIN32)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
