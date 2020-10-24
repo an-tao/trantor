@@ -91,7 +91,10 @@ target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
 
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 Rpcrt4)
-else()
+  if(OpenSSL_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Crypt32 Secur32)
+  endif(OpenSSL_FOUND)
+else(WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
 endif(WIN32)
 

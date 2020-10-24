@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### [1.1.0] - 2020-10-24
+
+### Changed
+
+- Disable TLS 1.0 and 1.1 by default.
+
+- Use explicit lambda capture lists.
+
+### Fixed
+
+- Fix a bug in the Date::fromDbStringLocal() method.
+
 ### [1.0.0] - 2020-9-27
 
 ### API changes list
@@ -194,7 +206,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.1.0...HEAD
+
+[1.1.0]: https://github.com/an-tao/trantor/compare/v1.0.0...v1.1.0
 
 [1.0.0]: https://github.com/an-tao/trantor/compare/v1.0.0-rc16...v1.0.0
 
