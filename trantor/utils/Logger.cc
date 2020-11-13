@@ -108,6 +108,11 @@ void Logger::formatTime()
     {
         threadId_ = pthread_getthreadid_np();
     }
+#elif defined __OpenBSD__
+    if (threadId_ == 0)
+    {
+        threadId_ = getthrid();
+    }
 #elif defined _WIN32
     if (threadId_ == 0)
     {
