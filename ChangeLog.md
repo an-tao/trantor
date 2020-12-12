@@ -3,7 +3,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### [1.1.0] - 2020-10-24
+## [1.1.1] - 2020-12-12
+
+### Changed
+
+- Add Openbsd support.
+
+## [1.1.0] - 2020-10-24
 
 ### Changed
 
@@ -15,7 +21,7 @@ All notable changes to this project will be documented in this file.
 
 - Fix a bug in the Date::fromDbStringLocal() method.
 
-### [1.0.0] - 2020-9-27
+## [1.0.0] - 2020-9-27
 
 ### API changes list
 
@@ -206,7 +212,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.1.1...HEAD
+
+[1.1.1]: https://github.com/an-tao/trantor/compare/v1.1.0...v1.1.1
 
 [1.1.0]: https://github.com/an-tao/trantor/compare/v1.0.0...v1.1.0
 
