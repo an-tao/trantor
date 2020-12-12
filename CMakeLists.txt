@@ -42,6 +42,12 @@ target_include_directories(
           ${PROJECT_SOURCE_DIR}/trantor/net/inner
           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/wepoll>)
 
+if(WIN32)
+  target_compile_definitions(
+    ${PROJECT_NAME}
+    PUBLIC -D_WIN32_WINNT=0x0601)
+endif(WIN32)
+
 set(TRANTOR_SOURCES
     trantor/utils/AsyncFileLogger.cc
     trantor/utils/ConcurrentTaskQueue.cc
