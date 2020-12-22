@@ -178,12 +178,16 @@ class Logger : public NonCopyable
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
 #define LOG_SYSERR trantor::Logger(__FILE__, __LINE__, true).stream()
 
+#define LOG_TRACE_IF(cond)                                                  \
+    if ((trantor::Logger::logLevel() <= trantor::Logger::kTrace) && (cond)) \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__)  \
+        .stream()
 #define LOG_DEBUG_IF(cond)                                                \
-    if ((cond)&&(Tensor::Logger::logLevel() <= Tensor::Logger::kDebug)) \
+    if ((Tensor::Logger::logLevel() <= Tensor::Logger::kDebug) && (cond)) \
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kDebug, __func__)  \
         .stream()
 #define LOG_INFO_IF(cond)                                                \
-    if ((cond)&&(Tensor::Logger::logLevel() <= Tensor::Logger::kInfo)) \
+    if ((Tensor::Logger::logLevel() <= Tensor::Logger::kInfo) && (cond)) \
     Tensor::Logger(__FILE__, __LINE__).stream()
 #define LOG_WARN_IF(cond) \
     if (cond)             \
@@ -196,6 +200,10 @@ class Logger : public NonCopyable
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kFatal).stream()
 
 #ifdef NDEBUG
+#define DLOG_TRACE                                                         \
+    if (0)                                                                 \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
+        .stream()
 #define DLOG_DEBUG                                                       \
     if (0)                                                               \
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kDebug, __func__) \
@@ -213,6 +221,10 @@ class Logger : public NonCopyable
     if (0)         \
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kFatal).stream()
 
+#define DLOG_TRACE_IF(cond)                                                \
+    if (0)                                                                 \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
+        .stream()
 #define DLOG_DEBUG_IF(cond)                                              \
     if (0)                                                               \
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kDebug, __func__) \
@@ -230,6 +242,10 @@ class Logger : public NonCopyable
     if (0)                  \
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kFatal).stream()
 #else
+#define DLOG_TRACE                                                         \
+    if (trantor::Logger::logLevel() <= trantor::Logger::kTrace)            \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
+        .stream()
 #define DLOG_DEBUG                                                       \
     if (Tensor::Logger::logLevel() <= Tensor::Logger::kDebug)            \
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kDebug, __func__) \
@@ -244,16 +260,16 @@ class Logger : public NonCopyable
 #define DLOG_FATAL \
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kFatal).stream()
 
-#define LOG_TRACE_IF(cond)                                                 \
-    if ((cond)&&(trantor::Logger::logLevel() <= trantor::Logger::kTrace))  \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
+#define DLOG_TRACE_IF(cond)                                                 \
+    if ((trantor::Logger::logLevel() <= trantor::Logger::kTrace) && (cond)) \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__)  \
         .stream()
 #define DLOG_DEBUG_IF(cond)                                               \
-    if ((cond)&&(Tensor::Logger::logLevel() <= Tensor::Logger::kDebug))   \
+    if ((Tensor::Logger::logLevel() <= Tensor::Logger::kDebug) && (cond)) \
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kDebug, __func__)  \
         .stream()
-#define DLOG_INFO_IF(cond)                                                \
-    if ((cond)&&(Tensor::Logger::logLevel() <= Tensor::Logger::kInfo))    \
+#define DLOG_INFO_IF(cond)                                               \
+    if ((Tensor::Logger::logLevel() <= Tensor::Logger::kInfo) && (cond)) \
     Tensor::Logger(__FILE__, __LINE__).stream()
 #define DLOG_WARN_IF(cond) \
     if (cond)              \
