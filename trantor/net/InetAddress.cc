@@ -188,7 +188,7 @@ std::string InetAddress::toIp() const
     char buf[64];
     if (addr_.sin_family == AF_INET)
     {
-#if defined _MSC_VER && _MSC_VER == 1900
+#if defined _MSC_VER && _MSC_VER >= 1900
         ::inet_ntop(AF_INET, (PVOID)&addr_.sin_addr, buf, sizeof(buf));
 #else
         ::inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
@@ -196,7 +196,7 @@ std::string InetAddress::toIp() const
     }
     else if (addr_.sin_family == AF_INET6)
     {
-#if defined _MSC_VER && _MSC_VER == 1900
+#if defined _MSC_VER && _MSC_VER >= 1900
         ::inet_ntop(AF_INET6, (PVOID)&addr6_.sin6_addr, buf, sizeof(buf));
 #else
         ::inet_ntop(AF_INET6, &addr6_.sin6_addr, buf, sizeof(buf));
