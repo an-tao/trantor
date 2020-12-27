@@ -50,6 +50,7 @@ jobs:
         sudo apt update
         # These aren't available or don't work well in vcpkg
         sudo apt install openssl libssl-dev
+        sudo apt install dos2unix
 
     - name: install gtest
       run: |
@@ -86,3 +87,9 @@ jobs:
       run: |
         cd build
         make test
+
+    - name: Lint
+      if: matrix.os == 'ubuntu-20.04'
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      shell: bash
+      run: ./format.sh && git diff --exit-code
