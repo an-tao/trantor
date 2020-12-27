@@ -50,6 +50,7 @@ jobs:
         sudo apt update
         # These aren't available or don't work well in vcpkg
         sudo apt install openssl libssl-dev
+        sudo apt install dos2unix
 
     - name: install gtest
       run: |
