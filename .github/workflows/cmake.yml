@@ -86,3 +86,9 @@ jobs:
       run: |
         cd build
         make test
+
+    - name: Lint
+      if: runner.os == 'Linux'
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      shell: bash
+      run: ./format.sh && git diff --exit-code
