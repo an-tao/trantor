@@ -86,6 +86,13 @@ class MpscQueue : public NonCopyable
         return true;
     }
 
+    bool empty()
+    {
+        BufferNode *tail = tail_.load(std::memory_order_relaxed);
+        BufferNode *next = tail->next_.load(std::memory_order_acquire);
+        return next == nullptr;
+    }
+
   private:
     struct BufferNode
     {
