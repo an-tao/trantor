@@ -285,8 +285,9 @@ void EventLoop::doRunInLoopFuncs()
 {
     callingFuncs_ = true;
     {
-        // the destructor for the Func may itself insert a new entry into the queue
-        while (! funcs_.empty())
+        // the destructor for the Func may itself insert a new entry into the
+        // queue
+        while (!funcs_.empty())
         {
             Func func;
             while (funcs_.dequeue(func))
