@@ -3,6 +3,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2021-01-16
+
+### API changes list
+
+- Add LOG_IF and DLOG like glog lib.
+
+### Changed
+
+- Enable github actions.
+
+- Add support for VS2019.
+
+- Modify the LockFreeQueue.
+
+### Fixed
+
+- Fix MinGW error with inet_ntop and inet_pton.
+
+- Fix a macro regression when using MSVC.
+
 ## [1.1.1] - 2020-12-12
 
 ### Changed
@@ -212,7 +232,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.2.0...HEAD
+
+[1.2.0]: https://github.com/an-tao/trantor/compare/v1.1.1...v1.2.0
 
 [1.1.1]: https://github.com/an-tao/trantor/compare/v1.1.0...v1.1.1
 
