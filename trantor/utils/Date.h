@@ -166,6 +166,16 @@ class Date
     {
         return microSecondsSinceEpoch_;
     }
+  
+    /**
+     * @brief Get the number of seconds since 1970-01-01 00:00.
+     *
+     * @return uint32_t
+     */
+    uint32_t secondsSinceEpoch() const
+    {
+        return secondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC;
+    }
 
     /**
      * @brief Get the tm struct for the time point.
