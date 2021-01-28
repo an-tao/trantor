@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <string.h>  // memcpy
 #include <string>
+#include <cstring>
 
 namespace trantor
 {
@@ -82,7 +83,7 @@ class FixedBuffer : NonCopyable
     }
     void bzero()
     {
-        memset(data_, 0, sizeof(data_));
+        std::memset(data_, 0, sizeof(data_));
     }
 
     // for used by GDB
