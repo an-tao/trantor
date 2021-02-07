@@ -17,6 +17,7 @@
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/TimingWheel.h>
 #include <list>
+#include <mutex>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -37,7 +38,7 @@ enum class SSLStatus
 class SSLContext;
 class SSLConn;
 
-std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS);
+std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS, bool validateCert);
 std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
                                                 const std::string &keyPath,
                                                 bool useOldTLS);
@@ -93,7 +94,8 @@ class TcpConnectionImpl : public TcpConnection,
                       const InetAddress &localAddr,
                       const InetAddress &peerAddr,
                       const std::shared_ptr<SSLContext> &ctxPtr,
-                      bool isServer = true);
+                      bool isServer = true,
+                      bool validateCert = true);
 #endif
     virtual ~TcpConnectionImpl();
     virtual void send(const char *msg, size_t len) override;
@@ -295,6 +297,7 @@ class TcpConnectionImpl : public TcpConnection,
 #ifdef USE_OPENSSL
   private:
     void doHandshaking();
+    bool validatePeerCertificate();
     struct SSLEncryption
     {
         SSLStatus statusOfSSL_ = SSLStatus::Handshaking;

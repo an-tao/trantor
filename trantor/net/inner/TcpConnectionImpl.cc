@@ -57,7 +57,7 @@ void initOpenSSL()
 class SSLContext
 {
   public:
-    explicit SSLContext(bool useOldTLS)
+    explicit SSLContext(bool useOldTLS, bool enableValidtion)
     {
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
         ctxPtr_ = SSL_CTX_new(TLS_method());
@@ -83,6 +83,10 @@ class SSLContext
                         "used for legacy purpose.";
         }
 #endif
+        if (enableValidtion)
+            SSL_CTX_load_verify_locations(ctxPtr_,
+                                          "/etc/ssl/cert.pem",
+                                          nullptr);
     }
     ~SSLContext()
     {
@@ -123,16 +127,16 @@ class SSLConn
     SSL *SSL_;
 };
 
-std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS)
+std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS, bool validateCert)
 {  // init OpenSSL
     initOpenSSL();
-    return std::make_shared<SSLContext>(useOldTLS);
+    return std::make_shared<SSLContext>(useOldTLS, validateCert);
 }
 std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
                                                 const std::string &keyPath,
                                                 bool useOldTLS)
 {
-    auto ctx = newSSLContext(useOldTLS);
+    auto ctx = newSSLContext(useOldTLS, false);
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
     if (!r)
     {
@@ -220,9 +224,13 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     }
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
     sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
-    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext(useOldTLS);
+    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext(useOldTLS, validateCert_);
     sslEncryptionPtr_->sslPtr_ =
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+    if (sslEncryptionPtr_->isServer_ == false)
+        SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
+                       SSL_VERIFY_NONE,
+                       nullptr);
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
@@ -252,6 +260,10 @@ void TcpConnectionImpl::startServerEncryptionInLoop(
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
+    if (sslEncryptionPtr_->isServer_ == false)
+        SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
+                       SSL_VERIFY_NONE,
+                       nullptr);
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
     (void)r;
     assert(r);
@@ -1372,7 +1384,8 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      const InetAddress &localAddr,
                                      const InetAddress &peerAddr,
                                      const std::shared_ptr<SSLContext> &ctxPtr,
-                                     bool isServer)
+                                     bool isServer,
+                                     bool validateCert)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
       socketPtr_(new Socket(socketfd)),
@@ -1395,6 +1408,11 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
     sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get());
     sslEncryptionPtr_->isServer_ = isServer;
+    validateCert_ = validateCert;
+    if (isServer == false)
+        SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
+                       SSL_VERIFY_NONE,
+                       nullptr);
     assert(sslEncryptionPtr_->sslPtr_);
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketfd);
     (void)r;
@@ -1402,6 +1420,35 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     isEncrypted_ = true;
     sslEncryptionPtr_->sendBufferPtr_ =
         std::make_unique<std::array<char, 8192>>();
+}
+
+bool TcpConnectionImpl::validatePeerCertificate()
+{
+    std::cerr << "Validating cert\n";
+    LOG_TRACE << "Validating peer cerificate";
+    assert(sslEncryptionPtr_ != nullptr);
+    // assert(sslEncryptionPtr_->sslCtxPtr_ != nullptr);
+    assert(sslEncryptionPtr_->sslPtr_ != nullptr);
+    SSL *ssl = sslEncryptionPtr_->sslPtr_->get();
+
+    auto result = SSL_get_verify_result(ssl);
+    // HACK: google.com is self signed with their root CA...
+    if (result != X509_V_OK && result != X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
+    {
+        LOG_DEBUG << "cert error code: " << result;
+        LOG_ERROR << "Server certificate is not valid";
+        return false;
+    }
+
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if (cert == nullptr)
+    {
+        LOG_ERROR << "Unable to obtain peer certificate";
+        return false;
+    }
+
+    X509_free(cert);
+    return true;
 }
 
 void TcpConnectionImpl::doHandshaking()
@@ -1412,6 +1459,19 @@ void TcpConnectionImpl::doHandshaking()
     LOG_TRACE << "hand shaking: " << r;
     if (r == 1)
     {
+        std::cerr << "Validate Cert is: " << (int)validateCert_ << std::endl;
+        if (validateCert_ && sslEncryptionPtr_->isServer_ == false)
+        {
+            std::cerr << "Validating certs\n";
+            if (validatePeerCertificate() == false)
+            {
+                LOG_ERROR << "SSL certificate validation failed.";
+                ioChannelPtr_->disableReading();
+                sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
+                return;
+            }
+        }
+        std::cerr << "CONNECTED!" << (int)validateCert_ << std::endl;
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::Connected;
         if (sslEncryptionPtr_->isUpgrade_)
         {
