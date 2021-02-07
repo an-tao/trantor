@@ -23,6 +23,7 @@
 #include <unistd.h>
 #else
 #include <WinSock2.h>
+#include <Windows.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -52,6 +53,43 @@ void initOpenSSL()
         SSL_load_error_strings();
         OpenSSL_add_all_algorithms();
     });
+#endif
+
+#ifdef _WIN32
+    namespace internal
+    {
+    // Code yanked from stackoverflow
+    // https://stackoverflow.com/questions/9507184/can-openssl-on-windows-use-the-system-certificate-store
+    inline bool loadWindowsSystemCert(X509_STORE *store)
+    {
+        auto hStore = CertOpenSystemStoreW((HCRYPTPROV_LEGACY)NULL, L"ROOT");
+
+        if (!hStore)
+        {
+            return false;
+        }
+
+        PCCERT_CONTEXT pContext = NULL;
+        while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) !=
+               nullptr)
+        {
+            auto encoded_cert =
+                static_cast<const unsigned char *>(pContext->pbCertEncoded);
+
+            auto x509 = d2i_X509(NULL, &encoded_cert, pContext->cbCertEncoded);
+            if (x509)
+            {
+                X509_STORE_add_cert(store, x509);
+                X509_free(x509);
+            }
+        }
+
+        CertFreeCertificateContext(pContext);
+        CertCloseStore(hStore, 0);
+
+        return true;
+    }
+    }  // namespace internal
 #endif
 }
 class SSLContext
@@ -83,10 +121,13 @@ class SSLContext
                         "used for legacy purpose.";
         }
 #endif
+#ifdef _WIN32
         if (enableValidtion)
-            SSL_CTX_load_verify_locations(ctxPtr_,
-                                          "/etc/ssl/cert.pem",
-                                          nullptr);
+            internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctxPtr_));
+#else
+        if (enableValidtion)
+            SSL_CTX_set_default_verify_paths(ctxPtr_);
+#endif
     }
     ~SSLContext()
     {
@@ -1424,7 +1465,6 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 
 bool TcpConnectionImpl::validatePeerCertificate()
 {
-    std::cerr << "Validating cert\n";
     LOG_TRACE << "Validating peer cerificate";
     assert(sslEncryptionPtr_ != nullptr);
     // assert(sslEncryptionPtr_->sslCtxPtr_ != nullptr);
@@ -1447,6 +1487,8 @@ bool TcpConnectionImpl::validatePeerCertificate()
         return false;
     }
 
+    // TODO: Validate cert domain
+
     X509_free(cert);
     return true;
 }
@@ -1459,10 +1501,10 @@ void TcpConnectionImpl::doHandshaking()
     LOG_TRACE << "hand shaking: " << r;
     if (r == 1)
     {
-        std::cerr << "Validate Cert is: " << (int)validateCert_ << std::endl;
+        // Client's are commonly do not have certificates. Let's not validate
+        // that
         if (validateCert_ && sslEncryptionPtr_->isServer_ == false)
         {
-            std::cerr << "Validating certs\n";
             if (validatePeerCertificate() == false)
             {
                 LOG_ERROR << "SSL certificate validation failed.";
@@ -1471,7 +1513,6 @@ void TcpConnectionImpl::doHandshaking()
                 return;
             }
         }
-        std::cerr << "CONNECTED!" << (int)validateCert_ << std::endl;
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::Connected;
         if (sslEncryptionPtr_->isUpgrade_)
         {
