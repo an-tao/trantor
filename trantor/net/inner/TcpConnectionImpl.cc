@@ -40,6 +40,43 @@ using namespace trantor;
 #ifdef USE_OPENSSL
 namespace trantor
 {
+#ifdef _WIN32
+namespace internal
+{
+// Code yanked from stackoverflow
+// https://stackoverflow.com/questions/9507184/can-openssl-on-windows-use-the-system-certificate-store
+inline bool loadWindowsSystemCert(X509_STORE *store)
+{
+    auto hStore = CertOpenSystemStoreW((HCRYPTPROV_LEGACY)NULL, L"ROOT");
+
+    if (!hStore)
+    {
+        return false;
+    }
+
+    PCCERT_CONTEXT pContext = NULL;
+    while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) !=
+           nullptr)
+    {
+        auto encoded_cert =
+            static_cast<const unsigned char *>(pContext->pbCertEncoded);
+
+        auto x509 = d2i_X509(NULL, &encoded_cert, pContext->cbCertEncoded);
+        if (x509)
+        {
+            X509_STORE_add_cert(store, x509);
+            X509_free(x509);
+        }
+    }
+
+    CertFreeCertificateContext(pContext);
+    CertCloseStore(hStore, 0);
+
+    return true;
+}
+}  // namespace internal
+#endif
+
 void initOpenSSL()
 {
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
@@ -54,44 +91,8 @@ void initOpenSSL()
         OpenSSL_add_all_algorithms();
     });
 #endif
-
-#ifdef _WIN32
-    namespace internal
-    {
-    // Code yanked from stackoverflow
-    // https://stackoverflow.com/questions/9507184/can-openssl-on-windows-use-the-system-certificate-store
-    inline bool loadWindowsSystemCert(X509_STORE *store)
-    {
-        auto hStore = CertOpenSystemStoreW((HCRYPTPROV_LEGACY)NULL, L"ROOT");
-
-        if (!hStore)
-        {
-            return false;
-        }
-
-        PCCERT_CONTEXT pContext = NULL;
-        while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) !=
-               nullptr)
-        {
-            auto encoded_cert =
-                static_cast<const unsigned char *>(pContext->pbCertEncoded);
-
-            auto x509 = d2i_X509(NULL, &encoded_cert, pContext->cbCertEncoded);
-            if (x509)
-            {
-                X509_STORE_add_cert(store, x509);
-                X509_free(x509);
-            }
-        }
-
-        CertFreeCertificateContext(pContext);
-        CertCloseStore(hStore, 0);
-
-        return true;
-    }
-    }  // namespace internal
-#endif
 }
+
 class SSLContext
 {
   public:
