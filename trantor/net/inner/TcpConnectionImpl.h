@@ -171,7 +171,8 @@ class TcpConnectionImpl : public TcpConnection,
         return bytesReceived_;
     }
     virtual void startClientEncryption(std::function<void()> callback,
-                                       bool useOldTLS = false) override;
+                                       bool useOldTLS = false,
+                                       bool validateCert = true) override;
     virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
                                        std::function<void()> callback) override;
     virtual bool isSSLConnection() const override
@@ -221,6 +222,11 @@ class TcpConnectionImpl : public TcpConnection,
     {
         closeCallback_ = cb;
     }
+    void setSSLErrorCallback(const SSLErrorCallback &cb)
+    {
+        sslErrorCallback_ = cb;
+    }
+
     void connectDestroyed();
     virtual void connectEstablished();
 
@@ -271,6 +277,7 @@ class TcpConnectionImpl : public TcpConnection,
     CloseCallback closeCallback_;
     WriteCompleteCallback writeCompleteCallback_;
     HighWaterMarkCallback highWaterMarkCallback_;
+    SSLErrorCallback sslErrorCallback_;
     void handleClose();
     void handleError();
     // virtual void sendInLoop(const std::string &msg);
@@ -311,7 +318,8 @@ class TcpConnectionImpl : public TcpConnection,
     };
     std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
     void startClientEncryptionInLoop(std::function<void()> &&callback,
-                                     bool useOldTLS);
+                                     bool useOldTLS,
+                                     bool validateCert);
     void startServerEncryptionInLoop(const std::shared_ptr<SSLContext> &ctx,
                                      std::function<void()> &&callback);
 #endif

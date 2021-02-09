@@ -176,6 +176,19 @@ class TcpClient : NonCopyable
     }
 
     /**
+     * @brief Set the callback for errors of SSL
+     * @param cb The callback is called when an SSL error occurs.
+     */
+    void setSSLErrorCallback(const SSLErrorCallback &cb)
+    {
+        sslErrorCallback_ = cb;
+    }
+    void setSSLErrorCallback(SSLErrorCallback &&cb)
+    {
+        sslErrorCallback_ = std::move(cb);
+    }
+
+    /**
      * @brief Enable SSL encryption.
      * @param useOldTLS If true, the TLS 1.0 and 1.1 are supported by the
      * client.
@@ -199,6 +212,7 @@ class TcpClient : NonCopyable
     ConnectionErrorCallback connectionErrorCallback_;
     RecvMessageCallback messageCallback_;
     WriteCompleteCallback writeCompleteCallback_;
+    SSLErrorCallback sslErrorCallback_;
     std::atomic_bool retry_;    // atomic
     std::atomic_bool connect_;  // atomic
     // always in loop thread

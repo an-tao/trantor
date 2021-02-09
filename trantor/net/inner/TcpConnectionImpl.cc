@@ -256,8 +256,10 @@ TcpConnectionImpl::~TcpConnectionImpl()
 #ifdef USE_OPENSSL
 void TcpConnectionImpl::startClientEncryptionInLoop(
     std::function<void()> &&callback,
-    bool useOldTLS)
+    bool useOldTLS,
+    bool validateCert)
 {
+    validateCert_ = validateCert;
     loop_->assertInLoopThread();
     if (isEncrypted_)
     {
@@ -339,7 +341,8 @@ void TcpConnectionImpl::startServerEncryption(
 #endif
 }
 void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
-                                              bool useOldTLS)
+                                              bool useOldTLS,
+                                              bool validateCert)
 {
 #ifndef USE_OPENSSL
     LOG_FATAL << "OpenSSL is not found in your system!";
@@ -347,15 +350,19 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
 #else
     if (loop_->isInLoopThread())
     {
-        startClientEncryptionInLoop(std::move(callback), useOldTLS);
+        startClientEncryptionInLoop(std::move(callback),
+                                    useOldTLS,
+                                    validateCert);
     }
     else
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
                             callback = std::move(callback),
-                            useOldTLS]() mutable {
+                            useOldTLS,
+                            validateCert]() mutable {
             thisPtr->startClientEncryptionInLoop(std::move(callback),
-                                                 useOldTLS);
+                                                 useOldTLS,
+                                                 validateCert);
         });
     }
 #endif
@@ -1511,6 +1518,10 @@ void TcpConnectionImpl::doHandshaking()
                 LOG_ERROR << "SSL certificate validation failed.";
                 ioChannelPtr_->disableReading();
                 sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
+                if (sslErrorCallback_)
+                {
+                    sslErrorCallback_(SSLError::kSSLInvalidCertificate);
+                }
                 return;
             }
         }
@@ -1546,6 +1557,10 @@ void TcpConnectionImpl::doHandshaking()
         LOG_TRACE << "SSL handshake err: " << err;
         ioChannelPtr_->disableReading();
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
+        if (sslErrorCallback_)
+        {
+            sslErrorCallback_(SSLError::kSSLHandshakeError);
+        }
         forceClose();
     }
 }
