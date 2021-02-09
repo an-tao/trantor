@@ -147,12 +147,6 @@ void TcpClient::newConnection(int sockfd)
                                                    sslCtxPtr_,
                                                    false,
                                                    validateCert_);
-        conn->setSSLErrorCallback([this](SSLError err) {
-            if (sslErrorCallback_)
-            {
-                sslErrorCallback_(err);
-            }
-        });
 #else
         LOG_FATAL << "OpenSSL is not found in your system!";
         abort();
@@ -173,6 +167,12 @@ void TcpClient::newConnection(int sockfd)
         std::lock_guard<std::mutex> lock(mutex_);
         connection_ = conn;
     }
+    conn->setSSLErrorCallback([this](SSLError err) {
+        if (sslErrorCallback_)
+        {
+            sslErrorCallback_(err);
+        }
+    });
     conn->connectEstablished();
 }
 
