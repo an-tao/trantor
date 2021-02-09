@@ -80,7 +80,7 @@ class FixedBuffer : NonCopyable
     {
         cur_ = data_;
     }
-    void bzero()
+    void zeroBuffer()
     {
         memset(data_, 0, sizeof(data_));
     }
