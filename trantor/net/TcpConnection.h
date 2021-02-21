@@ -230,6 +230,7 @@ class TcpConnection
      */
     virtual void startClientEncryption(std::function<void()> callback,
                                        bool useOldTLS = false,
+                                       bool validateCert = true,
                                        std::string hostname = "") = 0;
 
     /**
@@ -241,6 +242,9 @@ class TcpConnection
      */
     virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
                                        std::function<void()> callback) = 0;
+
+  protected:
+    bool validateCert_ = false;
 
   private:
     std::shared_ptr<void> contextPtr_;

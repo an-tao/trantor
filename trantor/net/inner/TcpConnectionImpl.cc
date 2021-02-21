@@ -23,22 +23,151 @@
 #include <unistd.h>
 #else
 #include <WinSock2.h>
+#include <Windows.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
 #ifdef USE_OPENSSL
 #include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 #include <openssl/err.h>
 #endif
 #ifdef _WIN32
 #define stat _stati64
 #endif
+#include <regex>
 
 using namespace trantor;
 
 #ifdef USE_OPENSSL
 namespace trantor
 {
+namespace internal
+{
+#ifdef _WIN32
+// Code yanked from stackoverflow
+// https://stackoverflow.com/questions/9507184/can-openssl-on-windows-use-the-system-certificate-store
+inline bool loadWindowsSystemCert(X509_STORE *store)
+{
+    auto hStore = CertOpenSystemStoreW((HCRYPTPROV_LEGACY)NULL, L"ROOT");
+
+    if (!hStore)
+    {
+        return false;
+    }
+
+    PCCERT_CONTEXT pContext = NULL;
+    while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) !=
+           nullptr)
+    {
+        auto encoded_cert =
+            static_cast<const unsigned char *>(pContext->pbCertEncoded);
+
+        auto x509 = d2i_X509(NULL, &encoded_cert, pContext->cbCertEncoded);
+        if (x509)
+        {
+            X509_STORE_add_cert(store, x509);
+            X509_free(x509);
+        }
+    }
+
+    CertFreeCertificateContext(pContext);
+    CertCloseStore(hStore, 0);
+
+    return true;
+}
+#endif
+
+inline std::string certNameToRegex(const std::string &certName)
+{
+    std::string result;
+    result.reserve(certName.size() + 11);
+
+    bool isStar = false;
+    for (char ch : certName)
+    {
+        if (isStar == false)
+        {
+            if (ch == '*')
+                isStar = true;
+            else
+                result.push_back(ch);
+        }
+        else
+        {
+            if (ch == '.')
+                result += "([^.]*\\.|)?";
+            else
+                result += "\\*" + ch;
+            isStar = false;
+        }
+    }
+    assert(isStar == false);
+    return result;
+}
+
+inline bool verifyName(const std::string &certName, const std::string &hostname)
+{
+    std::regex re(certNameToRegex(certName));
+    return std::regex_match(hostname, re);
+}
+
+inline bool verifyCommonName(X509 *cert, const std::string &hostname)
+{
+    X509_NAME *subjectName = X509_get_subject_name(cert);
+
+    if (subjectName != nullptr)
+    {
+        std::array<char, BUFSIZ> name;
+        auto length = X509_NAME_get_text_by_NID(subjectName,
+                                                NID_commonName,
+                                                name.data(),
+                                                (int)name.size());
+        if (length == -1)
+            return false;
+
+        return verifyName(std::string(name.begin(), name.begin() + length),
+                          hostname);
+    }
+
+    return false;
+}
+
+inline bool verifyAltName(X509 *cert, const std::string &hostname)
+{
+    bool good = false;
+    auto altNames = static_cast<const struct stack_st_GENERAL_NAME *>(
+        X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
+
+    if (altNames)
+    {
+        int numNames = sk_GENERAL_NAME_num(altNames);
+
+        for (int i = 0; i < numNames && !good; i++)
+        {
+            auto val = sk_GENERAL_NAME_value(altNames, i);
+            if (val->type != GEN_DNS)
+            {
+                LOG_WARN << "Name using IP addresses are not supported. Open "
+                            "an issue if you need that feature";
+                continue;
+            }
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+            auto name = (const char *)ASN1_STRING_get0_data(val->d.ia5);
+#else
+            auto name = (const char *)ASN1_STRING_data(val->d.ia5);
+#endif
+            auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
+            good = verifyName(std::string(name, name + name_len), hostname);
+        }
+    }
+
+    GENERAL_NAMES_free((STACK_OF(GENERAL_NAME) *)altNames);
+    return good;
+}
+
+}  // namespace internal
+
 void initOpenSSL()
 {
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || \
@@ -58,7 +187,7 @@ void initOpenSSL()
 class SSLContext
 {
   public:
-    explicit SSLContext(bool useOldTLS)
+    explicit SSLContext(bool useOldTLS, bool enableValidtion)
     {
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
         ctxPtr_ = SSL_CTX_new(TLS_method());
@@ -84,6 +213,13 @@ class SSLContext
                         "obsolete, insecure standards and should only be "
                         "used for legacy purpose.";
         }
+#endif
+#ifdef _WIN32
+        if (enableValidtion)
+            internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctxPtr_));
+#else
+        if (enableValidtion)
+            SSL_CTX_set_default_verify_paths(ctxPtr_);
 #endif
     }
     ~SSLContext()
@@ -125,16 +261,16 @@ class SSLConn
     SSL *SSL_;
 };
 
-std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS)
+std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS, bool validateCert)
 {  // init OpenSSL
     initOpenSSL();
-    return std::make_shared<SSLContext>(useOldTLS);
+    return std::make_shared<SSLContext>(useOldTLS, validateCert);
 }
 std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
                                                 const std::string &keyPath,
                                                 bool useOldTLS)
 {
-    auto ctx = newSSLContext(useOldTLS);
+    auto ctx = newSSLContext(useOldTLS, false);
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
     if (!r)
     {
@@ -213,8 +349,10 @@ TcpConnectionImpl::~TcpConnectionImpl()
 void TcpConnectionImpl::startClientEncryptionInLoop(
     std::function<void()> &&callback,
     bool useOldTLS,
+    bool validateCert,
     const std::string &hostname)
 {
+    validateCert_ = validateCert;
     loop_->assertInLoopThread();
     if (isEncrypted_)
     {
@@ -223,13 +361,21 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     }
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
     sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
-    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext(useOldTLS);
+    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext(useOldTLS, validateCert_);
     sslEncryptionPtr_->sslPtr_ =
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+    if (validateCert)
+    {
+        SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
+                       SSL_VERIFY_NONE,
+                       nullptr);
+        validateCert_ = validateCert;
+    }
     if (!hostname.empty())
     {
         SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
                                  hostname.data());
+        sslEncryptionPtr_->hostname_ = hostname;
     }
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
@@ -260,6 +406,10 @@ void TcpConnectionImpl::startServerEncryptionInLoop(
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
+    if (sslEncryptionPtr_->isServer_ == false)
+        SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
+                       SSL_VERIFY_NONE,
+                       nullptr);
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
     (void)r;
     assert(r);
@@ -294,6 +444,7 @@ void TcpConnectionImpl::startServerEncryption(
 }
 void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
                                               bool useOldTLS,
+                                              bool validateCert,
                                               std::string hostname)
 {
 #ifndef USE_OPENSSL
@@ -306,19 +457,26 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
                        hostname.end(),
                        hostname.begin(),
                        tolower);
+        assert(sslEncryptionPtr_ != nullptr);
+        sslEncryptionPtr_->hostname_ = hostname;
     }
     if (loop_->isInLoopThread())
     {
-        startClientEncryptionInLoop(std::move(callback), useOldTLS, hostname);
+        startClientEncryptionInLoop(std::move(callback),
+                                    useOldTLS,
+                                    validateCert,
+                                    hostname);
     }
     else
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
                             callback = std::move(callback),
                             useOldTLS,
-                            hostname = std::move(hostname)]() mutable {
+                            hostname = std::move(hostname),
+                            validateCert]() mutable {
             thisPtr->startClientEncryptionInLoop(std::move(callback),
                                                  useOldTLS,
+                                                 validateCert,
                                                  hostname);
         });
     }
@@ -1391,6 +1549,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      const InetAddress &peerAddr,
                                      const std::shared_ptr<SSLContext> &ctxPtr,
                                      bool isServer,
+                                     bool validateCert,
                                      const std::string &hostname)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
@@ -1414,10 +1573,16 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
     sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get());
     sslEncryptionPtr_->isServer_ = isServer;
+    validateCert_ = validateCert;
+    if (isServer == false)
+        SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
+                       SSL_VERIFY_NONE,
+                       nullptr);
     if (!isServer && !hostname.empty())
     {
         SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
                                  hostname.data());
+        sslEncryptionPtr_->hostname_ = hostname;
     }
     assert(sslEncryptionPtr_->sslPtr_);
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketfd);
@@ -1428,6 +1593,44 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
         std::make_unique<std::array<char, 8192>>();
 }
 
+bool TcpConnectionImpl::validatePeerCertificate()
+{
+    LOG_TRACE << "Validating peer cerificate";
+    assert(sslEncryptionPtr_ != nullptr);
+    assert(sslEncryptionPtr_->sslPtr_ != nullptr);
+    SSL *ssl = sslEncryptionPtr_->sslPtr_->get();
+
+    auto result = SSL_get_verify_result(ssl);
+    if (result != X509_V_OK)
+    {
+        LOG_DEBUG << "cert error code: " << result;
+        LOG_ERROR << "Server certificate is not valid";
+        return false;
+    }
+
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if (cert == nullptr)
+    {
+        LOG_ERROR << "Unable to obtain peer certificate";
+        return false;
+    }
+
+    bool domainIsValid =
+        internal::verifyCommonName(cert, sslEncryptionPtr_->hostname_) ||
+        internal::verifyAltName(cert, sslEncryptionPtr_->hostname_);
+    X509_free(cert);
+
+    if (domainIsValid)
+    {
+        return true;
+    }
+    else
+    {
+        LOG_ERROR << "Domain validation failed";
+        return false;
+    }
+}
+
 void TcpConnectionImpl::doHandshaking()
 {
     assert(sslEncryptionPtr_->statusOfSSL_ == SSLStatus::Handshaking);
@@ -1436,6 +1639,23 @@ void TcpConnectionImpl::doHandshaking()
     LOG_TRACE << "hand shaking: " << r;
     if (r == 1)
     {
+        // Clients don't commonly have certificates. Let's not validate
+        // that
+        if (validateCert_ && sslEncryptionPtr_->isServer_ == false)
+        {
+            if (validatePeerCertificate() == false)
+            {
+                LOG_ERROR << "SSL certificate validation failed.";
+                ioChannelPtr_->disableReading();
+                sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
+                if (sslErrorCallback_)
+                {
+                    sslErrorCallback_(SSLError::kSSLInvalidCertificate);
+                }
+                forceClose();
+                return;
+            }
+        }
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::Connected;
         if (sslEncryptionPtr_->isUpgrade_)
         {
@@ -1468,6 +1688,10 @@ void TcpConnectionImpl::doHandshaking()
         LOG_TRACE << "SSL handshake err: " << err;
         ioChannelPtr_->disableReading();
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
+        if (sslErrorCallback_)
+        {
+            sslErrorCallback_(SSLError::kSSLHandshakeError);
+        }
         forceClose();
     }
 }

@@ -149,6 +149,7 @@ void TcpClient::newConnection(int sockfd)
                                                    peerAddr,
                                                    sslCtxPtr_,
                                                    false,
+                                                   validateCert_,
                                                    SSLHostName_);
 #else
         LOG_FATAL << "OpenSSL is not found in your system!";
@@ -170,6 +171,12 @@ void TcpClient::newConnection(int sockfd)
         std::lock_guard<std::mutex> lock(mutex_);
         connection_ = conn;
     }
+    conn->setSSLErrorCallback([this](SSLError err) {
+        if (sslErrorCallback_)
+        {
+            sslErrorCallback_(err);
+        }
+    });
     conn->connectEstablished();
 }
 
@@ -195,11 +202,14 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
     }
 }
 
-void TcpClient::enableSSL(bool useOldTLS, std::string hostname)
+void TcpClient::enableSSL(bool useOldTLS,
+                          bool validateCert,
+                          std::string hostname)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLContext(useOldTLS);
+    sslCtxPtr_ = newSSLContext(useOldTLS, validateCert);
+    validateCert_ = validateCert;
     if (!hostname.empty())
     {
         std::transform(hostname.begin(),

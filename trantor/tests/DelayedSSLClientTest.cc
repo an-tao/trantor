@@ -45,10 +45,13 @@ int main()
                 if (msg == "hello")
                 {
                     buf->retrieveAll();
-                    conn->startClientEncryption([conn]() {
-                        LOG_INFO << "SSL established";
-                        conn->send("Hello");
-                    });
+                    conn->startClientEncryption(
+                        [conn]() {
+                            LOG_INFO << "SSL established";
+                            conn->send("Hello");
+                        },
+                        false,
+                        false);
                 }
                 if (conn->isSSLConnection())
                 {
