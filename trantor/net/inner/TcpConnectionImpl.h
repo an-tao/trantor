@@ -95,6 +95,7 @@ class TcpConnectionImpl : public TcpConnection,
                       const InetAddress &peerAddr,
                       const std::shared_ptr<SSLContext> &ctxPtr,
                       bool isServer = true,
+                      const std::string &hostname = "",
                       bool validateCert = true);
 #endif
     virtual ~TcpConnectionImpl();
@@ -171,7 +172,8 @@ class TcpConnectionImpl : public TcpConnection,
         return bytesReceived_;
     }
     virtual void startClientEncryption(std::function<void()> callback,
-                                       bool useOldTLS = false) override;
+                                       bool useOldTLS = false,
+                                       std::string hostname = "") override;
     virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
                                        std::function<void()> callback) override;
     virtual bool isSSLConnection() const override
@@ -311,7 +313,8 @@ class TcpConnectionImpl : public TcpConnection,
     };
     std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
     void startClientEncryptionInLoop(std::function<void()> &&callback,
-                                     bool useOldTLS);
+                                     bool useOldTLS,
+                                     const std::string &hostname);
     void startServerEncryptionInLoop(const std::shared_ptr<SSLContext> &ctx,
                                      std::function<void()> &&callback);
 #endif

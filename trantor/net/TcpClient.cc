@@ -15,10 +15,13 @@
 #include "Connector.h"
 #include "inner/TcpConnectionImpl.h"
 #include <trantor/net/EventLoop.h>
+
+#include <functional>
+#include <algorithm>
+
 #include "Socket.h"
 
 #include <stdio.h>  // snprintf
-#include <functional>
 
 using namespace trantor;
 using namespace std::placeholders;
@@ -146,6 +149,7 @@ void TcpClient::newConnection(int sockfd)
                                                    peerAddr,
                                                    sslCtxPtr_,
                                                    false,
+                                                   SSLHostName_,
                                                    validateCert_);
 #else
         LOG_FATAL << "OpenSSL is not found in your system!";
@@ -192,12 +196,21 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
     }
 }
 
-void TcpClient::enableSSL(bool useOldTLS, bool validateCert)
+void TcpClient::enableSSL(bool useOldTLS, std::string hostname, bool validateCert)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
     sslCtxPtr_ = newSSLContext(useOldTLS, validateCert);
     validateCert_ = validateCert;
+    if (!hostname.empty())
+    {
+        std::transform(hostname.begin(),
+                       hostname.end(),
+                       hostname.begin(),
+                       tolower);
+        SSLHostName_ = std::move(hostname);
+    }
+
 #else
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
