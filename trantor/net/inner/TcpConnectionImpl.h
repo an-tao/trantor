@@ -224,6 +224,11 @@ class TcpConnectionImpl : public TcpConnection,
     {
         closeCallback_ = cb;
     }
+    void setSSLErrorCallback(const SSLErrorCallback &cb)
+    {
+        sslErrorCallback_ = cb;
+    }
+
     void connectDestroyed();
     virtual void connectEstablished();
 
@@ -274,6 +279,7 @@ class TcpConnectionImpl : public TcpConnection,
     CloseCallback closeCallback_;
     WriteCompleteCallback writeCompleteCallback_;
     HighWaterMarkCallback highWaterMarkCallback_;
+    SSLErrorCallback sslErrorCallback_;
     void handleClose();
     void handleError();
     // virtual void sendInLoop(const std::string &msg);

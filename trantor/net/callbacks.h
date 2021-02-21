@@ -18,12 +18,11 @@
 #include <memory>
 namespace trantor
 {
-enum TrantorError
+enum class SSLError
 {
-    TrantorError_None,
-    TrantorError_UnkownError
+    kSSLHandshakeError,
+    kSSLInvalidCertificate
 };
-
 using TimerCallback = std::function<void()>;
 
 // the data has been read to (buf, len)
@@ -39,7 +38,6 @@ using CloseCallback = std::function<void(const TcpConnectionPtr &)>;
 using WriteCompleteCallback = std::function<void(const TcpConnectionPtr &)>;
 using HighWaterMarkCallback =
     std::function<void(const TcpConnectionPtr &, const size_t)>;
-
-using OperationCompleteCallback = std::function<void(const TrantorError)>;
+using SSLErrorCallback = std::function<void(SSLError)>;
 
 }  // namespace trantor

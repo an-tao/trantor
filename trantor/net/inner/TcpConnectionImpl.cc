@@ -263,6 +263,7 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     const std::string &hostname,
     bool validateCert)
 {
+    validateCert_ = validateCert;
     loop_->assertInLoopThread();
     if (isEncrypted_)
     {
@@ -1637,7 +1638,7 @@ void TcpConnectionImpl::doHandshaking()
     LOG_TRACE << "hand shaking: " << r;
     if (r == 1)
     {
-        // Client's are commonly do not have certificates. Let's not validate
+        // Clients don't commonly have certificates. Let's not validate
         // that
         if (validateCert_ && sslEncryptionPtr_->isServer_ == false)
         {
@@ -1646,6 +1647,10 @@ void TcpConnectionImpl::doHandshaking()
                 LOG_ERROR << "SSL certificate validation failed.";
                 ioChannelPtr_->disableReading();
                 sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
+                if (sslErrorCallback_)
+                {
+                    sslErrorCallback_(SSLError::kSSLInvalidCertificate);
+                }
                 return;
             }
         }
@@ -1681,6 +1686,10 @@ void TcpConnectionImpl::doHandshaking()
         LOG_TRACE << "SSL handshake err: " << err;
         ioChannelPtr_->disableReading();
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
+        if (sslErrorCallback_)
+        {
+            sslErrorCallback_(SSLError::kSSLHandshakeError);
+        }
         forceClose();
     }
 }
