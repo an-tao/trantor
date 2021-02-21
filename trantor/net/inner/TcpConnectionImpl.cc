@@ -1550,7 +1550,7 @@ inline bool verifyCommonName(X509 *cert, const std::string &hostname)
         auto length = X509_NAME_get_text_by_NID(subjectName,
                                                 NID_commonName,
                                                 name.data(),
-                                                name.size());
+                                                (int)name.size());
         if (length == -1)
             return false;
 
@@ -1580,7 +1580,11 @@ inline bool verifyAltName(X509 *cert, const std::string &hostname)
                             "an issue if you need that feature";
                 continue;
             }
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
             auto name = (const char *)ASN1_STRING_get0_data(val->d.ia5);
+#else
+            auto name = (const char *)ASN1_STRING_data(val->d.ia5);
+#endif
             auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
             good = verifyName(std::string(name, name + name_len), hostname);
         }
