@@ -225,10 +225,13 @@ class TcpConnection
      *
      * @param callback The callback is called when the SSL connection is
      * established.
+     * @param hostname The server hostname for SNI. If it is empty, the SNI is
+     * not used.
      */
     virtual void startClientEncryption(std::function<void()> callback,
                                        bool useOldTLS = false,
-                                       bool validateCert = true) = 0;
+                                       bool validateCert = true,
+                                       std::string hostname = "") = 0;
 
     /**
      * @brief Start the SSL encryption on the connection (as a server).

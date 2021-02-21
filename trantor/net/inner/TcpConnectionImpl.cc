@@ -101,7 +101,9 @@ class SSLContext
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
         ctxPtr_ = SSL_CTX_new(TLS_method());
         if (!useOldTLS)
+        {
             SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
+        }
         else
         {
             LOG_WARN << "TLS 1.0/1.1 are enabled. They are considered "
@@ -112,8 +114,7 @@ class SSLContext
         ctxPtr_ = SSL_CTX_new(SSLv23_method());
         if (!useOldTLS)
         {
-            SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1);
-            SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1_1);
+            SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
         }
         else
         {
@@ -257,7 +258,8 @@ TcpConnectionImpl::~TcpConnectionImpl()
 void TcpConnectionImpl::startClientEncryptionInLoop(
     std::function<void()> &&callback,
     bool useOldTLS,
-    bool validateCert)
+    bool validateCert,
+    const std::string &hostname)
 {
     validateCert_ = validateCert;
     loop_->assertInLoopThread();
@@ -275,6 +277,11 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
+    if (!hostname.empty())
+    {
+        SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
+                                 hostname.data());
+    }
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
@@ -342,27 +349,38 @@ void TcpConnectionImpl::startServerEncryption(
 }
 void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
                                               bool useOldTLS,
-                                              bool validateCert)
+                                              bool validateCert,
+                                              std::string hostname)
 {
 #ifndef USE_OPENSSL
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #else
+    if (!hostname.empty())
+    {
+        std::transform(hostname.begin(),
+                       hostname.end(),
+                       hostname.begin(),
+                       tolower);
+    }
     if (loop_->isInLoopThread())
     {
         startClientEncryptionInLoop(std::move(callback),
                                     useOldTLS,
-                                    validateCert);
+                                    validateCert,
+                                    hostname);
     }
     else
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
                             callback = std::move(callback),
                             useOldTLS,
-                            validateCert]() mutable {
+                            validateCert,
+                            hostname = std::move(hostname)]() mutable {
             thisPtr->startClientEncryptionInLoop(std::move(callback),
                                                  useOldTLS,
-                                                 validateCert);
+                                                 validateCert,
+                                                 hostname);
         });
     }
 #endif
@@ -1434,7 +1452,8 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      const InetAddress &peerAddr,
                                      const std::shared_ptr<SSLContext> &ctxPtr,
                                      bool isServer,
-                                     bool validateCert)
+                                     bool validateCert,
+                                     const std::string &hostname)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
       socketPtr_(new Socket(socketfd)),
@@ -1462,6 +1481,11 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
+    if (!isServer && !hostname.empty())
+    {
+        SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
+                                 hostname.data());
+    }
     assert(sslEncryptionPtr_->sslPtr_);
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketfd);
     (void)r;

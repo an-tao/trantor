@@ -196,8 +196,15 @@ class TcpClient : NonCopyable
      * is valid.
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
+     *
+     * @param hostname The server hostname for SNI. If it is empty, the SNI is
+     * not used.
+     * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
+     * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-    void enableSSL(bool useOldTLS = false, bool validateCert = true);
+    void enableSSL(bool useOldTLS = false,
+                   bool validateCert = true,
+                   std::string hostname = "");
 
   private:
     /// Not thread safe, but in loop
@@ -220,6 +227,7 @@ class TcpClient : NonCopyable
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
     std::shared_ptr<SSLContext> sslCtxPtr_;
     bool validateCert_ = false;
+    std::string SSLHostName_;
 #ifndef _WIN32
     class IgnoreSigPipe
     {
