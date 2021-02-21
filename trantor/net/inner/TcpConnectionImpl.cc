@@ -42,9 +42,9 @@ using namespace trantor;
 #ifdef USE_OPENSSL
 namespace trantor
 {
-#ifdef _WIN32
 namespace internal
 {
+#ifdef _WIN32
 // Code yanked from stackoverflow
 // https://stackoverflow.com/questions/9507184/can-openssl-on-windows-use-the-system-certificate-store
 inline bool loadWindowsSystemCert(X509_STORE *store)
@@ -75,6 +75,35 @@ inline bool loadWindowsSystemCert(X509_STORE *store)
     CertCloseStore(hStore, 0);
 
     return true;
+}
+#endif
+
+inline std::string certNameToRegex(const std::string &certName)
+{
+    std::string result;
+    result.reserve(certName.size() + 11);
+
+    bool isStar = false;
+    for (char ch : certName)
+    {
+        if (isStar == false)
+        {
+            if (ch == '*')
+                isStar = true;
+            else
+                result.push_back(ch);
+        }
+        else
+        {
+            if (ch == '.')
+                result += "([^.]*\\.|)?";
+            else
+                result += "\\*" + ch;
+            isStar = false;
+        }
+    }
+    assert(isStar == false);
+    return result;
 }
 
 inline bool verifyName(const std::string &certName, const std::string &hostname)
@@ -138,7 +167,6 @@ inline bool verifyAltName(X509 *cert, const std::string &hostname)
 }
 
 }  // namespace internal
-#endif
 
 void initOpenSSL()
 {
@@ -1563,34 +1591,6 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     isEncrypted_ = true;
     sslEncryptionPtr_->sendBufferPtr_ =
         std::make_unique<std::array<char, 8192>>();
-}
-
-inline std::string certNameToRegex(const std::string &certName)
-{
-    std::string result;
-    result.reserve(certName.size() + 11);
-
-    bool isStar = false;
-    for (char ch : certName)
-    {
-        if (isStar == false)
-        {
-            if (ch == '*')
-                isStar = true;
-            else
-                result.push_back(ch);
-        }
-        else
-        {
-            if (ch == '.')
-                result += "([^.]*\\.|)?";
-            else
-                result += "\\*" + ch;
-            isStar = false;
-        }
-    }
-    assert(isStar == false);
-    return result;
 }
 
 bool TcpConnectionImpl::validatePeerCertificate()
