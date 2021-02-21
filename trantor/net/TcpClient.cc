@@ -196,7 +196,9 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
     }
 }
 
-void TcpClient::enableSSL(bool useOldTLS, std::string hostname, bool validateCert)
+void TcpClient::enableSSL(bool useOldTLS,
+                          std::string hostname,
+                          bool validateCert)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */

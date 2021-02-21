@@ -258,7 +258,8 @@ TcpConnectionImpl::~TcpConnectionImpl()
 void TcpConnectionImpl::startClientEncryptionInLoop(
     std::function<void()> &&callback,
     bool useOldTLS,
-    const std::string &hostname)
+    const std::string &hostname,
+    bool validateCert)
 {
     loop_->assertInLoopThread();
     if (isEncrypted_)
@@ -271,10 +272,13 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     sslEncryptionPtr_->sslCtxPtr_ = newSSLContext(useOldTLS, validateCert_);
     sslEncryptionPtr_->sslPtr_ =
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
-    if (sslEncryptionPtr_->isServer_ == false)
+    if (validateCert)
+    {
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
+        validateCert_ = validateCert;
+    }
     if (!hostname.empty())
     {
         SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
@@ -347,7 +351,8 @@ void TcpConnectionImpl::startServerEncryption(
 }
 void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
                                               bool useOldTLS,
-                                              std::string hostname)
+                                              std::string hostname,
+                                              bool validateCert)
 {
 #ifndef USE_OPENSSL
     LOG_FATAL << "OpenSSL is not found in your system!";
@@ -362,17 +367,22 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
     }
     if (loop_->isInLoopThread())
     {
-        startClientEncryptionInLoop(std::move(callback), useOldTLS, hostname);
+        startClientEncryptionInLoop(std::move(callback),
+                                    useOldTLS,
+                                    hostname,
+                                    validateCert);
     }
     else
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
                             callback = std::move(callback),
                             useOldTLS,
-                            hostname = std::move(hostname)]() mutable {
+                            hostname = std::move(hostname),
+                            validateCert]() mutable {
             thisPtr->startClientEncryptionInLoop(std::move(callback),
                                                  useOldTLS,
-                                                 hostname);
+                                                 hostname,
+                                                 validateCert);
         });
     }
 #endif
