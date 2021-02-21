@@ -1646,6 +1646,7 @@ void TcpConnectionImpl::doHandshaking()
             {
                 LOG_ERROR << "SSL certificate validation failed.";
                 ioChannelPtr_->disableReading();
+                forceClose();
                 sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
                 if (sslErrorCallback_)
                 {
