@@ -230,8 +230,8 @@ class TcpConnection
      */
     virtual void startClientEncryption(std::function<void()> callback,
                                        bool useOldTLS = false,
-                                       std::string hostname = "",
-                                       bool validateCert = true) = 0;
+                                       bool validateCert = true,
+                                       std::string hostname = "") = 0;
 
     /**
      * @brief Start the SSL encryption on the connection (as a server).

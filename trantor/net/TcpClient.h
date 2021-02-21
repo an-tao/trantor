@@ -200,8 +200,8 @@ class TcpClient : NonCopyable
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
     void enableSSL(bool useOldTLS = false,
-                   std::string hostname = "",
-                   bool validateCert = true);
+                   bool validateCert = true,
+                   std::string hostname = "");
 
   private:
     /// Not thread safe, but in loop

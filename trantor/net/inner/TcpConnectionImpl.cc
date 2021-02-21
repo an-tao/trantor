@@ -260,8 +260,8 @@ TcpConnectionImpl::~TcpConnectionImpl()
 void TcpConnectionImpl::startClientEncryptionInLoop(
     std::function<void()> &&callback,
     bool useOldTLS,
-    const std::string &hostname,
-    bool validateCert)
+    bool validateCert,
+    const std::string &hostname)
 {
     validateCert_ = validateCert;
     loop_->assertInLoopThread();
@@ -355,8 +355,8 @@ void TcpConnectionImpl::startServerEncryption(
 }
 void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
                                               bool useOldTLS,
-                                              std::string hostname,
-                                              bool validateCert)
+                                              bool validateCert,
+                                              std::string hostname)
 {
 #ifndef USE_OPENSSL
     LOG_FATAL << "OpenSSL is not found in your system!";
@@ -375,8 +375,8 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
     {
         startClientEncryptionInLoop(std::move(callback),
                                     useOldTLS,
-                                    hostname,
-                                    validateCert);
+                                    validateCert,
+                                    hostname);
     }
     else
     {
@@ -387,8 +387,8 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
                             validateCert]() mutable {
             thisPtr->startClientEncryptionInLoop(std::move(callback),
                                                  useOldTLS,
-                                                 hostname,
-                                                 validateCert);
+                                                 validateCert,
+                                                 hostname);
         });
     }
 #endif
@@ -1460,8 +1460,8 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      const InetAddress &peerAddr,
                                      const std::shared_ptr<SSLContext> &ctxPtr,
                                      bool isServer,
-                                     const std::string &hostname,
-                                     bool validateCert)
+                                     bool validateCert,
+                                     const std::string &hostname)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
       socketPtr_(new Socket(socketfd)),

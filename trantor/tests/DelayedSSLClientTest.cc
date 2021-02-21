@@ -51,7 +51,6 @@ int main()
                             conn->send("Hello");
                         },
                         false,
-                        "",
                         false);
                 }
                 if (conn->isSSLConnection())
