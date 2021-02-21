@@ -179,10 +179,12 @@ class TcpClient : NonCopyable
      * @brief Enable SSL encryption.
      * @param useOldTLS If true, the TLS 1.0 and 1.1 are supported by the
      * client.
+     * @param hostname The server hostname for SNI. If it is empty, the SNI is
+     * not used.
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-    void enableSSL(bool useOldTLS = false);
+    void enableSSL(bool useOldTLS = false, std::string hostname = "");
 
   private:
     /// Not thread safe, but in loop
@@ -203,6 +205,7 @@ class TcpClient : NonCopyable
     mutable std::mutex mutex_;
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
     std::shared_ptr<SSLContext> sslCtxPtr_;
+    std::string SSLHostName_;
 #ifndef _WIN32
     class IgnoreSigPipe
     {
