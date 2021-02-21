@@ -1647,12 +1647,12 @@ void TcpConnectionImpl::doHandshaking()
             {
                 LOG_ERROR << "SSL certificate validation failed.";
                 ioChannelPtr_->disableReading();
-                forceClose();
                 sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
                 if (sslErrorCallback_)
                 {
                     sslErrorCallback_(SSLError::kSSLInvalidCertificate);
                 }
+                forceClose();
                 return;
             }
         }
