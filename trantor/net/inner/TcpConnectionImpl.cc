@@ -76,6 +76,67 @@ inline bool loadWindowsSystemCert(X509_STORE *store)
 
     return true;
 }
+
+inline bool verifyName(const std::string &certName, const std::string &hostname)
+{
+    std::regex re(certNameToRegex(certName));
+    return std::regex_match(hostname, re);
+}
+
+inline bool verifyCommonName(X509 *cert, const std::string &hostname)
+{
+    X509_NAME *subjectName = X509_get_subject_name(cert);
+
+    if (subjectName != nullptr)
+    {
+        std::array<char, BUFSIZ> name;
+        auto length = X509_NAME_get_text_by_NID(subjectName,
+                                                NID_commonName,
+                                                name.data(),
+                                                (int)name.size());
+        if (length == -1)
+            return false;
+
+        return verifyName(std::string(name.begin(), name.begin() + length),
+                          hostname);
+    }
+
+    return false;
+}
+
+inline bool verifyAltName(X509 *cert, const std::string &hostname)
+{
+    bool good = false;
+    auto altNames = static_cast<const struct stack_st_GENERAL_NAME *>(
+        X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
+
+    if (altNames)
+    {
+        int numNames = sk_GENERAL_NAME_num(altNames);
+
+        for (int i = 0; i < numNames && !good; i++)
+        {
+            auto val = sk_GENERAL_NAME_value(altNames, i);
+            if (val->type != GEN_DNS)
+            {
+                LOG_WARN << "Name using IP addresses are not supported. Open "
+                            "an issue if you need that feature";
+                continue;
+            }
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+            auto name = (const char *)ASN1_STRING_get0_data(val->d.ia5);
+#else
+            auto name = (const char *)ASN1_STRING_data(val->d.ia5);
+#endif
+            auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
+            good = verifyName(std::string(name, name + name_len), hostname);
+        }
+    }
+
+    GENERAL_NAMES_free((STACK_OF(GENERAL_NAME) *)altNames);
+    return good;
+}
+
 }  // namespace internal
 #endif
 
@@ -1531,70 +1592,6 @@ inline std::string certNameToRegex(const std::string &certName)
     assert(isStar == false);
     return result;
 }
-
-namespace internal
-{
-inline bool verifyName(const std::string &certName, const std::string &hostname)
-{
-    std::regex re(certNameToRegex(certName));
-    return std::regex_match(hostname, re);
-}
-
-inline bool verifyCommonName(X509 *cert, const std::string &hostname)
-{
-    X509_NAME *subjectName = X509_get_subject_name(cert);
-
-    if (subjectName != nullptr)
-    {
-        std::array<char, BUFSIZ> name;
-        auto length = X509_NAME_get_text_by_NID(subjectName,
-                                                NID_commonName,
-                                                name.data(),
-                                                (int)name.size());
-        if (length == -1)
-            return false;
-
-        return verifyName(std::string(name.begin(), name.begin() + length),
-                          hostname);
-    }
-
-    return false;
-}
-
-inline bool verifyAltName(X509 *cert, const std::string &hostname)
-{
-    bool good = false;
-    auto altNames = static_cast<const struct stack_st_GENERAL_NAME *>(
-        X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
-
-    if (altNames)
-    {
-        int numNames = sk_GENERAL_NAME_num(altNames);
-
-        for (int i = 0; i < numNames && !good; i++)
-        {
-            auto val = sk_GENERAL_NAME_value(altNames, i);
-            if (val->type != GEN_DNS)
-            {
-                LOG_WARN << "Name using IP addresses are not supported. Open "
-                            "an issue if you need that feature";
-                continue;
-            }
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-            auto name = (const char *)ASN1_STRING_get0_data(val->d.ia5);
-#else
-            auto name = (const char *)ASN1_STRING_data(val->d.ia5);
-#endif
-            auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
-            good = verifyName(std::string(name, name + name_len), hostname);
-        }
-    }
-
-    GENERAL_NAMES_free((STACK_OF(GENERAL_NAME) *)altNames);
-    return good;
-}
-
-}  // namespace internal
 
 bool TcpConnectionImpl::validatePeerCertificate()
 {
