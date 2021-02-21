@@ -1491,13 +1491,12 @@ bool TcpConnectionImpl::validatePeerCertificate()
 {
     LOG_TRACE << "Validating peer cerificate";
     assert(sslEncryptionPtr_ != nullptr);
-    // assert(sslEncryptionPtr_->sslCtxPtr_ != nullptr);
     assert(sslEncryptionPtr_->sslPtr_ != nullptr);
     SSL *ssl = sslEncryptionPtr_->sslPtr_->get();
 
     auto result = SSL_get_verify_result(ssl);
     // HACK: google.com is self signed with their root CA...
-    if (result != X509_V_OK && result != X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
+    if (result != X509_V_OK)
     {
         LOG_DEBUG << "cert error code: " << result;
         LOG_ERROR << "Server certificate is not valid";
