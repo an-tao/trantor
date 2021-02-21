@@ -311,6 +311,7 @@ class TcpConnectionImpl : public TcpConnection,
         bool isServer_{false};
         bool isUpgrade_{false};
         std::function<void()> upgradeCallback_;
+        std::string hostname_;
     };
     std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
     void startClientEncryptionInLoop(std::function<void()> &&callback,

@@ -29,11 +29,13 @@
 #include <fcntl.h>
 #ifdef USE_OPENSSL
 #include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 #include <openssl/err.h>
 #endif
 #ifdef _WIN32
 #define stat _stati64
 #endif
+#include <regex>
 
 using namespace trantor;
 
@@ -283,6 +285,7 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     {
         SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
                                  hostname.data());
+        sslEncryptionPtr_->hostname_ = hostname;
     }
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
@@ -364,6 +367,8 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
                        hostname.end(),
                        hostname.begin(),
                        tolower);
+        assert(sslEncryptionPtr_ != nullptr);
+        sslEncryptionPtr_->hostname_ = hostname;
     }
     if (loop_->isInLoopThread())
     {
@@ -1487,6 +1492,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     {
         SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
                                  hostname.data());
+        sslEncryptionPtr_->hostname_ = hostname;
     }
     assert(sslEncryptionPtr_->sslPtr_);
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketfd);
@@ -1497,6 +1503,94 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
         std::make_unique<std::array<char, 8192>>();
 }
 
+inline std::string certNameToRegex(const std::string &certName)
+{
+    std::string result;
+    result.reserve(certName.size() + 11);
+
+    bool isStar = false;
+    for (char ch : certName)
+    {
+        if (isStar == false)
+        {
+            if (ch == '*')
+                isStar = true;
+            else
+                result.push_back(ch);
+        }
+        else
+        {
+            if (ch == '.')
+                result += "([^.]*\\.|)?";
+            else
+                result += "\\*" + ch;
+            isStar = false;
+        }
+    }
+    assert(isStar == false);
+    return result;
+}
+
+namespace internal
+{
+inline bool verifyName(const std::string &certName, const std::string &hostname)
+{
+    std::regex re(certNameToRegex(certName));
+    return std::regex_match(hostname, re);
+}
+
+inline bool verifyCommonName(X509 *cert, const std::string &hostname)
+{
+    X509_NAME *subjectName = X509_get_subject_name(cert);
+
+    if (subjectName != nullptr)
+    {
+        std::array<char, BUFSIZ> name;
+        auto length = X509_NAME_get_text_by_NID(subjectName,
+                                                NID_commonName,
+                                                name.data(),
+                                                name.size());
+        if (length == -1)
+            return false;
+
+        return verifyName(std::string(name.begin(), name.begin() + length),
+                          hostname);
+    }
+
+    return false;
+}
+
+inline bool verifyAltName(X509 *cert, const std::string &hostname)
+{
+    bool good = false;
+    auto altNames = static_cast<const struct stack_st_GENERAL_NAME *>(
+        X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
+
+    if (altNames)
+    {
+        int numNames = sk_GENERAL_NAME_num(altNames);
+
+        for (int i = 0; i < numNames && !good; i++)
+        {
+            auto val = sk_GENERAL_NAME_value(altNames, i);
+            if (val->type != GEN_DNS)
+            {
+                LOG_WARN << "Name using IP addresses are not supported. Open "
+                            "an issue if you need that feature";
+                continue;
+            }
+            auto name = (const char *)ASN1_STRING_get0_data(val->d.ia5);
+            auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
+            good = verifyName(std::string(name, name + name_len), hostname);
+        }
+    }
+
+    GENERAL_NAMES_free((STACK_OF(GENERAL_NAME) *)altNames);
+    return good;
+}
+
+}  // namespace internal
+
 bool TcpConnectionImpl::validatePeerCertificate()
 {
     LOG_TRACE << "Validating peer cerificate";
@@ -1505,7 +1599,6 @@ bool TcpConnectionImpl::validatePeerCertificate()
     SSL *ssl = sslEncryptionPtr_->sslPtr_->get();
 
     auto result = SSL_get_verify_result(ssl);
-    // HACK: google.com is self signed with their root CA...
     if (result != X509_V_OK)
     {
         LOG_DEBUG << "cert error code: " << result;
@@ -1520,10 +1613,20 @@ bool TcpConnectionImpl::validatePeerCertificate()
         return false;
     }
 
-    // TODO: Validate cert domain
-
+    bool domainIsValid =
+        internal::verifyCommonName(cert, sslEncryptionPtr_->hostname_) ||
+        internal::verifyAltName(cert, sslEncryptionPtr_->hostname_);
     X509_free(cert);
-    return true;
+
+    if (domainIsValid)
+    {
+        return true;
+    }
+    else
+    {
+        LOG_ERROR << "Domain validation failed";
+        return false;
+    }
 }
 
 void TcpConnectionImpl::doHandshaking()
