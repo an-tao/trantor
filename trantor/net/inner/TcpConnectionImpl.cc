@@ -98,7 +98,7 @@ inline std::string certNameToRegex(const std::string &certName)
             if (ch == '.')
                 result += "([^.]*\\.|)?";
             else
-                result += "\\*" + ch;
+                result += std::string("\\*") + ch;
             isStar = false;
         }
     }
