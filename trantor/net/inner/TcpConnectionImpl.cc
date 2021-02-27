@@ -84,21 +84,30 @@ inline std::string certNameToRegex(const std::string &certName)
     result.reserve(certName.size() + 11);
 
     bool isStar = false;
+    bool isLeadingStar = true;
     for (char ch : certName)
     {
         if (isStar == false)
         {
             if (ch == '*')
                 isStar = true;
+            else if (ch == '.')
+            {
+                result += "\\.";
+                isLeadingStar = false;
+            }
             else
+            {
                 result.push_back(ch);
+                isLeadingStar = false;
+            }
         }
         else
         {
-            if (ch == '.')
+            if (ch == '.' && isLeadingStar)
                 result += "([^.]*\\.|)?";
             else
-                result += std::string("\\*") + ch;
+                result += std::string("[^.]*") + ch;
             isStar = false;
         }
     }
