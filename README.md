@@ -10,6 +10,8 @@ A non-blocking I/O cross-platform TCP network library, using C++14.
 Drawing on the design of Muduo Library
 
 ## suported platforms
+- Linux
+- MacOS
 - UNIX(BSD)
 - Windows
 
@@ -21,24 +23,23 @@ Drawing on the design of Muduo Library
 - Support SSL
 - Server and Client
 
-## Dependence
-cmake 3.5 or newer;    
-- UNIX(BSD)
-- Windows
 
 ## Build
-```c++
+```shell
 git clone https://github.com/an-tao/trantor.git
 cd trantor
 cmake -Bbuild -H.
 cd build 
-make -j9
+make -j
 ```
 
 ## Licensing
-Trantor - A non-blocking I/O based TCP network library, using C++14/17, 
-Copyright (c) 2016-2020, Tao An.  All rights reserved.
+Trantor - A non-blocking I/O based TCP network library, using C++14. 
+
+Copyright (c) 2016-2021, Tao An.  All rights reserved.
+
 https://github.com/an-tao/trantor
+
 For more information see [License](License)
 
 ## Community
@@ -46,5 +47,3 @@ For more information see [License](License)
 
 ## Documentation
 Doxygen documented
-
-
