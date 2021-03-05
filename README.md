@@ -46,4 +46,4 @@ For more information see [License](License)
 [Gitter](https://gitter.im/drogon-web/community)
 
 ## Documentation
-Doxygen documented
+[DocsForge](https://trantor.docsforge.com/)
