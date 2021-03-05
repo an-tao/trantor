@@ -10,9 +10,7 @@ A non-blocking I/O cross-platform TCP network library, using C++14.
 Drawing on the design of Muduo Library
 
 ## suported platforms
-- Linux
-- Mac Os
-- Solaris
+- UNIX(BSD)
 - Windows
 
 ## Feature highlights
@@ -21,14 +19,11 @@ Drawing on the design of Muduo Library
 - Thread pool
 - Lock free design
 - Support SSL
-- Thread pool
 - Server and Client
 
 ## Dependence
 cmake 3.5 or newer;    
-- linux kernel 2.6.9 x86-64 or newer;
-- Mac Os
-- Solaris
+- UNIX(BSD)
 - Windows
 
 ## Build
