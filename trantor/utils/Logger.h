@@ -17,6 +17,7 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
 #include <trantor/utils/LogStream.h>
+#include <trantor/exports.h>
 #include <string.h>
 #include <functional>
 #include <iostream>
@@ -73,12 +74,15 @@ class Logger : public NonCopyable
         const char *data_;
         int size_;
     };
-    Logger(SourceFile file, int line);
-    Logger(SourceFile file, int line, LogLevel level);
-    Logger(SourceFile file, int line, bool isSysErr);
-    Logger(SourceFile file, int line, LogLevel level, const char *func);
-    ~Logger();
-    LogStream &stream();
+    TRANTOR_EXPORT Logger(SourceFile file, int line);
+    TRANTOR_EXPORT Logger(SourceFile file, int line, LogLevel level);
+    TRANTOR_EXPORT Logger(SourceFile file, int line, bool isSysErr);
+    TRANTOR_EXPORT Logger(SourceFile file,
+                          int line,
+                          LogLevel level,
+                          const char *func);
+    TRANTOR_EXPORT ~Logger();
+    TRANTOR_EXPORT LogStream &stream();
 
     /**
      * @brief Set the output function.
@@ -124,7 +128,7 @@ class Logger : public NonCopyable
     {
         fflush(stdout);
     }
-    void formatTime();
+    TRANTOR_EXPORT void formatTime();
     static LogLevel &logLevel_()
     {
 #ifdef RELEASE
@@ -282,5 +286,5 @@ class Logger : public NonCopyable
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kFatal).stream()
 #endif
 
-const char *strerror_tl(int savedErrno);
+TRANTOR_EXPORT const char *strerror_tl(int savedErrno);
 }  // namespace trantor

@@ -16,6 +16,7 @@
 
 // Taken from muduo lib and modified. Classes in this file are used internally.
 #include <trantor/utils/NonCopyable.h>
+#include <trantor/exports.h>
 
 #include <assert.h>
 #include <string.h>  // memcpy
@@ -86,13 +87,13 @@ class FixedBuffer : NonCopyable
     }
 
     // for used by GDB
-    const char *debugString();
+    TRANTOR_EXPORT const char *debugString();
     void setCookie(void (*cookie)())
     {
         cookie_ = cookie;
     }
     // for used by unit test
-    std::string toString() const
+    TRANTOR_EXPORT std::string toString() const
     {
         return std::string(data_, length());
     }
@@ -128,24 +129,24 @@ class LogStream : NonCopyable
         return *this;
     }
 
-    self &operator<<(short);
-    self &operator<<(unsigned short);
-    self &operator<<(int);
-    self &operator<<(unsigned int);
-    self &operator<<(long);
-    self &operator<<(unsigned long);
-    self &operator<<(const long long &);
-    self &operator<<(const unsigned long long &);
+    TRANTOR_EXPORT self &operator<<(short);
+    TRANTOR_EXPORT self &operator<<(unsigned short);
+    TRANTOR_EXPORT self &operator<<(int);
+    TRANTOR_EXPORT self &operator<<(unsigned int);
+    TRANTOR_EXPORT self &operator<<(long);
+    TRANTOR_EXPORT self &operator<<(unsigned long);
+    TRANTOR_EXPORT self &operator<<(const long long &);
+    TRANTOR_EXPORT self &operator<<(const unsigned long long &);
 
-    self &operator<<(const void *);
+    TRANTOR_EXPORT self &operator<<(const void *);
 
     self &operator<<(float &v)
     {
         *this << static_cast<double>(v);
         return *this;
     }
-    self &operator<<(const double &);
-    self &operator<<(const long double &v);
+    TRANTOR_EXPORT self &operator<<(const double &);
+    TRANTOR_EXPORT self &operator<<(const long double &v);
 
     self &operator<<(char v)
     {
@@ -251,7 +252,7 @@ class Fmt  // : boost::noncopyable
 {
   public:
     template <typename T>
-    Fmt(const char *fmt, T val);
+    TRANTOR_EXPORT Fmt(const char *fmt, T val);
 
     const char *data() const
     {

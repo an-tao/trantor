@@ -16,6 +16,7 @@
 
 #include <trantor/net/EventLoop.h>
 #include <trantor/utils/Logger.h>
+#include <trantor/exports.h>
 #include <map>
 #include <mutex>
 #include <deque>
@@ -72,21 +73,22 @@ class TimingWheel
      * @example Four wheels with 200 buckets per wheel means the timing wheel
      * can work with a timeout up to 200^4 seconds, about 50 years;
      */
-    TimingWheel(trantor::EventLoop *loop,
-                size_t maxTimeout,
-                float ticksInterval = TIMING_TICK_INTERVAL,
-                size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL);
+    TRANTOR_EXPORT TimingWheel(
+        trantor::EventLoop *loop,
+        size_t maxTimeout,
+        float ticksInterval = TIMING_TICK_INTERVAL,
+        size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL);
 
-    void insertEntry(size_t delay, EntryPtr entryPtr);
+    TRANTOR_EXPORT void insertEntry(size_t delay, EntryPtr entryPtr);
 
-    void insertEntryInloop(size_t delay, EntryPtr entryPtr);
+    TRANTOR_EXPORT void insertEntryInloop(size_t delay, EntryPtr entryPtr);
 
     EventLoop *getLoop()
     {
         return loop_;
     }
 
-    ~TimingWheel();
+    TRANTOR_EXPORT ~TimingWheel();
 
   private:
     std::vector<BucketQueue> wheels_;

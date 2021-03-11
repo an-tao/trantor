@@ -15,6 +15,7 @@
 #pragma once
 
 #include <trantor/utils/TaskQueue.h>
+#include <trantor/exports.h>
 #include <list>
 #include <memory>
 #include <vector>
@@ -37,15 +38,15 @@ class ConcurrentTaskQueue : public TaskQueue
      * @param threadNum The number of threads in the queue.
      * @param name The name of the queue.
      */
-    ConcurrentTaskQueue(size_t threadNum, const std::string &name);
+    TRANTOR_EXPORT ConcurrentTaskQueue(size_t threadNum, const std::string &name);
 
     /**
      * @brief Run a task in the queue.
      *
      * @param task
      */
-    virtual void runTaskInQueue(const std::function<void()> &task);
-    virtual void runTaskInQueue(std::function<void()> &&task);
+    TRANTOR_EXPORT virtual void runTaskInQueue(const std::function<void()> &task);
+    TRANTOR_EXPORT virtual void runTaskInQueue(std::function<void()> &&task);
 
     /**
      * @brief Get the name of the queue.
@@ -62,15 +63,15 @@ class ConcurrentTaskQueue : public TaskQueue
      *
      * @return size_t
      */
-    size_t getTaskCount();
+    TRANTOR_EXPORT size_t getTaskCount();
 
     /**
      * @brief Stop all threads in the queue.
      *
      */
-    void stop();
+    TRANTOR_EXPORT void stop();
 
-    ~ConcurrentTaskQueue();
+    TRANTOR_EXPORT ~ConcurrentTaskQueue();
 
   private:
     size_t queueCount_;
@@ -82,7 +83,7 @@ class ConcurrentTaskQueue : public TaskQueue
     std::mutex taskMutex_;
     std::condition_variable taskCond_;
     std::atomic_bool stop_;
-    void queueFunc(int queueNum);
+    TRANTOR_EXPORT void queueFunc(int queueNum);
 };
 
 }  // namespace trantor

@@ -21,6 +21,7 @@
 #define MUDUO_NET_INETADDRESS_H
 
 #include <trantor/utils/Date.h>
+#include <trantor/exports.h>
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
@@ -52,9 +53,9 @@ class InetAddress
      * @param loopbackOnly
      * @param ipv6
      */
-    InetAddress(uint16_t port = 0,
-                bool loopbackOnly = false,
-                bool ipv6 = false);
+    TRANTOR_EXPORT InetAddress(uint16_t port = 0,
+                               bool loopbackOnly = false,
+                               bool ipv6 = false);
 
     /**
      * @brief Constructs an endpoint with given ip and port.
@@ -63,7 +64,9 @@ class InetAddress
      * @param port
      * @param ipv6
      */
-    InetAddress(const std::string &ip, uint16_t port, bool ipv6 = false);
+    TRANTOR_EXPORT InetAddress(const std::string &ip,
+                               uint16_t port,
+                               bool ipv6 = false);
 
     /**
      * @brief Constructs an endpoint with given struct `sockaddr_in`. Mostly
@@ -101,21 +104,21 @@ class InetAddress
      *
      * @return std::string
      */
-    std::string toIp() const;
+    TRANTOR_EXPORT std::string toIp() const;
 
     /**
      * @brief Return the IP and port string of the endpoint.
      *
      * @return std::string
      */
-    std::string toIpPort() const;
+    TRANTOR_EXPORT std::string toIpPort() const;
 
     /**
      * @brief Return the port number of the endpoint.
      *
      * @return uint16_t
      */
-    uint16_t toPort() const;
+    TRANTOR_EXPORT uint16_t toPort() const;
 
     /**
      * @brief Check if the endpoint is IPv4 or IPv6.
@@ -123,7 +126,7 @@ class InetAddress
      * @return true
      * @return false
      */
-    bool isIpV6() const
+    TRANTOR_EXPORT bool isIpV6() const
     {
         return isIpV6_;
     }
@@ -134,7 +137,7 @@ class InetAddress
      * @return true
      * @return false
      */
-    bool isIntranetIp() const;
+    TRANTOR_EXPORT bool isIntranetIp() const;
 
     /**
      * @brief Return true if the endpoint is a loopback endpoint.
@@ -142,7 +145,7 @@ class InetAddress
      * @return true
      * @return false
      */
-    bool isLoopbackIp() const;
+    TRANTOR_EXPORT bool isLoopbackIp() const;
 
     /**
      * @brief Get the pointer to the sockaddr struct.
@@ -170,7 +173,7 @@ class InetAddress
      *
      * @return uint32_t
      */
-    uint32_t ipNetEndian() const;
+    TRANTOR_EXPORT uint32_t ipNetEndian() const;
 
     /**
      * @brief Return the pointer to the integer value of the IP(v6) in net
@@ -178,7 +181,7 @@ class InetAddress
      *
      * @return const uint32_t*
      */
-    const uint32_t *ip6NetEndian() const;
+    TRANTOR_EXPORT const uint32_t *ip6NetEndian() const;
 
     /**
      * @brief Return the port number in net endian byte order.

@@ -15,6 +15,7 @@
 #pragma once
 
 #include <trantor/net/EventLoopThread.h>
+#include <trantor/exports.h>
 #include <vector>
 #include <memory>
 
@@ -35,21 +36,22 @@ class EventLoopThreadPool : NonCopyable
      * @param threadNum The number of threads
      * @param name The name of the EventLoopThreadPool object.
      */
-    EventLoopThreadPool(size_t threadNum,
-                        const std::string &name = "EventLoopThreadPool");
+    TRANTOR_EXPORT EventLoopThreadPool(
+        size_t threadNum,
+        const std::string &name = "EventLoopThreadPool");
 
     /**
      * @brief Run all event loops in the pool.
      * @note This function doesn't block the current thread.
      */
-    void start();
+    TRANTOR_EXPORT void start();
 
     /**
      * @brief Wait for all event loops in the pool to quit.
      *
      * @note This function blocks the current thread.
      */
-    void wait();
+    TRANTOR_EXPORT void wait();
 
     /**
      * @brief Return the number of the event loop.
@@ -66,7 +68,7 @@ class EventLoopThreadPool : NonCopyable
      *
      * @return EventLoop*
      */
-    EventLoop *getNextLoop();
+    TRANTOR_EXPORT EventLoop *getNextLoop();
 
     /**
      * @brief Get the event loop in the `id` position in the pool.
@@ -75,14 +77,14 @@ class EventLoopThreadPool : NonCopyable
      * of event loops, nullptr is returned.
      * @return EventLoop*
      */
-    EventLoop *getLoop(size_t id);
+    TRANTOR_EXPORT EventLoop *getLoop(size_t id);
 
     /**
      * @brief Get all event loops in the pool.
      *
      * @return std::vector<EventLoop *>
      */
-    std::vector<EventLoop *> getLoops() const;
+    TRANTOR_EXPORT std::vector<EventLoop *> getLoops() const;
 
   private:
     std::vector<std::shared_ptr<EventLoopThread>> loopThreadVector_;

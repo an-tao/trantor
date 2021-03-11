@@ -31,11 +31,15 @@ else(BUILD_TRANTOR_SHARED)
   add_library(${PROJECT_NAME} STATIC)
 endif(BUILD_TRANTOR_SHARED)
 
+include(GenerateExportHeader)
+generate_export_header(${PROJECT_NAME} EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/exports/trantor/exports.h)
+
 # include directories
 target_include_directories(
   ${PROJECT_NAME}
   PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
          $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/exports>
   PRIVATE ${PROJECT_SOURCE_DIR}
           ${PROJECT_SOURCE_DIR}/trantor/utils
           ${PROJECT_SOURCE_DIR}/trantor/net

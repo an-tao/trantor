@@ -16,6 +16,7 @@
 
 #include <trantor/utils/Logger.h>
 #include <trantor/utils/NonCopyable.h>
+#include <trantor/exports.h>
 #include <functional>
 #include <assert.h>
 #include <memory>
@@ -38,7 +39,7 @@ class Channel : NonCopyable
      * @param loop The event loop in which the channel works.
      * @param fd The socket fd.
      */
-    Channel(EventLoop *loop, int fd);
+    TRANTOR_EXPORT Channel(EventLoop *loop, int fd);
 
     /**
      * @brief Set the read callback.
@@ -171,7 +172,7 @@ class Channel : NonCopyable
      * @brief Remove the socket from the poller in the event loop.
      *
      */
-    void remove();
+    TRANTOR_EXPORT void remove();
 
     /**
      * @brief Return the event loop.
@@ -271,17 +272,17 @@ class Channel : NonCopyable
         tied_ = true;
     }
 
-    static const int kNoneEvent;
-    static const int kReadEvent;
-    static const int kWriteEvent;
+    TRANTOR_EXPORT static const int kNoneEvent;
+    TRANTOR_EXPORT static const int kReadEvent;
+    TRANTOR_EXPORT static const int kWriteEvent;
 
   private:
     friend class EventLoop;
     friend class EpollPoller;
     friend class KQueue;
-    void update();
-    void handleEvent();
-    void handleEventSafely();
+    TRANTOR_EXPORT void update();
+    TRANTOR_EXPORT void handleEvent();
+    TRANTOR_EXPORT void handleEventSafely();
     int setRevents(int revt)
     {
         // LOG_TRACE<<"revents="<<revt;

@@ -16,6 +16,7 @@
 
 #include "TaskQueue.h"
 #include <trantor/net/EventLoopThread.h>
+#include <trantor/exports.h>
 #include <string>
 #include <queue>
 #include <mutex>
@@ -35,8 +36,8 @@ class SerialTaskQueue : public TaskQueue
      *
      * @param task
      */
-    virtual void runTaskInQueue(const std::function<void()> &task);
-    virtual void runTaskInQueue(std::function<void()> &&task);
+    TRANTOR_EXPORT virtual void runTaskInQueue(const std::function<void()> &task);
+    TRANTOR_EXPORT virtual void runTaskInQueue(std::function<void()> &&task);
 
     /**
      * @brief Get the name of the queue.
@@ -52,7 +53,7 @@ class SerialTaskQueue : public TaskQueue
      * @brief Wait until all tasks in the queue are finished.
      *
      */
-    void waitAllTasksFinished();
+    TRANTOR_EXPORT void waitAllTasksFinished();
 
     SerialTaskQueue() = delete;
 
@@ -61,9 +62,9 @@ class SerialTaskQueue : public TaskQueue
      *
      * @param name
      */
-    explicit SerialTaskQueue(const std::string &name = std::string());
+    TRANTOR_EXPORT explicit SerialTaskQueue(const std::string &name = std::string());
 
-    virtual ~SerialTaskQueue();
+    TRANTOR_EXPORT virtual ~SerialTaskQueue();
 
     /**
      * @brief Check whether a task is running in the queue.
@@ -83,13 +84,13 @@ class SerialTaskQueue : public TaskQueue
      *
      * @return size_t
      */
-    size_t getTaskCount();
+    TRANTOR_EXPORT size_t getTaskCount();
 
     /**
      * @brief Stop the queue.
      *
      */
-    void stop();
+    TRANTOR_EXPORT void stop();
 
   protected:
     std::string queueName_;

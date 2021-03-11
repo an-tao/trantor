@@ -20,6 +20,7 @@
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
+#include <trantor/exports.h>
 #include <functional>
 #include <thread>
 #include <atomic>
@@ -43,28 +44,28 @@ class TcpClient : NonCopyable
      * @param serverAddr The address of the server.
      * @param nameArg The name of the client.
      */
-    TcpClient(EventLoop *loop,
-              const InetAddress &serverAddr,
-              const std::string &nameArg);
-    ~TcpClient();
+    TRANTOR_EXPORT TcpClient(EventLoop *loop,
+                             const InetAddress &serverAddr,
+                             const std::string &nameArg);
+    TRANTOR_EXPORT ~TcpClient();
 
     /**
      * @brief Connect to the server.
      *
      */
-    void connect();
+    TRANTOR_EXPORT void connect();
 
     /**
      * @brief Disconnect from the server.
      *
      */
-    void disconnect();
+    TRANTOR_EXPORT void disconnect();
 
     /**
      * @brief Stop connecting to the server.
      *
      */
-    void stop();
+    TRANTOR_EXPORT void stop();
 
     /**
      * @brief Get the TCP connection to the server.
@@ -199,15 +200,15 @@ class TcpClient : NonCopyable
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-    void enableSSL(bool useOldTLS = false,
-                   bool validateCert = true,
-                   std::string hostname = "");
+    TRANTOR_EXPORT void enableSSL(bool useOldTLS = false,
+                                  bool validateCert = true,
+                                  std::string hostname = "");
 
   private:
     /// Not thread safe, but in loop
-    void newConnection(int sockfd);
+    TRANTOR_EXPORT void newConnection(int sockfd);
     /// Not thread safe, but in loop
-    void removeConnection(const TcpConnectionPtr &conn);
+    TRANTOR_EXPORT void removeConnection(const TcpConnectionPtr &conn);
 
     EventLoop *loop_;
     ConnectorPtr connector_;  // avoid revealing Connector
