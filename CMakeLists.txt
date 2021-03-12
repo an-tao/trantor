@@ -159,7 +159,8 @@ install(TARGETS trantor
         EXPORT TrantorTargets
         ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib
         LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib)
-
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/exports/trantor/exports.h
+        DESTINATION ${INSTALL_INCLUDE_DIR}/trantor)
 install(FILES ${public_net_headers}
         DESTINATION ${INSTALL_INCLUDE_DIR}/trantor/net)
 install(FILES ${public_utils_headers}
