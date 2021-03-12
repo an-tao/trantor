@@ -252,7 +252,7 @@ class Fmt  // : boost::noncopyable
 {
   public:
     template <typename T>
-    TRANTOR_EXPORT Fmt(const char *fmt, T val);
+    Fmt(const char *fmt, T val);
 
     const char *data() const
     {
