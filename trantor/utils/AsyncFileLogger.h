@@ -111,8 +111,8 @@ class AsyncFileLogger : NonCopyable
     {
       public:
         TRANTOR_EXPORT LoggerFile(const std::string &filePath,
-                   const std::string &fileBaseName,
-                   const std::string &fileExtName);
+                                  const std::string &fileBaseName,
+                                  const std::string &fileExtName);
         TRANTOR_EXPORT ~LoggerFile();
         TRANTOR_EXPORT void writeLog(const StringPtr buf);
         TRANTOR_EXPORT uint64_t getLength();

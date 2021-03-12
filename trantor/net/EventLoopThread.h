@@ -32,7 +32,8 @@ namespace trantor
 class EventLoopThread : NonCopyable
 {
   public:
-    TRANTOR_EXPORT explicit EventLoopThread(const std::string &threadName = "EventLoopThread");
+    TRANTOR_EXPORT explicit EventLoopThread(
+        const std::string &threadName = "EventLoopThread");
     TRANTOR_EXPORT ~EventLoopThread();
 
     /**

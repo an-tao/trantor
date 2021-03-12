@@ -36,7 +36,8 @@ class SerialTaskQueue : public TaskQueue
      *
      * @param task
      */
-    TRANTOR_EXPORT virtual void runTaskInQueue(const std::function<void()> &task);
+    TRANTOR_EXPORT virtual void runTaskInQueue(
+        const std::function<void()> &task);
     TRANTOR_EXPORT virtual void runTaskInQueue(std::function<void()> &&task);
 
     /**

@@ -38,14 +38,16 @@ class ConcurrentTaskQueue : public TaskQueue
      * @param threadNum The number of threads in the queue.
      * @param name The name of the queue.
      */
-    TRANTOR_EXPORT ConcurrentTaskQueue(size_t threadNum, const std::string &name);
+    TRANTOR_EXPORT ConcurrentTaskQueue(size_t threadNum,
+                                       const std::string &name);
 
     /**
      * @brief Run a task in the queue.
      *
      * @param task
      */
-    TRANTOR_EXPORT virtual void runTaskInQueue(const std::function<void()> &task);
+    TRANTOR_EXPORT virtual void runTaskInQueue(
+        const std::function<void()> &task);
     TRANTOR_EXPORT virtual void runTaskInQueue(std::function<void()> &&task);
 
     /**
