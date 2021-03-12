@@ -44,6 +44,8 @@ set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${targets_list} PROPERTY CXX_EXTENSIONS OFF)
 
+find_package(Threads)
+
 foreach(T ${targets_list})
-  target_link_libraries(${T} PRIVATE trantor)
+  target_link_libraries(${T} PRIVATE trantor Threads::Threads)
 endforeach()
