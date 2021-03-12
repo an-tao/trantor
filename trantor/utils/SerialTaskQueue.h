@@ -62,7 +62,7 @@ class SerialTaskQueue : public TaskQueue
      *
      * @param name
      */
-    TRANTOR_EXPORT explicit SerialTaskQueue(const std::string &name = std::string());
+    TRANTOR_EXPORT explicit SerialTaskQueue(const std::string &name);
 
     TRANTOR_EXPORT virtual ~SerialTaskQueue();
 
