@@ -35,7 +35,7 @@ static constexpr char CRLF[]{"\r\n"};
  * data.
  *
  */
-class MsgBuffer
+class TRANTOR_EXPORT MsgBuffer
 {
   public:
     /**
@@ -43,7 +43,7 @@ class MsgBuffer
      *
      * @param len The initial size of the buffer.
      */
-    TRANTOR_EXPORT MsgBuffer(size_t len = kBufferDefaultLength);
+     MsgBuffer(size_t len = kBufferDefaultLength);
 
     /**
      * @brief Get the beginning of the buffer.
@@ -85,21 +85,21 @@ class MsgBuffer
      *
      * @return uint16_t
      */
-    TRANTOR_EXPORT uint16_t peekInt16() const;
+     uint16_t peekInt16() const;
 
     /**
      * @brief Get a unsigned int value from the buffer.
      *
      * @return uint32_t
      */
-    TRANTOR_EXPORT uint32_t peekInt32() const;
+     uint32_t peekInt32() const;
 
     /**
      * @brief Get a unsigned int64 value from the buffer.
      *
      * @return uint64_t
      */
-    TRANTOR_EXPORT uint64_t peekInt64() const;
+     uint64_t peekInt64() const;
 
     /**
      * @brief Get and remove some bytes from the buffer.
@@ -107,42 +107,42 @@ class MsgBuffer
      * @param len
      * @return std::string
      */
-    TRANTOR_EXPORT std::string read(size_t len);
+     std::string read(size_t len);
 
     /**
      * @brief Get the remove a byte value from the buffer.
      *
      * @return uint8_t
      */
-    TRANTOR_EXPORT uint8_t readInt8();
+     uint8_t readInt8();
 
     /**
      * @brief Get and remove a unsigned short value from the buffer.
      *
      * @return uint16_t
      */
-    TRANTOR_EXPORT uint16_t readInt16();
+     uint16_t readInt16();
 
     /**
      * @brief Get and remove a unsigned int value from the buffer.
      *
      * @return uint32_t
      */
-    TRANTOR_EXPORT uint32_t readInt32();
+     uint32_t readInt32();
 
     /**
      * @brief Get and remove a unsigned int64 value from the buffer.
      *
      * @return uint64_t
      */
-    TRANTOR_EXPORT uint64_t readInt64();
+     uint64_t readInt64();
 
     /**
      * @brief swap the buffer with another.
      *
      * @param buf
      */
-    TRANTOR_EXPORT void swap(MsgBuffer &buf) noexcept;
+     void swap(MsgBuffer &buf) noexcept;
 
     /**
      * @brief Return the size of the data in the buffer.
@@ -168,14 +168,14 @@ class MsgBuffer
      * @brief Append new data to the buffer.
      *
      */
-    TRANTOR_EXPORT void append(const MsgBuffer &buf);
+     void append(const MsgBuffer &buf);
     template <int N>
     void append(const char (&buf)[N])
     {
         assert(strnlen(buf, N) == N - 1);
         append(buf, N - 1);
     }
-    TRANTOR_EXPORT void append(const char *buf, size_t len);
+     void append(const char *buf, size_t len);
     void append(const std::string &buf)
     {
         append(buf.c_str(), buf.length());
@@ -196,21 +196,21 @@ class MsgBuffer
      *
      * @param s
      */
-    TRANTOR_EXPORT void appendInt16(const uint16_t s);
+     void appendInt16(const uint16_t s);
 
     /**
      * @brief Append a unsigned int value to the end of the buffer.
      *
      * @param i
      */
-    TRANTOR_EXPORT void appendInt32(const uint32_t i);
+     void appendInt32(const uint32_t i);
 
     /**
      * @brief Appaend a unsigned int64 value to the end of the buffer.
      *
      * @param l
      */
-    TRANTOR_EXPORT void appendInt64(const uint64_t l);
+     void appendInt64(const uint64_t l);
 
     /**
      * @brief Put new data to the beginning of the buffer.
@@ -218,7 +218,7 @@ class MsgBuffer
      * @param buf
      * @param len
      */
-    TRANTOR_EXPORT void addInFront(const char *buf, size_t len);
+     void addInFront(const char *buf, size_t len);
 
     /**
      * @brief Put a byte value to the beginning of the buffer.
@@ -235,34 +235,34 @@ class MsgBuffer
      *
      * @param s
      */
-    TRANTOR_EXPORT void addInFrontInt16(const uint16_t s);
+     void addInFrontInt16(const uint16_t s);
 
     /**
      * @brief Put a unsigned int value to the beginning of the buffer.
      *
      * @param i
      */
-    TRANTOR_EXPORT void addInFrontInt32(const uint32_t i);
+     void addInFrontInt32(const uint32_t i);
 
     /**
      * @brief Put a unsigned int64 value to the beginning of the buffer.
      *
      * @param l
      */
-    TRANTOR_EXPORT void addInFrontInt64(const uint64_t l);
+     void addInFrontInt64(const uint64_t l);
 
     /**
      * @brief Remove all data in the buffer.
      *
      */
-    TRANTOR_EXPORT void retrieveAll();
+     void retrieveAll();
 
     /**
      * @brief Remove some bytes in the buffer.
      *
      * @param len
      */
-    TRANTOR_EXPORT void retrieve(size_t len);
+     void retrieve(size_t len);
 
     /**
      * @brief Read data from a file descriptor and put it into the buffer.˝
@@ -272,7 +272,7 @@ class MsgBuffer
      * @return ssize_t The number of bytes read from the file descriptor. -1 is
      * returned when an error occurs.
      */
-    TRANTOR_EXPORT ssize_t readFd(int fd, int *retErrno);
+     ssize_t readFd(int fd, int *retErrno);
 
     /**
      * @brief Remove the data before a certain position from the buffer.
@@ -302,7 +302,7 @@ class MsgBuffer
      *
      * @param len
      */
-    TRANTOR_EXPORT void ensureWritableBytes(size_t len);
+     void ensureWritableBytes(size_t len);
 
     /**
      * @brief Move the write pointer forward when the new data has been written

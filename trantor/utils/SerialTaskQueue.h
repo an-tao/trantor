@@ -28,7 +28,7 @@ namespace trantor
  * by one.
  *
  */
-class SerialTaskQueue : public TaskQueue
+class TRANTOR_EXPORT SerialTaskQueue : public TaskQueue
 {
   public:
     /**
@@ -36,9 +36,9 @@ class SerialTaskQueue : public TaskQueue
      *
      * @param task
      */
-    TRANTOR_EXPORT virtual void runTaskInQueue(
+     virtual void runTaskInQueue(
         const std::function<void()> &task);
-    TRANTOR_EXPORT virtual void runTaskInQueue(std::function<void()> &&task);
+     virtual void runTaskInQueue(std::function<void()> &&task);
 
     /**
      * @brief Get the name of the queue.
@@ -54,7 +54,7 @@ class SerialTaskQueue : public TaskQueue
      * @brief Wait until all tasks in the queue are finished.
      *
      */
-    TRANTOR_EXPORT void waitAllTasksFinished();
+     void waitAllTasksFinished();
 
     SerialTaskQueue() = delete;
 
@@ -63,9 +63,9 @@ class SerialTaskQueue : public TaskQueue
      *
      * @param name
      */
-    TRANTOR_EXPORT explicit SerialTaskQueue(const std::string &name);
+     explicit SerialTaskQueue(const std::string &name);
 
-    TRANTOR_EXPORT virtual ~SerialTaskQueue();
+     virtual ~SerialTaskQueue();
 
     /**
      * @brief Check whether a task is running in the queue.
@@ -85,13 +85,13 @@ class SerialTaskQueue : public TaskQueue
      *
      * @return size_t
      */
-    TRANTOR_EXPORT size_t getTaskCount();
+     size_t getTaskCount();
 
     /**
      * @brief Stop the queue.
      *
      */
-    TRANTOR_EXPORT void stop();
+     void stop();
 
   protected:
     std::string queueName_;

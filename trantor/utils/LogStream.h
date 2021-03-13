@@ -87,13 +87,13 @@ class FixedBuffer : NonCopyable
     }
 
     // for used by GDB
-    TRANTOR_EXPORT const char *debugString();
+     const char *debugString();
     void setCookie(void (*cookie)())
     {
         cookie_ = cookie;
     }
     // for used by unit test
-    TRANTOR_EXPORT std::string toString() const
+     std::string toString() const
     {
         return std::string(data_, length());
     }
@@ -116,7 +116,7 @@ class FixedBuffer : NonCopyable
 
 }  // namespace detail
 
-class LogStream : NonCopyable
+class TRANTOR_EXPORT LogStream : NonCopyable
 {
     using self = LogStream;
 
@@ -129,24 +129,24 @@ class LogStream : NonCopyable
         return *this;
     }
 
-    TRANTOR_EXPORT self &operator<<(short);
-    TRANTOR_EXPORT self &operator<<(unsigned short);
-    TRANTOR_EXPORT self &operator<<(int);
-    TRANTOR_EXPORT self &operator<<(unsigned int);
-    TRANTOR_EXPORT self &operator<<(long);
-    TRANTOR_EXPORT self &operator<<(unsigned long);
-    TRANTOR_EXPORT self &operator<<(const long long &);
-    TRANTOR_EXPORT self &operator<<(const unsigned long long &);
+     self &operator<<(short);
+     self &operator<<(unsigned short);
+     self &operator<<(int);
+     self &operator<<(unsigned int);
+     self &operator<<(long);
+     self &operator<<(unsigned long);
+     self &operator<<(const long long &);
+     self &operator<<(const unsigned long long &);
 
-    TRANTOR_EXPORT self &operator<<(const void *);
+     self &operator<<(const void *);
 
     self &operator<<(float &v)
     {
         *this << static_cast<double>(v);
         return *this;
     }
-    TRANTOR_EXPORT self &operator<<(const double &);
-    TRANTOR_EXPORT self &operator<<(const long double &v);
+     self &operator<<(const double &);
+     self &operator<<(const long double &v);
 
     self &operator<<(char v)
     {
@@ -248,7 +248,7 @@ class LogStream : NonCopyable
     std::string exBuffer_;
 };
 
-class Fmt  // : boost::noncopyable
+class TRANTOR_EXPORT Fmt  // : boost::noncopyable
 {
   public:
     template <typename T>

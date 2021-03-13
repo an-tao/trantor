@@ -42,7 +42,7 @@ using BucketQueue = std::deque<EntryBucket>;
  * accuracy. This is usually used internally.
  *
  */
-class TimingWheel
+class TRANTOR_EXPORT TimingWheel
 {
   public:
     class CallbackEntry
@@ -73,22 +73,22 @@ class TimingWheel
      * @example Four wheels with 200 buckets per wheel means the timing wheel
      * can work with a timeout up to 200^4 seconds, about 50 years;
      */
-    TRANTOR_EXPORT TimingWheel(
+     TimingWheel(
         trantor::EventLoop *loop,
         size_t maxTimeout,
         float ticksInterval = TIMING_TICK_INTERVAL,
         size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL);
 
-    TRANTOR_EXPORT void insertEntry(size_t delay, EntryPtr entryPtr);
+     void insertEntry(size_t delay, EntryPtr entryPtr);
 
-    TRANTOR_EXPORT void insertEntryInloop(size_t delay, EntryPtr entryPtr);
+     void insertEntryInloop(size_t delay, EntryPtr entryPtr);
 
     EventLoop *getLoop()
     {
         return loop_;
     }
 
-    TRANTOR_EXPORT ~TimingWheel();
+     ~TimingWheel();
 
   private:
     std::vector<BucketQueue> wheels_;

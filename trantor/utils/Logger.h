@@ -28,7 +28,7 @@ namespace trantor
  * @brief This class implements log functions.
  *
  */
-class Logger : public NonCopyable
+class TRANTOR_EXPORT Logger : public NonCopyable
 {
   public:
     enum LogLevel
@@ -74,15 +74,15 @@ class Logger : public NonCopyable
         const char *data_;
         int size_;
     };
-    TRANTOR_EXPORT Logger(SourceFile file, int line);
-    TRANTOR_EXPORT Logger(SourceFile file, int line, LogLevel level);
-    TRANTOR_EXPORT Logger(SourceFile file, int line, bool isSysErr);
-    TRANTOR_EXPORT Logger(SourceFile file,
+     Logger(SourceFile file, int line);
+     Logger(SourceFile file, int line, LogLevel level);
+     Logger(SourceFile file, int line, bool isSysErr);
+     Logger(SourceFile file,
                           int line,
                           LogLevel level,
                           const char *func);
-    TRANTOR_EXPORT ~Logger();
-    TRANTOR_EXPORT LogStream &stream();
+     ~Logger();
+     LogStream &stream();
 
     /**
      * @brief Set the output function.
@@ -128,7 +128,7 @@ class Logger : public NonCopyable
     {
         fflush(stdout);
     }
-    TRANTOR_EXPORT void formatTime();
+     void formatTime();
     static LogLevel &logLevel_()
     {
 #ifdef RELEASE
@@ -286,5 +286,5 @@ class Logger : public NonCopyable
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kFatal).stream()
 #endif
 
-TRANTOR_EXPORT const char *strerror_tl(int savedErrno);
+ const char *strerror_tl(int savedErrno);
 }  // namespace trantor

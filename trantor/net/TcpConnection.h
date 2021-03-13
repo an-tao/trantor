@@ -34,7 +34,7 @@ TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
  * @brief This class represents a TCP connection.
  *
  */
-class TcpConnection
+class TRANTOR_EXPORT TcpConnection
 {
   public:
     TcpConnection() = default;

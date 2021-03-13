@@ -18,7 +18,7 @@ namespace trantor
  * @note Although the c-ares library is not essential, it is recommended to
  * install it for higher performance
  */
-class Resolver
+class TRANTOR_EXPORT Resolver
 {
   public:
     using Callback = std::function<void(const trantor::InetAddress&)>;
@@ -30,7 +30,7 @@ class Resolver
      * @param timeout The timeout in seconds for DNS.
      * @return std::shared_ptr<Resolver>
      */
-    TRANTOR_EXPORT static std::shared_ptr<Resolver> newResolver(
+     static std::shared_ptr<Resolver> newResolver(
         EventLoop* loop = nullptr,
         size_t timeout = 60);
 
@@ -53,6 +53,6 @@ class Resolver
      * @return true
      * @return false
      */
-    TRANTOR_EXPORT static bool isCAresUsed();
+     static bool isCAresUsed();
 };
 }  // namespace trantor

@@ -23,4 +23,4 @@ struct iovec
     int iov_len;    /* Number of bytes */
 };
 
-int TRANTOR_EXPORT readv(int fd, const struct iovec *vector, int count);
+TRANTOR_EXPORT int readv(int fd, const struct iovec *vector, int count);

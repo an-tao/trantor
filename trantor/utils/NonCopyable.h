@@ -13,13 +13,16 @@
  */
 
 #pragma once
+
+#include <trantor/exports.h>
+
 namespace trantor
 {
 /**
  * @brief This class represents a non-copyable object.
  *
  */
-class NonCopyable
+class TRANTOR_EXPORT NonCopyable
 {
   protected:
     NonCopyable()
