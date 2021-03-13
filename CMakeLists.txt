@@ -27,6 +27,13 @@ if(BUILD_TRANTOR_SHARED)
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
   endif("${isSystemDir}" STREQUAL "-1")
   add_library(${PROJECT_NAME} SHARED)
+  if(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
+    # Ignore MSVC C4251 and C4275 warning of exporting std objects with no dll export
+    # We export class to facilitate maintenance, thus if you compile
+    # drogon on windows as a shared library, you will need to use
+    # exact same compiler for drogon and your app.
+    target_compile_options(${PROJECT_NAME} PRIVATE /wd4251 /wd4275)
+  endif()
 else(BUILD_TRANTOR_SHARED)
   add_library(${PROJECT_NAME} STATIC)
 endif(BUILD_TRANTOR_SHARED)
