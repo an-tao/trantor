@@ -44,28 +44,28 @@ class TRANTOR_EXPORT TcpClient : NonCopyable
      * @param serverAddr The address of the server.
      * @param nameArg The name of the client.
      */
-     TcpClient(EventLoop *loop,
-                             const InetAddress &serverAddr,
-                             const std::string &nameArg);
-     ~TcpClient();
+    TcpClient(EventLoop *loop,
+              const InetAddress &serverAddr,
+              const std::string &nameArg);
+    ~TcpClient();
 
     /**
      * @brief Connect to the server.
      *
      */
-     void connect();
+    void connect();
 
     /**
      * @brief Disconnect from the server.
      *
      */
-     void disconnect();
+    void disconnect();
 
     /**
      * @brief Stop connecting to the server.
      *
      */
-     void stop();
+    void stop();
 
     /**
      * @brief Get the TCP connection to the server.
@@ -200,15 +200,15 @@ class TRANTOR_EXPORT TcpClient : NonCopyable
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-     void enableSSL(bool useOldTLS = false,
-                                  bool validateCert = true,
-                                  std::string hostname = "");
+    void enableSSL(bool useOldTLS = false,
+                   bool validateCert = true,
+                   std::string hostname = "");
 
   private:
     /// Not thread safe, but in loop
-     void newConnection(int sockfd);
+    void newConnection(int sockfd);
     /// Not thread safe, but in loop
-     void removeConnection(const TcpConnectionPtr &conn);
+    void removeConnection(const TcpConnectionPtr &conn);
 
     EventLoop *loop_;
     ConnectorPtr connector_;  // avoid revealing Connector

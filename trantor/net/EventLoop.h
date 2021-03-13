@@ -54,21 +54,21 @@ enum
 class TRANTOR_EXPORT EventLoop : NonCopyable
 {
   public:
-     EventLoop();
-     ~EventLoop();
+    EventLoop();
+    ~EventLoop();
 
     /**
      * @brief Run the event loop. This method will be blocked until the event
      * loop exits.
      *
      */
-     void loop();
+    void loop();
 
     /**
      * @brief Let the event loop quit.
      *
      */
-     void quit();
+    void quit();
 
     /**
      * @brief Assertion that the current thread is the thread to which the event
@@ -86,13 +86,13 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      * @brief Make the timer queue works after calling the fork() function.
      *
      */
-     void resetTimerQueue();
+    void resetTimerQueue();
 #endif
     /**
      * @brief Make the event loop works after calling the fork() function.
      *
      */
-     void resetAfterFork();
+    void resetAfterFork();
 
     /**
      * @brief Return true if the current thread is the thread to which the event
@@ -112,7 +112,7 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      *
      * @return EventLoop*
      */
-     static EventLoop *getEventLoopOfCurrentThread();
+    static EventLoop *getEventLoopOfCurrentThread();
 
     /**
      * @brief Run the function f in the thread of the event loop.
@@ -121,8 +121,8 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      * @note If the current thread is the thread of the event loop, the function
      * f is executed directly before the method exiting.
      */
-     void runInLoop(const Func &f);
-     void runInLoop(Func &&f);
+    void runInLoop(const Func &f);
+    void runInLoop(Func &&f);
 
     /**
      * @brief Run the function f in the thread of the event loop.
@@ -132,8 +132,8 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      * that the function f is executed after the method exiting no matter if the
      * current thread is the thread of the event loop.
      */
-     void queueInLoop(const Func &f);
-     void queueInLoop(Func &&f);
+    void queueInLoop(const Func &f);
+    void queueInLoop(Func &&f);
 
     /**
      * @brief Run a function at a time point.
@@ -142,8 +142,8 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      * @param cb The function to run.
      * @return TimerId The ID of the timer.
      */
-     TimerId runAt(const Date &time, const Func &cb);
-     TimerId runAt(const Date &time, Func &&cb);
+    TimerId runAt(const Date &time, const Func &cb);
+    TimerId runAt(const Date &time, Func &&cb);
 
     /**
      * @brief Run a function after a period of time.
@@ -152,8 +152,8 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      * @param cb The function to run.
      * @return TimerId The ID of the timer.
      */
-     TimerId runAfter(double delay, const Func &cb);
-     TimerId runAfter(double delay, Func &&cb);
+    TimerId runAfter(double delay, const Func &cb);
+    TimerId runAfter(double delay, Func &&cb);
 
     /**
      * @brief Run a function after a period of time.
@@ -181,8 +181,8 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      * @param cb The function to run.
      * @return TimerId The ID of the timer.
      */
-     TimerId runEvery(double interval, const Func &cb);
-     TimerId runEvery(double interval, Func &&cb);
+    TimerId runEvery(double interval, const Func &cb);
+    TimerId runEvery(double interval, Func &&cb);
 
     /**
      * @brief Repeatedly run a function every period of time.
@@ -210,21 +210,21 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      *
      * @param id The ID of the timer.
      */
-     void invalidateTimer(TimerId id);
+    void invalidateTimer(TimerId id);
 
     /**
      * @brief Move the EventLoop to the current thread, this method must be
      * called before the loop is running.
      *
      */
-     void moveToCurrentThread();
+    void moveToCurrentThread();
 
     /**
      * @brief Update channel status. This method is usually used internally.
      *
      * @param chl
      */
-     void updateChannel(Channel *chl);
+    void updateChannel(Channel *chl);
 
     /**
      * @brief Remove a channel from the event loop. This method is usually used
@@ -232,7 +232,7 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      *
      * @param chl
      */
-     void removeChannel(Channel *chl);
+    void removeChannel(Channel *chl);
 
     /**
      * @brief Return the index of the event loop.
@@ -277,9 +277,9 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
     }
 
   private:
-     void abortNotInLoopThread();
-     void wakeup();
-     void wakeupRead();
+    void abortNotInLoopThread();
+    void wakeup();
+    void wakeupRead();
     bool looping_;
     std::thread::id threadId_;
     bool quit_;

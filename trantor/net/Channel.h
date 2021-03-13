@@ -39,7 +39,7 @@ class TRANTOR_EXPORT Channel : NonCopyable
      * @param loop The event loop in which the channel works.
      * @param fd The socket fd.
      */
-     Channel(EventLoop *loop, int fd);
+    Channel(EventLoop *loop, int fd);
 
     /**
      * @brief Set the read callback.
@@ -172,7 +172,7 @@ class TRANTOR_EXPORT Channel : NonCopyable
      * @brief Remove the socket from the poller in the event loop.
      *
      */
-     void remove();
+    void remove();
 
     /**
      * @brief Return the event loop.
@@ -272,17 +272,17 @@ class TRANTOR_EXPORT Channel : NonCopyable
         tied_ = true;
     }
 
-     static const int kNoneEvent;
-     static const int kReadEvent;
-     static const int kWriteEvent;
+    static const int kNoneEvent;
+    static const int kReadEvent;
+    static const int kWriteEvent;
 
   private:
     friend class EventLoop;
     friend class EpollPoller;
     friend class KQueue;
-     void update();
-     void handleEvent();
-     void handleEventSafely();
+    void update();
+    void handleEvent();
+    void handleEventSafely();
     int setRevents(int revt)
     {
         // LOG_TRACE<<"revents="<<revt;

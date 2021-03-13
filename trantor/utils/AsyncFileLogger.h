@@ -44,19 +44,19 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
      * @param msg
      * @param len
      */
-    void  output(const char *msg, const uint64_t len);
+    void output(const char *msg, const uint64_t len);
 
     /**
      * @brief Flush data from memory buffer to the log file.
      *
      */
-    void  flush();
+    void flush();
 
     /**
      * @brief Start writing log files.
      *
      */
-    void  startLogging();
+    void startLogging();
 
     /**
      * @brief Set the size limit of log files. When the log file size reaches
@@ -89,8 +89,8 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         if (filePath_[filePath_.length() - 1] != '/')
             filePath_ = filePath_ + "/";
     }
-     ~AsyncFileLogger();
-     AsyncFileLogger();
+    ~AsyncFileLogger();
+    AsyncFileLogger();
 
   protected:
     std::mutex mutex_;
@@ -110,17 +110,17 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
     class LoggerFile : NonCopyable
     {
       public:
-         LoggerFile(const std::string &filePath,
-                                  const std::string &fileBaseName,
-                                  const std::string &fileExtName);
-         ~LoggerFile();
-         void writeLog(const StringPtr buf);
-         uint64_t getLength();
+        LoggerFile(const std::string &filePath,
+                   const std::string &fileBaseName,
+                   const std::string &fileExtName);
+        ~LoggerFile();
+        void writeLog(const StringPtr buf);
+        uint64_t getLength();
         explicit operator bool() const
         {
             return fp_ != nullptr;
         }
-         void flush();
+        void flush();
 
       protected:
         FILE *fp_{nullptr};

@@ -46,24 +46,24 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      * @param reUseAddr The SO_REUSEADDR option.
      * @param reUsePort The SO_REUSEPORT option.
      */
-     TcpServer(EventLoop *loop,
-                             const InetAddress &address,
-                             const std::string &name,
-                             bool reUseAddr = true,
-                             bool reUsePort = true);
-     ~TcpServer();
+    TcpServer(EventLoop *loop,
+              const InetAddress &address,
+              const std::string &name,
+              bool reUseAddr = true,
+              bool reUsePort = true);
+    ~TcpServer();
 
     /**
      * @brief Start the server.
      *
      */
-     void start();
+    void start();
 
     /**
      * @brief Stop the server.
      *
      */
-     void stop();
+    void stop();
 
     /**
      * @brief Set the number of event loops in which the I/O of connections to
@@ -152,14 +152,14 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      *
      * @return const std::string
      */
-     const std::string ipPort() const;
+    const std::string ipPort() const;
 
     /**
      * @brief Get the address of the server.
      *
      * @return const trantor::InetAddress&
      */
-     const trantor::InetAddress &address() const;
+    const trantor::InetAddress &address() const;
 
     /**
      * @brief Get the event loop of the server.
@@ -205,14 +205,14 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-     void enableSSL(const std::string &certPath,
-                                  const std::string &keyPath,
-                                  bool useOldTLS = false);
+    void enableSSL(const std::string &certPath,
+                   const std::string &keyPath,
+                   bool useOldTLS = false);
 
   private:
     EventLoop *loop_;
     std::unique_ptr<Acceptor> acceptorPtr_;
-     void newConnection(int fd, const InetAddress &peer);
+    void newConnection(int fd, const InetAddress &peer);
     std::string serverName_;
     std::set<TcpConnectionPtr> connSet_;
 
@@ -222,7 +222,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
 
     size_t idleTimeout_{0};
     std::map<EventLoop *, std::shared_ptr<TimingWheel>> timingWheelMap_;
-     void connectionClosed(const TcpConnectionPtr &connectionPtr);
+    void connectionClosed(const TcpConnectionPtr &connectionPtr);
     std::shared_ptr<EventLoopThreadPool> loopPoolPtr_;
 #ifndef _WIN32
     class IgnoreSigPipe

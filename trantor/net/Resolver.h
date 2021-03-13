@@ -30,9 +30,8 @@ class TRANTOR_EXPORT Resolver
      * @param timeout The timeout in seconds for DNS.
      * @return std::shared_ptr<Resolver>
      */
-     static std::shared_ptr<Resolver> newResolver(
-        EventLoop* loop = nullptr,
-        size_t timeout = 60);
+    static std::shared_ptr<Resolver> newResolver(EventLoop* loop = nullptr,
+                                                 size_t timeout = 60);
 
     /**
      * @brief Resolve an address asynchronously.
@@ -53,6 +52,6 @@ class TRANTOR_EXPORT Resolver
      * @return true
      * @return false
      */
-     static bool isCAresUsed();
+    static bool isCAresUsed();
 };
 }  // namespace trantor

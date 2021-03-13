@@ -49,20 +49,20 @@ class TRANTOR_EXPORT Date
      * @param second
      * @param microSecond
      */
-     Date(unsigned int year,
-                        unsigned int month,
-                        unsigned int day,
-                        unsigned int hour = 0,
-                        unsigned int minute = 0,
-                        unsigned int second = 0,
-                        unsigned int microSecond = 0);
+    Date(unsigned int year,
+         unsigned int month,
+         unsigned int day,
+         unsigned int hour = 0,
+         unsigned int minute = 0,
+         unsigned int second = 0,
+         unsigned int microSecond = 0);
 
     /**
      * @brief Create a Date object that represents the current time.
      *
      * @return const Date
      */
-     static const Date date();
+    static const Date date();
 
     /**
      * @brief Same as the date() method.
@@ -81,7 +81,7 @@ class TRANTOR_EXPORT Date
      * @param second
      * @return const Date
      */
-     const Date after(double second) const;
+    const Date after(double second) const;
 
     /**
      * @brief Return a new Date instance that equals to *this, but with zero
@@ -89,7 +89,7 @@ class TRANTOR_EXPORT Date
      *
      * @return const Date
      */
-     const Date roundSecond() const;
+    const Date roundSecond() const;
 
     /// Create a Date object equal to * this, but numbers of hours, minutes,
     /// seconds and microseconds are zero.
@@ -100,7 +100,7 @@ class TRANTOR_EXPORT Date
      *
      * @return const Date
      */
-     const Date roundDay() const;
+    const Date roundDay() const;
 
     ~Date(){};
 
@@ -183,7 +183,7 @@ class TRANTOR_EXPORT Date
      *
      * @return struct tm
      */
-     struct tm tmStruct() const;
+    struct tm tmStruct() const;
 
     /**
      * @brief Generate a UTC time string
@@ -191,7 +191,7 @@ class TRANTOR_EXPORT Date
      * 20180101 10:10:25            //If the @param showMicroseconds is false
      * 20180101 10:10:25:102414     //If the @param showMicroseconds is true
      */
-     std::string toFormattedString(bool showMicroseconds) const;
+    std::string toFormattedString(bool showMicroseconds) const;
 
     /**
      * @brief Generate a UTC time string formated by the @param fmtStr
@@ -202,9 +202,8 @@ class TRANTOR_EXPORT Date
      * 10:10:25:102414   //If the @param fmtStr is "%Y-%m-%d %H:%M:%S" and the
      * @param showMicroseconds is true
      */
-     std::string toCustomedFormattedString(
-        const std::string &fmtStr,
-        bool showMicroseconds = false) const;
+    std::string toCustomedFormattedString(const std::string &fmtStr,
+                                          bool showMicroseconds = false) const;
 
     /**
      * @brief Generate a local time zone string, the format of the string is
@@ -213,8 +212,7 @@ class TRANTOR_EXPORT Date
      * @param showMicroseconds
      * @return std::string
      */
-     std::string toFormattedStringLocal(
-        bool showMicroseconds) const;
+    std::string toFormattedStringLocal(bool showMicroseconds) const;
 
     /**
      * @brief Generate a local time zone string formated by the @param fmtStr
@@ -223,7 +221,7 @@ class TRANTOR_EXPORT Date
      * @param showMicroseconds
      * @return std::string
      */
-     std::string toCustomedFormattedStringLocal(
+    std::string toCustomedFormattedStringLocal(
         const std::string &fmtStr,
         bool showMicroseconds = false) const;
 
@@ -234,14 +232,14 @@ class TRANTOR_EXPORT Date
      * microseconds are zero 2018-01-01 10:10:25          //If the microsecond
      * is zero 2018-01-01 10:10:25:102414   //If the microsecond is not zero
      */
-     std::string toDbStringLocal() const;
+    std::string toDbStringLocal() const;
 
     /**
      * @brief From DB string to trantor local time zone.
      *
      * Inverse of toDbStringLocal()
      */
-     static Date fromDbStringLocal(const std::string &datetime);
+    static Date fromDbStringLocal(const std::string &datetime);
 
     /**
      * @brief Generate a UTC time string.
@@ -250,9 +248,9 @@ class TRANTOR_EXPORT Date
      * @param str The string buffer for the generated time string.
      * @param len The length of the string buffer.
      */
-     void toCustomedFormattedString(const std::string &fmtStr,
-                                                  char *str,
-                                                  size_t len) const;  // UTC
+    void toCustomedFormattedString(const std::string &fmtStr,
+                                   char *str,
+                                   size_t len) const;  // UTC
 
     /**
      * @brief Return true if the time point is in a same second as another.

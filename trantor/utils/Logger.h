@@ -74,15 +74,12 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         const char *data_;
         int size_;
     };
-     Logger(SourceFile file, int line);
-     Logger(SourceFile file, int line, LogLevel level);
-     Logger(SourceFile file, int line, bool isSysErr);
-     Logger(SourceFile file,
-                          int line,
-                          LogLevel level,
-                          const char *func);
-     ~Logger();
-     LogStream &stream();
+    Logger(SourceFile file, int line);
+    Logger(SourceFile file, int line, LogLevel level);
+    Logger(SourceFile file, int line, bool isSysErr);
+    Logger(SourceFile file, int line, LogLevel level, const char *func);
+    ~Logger();
+    LogStream &stream();
 
     /**
      * @brief Set the output function.
@@ -128,7 +125,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     {
         fflush(stdout);
     }
-     void formatTime();
+    void formatTime();
     static LogLevel &logLevel_()
     {
 #ifdef RELEASE
@@ -286,5 +283,5 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     Tensor::Logger(__FILE__, __LINE__, Tensor::Logger::kFatal).stream()
 #endif
 
- const char *strerror_tl(int savedErrno);
+const char *strerror_tl(int savedErrno);
 }  // namespace trantor

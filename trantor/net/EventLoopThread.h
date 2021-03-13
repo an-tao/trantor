@@ -32,15 +32,14 @@ namespace trantor
 class TRANTOR_EXPORT EventLoopThread : NonCopyable
 {
   public:
-     explicit EventLoopThread(
-        const std::string &threadName = "EventLoopThread");
-     ~EventLoopThread();
+    explicit EventLoopThread(const std::string &threadName = "EventLoopThread");
+    ~EventLoopThread();
 
     /**
      * @brief Wait for the event loop to exit.
      * @note This method blocks the current thread until the event loop exits.
      */
-     void wait();
+    void wait();
 
     /**
      * @brief Get the pointer of the event loop of the thread.
@@ -57,12 +56,12 @@ class TRANTOR_EXPORT EventLoopThread : NonCopyable
      * current thread.
      *
      */
-     void run();
+    void run();
 
   private:
     EventLoop *loop_;
     std::string loopThreadName_;
-     void loopFuncs();
+    void loopFuncs();
     std::promise<EventLoop *> promiseForLoopPointer_;
     std::promise<int> promiseForRun_;
     std::promise<int> promiseForLoop_;

@@ -73,22 +73,21 @@ class TRANTOR_EXPORT TimingWheel
      * @example Four wheels with 200 buckets per wheel means the timing wheel
      * can work with a timeout up to 200^4 seconds, about 50 years;
      */
-     TimingWheel(
-        trantor::EventLoop *loop,
-        size_t maxTimeout,
-        float ticksInterval = TIMING_TICK_INTERVAL,
-        size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL);
+    TimingWheel(trantor::EventLoop *loop,
+                size_t maxTimeout,
+                float ticksInterval = TIMING_TICK_INTERVAL,
+                size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL);
 
-     void insertEntry(size_t delay, EntryPtr entryPtr);
+    void insertEntry(size_t delay, EntryPtr entryPtr);
 
-     void insertEntryInloop(size_t delay, EntryPtr entryPtr);
+    void insertEntryInloop(size_t delay, EntryPtr entryPtr);
 
     EventLoop *getLoop()
     {
         return loop_;
     }
 
-     ~TimingWheel();
+    ~TimingWheel();
 
   private:
     std::vector<BucketQueue> wheels_;

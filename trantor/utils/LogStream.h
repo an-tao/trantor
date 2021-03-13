@@ -87,13 +87,13 @@ class FixedBuffer : NonCopyable
     }
 
     // for used by GDB
-     const char *debugString();
+    const char *debugString();
     void setCookie(void (*cookie)())
     {
         cookie_ = cookie;
     }
     // for used by unit test
-     std::string toString() const
+    std::string toString() const
     {
         return std::string(data_, length());
     }
@@ -129,24 +129,24 @@ class TRANTOR_EXPORT LogStream : NonCopyable
         return *this;
     }
 
-     self &operator<<(short);
-     self &operator<<(unsigned short);
-     self &operator<<(int);
-     self &operator<<(unsigned int);
-     self &operator<<(long);
-     self &operator<<(unsigned long);
-     self &operator<<(const long long &);
-     self &operator<<(const unsigned long long &);
+    self &operator<<(short);
+    self &operator<<(unsigned short);
+    self &operator<<(int);
+    self &operator<<(unsigned int);
+    self &operator<<(long);
+    self &operator<<(unsigned long);
+    self &operator<<(const long long &);
+    self &operator<<(const unsigned long long &);
 
-     self &operator<<(const void *);
+    self &operator<<(const void *);
 
     self &operator<<(float &v)
     {
         *this << static_cast<double>(v);
         return *this;
     }
-     self &operator<<(const double &);
-     self &operator<<(const long double &v);
+    self &operator<<(const double &);
+    self &operator<<(const long double &v);
 
     self &operator<<(char v)
     {
