@@ -32,7 +32,7 @@ if(BUILD_TRANTOR_SHARED)
     # We export class to facilitate maintenance, thus if you compile
     # drogon on windows as a shared library, you will need to use
     # exact same compiler for drogon and your app.
-    target_compile_options(${PROJECT_NAME} PRIVATE /wd4251 /wd4275)
+    target_compile_options(${PROJECT_NAME} PUBLIC /wd4251 /wd4275)
   endif()
 else(BUILD_TRANTOR_SHARED)
   add_library(${PROJECT_NAME} STATIC)

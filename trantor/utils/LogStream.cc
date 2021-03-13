@@ -258,16 +258,16 @@ Fmt::Fmt(const char *fmt, T val)
 
 // Explicit instantiations
 
-template Fmt::Fmt(const char *fmt, char);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, char);
 
-template Fmt::Fmt(const char *fmt, short);
-template Fmt::Fmt(const char *fmt, unsigned short);
-template Fmt::Fmt(const char *fmt, int);
-template Fmt::Fmt(const char *fmt, unsigned int);
-template Fmt::Fmt(const char *fmt, long);
-template Fmt::Fmt(const char *fmt, unsigned long);
-template Fmt::Fmt(const char *fmt, long long);
-template Fmt::Fmt(const char *fmt, unsigned long long);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, short);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, unsigned short);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, int);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, unsigned int);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, long);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, unsigned long);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, long long);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, unsigned long long);
 
-template Fmt::Fmt(const char *fmt, float);
-template Fmt::Fmt(const char *fmt, double);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, float);
+template TRANTOR_EXPORT Fmt::Fmt(const char *fmt, double);
