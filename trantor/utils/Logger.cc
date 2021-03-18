@@ -167,7 +167,9 @@ Logger::Logger(SourceFile file, int line, bool)
 Logger::~Logger()
 {
     logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
-    Logger::outputFunc_()(logStream_.bufferData(), logStream_.bufferLength());
+    auto oFunc = Logger::outputFunc_();
+    if (!oFunc) return;
+    oFunc(logStream_.bufferData(), logStream_.bufferLength());
     if (level_ >= kError)
         Logger::flushFunc_()();
     // logStream_.resetBuffer();
