@@ -164,6 +164,7 @@ source_group("Public API"
 install(TARGETS trantor
                 # IMPORTANT: Add the trantor library to the "export-set"
         EXPORT TrantorTargets
+        RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
         ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib
         LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/exports/trantor/exports.h
