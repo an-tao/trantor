@@ -200,6 +200,14 @@ class InetAddress
         addr_.sin_port = port;
     }
 
+    /**
+     * @brief Returns if the address is not initalized.
+     */
+    inline bool isUnspecified() const
+    {
+        return isUnspecified_;
+    }
+
   private:
     union
     {
@@ -207,6 +215,7 @@ class InetAddress
         struct sockaddr_in6 addr6_;
     };
     bool isIpV6_{false};
+    bool isUnspecified_{true};
 };
 
 }  // namespace trantor

@@ -93,8 +93,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
         addr6_.sin6_port = htons(port);
         if (::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr) <= 0)
         {
-            LOG_SYSERR << "Failed to parse IPv6 address \'" << ip << "\'";
-            abort();
+            return;
         }
     }
     else
@@ -104,10 +103,10 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
         addr_.sin_port = htons(port);
         if (::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)
         {
-            LOG_SYSERR << "Failed to parse IPv4 address \'" << ip << "\'";
-            abort();
+            return;
         }
     }
+    isUnspecified_ = false;
 }
 
 std::string InetAddress::toIpPort() const
