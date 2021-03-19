@@ -81,6 +81,7 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
         addr_.sin_addr.s_addr = htonl(ip);
         addr_.sin_port = htons(port);
     }
+    isUnspecified_ = false;
 }
 
 InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
@@ -93,8 +94,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
         addr6_.sin6_port = htons(port);
         if (::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr) <= 0)
         {
-            // LOG_SYSERR << "sockets::fromIpPort";
-            // abort();
+            return;
         }
     }
     else
@@ -104,10 +104,10 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
         addr_.sin_port = htons(port);
         if (::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)
         {
-            // LOG_SYSERR << "sockets::fromIpPort";
-            // abort();
+            return;
         }
     }
+    isUnspecified_ = false;
 }
 
 std::string InetAddress::toIpPort() const
