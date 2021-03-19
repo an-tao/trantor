@@ -71,7 +71,8 @@ class InetAddress
      *
      * @param addr
      */
-    explicit InetAddress(const struct sockaddr_in &addr) : addr_(addr)
+    explicit InetAddress(const struct sockaddr_in &addr)
+        : addr_(addr), isUnspecified_(false)
     {
     }
 
@@ -82,7 +83,7 @@ class InetAddress
      * @param addr
      */
     explicit InetAddress(const struct sockaddr_in6 &addr)
-        : addr6_(addr), isIpV6_(true)
+        : addr6_(addr), isIpV6_(true), isUnspecified_(false)
     {
     }
 
@@ -163,6 +164,7 @@ class InetAddress
     {
         addr6_ = addr6;
         isIpV6_ = (addr6_.sin6_family == AF_INET6);
+        isUnspecified_ = false;
     }
 
     /**

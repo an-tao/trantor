@@ -81,6 +81,7 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
         addr_.sin_addr.s_addr = htonl(ip);
         addr_.sin_port = htons(port);
     }
+    isUnspecified_ = false;
 }
 
 InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
