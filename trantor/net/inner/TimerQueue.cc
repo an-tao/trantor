@@ -283,7 +283,6 @@ void TimerQueue::reset(const std::vector<TimerPtr> &expired,
                 timerIdSet_.erase(iter);
             }
         }
-        
     }
 #ifdef __linux__
     if (!timers_.empty())
