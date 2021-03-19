@@ -203,7 +203,7 @@ class InetAddress
     }
 
     /**
-     * @brief Returns if the address is not initalized.
+     * @brief Return true if the address is not initalized.
      */
     inline bool isUnspecified() const
     {
