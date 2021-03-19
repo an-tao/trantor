@@ -270,13 +270,8 @@ void TimerQueue::reset(const std::vector<TimerPtr> &expired,
     loop_->assertInLoopThread();
     for (auto const &timerPtr : expired)
     {
-        // if (timerPtr->isRepeat() &&
-        //     timerIdSet_.find(timerPtr->id()) != timerIdSet_.end())
-        // {
-        //     timerPtr->restart(now);
-        //     insert(timerPtr);
-        // }
-        if (timerIdSet_.find(timerPtr->id()) != timerIdSet_.end())
+        auto iter = timerIdSet_.find(timerPtr->id());
+        if (iter != timerIdSet_.end())
         {
             if (timerPtr->isRepeat())
             {
@@ -285,9 +280,7 @@ void TimerQueue::reset(const std::vector<TimerPtr> &expired,
             }
             else
             {
-                // If the timer has been called and not repeat, it should be removed from the set
-                // I guess you forget that 
-                timerIdSet_.erase(timerPtr->id());
+                timerIdSet_.erase(iter);
             }
         }
         

@@ -76,11 +76,6 @@ static thread_local uint64_t threadId_{0};
 
 void Logger::formatTime()
 {
-    // uint64_t now = date_.microSecondsSinceEpoch();
-    // uint64_t microSec = now % 1000000;
-    // now = now / 1000000;
-    
-    // reduce magic number
     uint64_t now = static_cast<uint64_t>(date_.secondsSinceEpoch());
     uint64_t microSec = static_cast<uint64_t>(
         date_.microSecondsSinceEpoch() - date_.roundSecond().microSecondsSinceEpoch());
