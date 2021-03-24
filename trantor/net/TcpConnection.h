@@ -13,6 +13,7 @@
  */
 
 #pragma once
+#include <trantor/exports.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/utils/NonCopyable.h>
@@ -25,14 +26,15 @@
 namespace trantor
 {
 class SSLContext;
-std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
-                                                const std::string &keyPath,
-                                                bool useOldTLS = false);
+TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
+    const std::string &certPath,
+    const std::string &keyPath,
+    bool useOldTLS = false);
 /**
  * @brief This class represents a TCP connection.
  *
  */
-class TcpConnection
+class TRANTOR_EXPORT TcpConnection
 {
   public:
     TcpConnection() = default;

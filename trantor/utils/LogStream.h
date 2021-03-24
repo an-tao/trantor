@@ -16,6 +16,7 @@
 
 // Taken from muduo lib and modified. Classes in this file are used internally.
 #include <trantor/utils/NonCopyable.h>
+#include <trantor/exports.h>
 
 #include <assert.h>
 #include <string.h>  // memcpy
@@ -115,7 +116,7 @@ class FixedBuffer : NonCopyable
 
 }  // namespace detail
 
-class LogStream : NonCopyable
+class TRANTOR_EXPORT LogStream : NonCopyable
 {
     using self = LogStream;
 
@@ -247,7 +248,7 @@ class LogStream : NonCopyable
     std::string exBuffer_;
 };
 
-class Fmt  // : boost::noncopyable
+class TRANTOR_EXPORT Fmt  // : boost::noncopyable
 {
   public:
     template <typename T>

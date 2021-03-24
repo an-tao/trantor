@@ -16,6 +16,7 @@
 
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
+#include <trantor/exports.h>
 #include <thread>
 #include <mutex>
 #include <string>
@@ -34,7 +35,7 @@ using StringPtrQueue = std::queue<StringPtr>;
  * asynchronously.
  *
  */
-class AsyncFileLogger : NonCopyable
+class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
 {
   public:
     /**

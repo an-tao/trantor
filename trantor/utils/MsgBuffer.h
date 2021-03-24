@@ -14,6 +14,7 @@
 
 #pragma once
 #include <trantor/utils/NonCopyable.h>
+#include <trantor/exports.h>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -34,7 +35,7 @@ static constexpr char CRLF[]{"\r\n"};
  * data.
  *
  */
-class MsgBuffer
+class TRANTOR_EXPORT MsgBuffer
 {
   public:
     /**

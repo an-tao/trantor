@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <trantor/exports.h>
 #include <stdint.h>
 
 struct iovec
@@ -22,4 +23,4 @@ struct iovec
     int iov_len;    /* Number of bytes */
 };
 
-int readv(int fd, const struct iovec *vector, int count);
+TRANTOR_EXPORT int readv(int fd, const struct iovec *vector, int count);

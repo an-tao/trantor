@@ -6,6 +6,7 @@
 // Author: Tao An
 
 #pragma once
+#include <trantor/exports.h>
 #include <memory>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
@@ -17,7 +18,7 @@ namespace trantor
  * @note Although the c-ares library is not essential, it is recommended to
  * install it for higher performance
  */
-class Resolver
+class TRANTOR_EXPORT Resolver
 {
   public:
     using Callback = std::function<void(const trantor::InetAddress&)>;

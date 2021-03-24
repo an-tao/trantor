@@ -16,6 +16,7 @@
 
 #include "TaskQueue.h"
 #include <trantor/net/EventLoopThread.h>
+#include <trantor/exports.h>
 #include <string>
 #include <queue>
 #include <mutex>
@@ -27,7 +28,7 @@ namespace trantor
  * by one.
  *
  */
-class SerialTaskQueue : public TaskQueue
+class TRANTOR_EXPORT SerialTaskQueue : public TaskQueue
 {
   public:
     /**
@@ -61,7 +62,7 @@ class SerialTaskQueue : public TaskQueue
      *
      * @param name
      */
-    explicit SerialTaskQueue(const std::string &name = std::string());
+    explicit SerialTaskQueue(const std::string &name);
 
     virtual ~SerialTaskQueue();
 

@@ -16,6 +16,7 @@
 
 #include <trantor/net/EventLoop.h>
 #include <trantor/utils/NonCopyable.h>
+#include <trantor/exports.h>
 #include <mutex>
 #include <thread>
 #include <memory>
@@ -28,7 +29,7 @@ namespace trantor
  * @brief This class represents an event loop thread.
  *
  */
-class EventLoopThread : NonCopyable
+class TRANTOR_EXPORT EventLoopThread : NonCopyable
 {
   public:
     explicit EventLoopThread(const std::string &threadName = "EventLoopThread");

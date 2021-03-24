@@ -16,6 +16,7 @@
 
 #include <trantor/net/EventLoop.h>
 #include <trantor/utils/Logger.h>
+#include <trantor/exports.h>
 #include <map>
 #include <mutex>
 #include <deque>
@@ -41,7 +42,7 @@ using BucketQueue = std::deque<EntryBucket>;
  * accuracy. This is usually used internally.
  *
  */
-class TimingWheel
+class TRANTOR_EXPORT TimingWheel
 {
   public:
     class CallbackEntry

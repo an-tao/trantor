@@ -15,6 +15,7 @@
 #pragma once
 
 #include <trantor/utils/TaskQueue.h>
+#include <trantor/exports.h>
 #include <list>
 #include <memory>
 #include <vector>
@@ -28,7 +29,7 @@ namespace trantor
  * can be called a threads pool.
  *
  */
-class ConcurrentTaskQueue : public TaskQueue
+class TRANTOR_EXPORT ConcurrentTaskQueue : public TaskQueue
 {
   public:
     /**

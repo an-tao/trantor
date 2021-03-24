@@ -20,6 +20,7 @@
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/TimingWheel.h>
+#include <trantor/exports.h>
 #include <string>
 #include <memory>
 #include <set>
@@ -32,7 +33,7 @@ class SSLContext;
  * @brief This class represents a TCP server.
  *
  */
-class TcpServer : NonCopyable
+class TRANTOR_EXPORT TcpServer : NonCopyable
 {
   public:
     /**

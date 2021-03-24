@@ -19,6 +19,7 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Date.h>
 #include <trantor/utils/LockFreeQueue.h>
+#include <trantor/exports.h>
 #include <thread>
 #include <memory>
 #include <vector>
@@ -50,7 +51,7 @@ enum
  * the event loop of the thread it belongs to, or call that thread the thread of
  * the event loop.
  */
-class EventLoop : NonCopyable
+class TRANTOR_EXPORT EventLoop : NonCopyable
 {
   public:
     EventLoop();

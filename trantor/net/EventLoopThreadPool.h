@@ -15,6 +15,7 @@
 #pragma once
 
 #include <trantor/net/EventLoopThread.h>
+#include <trantor/exports.h>
 #include <vector>
 #include <memory>
 
@@ -24,7 +25,7 @@ namespace trantor
  * @brief This class represents a pool of EventLoopThread objects
  *
  */
-class EventLoopThreadPool : NonCopyable
+class TRANTOR_EXPORT EventLoopThreadPool : NonCopyable
 {
   public:
     EventLoopThreadPool() = delete;

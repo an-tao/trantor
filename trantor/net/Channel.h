@@ -16,6 +16,7 @@
 
 #include <trantor/utils/Logger.h>
 #include <trantor/utils/NonCopyable.h>
+#include <trantor/exports.h>
 #include <functional>
 #include <assert.h>
 #include <memory>
@@ -28,7 +29,7 @@ class EventLoop;
  * events on the socket it manages.
  *
  */
-class Channel : NonCopyable
+class TRANTOR_EXPORT Channel : NonCopyable
 {
   public:
     using EventCallback = std::function<void()>;

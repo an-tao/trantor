@@ -20,6 +20,7 @@
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
+#include <trantor/exports.h>
 #include <functional>
 #include <thread>
 #include <atomic>
@@ -33,7 +34,7 @@ class SSLContext;
  * @brief This class represents a TCP client.
  *
  */
-class TcpClient : NonCopyable
+class TRANTOR_EXPORT TcpClient : NonCopyable
 {
   public:
     /**

@@ -21,6 +21,7 @@
 #define MUDUO_NET_INETADDRESS_H
 
 #include <trantor/utils/Date.h>
+#include <trantor/exports.h>
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
@@ -41,7 +42,7 @@ namespace trantor
  * @brief Wrapper of sockaddr_in. This is an POD interface class.
  *
  */
-class InetAddress
+class TRANTOR_EXPORT InetAddress
 {
   public:
     /**
