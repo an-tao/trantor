@@ -16,6 +16,7 @@ endif()
 if(@c-ares_FOUND@)
   find_dependency(c-ares)
 endif()
+find_dependency(Threads)
 # Compute paths
 
 # Our library dependencies (contains definitions for IMPORTED targets)
