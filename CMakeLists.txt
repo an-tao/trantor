@@ -107,7 +107,7 @@ endif()
 target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
 
 find_package(Threads)
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 Rpcrt4)
   if(OpenSSL_FOUND)
