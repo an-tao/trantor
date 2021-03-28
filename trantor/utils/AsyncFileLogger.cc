@@ -54,13 +54,7 @@ AsyncFileLogger::~AsyncFileLogger()
         std::lock_guard<std::mutex> guard_(mutex_);
         if (logBufferPtr_->length() > 0)
         {
-            writeBuffers_.push(logBufferPtr_);
-        }
-        if (writeBuffers_.size() > 0)
-        {
-            StringPtr tmpPtr = (StringPtr &&) writeBuffers_.front();
-            writeBuffers_.pop();
-            writeLogToFile(tmpPtr);
+            writeLogToFile(logBufferPtr_);
         }
     }
 }
