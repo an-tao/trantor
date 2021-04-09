@@ -3,6 +3,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.0] - 2021-04-09
+
+### API changes list
+
+- Add isUnspecified() to indicate if IP parsing failed.
+
+- Add exports macro to allow Shared Library with hidden symbols by default.
+
+### Changed
+
+- Modify the AsyncFileLogger destructor.
+
+### Fixed
+
+- Recycle TimerID in the TimerQueue.
+
 ## [1.3.0] - 2021-03-05
 
 ### API changes list
@@ -248,7 +264,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.4.0...HEAD
+
+[1.4.0]: https://github.com/an-tao/trantor/compare/v1.3.0...v1.4.0
 
 [1.3.0]: https://github.com/an-tao/trantor/compare/v1.2.0...v1.3.0
 
