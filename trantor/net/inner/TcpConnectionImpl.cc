@@ -710,7 +710,6 @@ void TcpConnectionImpl::writeCallback()
                                 writeBufferList_.front()->msgBuffer_->peek(),
                                 writeBufferList_.front()
                                     ->msgBuffer_->readableBytes());
-                            writeBufferList_.front()->msgBuffer_->retrieve(n);
                             if (n >= 0)
                             {
                                 writeBufferList_.front()->msgBuffer_->retrieve(
