@@ -40,7 +40,7 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
     {
         wheels_[i].resize(bucketsNumPerWheel_);
     }
-    timerId_ = loop_->runEvery(ticksInterval_, [=]() {
+    timerId_ = loop_->runEvery(ticksInterval_, [this]() {
         ++ticksCounter_;
         size_t t = ticksCounter_;
         size_t pow = 1;
@@ -85,7 +85,8 @@ void TimingWheel::insertEntry(size_t delay, EntryPtr entryPtr)
     }
     else
     {
-        loop_->runInLoop([=]() { insertEntryInloop(delay, entryPtr); });
+        loop_->runInLoop(
+            [this, delay, entryPtr]() { insertEntryInloop(delay, entryPtr); });
     }
 }
 
@@ -104,14 +105,15 @@ void TimingWheel::insertEntryInloop(size_t delay, EntryPtr entryPtr)
         }
         if (i < (wheelsNum_ - 1))
         {
-            entryPtr = std::make_shared<CallbackEntry>([=]() {
-                if (delay > 0)
-                {
-                    wheels_[i][(delay + (t % bucketsNumPerWheel_) - 1) %
-                               bucketsNumPerWheel_]
-                        .insert(entryPtr);
-                }
-            });
+            entryPtr = std::make_shared<CallbackEntry>(
+                [this, delay, i, t, entryPtr]() {
+                    if (delay > 0)
+                    {
+                        wheels_[i][(delay + (t % bucketsNumPerWheel_) - 1) %
+                                   bucketsNumPerWheel_]
+                            .insert(entryPtr);
+                    }
+                });
         }
         else
         {

@@ -14,7 +14,8 @@
 #ifdef _WIN32
 struct in6_addr_uint
 {
-    union {
+    union
+    {
         u_char Byte[16];
         u_short Word[8];
         uint32_t __s6_addr32[4];
@@ -80,6 +81,7 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
         addr_.sin_addr.s_addr = htonl(ip);
         addr_.sin_port = htons(port);
     }
+    isUnspecified_ = false;
 }
 
 InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
@@ -92,8 +94,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
         addr6_.sin6_port = htons(port);
         if (::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr) <= 0)
         {
-            // LOG_SYSERR << "sockets::fromIpPort";
-            // abort();
+            return;
         }
     }
     else
@@ -103,10 +104,10 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
         addr_.sin_port = htons(port);
         if (::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)
         {
-            // LOG_SYSERR << "sockets::fromIpPort";
-            // abort();
+            return;
         }
     }
+    isUnspecified_ = false;
 }
 
 std::string InetAddress::toIpPort() const
@@ -187,7 +188,7 @@ std::string InetAddress::toIp() const
     char buf[64];
     if (addr_.sin_family == AF_INET)
     {
-#if defined _MSC_VER && _MSC_VER == 1900
+#if defined _MSC_VER && _MSC_VER >= 1900
         ::inet_ntop(AF_INET, (PVOID)&addr_.sin_addr, buf, sizeof(buf));
 #else
         ::inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
@@ -195,7 +196,7 @@ std::string InetAddress::toIp() const
     }
     else if (addr_.sin_family == AF_INET6)
     {
-#if defined _MSC_VER && _MSC_VER == 1900
+#if defined _MSC_VER && _MSC_VER >= 1900
         ::inet_ntop(AF_INET6, (PVOID)&addr6_.sin6_addr, buf, sizeof(buf));
 #else
         ::inet_ntop(AF_INET6, &addr6_.sin6_addr, buf, sizeof(buf));

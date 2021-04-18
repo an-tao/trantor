@@ -1,7 +1,7 @@
 /**
  *
- *  TimerQueue.cc
- *  An Tao
+ *  @file TimerQueue.cc
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -27,7 +27,7 @@
 
 using namespace trantor;
 #ifdef __linux__
-int createTimerfd()
+static int createTimerfd()
 {
     int timerfd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
     if (timerfd < 0)
@@ -37,7 +37,7 @@ int createTimerfd()
     return timerfd;
 }
 
-struct timespec howMuchTimeFromNow(const TimePoint &when)
+static struct timespec howMuchTimeFromNow(const TimePoint &when)
 {
     auto microSeconds = std::chrono::duration_cast<std::chrono::microseconds>(
                             when - std::chrono::steady_clock::now())
@@ -51,7 +51,7 @@ struct timespec howMuchTimeFromNow(const TimePoint &when)
     ts.tv_nsec = static_cast<long>((microSeconds % 1000000) * 1000);
     return ts;
 }
-void resetTimerfd(int timerfd, const TimePoint &expiration)
+static void resetTimerfd(int timerfd, const TimePoint &expiration)
 {
     // wake up loop by timerfd_settime()
     struct itimerspec newValue;
@@ -65,7 +65,7 @@ void resetTimerfd(int timerfd, const TimePoint &expiration)
         // LOG_SYSERR << "timerfd_settime()";
     }
 }
-void readTimerfd(int timerfd, const TimePoint &now)
+static void readTimerfd(int timerfd, const TimePoint &now)
 {
     uint64_t howmany;
     ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
@@ -99,7 +99,7 @@ void TimerQueue::handleRead()
     reset(expired, now);
 }
 #else
-int64_t howMuchTimeFromNow(const TimePoint &when)
+static int64_t howMuchTimeFromNow(const TimePoint &when)
 {
     auto microSeconds = std::chrono::duration_cast<std::chrono::microseconds>(
                             when - std::chrono::steady_clock::now())
@@ -190,7 +190,7 @@ TimerId TimerQueue::addTimer(const TimerCallback &cb,
     std::shared_ptr<Timer> timerPtr =
         std::make_shared<Timer>(cb, when, interval);
 
-    loop_->runInLoop([=]() { addTimerInLoop(timerPtr); });
+    loop_->runInLoop([this, timerPtr]() { addTimerInLoop(timerPtr); });
     return timerPtr->id();
 }
 TimerId TimerQueue::addTimer(TimerCallback &&cb,
@@ -200,7 +200,7 @@ TimerId TimerQueue::addTimer(TimerCallback &&cb,
     std::shared_ptr<Timer> timerPtr =
         std::make_shared<Timer>(std::move(cb), when, interval);
 
-    loop_->runInLoop([=]() { addTimerInLoop(timerPtr); });
+    loop_->runInLoop([this, timerPtr]() { addTimerInLoop(timerPtr); });
     return timerPtr->id();
 }
 void TimerQueue::addTimerInLoop(const TimerPtr &timer)
@@ -218,7 +218,7 @@ void TimerQueue::addTimerInLoop(const TimerPtr &timer)
 
 void TimerQueue::invalidateTimer(TimerId id)
 {
-    loop_->runInLoop([=]() { timerIdSet_.erase(id); });
+    loop_->runInLoop([this, id]() { timerIdSet_.erase(id); });
 }
 
 bool TimerQueue::insert(const TimerPtr &timerPtr)
@@ -270,11 +270,18 @@ void TimerQueue::reset(const std::vector<TimerPtr> &expired,
     loop_->assertInLoopThread();
     for (auto const &timerPtr : expired)
     {
-        if (timerPtr->isRepeat() &&
-            timerIdSet_.find(timerPtr->id()) != timerIdSet_.end())
+        auto iter = timerIdSet_.find(timerPtr->id());
+        if (iter != timerIdSet_.end())
         {
-            timerPtr->restart(now);
-            insert(timerPtr);
+            if (timerPtr->isRepeat())
+            {
+                timerPtr->restart(now);
+                insert(timerPtr);
+            }
+            else
+            {
+                timerIdSet_.erase(iter);
+            }
         }
     }
 #ifdef __linux__

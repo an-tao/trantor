@@ -3,9 +3,109 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.0] - 2021-04-09
+
+### API changes list
+
+- Add isUnspecified() to indicate if IP parsing failed.
+
+- Add exports macro to allow Shared Library with hidden symbols by default.
+
+### Changed
+
+- Modify the AsyncFileLogger destructor.
+
+### Fixed
+
+- Recycle TimerID in the TimerQueue.
+
+## [1.3.0] - 2021-03-05
+
+### API changes list
+
+- Add secondsSinceEpoch to trantor::Date.
+
+- Rename the 'bzero' method of the FixedBuffer class to 'zeroBuffer'.
+
+- Add SNI support to TcpClient.
+
+- Add SSL certificate validation.
+
+### Changed
+
+- Change README.md.
+
+## [1.2.0] - 2021-01-16
+
+### API changes list
+
+- Add LOG_IF and DLOG like glog lib.
+
+### Changed
+
+- Enable github actions.
+
+- Add support for VS2019.
+
+- Modify the LockFreeQueue.
+
+### Fixed
+
+- Fix MinGW error with inet_ntop and inet_pton.
+
+- Fix a macro regression when using MSVC.
+
+## [1.1.1] - 2020-12-12
+
+### Changed
+
+- Add Openbsd support.
+
+## [1.1.0] - 2020-10-24
+
+### Changed
+
+- Disable TLS 1.0 and 1.1 by default.
+
+- Use explicit lambda capture lists.
+
+### Fixed
+
+- Fix a bug in the Date::fromDbStringLocal() method.
+
+## [1.0.0] - 2020-9-27
+
+### API changes list
+
+- Add the address() method to the TcpServer class.
+
+- Change some internal methods from public to private in the Channel class.
+
+### Changed
+
+- Update the wepoll library.
+
+- Add comments in public header files.
+
+## [1.0.0-rc16] - 2020-8-15
+
+### Fixed
+
+- Fix a bug when sending big files on Windows.
+
+### API changes list
+
+- Add updateEvents() method to the Channel class.
+
+## [1.0.0-rc15] - 2020-7-16
+
+### Fixed
+
+- Fix installation errors of shared library.
+
 ## [1.0.0-rc14] - 2020-6-14
 
-### API change list
+### API changes list
 
 - Add the moveToCurrentThread() method to EventLoop.
 
@@ -19,13 +119,13 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc13] - 2020-5-23
 
-### API change list
+### API changes list
 
 - Make the Channel class as a part of the public API.
 
 ## [1.0.0-rc12] - 2020-5-22
 
-### API change list
+### API changes list
 
 - Add a method to show if the c-ares library is used
 
@@ -39,7 +139,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc11] - 2020-4-27
 
-### API Change list
+### API changes list
 
 - Add fromDbStringLocal() method to the Date class
 
@@ -51,7 +151,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc10] - 2020-3-28
 
-### API Change list
+### API changes list
 
 - Add the send(const void *, size_t) method to the TcpConnection class
 
@@ -71,7 +171,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc9] - 2020-2-17
 
-### API change list
+### API changes list
 
 - Add support for a delayed SSL handshake
 
@@ -85,7 +185,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc8] - 2019-11-30
 
-### API change list
+### API changes list
 
 - Add the isSSLConnection() method to the TcpConnection class
 
@@ -102,7 +202,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc6] - 2019-10-4
 
-### API change list
+### API changes list
 
 - Add index() interface to the EventLoop class.
 
@@ -114,7 +214,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc5] - 2019-08-24
 
-### API change list
+### API changes list
 
 - Remove the resolve method from the InetAddress class.
 
@@ -125,7 +225,7 @@ All notable changes to this project will be documented in this file.
   
 ## [1.0.0-rc4] - 2019-08-08
 
-### API change list
+### API changes list
 
 - None
 
@@ -139,7 +239,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc3] - 2019-07-30
 
-### API change list
+### API changes list
 
 - TcpConnection::setContext, TcpConnection::getContext, etc.
 - Remove the config.h from public API.
@@ -164,7 +264,23 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.0.0-rc14...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.4.0...HEAD
+
+[1.4.0]: https://github.com/an-tao/trantor/compare/v1.3.0...v1.4.0
+
+[1.3.0]: https://github.com/an-tao/trantor/compare/v1.2.0...v1.3.0
+
+[1.2.0]: https://github.com/an-tao/trantor/compare/v1.1.1...v1.2.0
+
+[1.1.1]: https://github.com/an-tao/trantor/compare/v1.1.0...v1.1.1
+
+[1.1.0]: https://github.com/an-tao/trantor/compare/v1.0.0...v1.1.0
+
+[1.0.0]: https://github.com/an-tao/trantor/compare/v1.0.0-rc16...v1.0.0
+
+[1.0.0-rc16]: https://github.com/an-tao/trantor/compare/v1.0.0-rc15...v1.0.0-rc16
+
+[1.0.0-rc15]: https://github.com/an-tao/trantor/compare/v1.0.0-rc14...v1.0.0-rc15
 
 [1.0.0-rc14]: https://github.com/an-tao/trantor/compare/v1.0.0-rc13...v1.0.0-rc14
 

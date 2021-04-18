@@ -27,7 +27,7 @@ namespace trantor
 class EventLoop;
 class Channel;
 using TimerPtr = std::shared_ptr<Timer>;
-struct comp
+struct TimerPtrComparer
 {
     bool operator()(const TimerPtr &x, const TimerPtr &y) const
     {
@@ -61,7 +61,8 @@ class TimerQueue : NonCopyable
     std::shared_ptr<Channel> timerfdChannelPtr_;
     void handleRead();
 #endif
-    std::priority_queue<TimerPtr, std::vector<TimerPtr>, comp> timers_;
+    std::priority_queue<TimerPtr, std::vector<TimerPtr>, TimerPtrComparer>
+        timers_;
 
     bool callingExpiredTimers_;
     bool insert(const TimerPtr &timePtr);

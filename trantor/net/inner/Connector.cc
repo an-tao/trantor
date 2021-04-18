@@ -1,7 +1,7 @@
 /**
  *
- *  Connector.cc
- *  An Tao
+ *  @file Connector.cc
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -30,7 +30,7 @@ Connector::Connector(EventLoop *loop, InetAddress &&addr, bool retry)
 void Connector::start()
 {
     connect_ = true;
-    loop_->runInLoop([=]() { startInLoop(); });
+    loop_->runInLoop([this]() { startInLoop(); });
 }
 void Connector::restart()
 {
@@ -132,7 +132,7 @@ int Connector::removeAndResetChannel()
     channelPtr_->remove();
     int sockfd = channelPtr_->fd();
     // Can't reset channel_ here, because we are inside Channel::handleEvent
-    loop_->queueInLoop([=]() { channelPtr_.reset(); });
+    loop_->queueInLoop([this]() { channelPtr_.reset(); });
     return sockfd;
 }
 

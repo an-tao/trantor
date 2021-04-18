@@ -1,7 +1,7 @@
 /**
  *
- *  TcpServer.cc
- *  An Tao
+ *  @file TcpServer.cc
+ *  @author An Tao
  *
  *  Copyright 2018, An Tao.  All rights reserved.
  *  https://github.com/an-tao/trantor
@@ -92,12 +92,13 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     }
     newPtr->setRecvMsgCallback(recvMessageCallback_);
 
-    newPtr->setConnectionCallback([=](const TcpConnectionPtr &connectionPtr) {
-        if (connectionCallback_)
-            connectionCallback_(connectionPtr);
-    });
+    newPtr->setConnectionCallback(
+        [this](const TcpConnectionPtr &connectionPtr) {
+            if (connectionCallback_)
+                connectionCallback_(connectionPtr);
+        });
     newPtr->setWriteCompleteCallback(
-        [=](const TcpConnectionPtr &connectionPtr) {
+        [this](const TcpConnectionPtr &connectionPtr) {
             if (writeCompleteCallback_)
                 writeCompleteCallback_(connectionPtr);
         });
@@ -108,7 +109,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 
 void TcpServer::start()
 {
-    loop_->runInLoop([=]() {
+    loop_->runInLoop([this]() {
         assert(!started_);
         started_ = true;
         if (idleTimeout_ > 0)
@@ -165,7 +166,7 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
     // loop_->assertInLoopThread();
-    loop_->runInLoop([=]() {
+    loop_->runInLoop([this, connectionPtr]() {
         size_t n = connSet_.erase(connectionPtr);
         (void)n;
         assert(n == 1);
@@ -179,12 +180,18 @@ const std::string TcpServer::ipPort() const
     return acceptorPtr_->addr().toIpPort();
 }
 
+const trantor::InetAddress &TcpServer::address() const
+{
+    return acceptorPtr_->addr();
+}
+
 void TcpServer::enableSSL(const std::string &certPath,
-                          const std::string &keyPath)
+                          const std::string &keyPath,
+                          bool useOldTLS)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLServerContext(certPath, keyPath);
+    sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS);
 #else
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();

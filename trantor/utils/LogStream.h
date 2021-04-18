@@ -1,7 +1,7 @@
 /**
  *
- *  LogStream.h
- *  An Tao
+ *  @file LogStream.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -14,8 +14,9 @@
 
 #pragma once
 
-// token from muduo lib
+// Taken from muduo lib and modified. Classes in this file are used internally.
 #include <trantor/utils/NonCopyable.h>
+#include <trantor/exports.h>
 
 #include <assert.h>
 #include <string.h>  // memcpy
@@ -80,7 +81,7 @@ class FixedBuffer : NonCopyable
     {
         cur_ = data_;
     }
-    void bzero()
+    void zeroBuffer()
     {
         memset(data_, 0, sizeof(data_));
     }
@@ -115,7 +116,7 @@ class FixedBuffer : NonCopyable
 
 }  // namespace detail
 
-class LogStream : NonCopyable
+class TRANTOR_EXPORT LogStream : NonCopyable
 {
     using self = LogStream;
 
@@ -247,7 +248,7 @@ class LogStream : NonCopyable
     std::string exBuffer_;
 };
 
-class Fmt  // : boost::noncopyable
+class TRANTOR_EXPORT Fmt  // : boost::noncopyable
 {
   public:
     template <typename T>

@@ -1,7 +1,7 @@
 /**
  *
- *  EventLoopThread.cc
- *  An Tao
+ *  @file EventLoopThread.cc
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -22,7 +22,7 @@ using namespace trantor;
 EventLoopThread::EventLoopThread(const std::string &threadName)
     : loop_(nullptr),
       loopThreadName_(threadName),
-      thread_([=]() { loopFuncs(); })
+      thread_([this]() { loopFuncs(); })
 {
     auto f = promiseForLoopPointer_.get_future();
     loop_ = f.get();
@@ -53,7 +53,7 @@ void EventLoopThread::loopFuncs()
     ::prctl(PR_SET_NAME, loopThreadName_.c_str());
 #endif
     EventLoop loop;
-    loop.queueInLoop([=]() { promiseForLoop_.set_value(1); });
+    loop.queueInLoop([this]() { promiseForLoop_.set_value(1); });
     promiseForLoopPointer_.set_value(&loop);
     auto f = promiseForRun_.get_future();
     (void)f.get();

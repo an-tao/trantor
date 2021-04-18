@@ -1,7 +1,7 @@
 /**
  *
- *  LockFreeQueue.h
- *  An Tao
+ *  @file LockFreeQueue.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -20,7 +20,12 @@
 #include <assert.h>
 namespace trantor
 {
-/// A lock-free multiple producers single consumer queue
+/**
+ * @brief This class template represents a lock-free multiple producers single
+ * consumer queue
+ *
+ * @tparam T The type of the items in the queue.
+ */
 template <typename T>
 class MpscQueue : public NonCopyable
 {
@@ -29,7 +34,6 @@ class MpscQueue : public NonCopyable
         : head_(new BufferNode), tail_(head_.load(std::memory_order_relaxed))
     {
     }
-
     ~MpscQueue()
     {
         T output;
@@ -40,13 +44,18 @@ class MpscQueue : public NonCopyable
         delete front;
     }
 
+    /**
+     * @brief Put a item into the queue.
+     *
+     * @param input
+     * @note This method can be called in multiple threads.
+     */
     void enqueue(T &&input)
     {
         BufferNode *node{new BufferNode(std::move(input))};
         BufferNode *prevhead{head_.exchange(node, std::memory_order_acq_rel)};
         prevhead->next_.store(node, std::memory_order_release);
     }
-
     void enqueue(const T &input)
     {
         BufferNode *node{new BufferNode(input)};
@@ -54,6 +63,13 @@ class MpscQueue : public NonCopyable
         prevhead->next_.store(node, std::memory_order_release);
     }
 
+    /**
+     * @brief Get a item from the queue.
+     *
+     * @param output
+     * @return false if the queue is empty.
+     * @note This method must be called in a single thread.
+     */
     bool dequeue(T &output)
     {
         BufferNode *tail = tail_.load(std::memory_order_relaxed);
@@ -68,6 +84,13 @@ class MpscQueue : public NonCopyable
         tail_.store(next, std::memory_order_release);
         delete tail;
         return true;
+    }
+
+    bool empty()
+    {
+        BufferNode *tail = tail_.load(std::memory_order_relaxed);
+        BufferNode *next = tail->next_.load(std::memory_order_acquire);
+        return next == nullptr;
     }
 
   private:

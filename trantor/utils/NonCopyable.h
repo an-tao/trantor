@@ -1,7 +1,7 @@
 /**
  *
- *  NonCopyable.h
- *  An Tao
+ *  @file NonCopyable.h
+ *  @author An Tao
  *
  *  Public header file in trantor lib.
  *
@@ -13,9 +13,16 @@
  */
 
 #pragma once
+
+#include <trantor/exports.h>
+
 namespace trantor
 {
-class NonCopyable
+/**
+ * @brief This class represents a non-copyable object.
+ *
+ */
+class TRANTOR_EXPORT NonCopyable
 {
   protected:
     NonCopyable()
