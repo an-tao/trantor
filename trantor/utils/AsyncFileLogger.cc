@@ -184,10 +184,7 @@ AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
 #ifndef _MSC_VER
     fp_ = fopen(fileFullName_.c_str(), "a");
 #else
-    if (fopen_s(&fp_, fileFullName_.c_str(), "a") != 0)
-    {
-        fp_ = nullptr;
-    }
+    fp_ = _fsopen(fileFullName_.c_str(), "a+", _SH_DENYWR);
 #endif
     if (fp_ == nullptr)
     {
