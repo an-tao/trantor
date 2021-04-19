@@ -11,7 +11,47 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build:
+  windows:
+    name: 'windows/msvc - ${{matrix.link}}'
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        link: [ 'STATIC', 'SHARED' ]
+    steps:
+      - name: Checkout Trantor source code
+        uses: actions/checkout@v2
+        with:
+          submodules: false
+
+      - name: Install dependencies
+        run: |
+          pip install conan
+
+      - name: Create build directory
+        run: |
+          mkdir build
+
+      - name: Install conan packages
+        shell: pwsh
+        working-directory: ./build
+        run: |
+          conan install .. -s compiler="Visual Studio" -s compiler.version=16 -sbuild_type=Debug -g cmake_paths
+
+      - name: Create Build Environment & Configure Cmake
+        shell: bash
+        working-directory: ./build
+        run: |
+          [[ ${{ matrix.link }} == "SHARED" ]] && shared="ON" || shared="OFF"
+          cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=on -DBUILD_TRANTOR_SHARED=$shared -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" -DCMAKE_INSTALL_PREFIX=../install
+
+      - name: Build
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        shell: bash
+        run: |
+          cd build
+          cmake --build . --target install --parallel
+  unix:
     name: ${{matrix.buildname}}
     runs-on: ${{matrix.os}}
     strategy:
