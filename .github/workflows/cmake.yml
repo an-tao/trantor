@@ -40,7 +40,7 @@ jobs:
           conan install .. -s compiler="Visual Studio" -s compiler.version=16 -sbuild_type=Debug -g cmake_paths
 
       - name: Create Build Environment & Configure Cmake
-        shell: bash
+        shell: pwsh
         working-directory: ./build
         run: |
           [[ ${{ matrix.link }} == "SHARED" ]] && shared="ON" || shared="OFF"
