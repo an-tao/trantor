@@ -43,7 +43,7 @@ jobs:
         working-directory: ./build
         run: |
           [[ ${{ matrix.link }} == "SHARED" ]] && shared="ON" || shared="OFF"
-          cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=on -BUILD_TRANTOR_SHARED=$shared -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" -DCMAKE_INSTALL_PREFIX=../install
+          cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=on -DBUILD_TRANTOR_SHARED=$shared -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" -DCMAKE_INSTALL_PREFIX=../install
 
       - name: Build
         working-directory: ${{env.GITHUB_WORKSPACE}}
