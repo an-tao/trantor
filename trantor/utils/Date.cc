@@ -344,6 +344,7 @@ Date::Date(unsigned int year,
 {
     struct tm tm;
     memset(&tm, 0, sizeof(tm));
+    tm.tm_isdst = -1;
     time_t epoch;
     tm.tm_year = year - 1900;
     tm.tm_mon = month - 1;
