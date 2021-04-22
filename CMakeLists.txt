@@ -4,8 +4,8 @@ project(trantor)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
 set(TRANTOR_MAJOR_VERSION 1)
-set(TRANTOR_MINOR_VERSION 1)
-set(TRANTOR_PATCH_VERSION 1)
+set(TRANTOR_MINOR_VERSION 4)
+set(TRANTOR_PATCH_VERSION 0)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
 
@@ -27,6 +27,9 @@ if(BUILD_TRANTOR_SHARED)
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
   endif("${isSystemDir}" STREQUAL "-1")
   add_library(${PROJECT_NAME} SHARED)
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+      VERSION ${TRANTOR_VERSION}
+      SOVERSION ${TRANTOR_MAJOR_VERSION})
   if(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
     # Ignore MSVC C4251 and C4275 warning of exporting std objects with no dll export
     # We export class to facilitate maintenance, thus if you compile
