@@ -303,11 +303,13 @@ void EventLoop::wakeup()
     //     return;
     uint64_t tmp = 1;
 #ifdef __linux__
-    __attribute__((unused)) int ret = write(wakeupFd_, &tmp, sizeof(tmp));
+    int ret = write(wakeupFd_, &tmp, sizeof(tmp));
+    (void)ret;
 #elif defined _WIN32
     poller_->postEvent(1);
 #else
-    __attribute__((unused)) int ret = write(wakeupFd_[1], &tmp, sizeof(tmp));
+    int ret = write(wakeupFd_[1], &tmp, sizeof(tmp));
+    (void)ret;
 #endif
 }
 void EventLoop::wakeupRead()
