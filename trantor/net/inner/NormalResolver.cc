@@ -12,7 +12,7 @@
 
 using namespace trantor;
 
-std::shared_ptr<Resolver> Resolver::newResolver(trantor::EventLoop *loop,
+std::shared_ptr<Resolver> Resolver::newResolver(trantor::EventLoop *,
                                                 size_t timeout)
 {
     return std::make_shared<NormalResolver>(timeout);
