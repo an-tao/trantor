@@ -41,6 +41,10 @@ else(BUILD_TRANTOR_SHARED)
   add_library(${PROJECT_NAME} STATIC)
 endif(BUILD_TRANTOR_SHARED)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
+endif()
+
 include(GenerateExportHeader)
 generate_export_header(${PROJECT_NAME} EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/exports/trantor/exports.h)
 

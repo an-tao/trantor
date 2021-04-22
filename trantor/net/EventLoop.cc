@@ -68,12 +68,11 @@ EventLoop::EventLoop()
       currentActiveChannel_(nullptr),
       eventHandling_(false),
       timerQueue_(new TimerQueue(this)),
-      threadLocalLoopPtr_(&t_loopInThisThread)
 #ifdef __linux__
-      ,
       wakeupFd_(createEventfd()),
-      wakeupChannelPtr_(new Channel(this, wakeupFd_))
+      wakeupChannelPtr_(new Channel(this, wakeupFd_)),
 #endif
+      threadLocalLoopPtr_(&t_loopInThisThread)
 {
     if (t_loopInThisThread)
     {
@@ -305,10 +304,12 @@ void EventLoop::wakeup()
     uint64_t tmp = 1;
 #ifdef __linux__
     int ret = write(wakeupFd_, &tmp, sizeof(tmp));
+    (void)ret;
 #elif defined _WIN32
     poller_->postEvent(1);
 #else
     int ret = write(wakeupFd_[1], &tmp, sizeof(tmp));
+    (void)ret;
 #endif
 }
 void EventLoop::wakeupRead()
