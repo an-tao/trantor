@@ -65,7 +65,7 @@ static void resetTimerfd(int timerfd, const TimePoint &expiration)
         // LOG_SYSERR << "timerfd_settime()";
     }
 }
-static void readTimerfd(int timerfd, const TimePoint &now)
+static void readTimerfd(int timerfd, const TimePoint &)
 {
     uint64_t howmany;
     ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
