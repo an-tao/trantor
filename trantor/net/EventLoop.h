@@ -164,12 +164,11 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
        runAfter(10min, task);
        @endcode
      */
-    TimerId runAfter(const std::chrono::duration<long double> &delay,
-                     const Func &cb)
+    TimerId runAfter(const std::chrono::duration<double> &delay, const Func &cb)
     {
         return runAfter(delay.count(), cb);
     }
-    TimerId runAfter(const std::chrono::duration<long double> &delay, Func &&cb)
+    TimerId runAfter(const std::chrono::duration<double> &delay, Func &&cb)
     {
         return runAfter(delay.count(), std::move(cb));
     }
@@ -194,13 +193,12 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
        runEvery(0.1h, task);
        @endcode
      */
-    TimerId runEvery(const std::chrono::duration<long double> &interval,
+    TimerId runEvery(const std::chrono::duration<double> &interval,
                      const Func &cb)
     {
         return runEvery(interval.count(), cb);
     }
-    TimerId runEvery(const std::chrono::duration<long double> &interval,
-                     Func &&cb)
+    TimerId runEvery(const std::chrono::duration<double> &interval, Func &&cb)
     {
         return runEvery(interval.count(), std::move(cb));
     }
