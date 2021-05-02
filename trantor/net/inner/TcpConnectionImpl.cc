@@ -24,6 +24,7 @@
 #else
 #include <WinSock2.h>
 #include <Windows.h>
+#include <wincrypt.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
