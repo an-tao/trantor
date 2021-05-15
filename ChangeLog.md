@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.1] - 2021-05-15
+
+### Changed
+
+- Add github actions of Windows.
+
+- Modify the way the log file is opened.
+
+- Add version/soversion to shared library.
+
+- Use double instead of long double as the type for timer durations.
+
+### Fixed
+
+- Fix a bug in the TcpConnectionImpl class.
+
+- Fix constructing Date in a daylight saving timezone.
+
+- GNU: -Wall -Wextra -Werror; fix related warnings.
+
+- Add wincrypt.h include for Windows.
+
 ## [1.4.0] - 2021-04-09
 
 ### API changes list
@@ -264,7 +286,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.4.1...HEAD
+
+[1.4.1]: https://github.com/an-tao/trantor/compare/v1.4.0...v1.4.1
 
 [1.4.0]: https://github.com/an-tao/trantor/compare/v1.3.0...v1.4.0
 
