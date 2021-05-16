@@ -1133,5 +1133,7 @@ int main()
            ""
         << 123 << 123.123 << "haha" << '\n'
         << std::string("12356");
+    LOG_RAW << "Testing finished\n";
+    LOG_RAW_TO(5) << "Testing finished\n";
     thread_.join();
 }

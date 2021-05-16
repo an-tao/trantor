@@ -165,15 +165,45 @@ Logger::Logger(SourceFile file, int line, bool)
         logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
     }
 }
+RawLogger::~RawLogger()
+{
+    if (index_ < 0)
+    {
+        auto &oFunc = Logger::outputFunc_();
+        if (!oFunc)
+            return;
+        oFunc(logStream_.bufferData(), logStream_.bufferLength());
+    }
+    else
+    {
+        auto &oFunc = Logger::outputFunc_(index_);
+        if (!oFunc)
+            return;
+        oFunc(logStream_.bufferData(), logStream_.bufferLength());
+    }
+}
 Logger::~Logger()
 {
     logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
-    auto oFunc = Logger::outputFunc_();
-    if (!oFunc)
-        return;
-    oFunc(logStream_.bufferData(), logStream_.bufferLength());
-    if (level_ >= kError)
-        Logger::flushFunc_()();
+    if (index_ < 0)
+    {
+        auto &oFunc = Logger::outputFunc_();
+        if (!oFunc)
+            return;
+        oFunc(logStream_.bufferData(), logStream_.bufferLength());
+        if (level_ >= kError)
+            Logger::flushFunc_()();
+    }
+    else
+    {
+        auto &oFunc = Logger::outputFunc_(index_);
+        if (!oFunc)
+            return;
+        oFunc(logStream_.bufferData(), logStream_.bufferLength());
+        if (level_ >= kError)
+            Logger::flushFunc_(index_)();
+    }
+
     // logStream_.resetBuffer();
 }
 LogStream &Logger::stream()

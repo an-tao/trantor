@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
 set(TRANTOR_MAJOR_VERSION 1)
 set(TRANTOR_MINOR_VERSION 4)
