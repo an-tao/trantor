@@ -26,7 +26,7 @@
 #include <assert.h>
 #ifdef _WIN32
 #include <io.h>
-using ssize_t = std::intptr_t;
+using ssize_t = long long;
 #else
 #include <poll.h>
 #endif

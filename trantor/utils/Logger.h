@@ -18,9 +18,10 @@
 #include <trantor/utils/Date.h>
 #include <trantor/utils/LogStream.h>
 #include <trantor/exports.h>
-#include <string.h>
+#include <cstring>
 #include <functional>
 #include <iostream>
+#include <vector>
 
 namespace trantor
 {
@@ -79,6 +80,11 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     Logger(SourceFile file, int line, bool isSysErr);
     Logger(SourceFile file, int line, LogLevel level, const char *func);
     ~Logger();
+    Logger &setIndex(int index)
+    {
+        index_ = index;
+        return *this;
+    }
     LogStream &stream();
 
     /**
@@ -90,10 +96,19 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      */
     static void setOutputFunction(
         std::function<void(const char *msg, const uint64_t len)> outputFunc,
-        std::function<void()> flushFunc)
+        std::function<void()> flushFunc,
+        int index = -1)
     {
-        outputFunc_() = outputFunc;
-        flushFunc_() = flushFunc;
+        if (index < 0)
+        {
+            outputFunc_() = outputFunc;
+            flushFunc_() = flushFunc;
+        }
+        else
+        {
+            outputFunc_(index) = outputFunc;
+            flushFunc_(index) = flushFunc;
+        }
     }
 
     /**
@@ -147,11 +162,60 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         static std::function<void()> flushFunc = Logger::defaultFlushFunction;
         return flushFunc;
     }
+    static std::function<void(const char *msg, const uint64_t len)>
+        &outputFunc_(size_t index)
+    {
+        static std::vector<
+            std::function<void(const char *msg, const uint64_t len)>>
+            outputFuncs;
+        if (index < outputFuncs.size())
+        {
+            return outputFuncs[index];
+        }
+        while (index >= outputFuncs.size())
+        {
+            outputFuncs.emplace_back(outputFunc_());
+        }
+        return outputFuncs[index];
+    }
+    static std::function<void()> &flushFunc_(size_t index)
+    {
+        static std::vector<std::function<void()>> flushFuncs;
+        if (index < flushFuncs.size())
+        {
+            return flushFuncs[index];
+        }
+        while (index >= flushFuncs.size())
+        {
+            flushFuncs.emplace_back(flushFunc_());
+        }
+        return flushFuncs[index];
+    }
+    friend class RawLogger;
     LogStream logStream_;
     Date date_{Date::now()};
     SourceFile sourceFile_;
     int fileLine_;
     LogLevel level_;
+    int index_{-1};
+};
+class TRANTOR_EXPORT RawLogger : public NonCopyable
+{
+  public:
+    ~RawLogger();
+    RawLogger &setIndex(int index)
+    {
+        index_ = index;
+        return *this;
+    }
+    LogStream &stream()
+    {
+        return logStream_;
+    }
+
+  private:
+    LogStream logStream_;
+    int index_{-1};
 };
 #ifdef NDEBUG
 #define LOG_TRACE                                                          \
@@ -163,21 +227,53 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     if (trantor::Logger::logLevel() <= trantor::Logger::kTrace)            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
+#define LOG_TRACE_TO(index)                                                \
+    if (trantor::Logger::logLevel() <= trantor::Logger::kTrace)            \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
+        .setIndex(index)                                                   \
+        .stream()
+
 #endif
+
 #define LOG_DEBUG                                                          \
     if (trantor::Logger::logLevel() <= trantor::Logger::kDebug)            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
         .stream()
+#define LOG_DEBUG_TO(index)                                                \
+    if (trantor::Logger::logLevel() <= trantor::Logger::kDebug)            \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
+        .setIndex(index)                                                   \
+        .stream()
 #define LOG_INFO                                               \
     if (trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
     trantor::Logger(__FILE__, __LINE__).stream()
+#define LOG_INFO_TO(index)                                     \
+    if (trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
+    trantor::Logger(__FILE__, __LINE__).setIndex(index).stream()
 #define LOG_WARN \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn).stream()
+#define LOG_WARN_TO(index)                                      \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn) \
+        .setIndex(index)                                        \
+        .stream()
 #define LOG_ERROR \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kError).stream()
+#define LOG_ERROR_TO(index)                                      \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kError) \
+        .setIndex(index)                                         \
+        .stream()
 #define LOG_FATAL \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
+#define LOG_FATAL_TO(index)                                      \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal) \
+        .setIndex(index)                                         \
+        .stream()
 #define LOG_SYSERR trantor::Logger(__FILE__, __LINE__, true).stream()
+#define LOG_SYSERR_TO(index) \
+    trantor::Logger(__FILE__, __LINE__, true).setIndex(index).stream()
+
+#define LOG_RAW trantor::RawLogger().stream()
+#define LOG_RAW_TO(index) trantor::RawLogger().setIndex(index).stream()
 
 #define LOG_TRACE_IF(cond)                                                  \
     if ((trantor::Logger::logLevel() <= trantor::Logger::kTrace) && (cond)) \
