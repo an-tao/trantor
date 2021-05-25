@@ -197,10 +197,23 @@ void initOpenSSL()
 class SSLContext
 {
   public:
-    explicit SSLContext(bool useOldTLS, bool enableValidtion)
+    explicit SSLContext(
+        bool useOldTLS,
+        bool enableValidtion,
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
     {
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
         ctxPtr_ = SSL_CTX_new(TLS_method());
+        SSL_CONF_CTX *cctx = SSL_CONF_CTX_new();
+        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
+        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CLIENT);
+        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CERTIFICATE);
+        SSL_CONF_CTX_set_ssl_ctx(cctx, ctxPtr_);
+        for (auto cmd : sslConfCmds)
+        {
+            SSL_CONF_cmd(cctx, cmd.first.data(), cmd.second.data());
+        }
+        SSL_CONF_CTX_finish(cctx);
         if (!useOldTLS)
         {
             SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
@@ -213,6 +226,16 @@ class SSLContext
         }
 #else
         ctxPtr_ = SSL_CTX_new(SSLv23_method());
+        SSL_CONF_CTX *cctx = SSL_CONF_CTX_new();
+        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
+        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CLIENT);
+        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CERTIFICATE);
+        SSL_CONF_CTX_set_ssl_ctx(cctx, ctxPtr_);
+        for (auto cmd : sslConfCmds)
+        {
+            SSL_CONF_cmd(cctx, cmd.first.data(), cmd.second.data());
+        }
+        SSL_CONF_CTX_finish(cctx);
         if (!useOldTLS)
         {
             SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
@@ -271,16 +294,21 @@ class SSLConn
     SSL *SSL_;
 };
 
-std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS, bool validateCert)
+std::shared_ptr<SSLContext> newSSLContext(
+    bool useOldTLS,
+    bool validateCert,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
 {  // init OpenSSL
     initOpenSSL();
-    return std::make_shared<SSLContext>(useOldTLS, validateCert);
+    return std::make_shared<SSLContext>(useOldTLS, validateCert, sslConfCmds);
 }
-std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
-                                                const std::string &keyPath,
-                                                bool useOldTLS)
+std::shared_ptr<SSLContext> newSSLServerContext(
+    const std::string &certPath,
+    const std::string &keyPath,
+    bool useOldTLS,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
 {
-    auto ctx = newSSLContext(useOldTLS, false);
+    auto ctx = newSSLContext(useOldTLS, false, sslConfCmds);
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
     if (!r)
     {
@@ -319,9 +347,11 @@ std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
 #else
 namespace trantor
 {
-std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
-                                                const std::string &keyPath,
-                                                bool useOldTLS)
+std::shared_ptr<SSLContext> newSSLServerContext(
+    const std::string &certPath,
+    const std::string &keyPath,
+    bool useOldTLS,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
 {
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
@@ -360,7 +390,8 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     std::function<void()> &&callback,
     bool useOldTLS,
     bool validateCert,
-    const std::string &hostname)
+    const std::string &hostname,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
 {
     validateCert_ = validateCert;
     loop_->assertInLoopThread();
@@ -371,7 +402,8 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     }
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
     sslEncryptionPtr_->upgradeCallback_ = std::move(callback);
-    sslEncryptionPtr_->sslCtxPtr_ = newSSLContext(useOldTLS, validateCert_);
+    sslEncryptionPtr_->sslCtxPtr_ =
+        newSSLContext(useOldTLS, validateCert_, sslConfCmds);
     sslEncryptionPtr_->sslPtr_ =
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
     if (validateCert)
@@ -452,10 +484,12 @@ void TcpConnectionImpl::startServerEncryption(
 
 #endif
 }
-void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
-                                              bool useOldTLS,
-                                              bool validateCert,
-                                              std::string hostname)
+void TcpConnectionImpl::startClientEncryption(
+    std::function<void()> callback,
+    bool useOldTLS,
+    bool validateCert,
+    std::string hostname,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
 {
 #ifndef USE_OPENSSL
     LOG_FATAL << "OpenSSL is not found in your system!";
@@ -472,10 +506,8 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
     }
     if (loop_->isInLoopThread())
     {
-        startClientEncryptionInLoop(std::move(callback),
-                                    useOldTLS,
-                                    validateCert,
-                                    hostname);
+        startClientEncryptionInLoop(
+            std::move(callback), useOldTLS, validateCert, hostname, sslConfCmds);
     }
     else
     {
@@ -483,11 +515,10 @@ void TcpConnectionImpl::startClientEncryption(std::function<void()> callback,
                             callback = std::move(callback),
                             useOldTLS,
                             hostname = std::move(hostname),
-                            validateCert]() mutable {
-            thisPtr->startClientEncryptionInLoop(std::move(callback),
-                                                 useOldTLS,
-                                                 validateCert,
-                                                 hostname);
+                            validateCert,
+                            &sslConfCmds]() mutable {
+            thisPtr->startClientEncryptionInLoop(
+                std::move(callback), useOldTLS, validateCert, hostname, sslConfCmds);
         });
     }
 #endif

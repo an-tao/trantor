@@ -208,7 +208,7 @@ void TcpClient::enableSSL(bool useOldTLS,
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLContext(useOldTLS, validateCert);
+    sslCtxPtr_ = newSSLContext(useOldTLS, validateCert, {});
     validateCert_ = validateCert;
     if (!hostname.empty())
     {

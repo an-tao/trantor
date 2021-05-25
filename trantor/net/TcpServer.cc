@@ -185,13 +185,15 @@ const trantor::InetAddress &TcpServer::address() const
     return acceptorPtr_->addr();
 }
 
-void TcpServer::enableSSL(const std::string &certPath,
-                          const std::string &keyPath,
-                          bool useOldTLS)
+void TcpServer::enableSSL(
+    const std::string &certPath,
+    const std::string &keyPath,
+    bool useOldTLS,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS);
+    sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds);
 #else
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();

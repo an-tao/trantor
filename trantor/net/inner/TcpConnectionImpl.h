@@ -38,10 +38,15 @@ enum class SSLStatus
 class SSLContext;
 class SSLConn;
 
-std::shared_ptr<SSLContext> newSSLContext(bool useOldTLS, bool validateCert);
-std::shared_ptr<SSLContext> newSSLServerContext(const std::string &certPath,
-                                                const std::string &keyPath,
-                                                bool useOldTLS);
+std::shared_ptr<SSLContext> newSSLContext(
+    bool useOldTLS,
+    bool validateCert,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
+std::shared_ptr<SSLContext> newSSLServerContext(
+    const std::string &certPath,
+    const std::string &keyPath,
+    bool useOldTLS,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
 // void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
 //                           const std::string &certPath,
 //                           const std::string &keyPath);
@@ -171,10 +176,13 @@ class TcpConnectionImpl : public TcpConnection,
     {
         return bytesReceived_;
     }
-    virtual void startClientEncryption(std::function<void()> callback,
-                                       bool useOldTLS = false,
-                                       bool validateCert = true,
-                                       std::string hostname = "") override;
+    virtual void startClientEncryption(
+        std::function<void()> callback,
+        bool useOldTLS = false,
+        bool validateCert = true,
+        std::string hostname = "",
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
+            {}) override;
     virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
                                        std::function<void()> callback) override;
     virtual bool isSSLConnection() const override
@@ -320,10 +328,12 @@ class TcpConnectionImpl : public TcpConnection,
         std::string hostname_;
     };
     std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
-    void startClientEncryptionInLoop(std::function<void()> &&callback,
-                                     bool useOldTLS,
-                                     bool validateCert,
-                                     const std::string &hostname);
+    void startClientEncryptionInLoop(
+        std::function<void()> &&callback,
+        bool useOldTLS,
+        bool validateCert,
+        const std::string &hostname,
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
     void startServerEncryptionInLoop(const std::shared_ptr<SSLContext> &ctx,
                                      std::function<void()> &&callback);
 #endif
