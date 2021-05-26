@@ -193,16 +193,20 @@ class TRANTOR_EXPORT TcpClient : NonCopyable
      * @brief Enable SSL encryption.
      * @param useOldTLS If true, the TLS 1.0 and 1.1 are supported by the
      * client.
-     * @param hostname The server hostname for SNI. If it is empty, the SNI is
-     * not used.
      * @param validateCert If true, we try to validate if the peer's SSL cert
      * is valid.
+     * @param hostname The server hostname for SNI. If it is empty, the SNI is
+     * not used.
+     * @param sslConfCmds The commands used to call the SSL_CONF_cmd function in
+     * OpenSSL.
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
     void enableSSL(bool useOldTLS = false,
                    bool validateCert = true,
-                   std::string hostname = "");
+                   std::string hostname = "",
+                   const std::vector<std::pair<std::string, std::string>>
+                       &sslConfCmds = {});
 
   private:
     /// Not thread safe, but in loop

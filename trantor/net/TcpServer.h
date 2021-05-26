@@ -202,6 +202,8 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      * @param keyPath The path of the private key file.
      * @param useOldTLS If true, the TLS 1.0 and 1.1 are supported by the
      * server.
+     * @param sslConfCmds The commands used to call the SSL_CONF_cmd function in
+     * OpenSSL.
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
