@@ -230,6 +230,8 @@ class TRANTOR_EXPORT TcpConnection
      * established.
      * @param hostname The server hostname for SNI. If it is empty, the SNI is
      * not used.
+     * @param sslConfCmds The commands used to call the SSL_CONF_cmd function in
+     * OpenSSL.
      */
     virtual void startClientEncryption(
         std::function<void()> callback,
