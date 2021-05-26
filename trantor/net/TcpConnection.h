@@ -29,7 +29,8 @@ class SSLContext;
 TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
-    bool useOldTLS = false);
+    bool useOldTLS = false,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {});
 /**
  * @brief This class represents a TCP connection.
  *
@@ -230,10 +231,13 @@ class TRANTOR_EXPORT TcpConnection
      * @param hostname The server hostname for SNI. If it is empty, the SNI is
      * not used.
      */
-    virtual void startClientEncryption(std::function<void()> callback,
-                                       bool useOldTLS = false,
-                                       bool validateCert = true,
-                                       std::string hostname = "") = 0;
+    virtual void startClientEncryption(
+        std::function<void()> callback,
+        bool useOldTLS = false,
+        bool validateCert = true,
+        std::string hostname = "",
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
+            {}) = 0;
 
     /**
      * @brief Start the SSL encryption on the connection (as a server).
