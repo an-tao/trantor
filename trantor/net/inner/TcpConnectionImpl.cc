@@ -506,8 +506,11 @@ void TcpConnectionImpl::startClientEncryption(
     }
     if (loop_->isInLoopThread())
     {
-        startClientEncryptionInLoop(
-            std::move(callback), useOldTLS, validateCert, hostname, sslConfCmds);
+        startClientEncryptionInLoop(std::move(callback),
+                                    useOldTLS,
+                                    validateCert,
+                                    hostname,
+                                    sslConfCmds);
     }
     else
     {
@@ -517,8 +520,11 @@ void TcpConnectionImpl::startClientEncryption(
                             hostname = std::move(hostname),
                             validateCert,
                             &sslConfCmds]() mutable {
-            thisPtr->startClientEncryptionInLoop(
-                std::move(callback), useOldTLS, validateCert, hostname, sslConfCmds);
+            thisPtr->startClientEncryptionInLoop(std::move(callback),
+                                                 useOldTLS,
+                                                 validateCert,
+                                                 hostname,
+                                                 sslConfCmds);
         });
     }
 #endif
