@@ -29,7 +29,8 @@ class SSLContext;
 TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
-    bool useOldTLS = false);
+    bool useOldTLS = false,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {});
 /**
  * @brief This class represents a TCP connection.
  *
