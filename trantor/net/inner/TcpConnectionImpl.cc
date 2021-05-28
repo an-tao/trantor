@@ -208,8 +208,9 @@ class SSLContext
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CLIENT);
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CERTIFICATE);
+        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_FILE);
         SSL_CONF_CTX_set_ssl_ctx(cctx, ctxPtr_);
-        for (auto cmd : sslConfCmds)
+        for (const auto &cmd : sslConfCmds)
         {
             SSL_CONF_cmd(cctx, cmd.first.data(), cmd.second.data());
         }
@@ -230,8 +231,9 @@ class SSLContext
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CLIENT);
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CERTIFICATE);
+        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_FILE);
         SSL_CONF_CTX_set_ssl_ctx(cctx, ctxPtr_);
-        for (auto cmd : sslConfCmds)
+        for (const auto &cmd : sslConfCmds)
         {
             SSL_CONF_cmd(cctx, cmd.first.data(), cmd.second.data());
         }
