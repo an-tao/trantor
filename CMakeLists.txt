@@ -122,6 +122,15 @@ if(WIN32)
   endif(OpenSSL_FOUND)
 endif(WIN32)
 
+file(WRITE ${CMAKE_BINARY_DIR}/test_atomic.cpp
+     "#include <atomic>\n"
+     "int main() { std::atomic<int64_t> i(0); i++; return 0; }\n")
+try_compile(ATOMIC_WITHOUT_LINKING ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_atomic.cpp)
+if (NOT ATOMIC_WITHOUT_LINKING)
+    target_link_libraries(${PROJECT_NAME} PUBLIC atomic)
+endif ()
+file(REMOVE ${CMAKE_BINARY_DIR}/test_atomic.cpp)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
