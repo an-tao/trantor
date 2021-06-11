@@ -111,6 +111,7 @@ void EventLoop::resetAfterFork()
 }
 EventLoop::~EventLoop()
 {
+    quit();
     assert(!looping_);
     t_loopInThisThread = nullptr;
 #ifdef __linux__
@@ -147,6 +148,13 @@ void EventLoop::removeChannel(Channel *channel)
 void EventLoop::quit()
 {
     quit_ = true;
+
+    Func f;
+    while (funcsOnQuit_.dequeue(f))
+    {
+        f();
+    }
+
     // There is a chance that loop() just executes while(!quit_) and exits,
     // then EventLoop destructs, then we are accessing an invalid object.
     // Can be fixed using mutex_ in both places.
@@ -349,6 +357,16 @@ void EventLoop::moveToCurrentThread()
     t_loopInThisThread = this;
     threadLocalLoopPtr_ = &t_loopInThisThread;
     threadId_ = std::this_thread::get_id();
+}
+
+void EventLoop::runOnQuit(Func &&cb)
+{
+    funcsOnQuit_.enqueue(std::move(cb));
+}
+
+void EventLoop::runOnQuit(const Func &cb)
+{
+    funcsOnQuit_.enqueue(cb);
 }
 
 }  // namespace trantor

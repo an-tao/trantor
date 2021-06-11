@@ -274,6 +274,15 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
         return callingFuncs_;
     }
 
+    /**
+     * @brief Run functions when the event loop quits
+     *
+     * @param cb the function to run
+     * @note the function runs on the thread that quits the EventLoop
+     */
+    void runOnQuit(Func &&cb);
+    void runOnQuit(const Func &cb);
+
   private:
     void abortNotInLoopThread();
     void wakeup();
@@ -289,6 +298,7 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
     bool eventHandling_;
     MpscQueue<Func> funcs_;
     std::unique_ptr<TimerQueue> timerQueue_;
+    MpscQueue<Func> funcsOnQuit_;
     bool callingFuncs_{false};
 #ifdef __linux__
     int wakeupFd_;
