@@ -3,6 +3,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.0] - 2021-06-18
+
+### API changes list
+
+- Enable multiple log files or streams.
+
+- Add SSL_CONF_cmd support.
+
+- Add runOnQuit to the EventLoop class.
+
+### Changed
+
+- Export the FixedBuffer.
+
+- Added a try_compile block to detect if we need to link against atomic.
+
 ## [1.4.1] - 2021-05-15
 
 ### Changed
@@ -286,7 +302,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.0...HEAD
+
+[1.5.0]: https://github.com/an-tao/trantor/compare/v1.4.1...v1.5.0
 
 [1.4.1]: https://github.com/an-tao/trantor/compare/v1.4.0...v1.4.1
 
