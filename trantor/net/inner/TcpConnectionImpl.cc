@@ -33,9 +33,6 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #endif
-#ifdef _WIN32
-#define stat _stati64
-#endif
 #include <regex>
 
 using namespace trantor;
@@ -1273,7 +1270,19 @@ void TcpConnectionImpl::sendFile(const char *fileName,
                                  size_t length)
 {
     assert(fileName);
-#ifndef _WIN32
+#ifdef _WIN32
+    // Convert UTF-8 file path to UCS-2
+    int nSizeNeeded = ::MultiByteToWideChar(
+        CP_UTF8, 0, fileName, (int)strnlen_s(fileName, MAX_PATH), NULL, 0);
+    std::wstring wFileName(nSizeNeeded, 0);
+    ::MultiByteToWideChar(CP_UTF8,
+                          0,
+                          fileName,
+                          (int)strnlen_s(fileName, MAX_PATH),
+                          &wFileName[0],
+                          nSizeNeeded);
+    sendFile(wFileName.c_str(), offset, length);
+#else   // _WIN32
     int fd = open(fileName, O_RDONLY);
 
     if (fd < 0)
@@ -1295,16 +1304,22 @@ void TcpConnectionImpl::sendFile(const char *fileName,
     }
 
     sendFile(fd, offset, length);
-#else
-#ifndef _MSC_VER
-    auto fp = fopen(fileName, "rb");
-#else
+#endif  // _WIN32
+}
+
+#ifdef _WIN32
+void TcpConnectionImpl::sendFile(const wchar_t *fileName,
+                                 size_t offset,
+                                 size_t length)
+{
+    assert(fileName);
     FILE *fp;
-    if (fopen_s(&fp, fileName, "rb") != 0)
-    {
+#ifndef _MSC_VER
+    fp = _wfopen(fileName, L"rb");
+#else   // _MSC_VER
+    if (_wfopen_s(&fp, fileName, L"rb") != 0)
         fp = nullptr;
-    }
-#endif
+#endif  // _MSC_VER
     if (fp == nullptr)
     {
         LOG_SYSERR << fileName << " open error";
@@ -1313,8 +1328,8 @@ void TcpConnectionImpl::sendFile(const char *fileName,
 
     if (length == 0)
     {
-        struct stat filestat;
-        if (stat(fileName, &filestat) < 0)
+        struct _stati64 filestat;
+        if (_wstati64(fileName, &filestat) < 0)
         {
             LOG_SYSERR << fileName << " stat error";
             fclose(fp);
@@ -1324,8 +1339,8 @@ void TcpConnectionImpl::sendFile(const char *fileName,
     }
 
     sendFile(fp, offset, length);
-#endif
 }
+#endif  // _WIN32
 
 #ifndef _WIN32
 void TcpConnectionImpl::sendFile(int sfd, size_t offset, size_t length)

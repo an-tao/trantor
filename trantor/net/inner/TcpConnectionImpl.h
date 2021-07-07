@@ -115,6 +115,11 @@ class TcpConnectionImpl : public TcpConnection,
     virtual void sendFile(const char *fileName,
                           size_t offset = 0,
                           size_t length = 0) override;
+#ifdef _WIN32
+    virtual void sendFile(const wchar_t *fileName,
+                          size_t offset = 0,
+                          size_t length = 0) override;
+#endif  // WIN32
 
     virtual const InetAddress &localAddr() const override
     {
