@@ -134,7 +134,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
   protected:
     static void defaultOutputFunction(const char *msg, const uint64_t len)
     {
-        fwrite(msg, 1, len, stdout);
+        fwrite(msg, 1, static_cast<size_t>(len), stdout);
     }
     static void defaultFlushFunction()
     {
