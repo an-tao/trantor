@@ -187,9 +187,15 @@ AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
     fp_ = fopen(fileFullName_.c_str(), "a");
 #else
     // Convert UTF-8 file to UCS-2
-    int nSizeNeeded = ::MultiByteToWideChar(CP_UTF8, 0, &fileFullName_[0], (int)fileFullName_.size(), NULL, 0);
+    int nSizeNeeded = ::MultiByteToWideChar(
+        CP_UTF8, 0, &fileFullName_[0], (int)fileFullName_.size(), NULL, 0);
     std::wstring wFullName(nSizeNeeded, 0);
-    ::MultiByteToWideChar(CP_UTF8, 0, &fileFullName_[0], (int)fileFullName_.size(), &wFullName[0], nSizeNeeded);
+    ::MultiByteToWideChar(CP_UTF8,
+                          0,
+                          &fileFullName_[0],
+                          (int)fileFullName_.size(),
+                          &wFullName[0],
+                          nSizeNeeded);
     fp_ = _wfsopen(wFullName.c_str(), L"a+", _SH_DENYWR);
 #endif
     if (fp_ == nullptr)
@@ -242,12 +248,24 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
         rename(fileFullName_.c_str(), newName.c_str());
 #else   // _WIN32
         // Convert UTF-8 file to UCS-2
-        int nSizeNeeded = ::MultiByteToWideChar(CP_UTF8, 0, &fileFullName_[0], (int)fileFullName_.size(), NULL, 0);
+        int nSizeNeeded = ::MultiByteToWideChar(
+            CP_UTF8, 0, &fileFullName_[0], (int)fileFullName_.size(), NULL, 0);
         std::wstring wFullName(nSizeNeeded, 0);
-        ::MultiByteToWideChar(CP_UTF8, 0, &fileFullName_[0], (int)fileFullName_.size(), &wFullName[0], nSizeNeeded);
-        nSizeNeeded = ::MultiByteToWideChar(CP_UTF8, 0, &newName[0], (int)newName.size(), NULL, 0);
+        ::MultiByteToWideChar(CP_UTF8,
+                              0,
+                              &fileFullName_[0],
+                              (int)fileFullName_.size(),
+                              &wFullName[0],
+                              nSizeNeeded);
+        nSizeNeeded = ::MultiByteToWideChar(
+            CP_UTF8, 0, &newName[0], (int)newName.size(), NULL, 0);
         std::wstring wNewName(nSizeNeeded, 0);
-        ::MultiByteToWideChar(CP_UTF8, 0, &newName[0], (int)newName.size(), &wNewName[0], nSizeNeeded);
+        ::MultiByteToWideChar(CP_UTF8,
+                              0,
+                              &newName[0],
+                              (int)newName.size(),
+                              &wNewName[0],
+                              nSizeNeeded);
         _wrename(wFullName.c_str(), wNewName.c_str());
 #endif  // _WIN32
     }
