@@ -18,6 +18,8 @@
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
+#else
+#include <Windows.h>
 #endif
 #include <string.h>
 #include <iostream>
@@ -184,7 +186,17 @@ AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
 #ifndef _MSC_VER
     fp_ = fopen(fileFullName_.c_str(), "a");
 #else
-    fp_ = _fsopen(fileFullName_.c_str(), "a+", _SH_DENYWR);
+    // Convert UTF-8 file to UCS-2
+    int nSizeNeeded = ::MultiByteToWideChar(
+        CP_UTF8, 0, &fileFullName_[0], (int)fileFullName_.size(), NULL, 0);
+    std::wstring wFullName(nSizeNeeded, 0);
+    ::MultiByteToWideChar(CP_UTF8,
+                          0,
+                          &fileFullName_[0],
+                          (int)fileFullName_.size(),
+                          &wFullName[0],
+                          nSizeNeeded);
+    fp_ = _wfsopen(wFullName.c_str(), L"a+", _SH_DENYWR);
 #endif
     if (fp_ == nullptr)
     {
@@ -232,7 +244,30 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
             filePath_ + fileBaseName_ + "." +
             creationDate_.toCustomedFormattedString("%y%m%d-%H%M%S") +
             std::string(seq) + fileExtName_;
+#ifndef _WIN32
         rename(fileFullName_.c_str(), newName.c_str());
+#else   // _WIN32
+        // Convert UTF-8 file to UCS-2
+        int nSizeNeeded = ::MultiByteToWideChar(
+            CP_UTF8, 0, &fileFullName_[0], (int)fileFullName_.size(), NULL, 0);
+        std::wstring wFullName(nSizeNeeded, 0);
+        ::MultiByteToWideChar(CP_UTF8,
+                              0,
+                              &fileFullName_[0],
+                              (int)fileFullName_.size(),
+                              &wFullName[0],
+                              nSizeNeeded);
+        nSizeNeeded = ::MultiByteToWideChar(
+            CP_UTF8, 0, &newName[0], (int)newName.size(), NULL, 0);
+        std::wstring wNewName(nSizeNeeded, 0);
+        ::MultiByteToWideChar(CP_UTF8,
+                              0,
+                              &newName[0],
+                              (int)newName.size(),
+                              &wNewName[0],
+                              nSizeNeeded);
+        _wrename(wFullName.c_str(), wNewName.c_str());
+#endif  // _WIN32
     }
 }
 
