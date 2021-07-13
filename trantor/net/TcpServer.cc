@@ -29,11 +29,13 @@ TcpServer::TcpServer(EventLoop *loop,
     : loop_(loop),
       acceptorPtr_(new Acceptor(loop, address, reUseAddr, reUsePort)),
       serverName_(name),
-      recvMessageCallback_([](const TcpConnectionPtr &, MsgBuffer *buffer) {
-          LOG_ERROR << "unhandled recv message [" << buffer->readableBytes()
-                    << " bytes]";
-          buffer->retrieveAll();
-      })
+      recvMessageCallback_(
+          [](const TcpConnectionPtr &, MsgBuffer *buffer)
+          {
+              LOG_ERROR << "unhandled recv message [" << buffer->readableBytes()
+                        << " bytes]";
+              buffer->retrieveAll();
+          })
 {
     acceptorPtr_->setNewConnectionCallback(
         std::bind(&TcpServer::newConnection, this, _1, _2));
@@ -93,12 +95,14 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     newPtr->setRecvMsgCallback(recvMessageCallback_);
 
     newPtr->setConnectionCallback(
-        [this](const TcpConnectionPtr &connectionPtr) {
+        [this](const TcpConnectionPtr &connectionPtr)
+        {
             if (connectionCallback_)
                 connectionCallback_(connectionPtr);
         });
     newPtr->setWriteCompleteCallback(
-        [this](const TcpConnectionPtr &connectionPtr) {
+        [this](const TcpConnectionPtr &connectionPtr)
+        {
             if (writeCompleteCallback_)
                 writeCompleteCallback_(connectionPtr);
         });
@@ -109,39 +113,41 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 
 void TcpServer::start()
 {
-    loop_->runInLoop([this]() {
-        assert(!started_);
-        started_ = true;
-        if (idleTimeout_ > 0)
+    loop_->runInLoop(
+        [this]()
         {
-            timingWheelMap_[loop_] =
-                std::make_shared<TimingWheel>(loop_,
-                                              idleTimeout_,
-                                              1.0F,
-                                              idleTimeout_ < 500
-                                                  ? idleTimeout_ + 1
-                                                  : 100);
-            if (loopPoolPtr_)
+            assert(!started_);
+            started_ = true;
+            if (idleTimeout_ > 0)
             {
-                auto loopNum = loopPoolPtr_->size();
-                while (loopNum > 0)
+                timingWheelMap_[loop_] =
+                    std::make_shared<TimingWheel>(loop_,
+                                                  idleTimeout_,
+                                                  1.0F,
+                                                  idleTimeout_ < 500
+                                                      ? idleTimeout_ + 1
+                                                      : 100);
+                if (loopPoolPtr_)
                 {
-                    // LOG_TRACE << "new Wheel loopNum=" << loopNum;
-                    auto poolLoop = loopPoolPtr_->getNextLoop();
-                    timingWheelMap_[poolLoop] =
-                        std::make_shared<TimingWheel>(poolLoop,
-                                                      idleTimeout_,
-                                                      1.0F,
-                                                      idleTimeout_ < 500
-                                                          ? idleTimeout_ + 1
-                                                          : 100);
-                    --loopNum;
+                    auto loopNum = loopPoolPtr_->size();
+                    while (loopNum > 0)
+                    {
+                        // LOG_TRACE << "new Wheel loopNum=" << loopNum;
+                        auto poolLoop = loopPoolPtr_->getNextLoop();
+                        timingWheelMap_[poolLoop] =
+                            std::make_shared<TimingWheel>(poolLoop,
+                                                          idleTimeout_,
+                                                          1.0F,
+                                                          idleTimeout_ < 500
+                                                              ? idleTimeout_ + 1
+                                                              : 100);
+                        --loopNum;
+                    }
                 }
             }
-        }
-        LOG_TRACE << "map size=" << timingWheelMap_.size();
-        acceptorPtr_->listen();
-    });
+            LOG_TRACE << "map size=" << timingWheelMap_.size();
+            acceptorPtr_->listen();
+        });
 }
 void TcpServer::stop()
 {
@@ -155,10 +161,12 @@ void TcpServer::stop()
     {
         std::promise<int> pro;
         auto f = pro.get_future();
-        iter.second->getLoop()->runInLoop([&iter, &pro]() mutable {
-            iter.second.reset();
-            pro.set_value(1);
-        });
+        iter.second->getLoop()->runInLoop(
+            [&iter, &pro]() mutable
+            {
+                iter.second.reset();
+                pro.set_value(1);
+            });
         f.get();
     }
 }
@@ -166,11 +174,13 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
     // loop_->assertInLoopThread();
-    loop_->runInLoop([this, connectionPtr]() {
-        size_t n = connSet_.erase(connectionPtr);
-        (void)n;
-        assert(n == 1);
-    });
+    loop_->runInLoop(
+        [this, connectionPtr]()
+        {
+            size_t n = connSet_.erase(connectionPtr);
+            (void)n;
+            assert(n == 1);
+        });
 
     static_cast<TcpConnectionImpl *>(connectionPtr.get())->connectDestroyed();
 }

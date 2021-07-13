@@ -40,7 +40,8 @@ void NormalResolver::resolve(const std::string &hostname,
     }
 
     concurrentTaskQueue().runTaskInQueue(
-        [thisPtr = shared_from_this(), callback, hostname]() {
+        [thisPtr = shared_from_this(), callback, hostname]()
+        {
             {
                 std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
                 auto iter = thisPtr->globalCache().find(hostname);

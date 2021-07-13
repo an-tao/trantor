@@ -19,24 +19,27 @@ int main()
     TcpServer server(loopThread.getLoop(), addr, "test");
     server.enableSSL("server.pem", "server.pem");
     server.setRecvMessageCallback(
-        [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
+        [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer)
+        {
             // LOG_DEBUG<<"recv callback!";
             std::cout << std::string(buffer->peek(), buffer->readableBytes());
             connectionPtr->send(buffer->peek(), buffer->readableBytes());
             buffer->retrieveAll();
             connectionPtr->forceClose();
         });
-    server.setConnectionCallback([](const TcpConnectionPtr &connPtr) {
-        if (connPtr->connected())
+    server.setConnectionCallback(
+        [](const TcpConnectionPtr &connPtr)
         {
-            LOG_DEBUG << "New connection";
-            connPtr->send("Hello world\r\n");
-        }
-        else if (connPtr->disconnected())
-        {
-            LOG_DEBUG << "connection disconnected";
-        }
-    });
+            if (connPtr->connected())
+            {
+                LOG_DEBUG << "New connection";
+                connPtr->send("Hello world\r\n");
+            }
+            else if (connPtr->disconnected())
+            {
+                LOG_DEBUG << "connection disconnected";
+            }
+        });
     server.setIoLoopNum(3);
     server.start();
     loopThread.wait();

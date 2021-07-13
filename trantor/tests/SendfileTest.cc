@@ -50,25 +50,29 @@ int main(int argc, char *argv[])
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
     server.setRecvMessageCallback(
-        [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
+        [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer)
+        {
             // LOG_DEBUG<<"recv callback!";
         });
     int counter = 0;
     server.setConnectionCallback(
-        [argv, &counter](const TcpConnectionPtr &connPtr) {
+        [argv, &counter](const TcpConnectionPtr &connPtr)
+        {
             if (connPtr->connected())
             {
                 LOG_DEBUG << "New connection";
-                std::thread t([connPtr, argv, &counter]() {
-                    for (int i = 0; i < 5; ++i)
+                std::thread t(
+                    [connPtr, argv, &counter]()
                     {
-                        connPtr->sendFile(argv[1]);
-                        char str[64];
-                        ++counter;
-                        sprintf(str, "\n%d files sent!\n", counter);
-                        connPtr->send(str, strlen(str));
-                    }
-                });
+                        for (int i = 0; i < 5; ++i)
+                        {
+                            connPtr->sendFile(argv[1]);
+                            char str[64];
+                            ++counter;
+                            sprintf(str, "\n%d files sent!\n", counter);
+                            connPtr->send(str, strlen(str));
+                        }
+                    });
                 t.detach();
 
                 for (int i = 0; i < 3; ++i)

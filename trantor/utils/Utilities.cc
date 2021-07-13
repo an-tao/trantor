@@ -63,7 +63,7 @@ std::string to_utf8(const std::wstring &wstr)
     auto nLen = wcstombs_l(&strTo[0], wstr.c_str(), strTo.length(), utf8);
     strTo.resize(nLen);
     freelocale(utf8);
-#else  // c++11 to c++14
+#else   // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     strTo = utf8conv.to_bytes(wstr);
 #endif  // __cplusplus
@@ -96,7 +96,7 @@ std::wstring from_utf8(const std::string &str)
     auto nLen = mbstowcs_l(&wstrTo[0], str.c_str(), wstrTo.length(), utf8);
     wstrTo.resize(nLen);
     freelocale(utf8);
-#else  // c++11 to c++14
+#else   // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     try
     {
@@ -126,7 +126,7 @@ std::string fromWidePath(const std::wstring &wstrPath)
     auto srcPath{wstrPath};
     // Not needed: to portable path (just replaces '\' with '/')
     std::replace(srcPath.begin(), srcPath.end(), L'\\', L'/');
-#else  // _WIN32
+#else   // _WIN32
     auto &srcPath{wstrPath};
 #endif  // _WIN32
     return to_utf8(srcPath);

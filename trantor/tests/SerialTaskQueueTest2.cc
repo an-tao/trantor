@@ -13,28 +13,37 @@ int main()
     std::promise<int> pro;
     auto ft = pro.get_future();
     trantor::SerialTaskQueue queue("");
-    queue.runTaskInQueue([&counter, &pro, &queue]() {
-        for (int i = 0; i < 10000; ++i)
+    queue.runTaskInQueue(
+        [&counter, &pro, &queue]()
         {
-            queue.runTaskInQueue([&counter, &pro]() {
-                ++counter;
-                if (counter.load() == 110000)
-                    pro.set_value(1);
-            });
-        }
-    });
-    for (int i = 0; i < 10; ++i)
-    {
-        std::thread([&counter, &queue, &pro]() {
             for (int i = 0; i < 10000; ++i)
             {
-                queue.runTaskInQueue([&counter, &pro]() {
-                    ++counter;
-                    if (counter.load() == 110000)
-                        pro.set_value(1);
-                });
+                queue.runTaskInQueue(
+                    [&counter, &pro]()
+                    {
+                        ++counter;
+                        if (counter.load() == 110000)
+                            pro.set_value(1);
+                    });
             }
-        }).detach();
+        });
+    for (int i = 0; i < 10; ++i)
+    {
+        std::thread(
+            [&counter, &queue, &pro]()
+            {
+                for (int i = 0; i < 10000; ++i)
+                {
+                    queue.runTaskInQueue(
+                        [&counter, &pro]()
+                        {
+                            ++counter;
+                            if (counter.load() == 110000)
+                                pro.set_value(1);
+                        });
+                }
+            })
+            .detach();
     }
 
     ft.get();

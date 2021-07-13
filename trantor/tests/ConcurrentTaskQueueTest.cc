@@ -15,22 +15,26 @@ int main()
     sum = 0;
     for (int i = 0; i < 4; ++i)
     {
-        queue.runTaskInQueue([&sum]() {
-            LOG_DEBUG << "add sum";
-            for (int i = 0; i < 10000; ++i)
+        queue.runTaskInQueue(
+            [&sum]()
             {
-                ++sum;
-            }
-        });
+                LOG_DEBUG << "add sum";
+                for (int i = 0; i < 10000; ++i)
+                {
+                    ++sum;
+                }
+            });
     }
 
-    queue.runTaskInQueue([&sum]() {
-        for (int i = 0; i < 20; ++i)
+    queue.runTaskInQueue(
+        [&sum]()
         {
-            LOG_DEBUG << "sum=" << sum;
-            std::this_thread::sleep_for(100us);
-        }
-    });
+            for (int i = 0; i < 20; ++i)
+            {
+                LOG_DEBUG << "sum=" << sum;
+                std::this_thread::sleep_for(100us);
+            }
+        });
 
     getc(stdin);
     LOG_DEBUG << "sum=" << sum;

@@ -54,18 +54,21 @@ class ObjectPool : public NonCopyable,
 
         assert(p);
         std::weak_ptr<ObjectPool<T>> weakPtr = this->shared_from_this();
-        auto obj = std::shared_ptr<T>(p, [weakPtr](T *ptr) {
-            auto self = weakPtr.lock();
-            if (self)
-            {
-                std::lock_guard<std::mutex> lock(self->mtx_);
-                self->objs_.push_back(ptr);
-            }
-            else
-            {
-                delete ptr;
-            }
-        });
+        auto obj = std::shared_ptr<T>(p,
+                                      [weakPtr](T *ptr)
+                                      {
+                                          auto self = weakPtr.lock();
+                                          if (self)
+                                          {
+                                              std::lock_guard<std::mutex> lock(
+                                                  self->mtx_);
+                                              self->objs_.push_back(ptr);
+                                          }
+                                          else
+                                          {
+                                              delete ptr;
+                                          }
+                                      });
         return obj;
     }
 
