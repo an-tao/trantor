@@ -75,6 +75,7 @@ set(TRANTOR_SOURCES
     trantor/utils/MsgBuffer.cc
     trantor/utils/SerialTaskQueue.cc
     trantor/utils/TimingWheel.cc
+    trantor/utils/Utilities.cc
     trantor/net/EventLoop.cc
     trantor/net/EventLoopThread.cc
     trantor/net/EventLoopThreadPool.cc
@@ -108,10 +109,32 @@ if(c-ares_FOUND)
   message(STATUS "c-ares found!")
   target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/AresResolver.cc)
-else()
+else(c-ares_FOUND)
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
+endif(c-ares_FOUND)
+
+if ((CMAKE_GENERATOR MATCHES "Visual Studio") OR (CMAKE_GENERATOR MATCHES "Xcode"))
+  set(private_headers
+      trantor/net/inner/Acceptor.h
+      trantor/net/inner/Connector.h
+      trantor/net/inner/Poller.h
+      trantor/net/inner/Socket.h
+      trantor/net/inner/TcpConnectionImpl.h
+      trantor/net/inner/Timer.h
+      trantor/net/inner/TimerQueue.h
+      trantor/net/inner/poller/EpollPoller.h
+      trantor/net/inner/poller/KQueue.h
+      third_party/wepoll/Wepoll.h)
+  if(c-ares_FOUND)
+    set(private_headers ${private_headers}
+        trantor/net/inner/AresResolver.h)
+  else(c-ares_FOUND)
+    set(private_headers ${private_headers}
+        trantor/net/inner/NormalResolver.h)
+  endif(c-ares_FOUND)
 endif()
-target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
+
+#target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
 
 find_package(Threads)
 target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
@@ -170,12 +193,28 @@ set(public_utils_headers
     trantor/utils/ObjectPool.h
     trantor/utils/SerialTaskQueue.h
     trantor/utils/TaskQueue.h
-    trantor/utils/TimingWheel.h)
+    trantor/utils/TimingWheel.h
+    trantor/utils/Utilities.h)
+if(WIN32)
+  set(public_utils_headers ${public_utils_headers}
+      trantor/utils/WindowsSupport.h)
+endif(WIN32)
 
 source_group("Public API"
              FILES
              ${public_net_headers}
              ${public_utils_headers})
+# Make headers visible in Visual Studio
+if ((CMAKE_GENERATOR MATCHES "Visual Studio") OR (CMAKE_GENERATOR MATCHES "Xcode"))
+  source_group("Private Headers"
+               FILES
+               ${private_headers})
+  set(TRANTOR_SOURCES ${TRANTOR_SOURCES}
+             ${public_net_headers}
+             ${public_utils_headers}
+             ${private_headers})
+endif()
+target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
 
 install(TARGETS trantor
                 # IMPORTANT: Add the trantor library to the "export-set"

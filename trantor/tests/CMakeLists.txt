@@ -19,6 +19,7 @@ add_executable(dns_test DnsTest.cc)
 add_executable(delayed_ssl_server_test DelayedSSLServerTest.cc)
 add_executable(delayed_ssl_client_test DelayedSSLClientTest.cc)
 add_executable(run_on_quit_test RunOnQuitTest.cc)
+add_executable(path_conversion_test PathConversionTest.cc)
 set(targets_list
     ssl_server_test
     ssl_client_test
@@ -40,7 +41,8 @@ set(targets_list
     dns_test
     delayed_ssl_server_test
     delayed_ssl_client_test
-    run_on_quit_test)
+    run_on_quit_test
+    path_conversion_test)
 
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD_REQUIRED ON)

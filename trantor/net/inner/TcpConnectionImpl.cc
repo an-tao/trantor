@@ -15,6 +15,7 @@
 #include "TcpConnectionImpl.h"
 #include "Socket.h"
 #include "Channel.h"
+#include <trantor/utils/Utilities.h>
 #ifdef __linux__
 #include <sys/sendfile.h>
 #endif
@@ -1271,18 +1272,8 @@ void TcpConnectionImpl::sendFile(const char *fileName,
 {
     assert(fileName);
 #ifdef _WIN32
-    // Convert UTF-8 file path to UCS-2
-    int nSizeNeeded = ::MultiByteToWideChar(
-        CP_UTF8, 0, fileName, (int)strnlen_s(fileName, MAX_PATH), NULL, 0);
-    std::wstring wFileName(nSizeNeeded, 0);
-    ::MultiByteToWideChar(CP_UTF8,
-                          0,
-                          fileName,
-                          (int)strnlen_s(fileName, MAX_PATH),
-                          &wFileName[0],
-                          nSizeNeeded);
-    sendFile(wFileName.c_str(), offset, length);
-#else   // _WIN32
+    sendFile(utils::toNativePath(fileName).c_str(), offset, length);
+#else  // _WIN32
     int fd = open(fileName, O_RDONLY);
 
     if (fd < 0)
@@ -1307,16 +1298,18 @@ void TcpConnectionImpl::sendFile(const char *fileName,
 #endif  // _WIN32
 }
 
-#ifdef _WIN32
 void TcpConnectionImpl::sendFile(const wchar_t *fileName,
                                  size_t offset,
                                  size_t length)
 {
     assert(fileName);
+#ifndef _WIN32
+    sendFile(utils::toNativePath(fileName).c_str(), offset, length);
+#else  // _WIN32
     FILE *fp;
 #ifndef _MSC_VER
     fp = _wfopen(fileName, L"rb");
-#else   // _MSC_VER
+#else  // _MSC_VER
     if (_wfopen_s(&fp, fileName, L"rb") != 0)
         fp = nullptr;
 #endif  // _MSC_VER
@@ -1339,8 +1332,8 @@ void TcpConnectionImpl::sendFile(const wchar_t *fileName,
     }
 
     sendFile(fp, offset, length);
-}
 #endif  // _WIN32
+}
 
 #ifndef _WIN32
 void TcpConnectionImpl::sendFile(int sfd, size_t offset, size_t length)

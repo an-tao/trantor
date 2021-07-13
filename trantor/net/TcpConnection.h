@@ -66,18 +66,16 @@ class TRANTOR_EXPORT TcpConnection
     virtual void sendFile(const char *fileName,
                           size_t offset = 0,
                           size_t length = 0) = 0;
-#ifdef _WIN32
     /**
      * @brief Send a file to the peer.
      *
-     * @param fileName in UCS-2 (windows only)
+     * @param fileName in wide string (eg. windows native UCS-2)
      * @param offset
      * @param length
      */
     virtual void sendFile(const wchar_t *fileName,
                           size_t offset = 0,
                           size_t length = 0) = 0;
-#endif  // WIN32
 
     /**
      * @brief Get the local address of the connection.
