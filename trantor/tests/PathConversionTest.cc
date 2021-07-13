@@ -14,7 +14,7 @@ int main()
     std::wstring widePathAlt(L"C:/Temp/\u4E2D\u6587");
     std::string utf8WidePathStandard{utf8PathAlt};
     std::string utf8WidePathAlt{utf8PathStandard};
-#else  // _WIN32
+#else   // _WIN32
     std::string utf8PathStandard("/tmp/\xE4\xB8\xAD\xE6\x96\x87");
     std::string utf8PathAlt(
         "\\tmp\\\xE4\xB8\xAD\xE6\x96\x87");  // Invalid, won't be changed
@@ -27,28 +27,28 @@ int main()
     // 1. Check from/to UTF-8
 #ifdef _WIN32
     if (utf8PathAlt != trantor::utils::to_utf8(widePathStandard))
-#else  // _WIN32
+#else   // _WIN32
     if (utf8PathStandard != trantor::utils::to_utf8(widePathStandard))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8WidePathStandard
                   << " from wide string to utf-8";
 #ifdef _WIN32
     if (utf8PathStandard != trantor::utils::to_utf8(widePathAlt))
-#else  // _WIN32
+#else   // _WIN32
     if (utf8PathAlt != trantor::utils::to_utf8(widePathAlt))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8WidePathAlt
                   << " from wide string to utf-8";
 #ifdef _WIN32
     if (widePathAlt != trantor::utils::from_utf8(utf8PathStandard))
-#else  // _WIN32
+#else   // _WIN32
     if (widePathStandard != trantor::utils::from_utf8(utf8PathStandard))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8PathStandard
                   << " from utf-8 to wide string";
 #ifdef _WIN32
     if (widePathStandard != trantor::utils::from_utf8(utf8PathAlt))
-#else  // _WIN32
+#else   // _WIN32
     if (widePathAlt != trantor::utils::from_utf8(utf8PathAlt))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8PathAlt
@@ -61,7 +61,7 @@ int main()
                   << " from wide path to utf-8";
 #ifdef _WIN32
     if (utf8PathStandard != trantor::utils::fromWidePath(widePathAlt))
-#else  // _WIN32
+#else   // _WIN32
     if (utf8PathAlt != trantor::utils::fromWidePath(widePathAlt))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8WidePathAlt
@@ -71,7 +71,7 @@ int main()
                   << " from utf-8 to wide path";
 #ifdef _WIN32
     if (widePathStandard != trantor::utils::toWidePath(utf8PathAlt))
-#else  // _WIN32
+#else   // _WIN32
     if (widePathAlt != trantor::utils::toWidePath(utf8PathAlt))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8PathAlt
