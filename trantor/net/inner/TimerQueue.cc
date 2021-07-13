@@ -152,25 +152,22 @@ TimerQueue::TimerQueue(EventLoop *loop)
 #ifdef __linux__
 void TimerQueue::reset()
 {
-    loop_->runInLoop(
-        [this]()
+    loop_->runInLoop([this]() {
+        timerfdChannelPtr_->disableAll();
+        timerfdChannelPtr_->remove();
+        close(timerfd_);
+        timerfd_ = createTimerfd();
+        timerfdChannelPtr_ = std::make_shared<Channel>(loop_, timerfd_);
+        timerfdChannelPtr_->setReadCallback(
+            std::bind(&TimerQueue::handleRead, this));
+        // we are always reading the timerfd, we disarm it with timerfd_settime.
+        timerfdChannelPtr_->enableReading();
+        if (!timers_.empty())
         {
-            timerfdChannelPtr_->disableAll();
-            timerfdChannelPtr_->remove();
-            close(timerfd_);
-            timerfd_ = createTimerfd();
-            timerfdChannelPtr_ = std::make_shared<Channel>(loop_, timerfd_);
-            timerfdChannelPtr_->setReadCallback(
-                std::bind(&TimerQueue::handleRead, this));
-            // we are always reading the timerfd, we disarm it with
-            // timerfd_settime.
-            timerfdChannelPtr_->enableReading();
-            if (!timers_.empty())
-            {
-                const auto nextExpire = timers_.top()->when();
-                resetTimerfd(timerfd_, nextExpire);
-            }
-        });
+            const auto nextExpire = timers_.top()->when();
+            resetTimerfd(timerfd_, nextExpire);
+        }
+    });
 }
 #endif
 TimerQueue::~TimerQueue()
@@ -178,13 +175,11 @@ TimerQueue::~TimerQueue()
 #ifdef __linux__
     auto chlPtr = timerfdChannelPtr_;
     auto fd = timerfd_;
-    loop_->runInLoop(
-        [chlPtr, fd]()
-        {
-            chlPtr->disableAll();
-            chlPtr->remove();
-            ::close(fd);
-        });
+    loop_->runInLoop([chlPtr, fd]() {
+        chlPtr->disableAll();
+        chlPtr->remove();
+        ::close(fd);
+    });
 #endif
 }
 

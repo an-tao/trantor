@@ -189,12 +189,10 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      */
     void kickoffIdleConnections(size_t timeout)
     {
-        loop_->runInLoop(
-            [this, timeout]()
-            {
-                assert(!started_);
-                idleTimeout_ = timeout;
-            });
+        loop_->runInLoop([this, timeout]() {
+            assert(!started_);
+            idleTimeout_ = timeout;
+        });
     }
 
     /**

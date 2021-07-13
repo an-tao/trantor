@@ -45,12 +45,10 @@ class TaskQueue : public NonCopyable
     {
         std::promise<int> prom;
         std::future<int> fut = prom.get_future();
-        runTaskInQueue(
-            [&]()
-            {
-                task();
-                prom.set_value(1);
-            });
+        runTaskInQueue([&]() {
+            task();
+            prom.set_value(1);
+        });
         fut.get();
     };
     virtual ~TaskQueue()

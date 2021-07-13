@@ -48,10 +48,9 @@ void SerialTaskQueue::runTaskInQueue(std::function<void()> &&task)
 
 void SerialTaskQueue::waitAllTasksFinished()
 {
-    syncTaskInQueue(
-        []() {
+    syncTaskInQueue([]() {
 
-        });
+    });
 }
 
 }  // namespace trantor

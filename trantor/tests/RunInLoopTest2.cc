@@ -15,37 +15,28 @@ int main()
     trantor::EventLoopThread loopThread;
 
     auto loop = loopThread.getLoop();
-    loop->runInLoop(
-        [&counter, &pro, loop]()
+    loop->runInLoop([&counter, &pro, loop]() {
+        for (int i = 0; i < 10000; ++i)
         {
-            for (int i = 0; i < 10000; ++i)
-            {
-                loop->queueInLoop(
-                    [&counter, &pro]()
-                    {
-                        ++counter;
-                        if (counter.load() == 110000)
-                            pro.set_value(1);
-                    });
-            }
-        });
+            loop->queueInLoop([&counter, &pro]() {
+                ++counter;
+                if (counter.load() == 110000)
+                    pro.set_value(1);
+            });
+        }
+    });
     for (int i = 0; i < 10; ++i)
     {
-        std::thread(
-            [&counter, loop, &pro]()
+        std::thread([&counter, loop, &pro]() {
+            for (int i = 0; i < 10000; ++i)
             {
-                for (int i = 0; i < 10000; ++i)
-                {
-                    loop->runInLoop(
-                        [&counter, &pro]()
-                        {
-                            ++counter;
-                            if (counter.load() == 110000)
-                                pro.set_value(1);
-                        });
-                }
-            })
-            .detach();
+                loop->runInLoop([&counter, &pro]() {
+                    ++counter;
+                    if (counter.load() == 110000)
+                        pro.set_value(1);
+                });
+            }
+        }).detach();
     }
     loopThread.run();
     ft.get();

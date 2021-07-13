@@ -63,12 +63,10 @@ void EventLoopThread::loopFuncs()
 }
 void EventLoopThread::run()
 {
-    std::call_once(once_,
-                   [this]()
-                   {
-                       auto f = promiseForLoop_.get_future();
-                       promiseForRun_.set_value(1);
-                       // Make sure the event loop loops before returning.
-                       (void)f.get();
-                   });
+    std::call_once(once_, [this]() {
+        auto f = promiseForLoop_.get_future();
+        promiseForRun_.set_value(1);
+        // Make sure the event loop loops before returning.
+        (void)f.get();
+    });
 }

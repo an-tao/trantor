@@ -18,26 +18,23 @@ int main()
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
     server.setRecvMessageCallback(
-        [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer)
-        {
+        [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             // LOG_DEBUG<<"recv callback!";
             std::cout << std::string(buffer->peek(), buffer->readableBytes());
             connectionPtr->send(buffer->peek(), buffer->readableBytes());
             buffer->retrieveAll();
             // connectionPtr->forceClose();
         });
-    server.setConnectionCallback(
-        [](const TcpConnectionPtr &connPtr)
+    server.setConnectionCallback([](const TcpConnectionPtr &connPtr) {
+        if (connPtr->connected())
         {
-            if (connPtr->connected())
-            {
-                LOG_DEBUG << "New connection";
-            }
-            else if (connPtr->disconnected())
-            {
-                LOG_DEBUG << "connection disconnected";
-            }
-        });
+            LOG_DEBUG << "New connection";
+        }
+        else if (connPtr->disconnected())
+        {
+            LOG_DEBUG << "connection disconnected";
+        }
+    });
     server.setIoLoopNum(3);
     server.start();
     loopThread.wait();

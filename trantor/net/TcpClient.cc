@@ -65,14 +65,12 @@ TcpClient::TcpClient(EventLoop *loop,
 {
     connector_->setNewConnectionCallback(
         std::bind(&TcpClient::newConnection, this, _1));
-    connector_->setErrorCallback(
-        [this]()
+    connector_->setErrorCallback([this]() {
+        if (connectionErrorCallback_)
         {
-            if (connectionErrorCallback_)
-            {
-                connectionErrorCallback_();
-            }
-        });
+            connectionErrorCallback_();
+        }
+    });
     LOG_TRACE << "TcpClient::TcpClient[" << name_ << "] - connector ";
 }
 
@@ -89,19 +87,14 @@ TcpClient::~TcpClient()
         assert(loop_ == conn->getLoop());
         // TODO: not 100% safe, if we are in different thread
         auto loop = loop_;
-        loop_->runInLoop(
-            [conn, loop]()
-            {
-                conn->setCloseCallback(
-                    [loop](const TcpConnectionPtr &connPtr)
-                    {
-                        loop->queueInLoop(
-                            [connPtr]() {
-                                static_cast<TcpConnectionImpl *>(connPtr.get())
-                                    ->connectDestroyed();
-                            });
-                    });
+        loop_->runInLoop([conn, loop]() {
+            conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
+                loop->queueInLoop([connPtr]() {
+                    static_cast<TcpConnectionImpl *>(connPtr.get())
+                        ->connectDestroyed();
+                });
             });
+        });
         conn->forceClose();
     }
     else
@@ -178,14 +171,12 @@ void TcpClient::newConnection(int sockfd)
         std::lock_guard<std::mutex> lock(mutex_);
         connection_ = conn;
     }
-    conn->setSSLErrorCallback(
-        [this](SSLError err)
+    conn->setSSLErrorCallback([this](SSLError err) {
+        if (sslErrorCallback_)
         {
-            if (sslErrorCallback_)
-            {
-                sslErrorCallback_(err);
-            }
-        });
+            sslErrorCallback_(err);
+        }
+    });
     conn->connectEstablished();
 }
 

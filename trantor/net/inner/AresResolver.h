@@ -64,8 +64,9 @@ class AresResolver : public Resolver,
         }
         else
         {
-            loop_->queueInLoop([thisPtr = shared_from_this(), hostname, cb]()
-                               { thisPtr->resolveInLoop(hostname, cb); });
+            loop_->queueInLoop([thisPtr = shared_from_this(), hostname, cb]() {
+                thisPtr->resolveInLoop(hostname, cb);
+            });
         }
     }
 

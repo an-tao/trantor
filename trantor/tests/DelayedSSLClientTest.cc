@@ -25,8 +25,7 @@ int main()
                                                          serverAddr,
                                                          "tcpclienttest");
         client[i]->setConnectionCallback(
-            [i, &loop, &connCount](const TcpConnectionPtr &conn)
-            {
+            [i, &loop, &connCount](const TcpConnectionPtr &conn) {
                 if (conn->connected())
                 {
                 }
@@ -39,8 +38,7 @@ int main()
                 }
             });
         client[i]->setMessageCallback(
-            [](const TcpConnectionPtr &conn, MsgBuffer *buf)
-            {
+            [](const TcpConnectionPtr &conn, MsgBuffer *buf) {
                 auto msg = std::string(buf->peek(), buf->readableBytes());
 
                 LOG_INFO << msg;
@@ -48,8 +46,7 @@ int main()
                 {
                     buf->retrieveAll();
                     conn->startClientEncryption(
-                        [conn]()
-                        {
+                        [conn]() {
                             LOG_INFO << "SSL established";
                             conn->send("Hello");
                         },

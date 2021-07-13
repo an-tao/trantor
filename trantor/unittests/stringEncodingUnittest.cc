@@ -9,7 +9,7 @@ const std::wstring widePath(L"C:/Temp/\u4E2D\u6587");
 const std::wstring windowsPath(L"C:\\Temp\\\u4E2D\u6587");
 #ifdef _WIN32
 const std::wstring nativePath(windowsPath);
-#else   // _WIN32
+#else  // _WIN32
 const std::string nativePath(utf8Path);
 #endif  // _WIN32
 
@@ -48,7 +48,7 @@ TEST(pathConversion, fromWidePath2)
     auto out = utils::fromWidePath(windowsPath);
 #ifdef _WIN32
     EXPECT_EQ(out, utf8Path)
-#else   // _WIN32
+#else  // _WIN32
     EXPECT_EQ(out, utf8AltPath)
 #endif  // _WIN32
         << "Error converting " << windowsPath << " from wide path to utf-8";
@@ -58,7 +58,7 @@ TEST(pathConversion, toWidePath1)
     auto out = utils::toWidePath(utf8Path);
 #ifdef _WIN32
     EXPECT_EQ(out, windowsPath)
-#else   // _WIN32
+#else  // _WIN32
     EXPECT_EQ(out, widePath)
 #endif  // _WIN32
         << "Error converting " << utf8Path << " from utf-8 path to wide string";
@@ -81,7 +81,7 @@ TEST(pathConversion, toNativePath2)
 #ifdef _WIN32
     EXPECT_EQ(out, windowsPath) << "Error converting " << utf8AltPath
                                 << " from utf-8 path to wide string";
-#else   // _WIN32
+#else  // _WIN32
     EXPECT_EQ(out, utf8AltPath) << "Error converting " << utf8AltPath
                                 << " from utf-8 path (should be a noop)";
 #endif  // _WIN32
@@ -92,7 +92,7 @@ TEST(pathConversion, toNativePath3)
 #ifdef _WIN32
     EXPECT_EQ(out, windowsPath) << "Error converting " << windowsPath
                                 << " from wide path (should be a noop)";
-#else   // _WIN32
+#else  // _WIN32
     EXPECT_EQ(out, utf8AltPath)
         << "Error converting " << windowsPath << " from wide path to utf-8";
 #endif  // _WIN32
@@ -103,7 +103,7 @@ TEST(pathConversion, toNativePath4)
 #ifdef _WIN32
     EXPECT_EQ(out, widePath) << "Error converting " << widePath
                              << " from wide path (should be a noop)";
-#else   // _WIN32
+#else  // _WIN32
     EXPECT_EQ(out, utf8Path)
         << "Error converting " << widePath << " from wide path to utf-8";
 #endif  // _WIN32
@@ -131,7 +131,7 @@ TEST(pathConversion, fromNativePath4)
     auto out = utils::fromNativePath(windowsPath);
 #ifdef _WIN32
     EXPECT_EQ(out, utf8Path)
-#else   // _WIN32
+#else  // _WIN32
     EXPECT_EQ(out, utf8AltPath)
 #endif  // _WIN32
         << "Error converting " << windowsPath << " from wide path to utf-8";
