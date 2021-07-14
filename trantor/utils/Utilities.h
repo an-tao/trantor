@@ -90,7 +90,7 @@ inline const std::wstring &toNativePath(const std::wstring &strPath)
 {
     return strPath;
 }
-#else  // __WIN32
+#else   // __WIN32
 // NoOP on Unixes
 inline const std::string &toNativePath(const std::string &strPath)
 {
