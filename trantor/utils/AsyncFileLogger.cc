@@ -239,8 +239,8 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
             std::string(seq) + fileExtName_;
 #ifndef _WIN32
         rename(fileFullName_.c_str(), newName.c_str());
-#else  // _WIN32
-       // Convert UTF-8 file to UCS-2
+#else   // _WIN32
+        // Convert UTF-8 file to UCS-2
         auto wFullName{utils::toNativePath(fileFullName_)};
         auto wNewName{utils::toNativePath(newName)};
         _wrename(wFullName.c_str(), wNewName.c_str());

@@ -48,7 +48,7 @@ std::string toUtf8(const std::wstring &wstr)
                           nSizeNeeded,
                           NULL,
                           NULL);
-#else   // _WIN32
+#else  // _WIN32
 #if __cplusplus < 201103L || __cplusplus >= 201703L
     // Note: Introduced in c++11 and deprecated with c++17.
     // Revert to C99 code since there no replacement yet
@@ -81,7 +81,7 @@ std::wstring fromUtf8(const std::string &str)
     wstrTo.resize(nSizeNeeded, 0);
     ::MultiByteToWideChar(
         CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], nSizeNeeded);
-#else   // _WIN32
+#else  // _WIN32
 #if __cplusplus < 201103L || __cplusplus >= 201703L
     // Note: Introduced in c++11 and deprecated with c++17.
     // Revert to C99 code since there no replacement yet
