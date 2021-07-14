@@ -30,7 +30,7 @@ namespace trantor
 {
 namespace utils
 {
-std::string to_utf8(const std::wstring &wstr)
+std::string toUtf8(const std::wstring &wstr)
 {
     if (wstr.empty())
         return {};
@@ -48,7 +48,7 @@ std::string to_utf8(const std::wstring &wstr)
                           nSizeNeeded,
                           NULL,
                           NULL);
-#else  // _WIN32
+#else   // _WIN32
 #if __cplusplus < 201103L || __cplusplus >= 201703L
     // Note: Introduced in c++11 and deprecated with c++17.
     // Revert to C99 code since there no replacement yet
@@ -70,7 +70,7 @@ std::string to_utf8(const std::wstring &wstr)
 #endif  // _WIN32
     return strTo;
 }
-std::wstring from_utf8(const std::string &str)
+std::wstring fromUtf8(const std::string &str)
 {
     if (str.empty())
         return {};
@@ -81,7 +81,7 @@ std::wstring from_utf8(const std::string &str)
     wstrTo.resize(nSizeNeeded, 0);
     ::MultiByteToWideChar(
         CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], nSizeNeeded);
-#else  // _WIN32
+#else   // _WIN32
 #if __cplusplus < 201103L || __cplusplus >= 201703L
     // Note: Introduced in c++11 and deprecated with c++17.
     // Revert to C99 code since there no replacement yet
@@ -112,7 +112,7 @@ std::wstring from_utf8(const std::string &str)
 
 std::wstring toWidePath(const std::string &strUtf8Path)
 {
-    auto wstrPath{from_utf8(strUtf8Path)};
+    auto wstrPath{fromUtf8(strUtf8Path)};
 #ifdef _WIN32
     // Not needed: normalize path (just replaces '/' with '\')
     std::replace(wstrPath.begin(), wstrPath.end(), L'/', L'\\');
@@ -129,7 +129,7 @@ std::string fromWidePath(const std::wstring &wstrPath)
 #else   // _WIN32
     auto &srcPath{wstrPath};
 #endif  // _WIN32
-    return to_utf8(srcPath);
+    return toUtf8(srcPath);
 }
 
 }  // namespace utils

@@ -15,25 +15,25 @@ const std::string nativePath(utf8Path);
 
 TEST(pathConversion, fromUtf8a)
 {
-    auto out = utils::from_utf8(utf8Path);
+    auto out = utils::fromUtf8(utf8Path);
     EXPECT_EQ(out, widePath)
         << "Error converting " << utf8Path << " to wide string";
 }
 TEST(pathConversion, fromUtf8b)
 {
-    auto out = utils::from_utf8(utf8AltPath);
+    auto out = utils::fromUtf8(utf8AltPath);
     EXPECT_EQ(out, windowsPath)
         << "Error converting " << utf8AltPath << " to wide string";
 }
 TEST(pathConversion, toUtf8a)
 {
-    auto out = utils::to_utf8(widePath);
+    auto out = utils::toUtf8(widePath);
     EXPECT_EQ(out, utf8Path)
         << "Error converting " << widePath << " from wide string to utf-8";
 }
 TEST(pathConversion, toUtf8b)
 {
-    auto out = utils::to_utf8(windowsPath);
+    auto out = utils::toUtf8(windowsPath);
     EXPECT_EQ(out, utf8AltPath)
         << "Error converting " << windowsPath << " from wide string to utf-8";
 }

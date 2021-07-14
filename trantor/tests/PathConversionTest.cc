@@ -26,30 +26,30 @@ int main()
 
     // 1. Check from/to UTF-8
 #ifdef _WIN32
-    if (utf8PathAlt != trantor::utils::to_utf8(widePathStandard))
+    if (utf8PathAlt != trantor::utils::toUtf8(widePathStandard))
 #else   // _WIN32
-    if (utf8PathStandard != trantor::utils::to_utf8(widePathStandard))
+    if (utf8PathStandard != trantor::utils::toUtf8(widePathStandard))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8WidePathStandard
                   << " from wide string to utf-8";
 #ifdef _WIN32
-    if (utf8PathStandard != trantor::utils::to_utf8(widePathAlt))
+    if (utf8PathStandard != trantor::utils::toUtf8(widePathAlt))
 #else   // _WIN32
-    if (utf8PathAlt != trantor::utils::to_utf8(widePathAlt))
+    if (utf8PathAlt != trantor::utils::toUtf8(widePathAlt))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8WidePathAlt
                   << " from wide string to utf-8";
 #ifdef _WIN32
-    if (widePathAlt != trantor::utils::from_utf8(utf8PathStandard))
+    if (widePathAlt != trantor::utils::fromUtf8(utf8PathStandard))
 #else   // _WIN32
-    if (widePathStandard != trantor::utils::from_utf8(utf8PathStandard))
+    if (widePathStandard != trantor::utils::fromUtf8(utf8PathStandard))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8PathStandard
                   << " from utf-8 to wide string";
 #ifdef _WIN32
-    if (widePathStandard != trantor::utils::from_utf8(utf8PathAlt))
+    if (widePathStandard != trantor::utils::fromUtf8(utf8PathAlt))
 #else   // _WIN32
-    if (widePathAlt != trantor::utils::from_utf8(utf8PathAlt))
+    if (widePathAlt != trantor::utils::fromUtf8(utf8PathAlt))
 #endif  // _WIN32
         LOG_ERROR << "Error converting " << utf8PathAlt
                   << " from utf-8 to wide string";
