@@ -75,6 +75,7 @@ set(TRANTOR_SOURCES
     trantor/utils/MsgBuffer.cc
     trantor/utils/SerialTaskQueue.cc
     trantor/utils/TimingWheel.cc
+    trantor/utils/Utilities.cc
     trantor/net/EventLoop.cc
     trantor/net/EventLoopThread.cc
     trantor/net/EventLoopThreadPool.cc
@@ -91,10 +92,27 @@ set(TRANTOR_SOURCES
     trantor/net/inner/TimerQueue.cc
     trantor/net/inner/poller/EpollPoller.cc
     trantor/net/inner/poller/KQueue.cc)
+set(private_headers
+    trantor/net/inner/Acceptor.h
+    trantor/net/inner/Connector.h
+    trantor/net/inner/Poller.h
+    trantor/net/inner/Socket.h
+    trantor/net/inner/TcpConnectionImpl.h
+    trantor/net/inner/Timer.h
+    trantor/net/inner/TimerQueue.h
+    trantor/net/inner/poller/EpollPoller.h
+    trantor/net/inner/poller/KQueue.h)
+
 
 if(WIN32)
-  set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/utils/WindowsSupport.cc)
-  set(TRANTOR_SOURCES ${TRANTOR_SOURCES} third_party/wepoll/Wepoll.c)
+  set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      third_party/wepoll/Wepoll.c
+      trantor/utils/WindowsSupport.cc)
+  set(private_headers
+      ${private_headers}
+      third_party/wepoll/Wepoll.h
+      trantor/utils/WindowsSupport.h)
 endif(WIN32)
 
 find_package(OpenSSL)
@@ -107,11 +125,20 @@ find_package(c-ares)
 if(c-ares_FOUND)
   message(STATUS "c-ares found!")
   target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
-  set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/AresResolver.cc)
-else()
-  set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/NormalResolver.cc)
-endif()
-target_sources(${PROJECT_NAME} PRIVATE ${TRANTOR_SOURCES})
+  set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/net/inner/AresResolver.cc)
+  set(private_headers
+      ${private_headers}
+      trantor/net/inner/AresResolver.h)
+else(c-ares_FOUND)
+  set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/net/inner/NormalResolver.cc)
+  set(private_headers
+      ${private_headers}
+      trantor/net/inner/NormalResolver.h)
+endif(c-ares_FOUND)
 
 find_package(Threads)
 target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
@@ -170,12 +197,25 @@ set(public_utils_headers
     trantor/utils/ObjectPool.h
     trantor/utils/SerialTaskQueue.h
     trantor/utils/TaskQueue.h
-    trantor/utils/TimingWheel.h)
+    trantor/utils/TimingWheel.h
+    trantor/utils/Utilities.h)
+
+target_sources(${PROJECT_NAME} PRIVATE
+               ${TRANTOR_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/exports/trantor/exports.h
+               ${public_net_headers}
+               ${public_utils_headers}
+               ${private_headers})
 
 source_group("Public API"
              FILES
+             ${CMAKE_CURRENT_BINARY_DIR}/exports/trantor/exports.h
              ${public_net_headers}
              ${public_utils_headers})
+
+source_group("Private Headers"
+             FILES
+             ${private_headers})
 
 install(TARGETS trantor
                 # IMPORTANT: Add the trantor library to the "export-set"
