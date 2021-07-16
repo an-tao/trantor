@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 
-option(BUILD_DOC "Build Doxygen documentation" FALSE)
+option(BUILD_DOC "Build Doxygen documentation" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
