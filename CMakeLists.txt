@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 
+option(BUILD_DOC "Build Doxygen documentation" OFF)
+
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
 set(TRANTOR_MAJOR_VERSION 1)
@@ -258,3 +260,36 @@ install(EXPORT TrantorTargets
         DESTINATION "${INSTALL_TRANTOR_CMAKE_DIR}"
         NAMESPACE Trantor::
         COMPONENT dev)
+
+# Doxygen documentation
+find_package(Doxygen OPTIONAL_COMPONENTS dot dia)
+if(DOXYGEN_FOUND)
+  set(DOXYGEN_PROJECT_BRIEF "Non-blocking I/O cross-platform TCP network library, using C++14")
+  set(DOXYGEN_OUTPUT_DIRECTORY docs/${PROJECT_NAME})
+  set(DOXYGEN_GENERATE_LATEX NO)
+  set(DOXYGEN_BUILTIN_STL_SUPPORT YES)
+  set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
+  set(DOXYGEN_STRIP_FROM_INC_PATH ${PROJECT_SOURCE_DIR}
+                                  ${CMAKE_CURRENT_BINARY_DIR}/exports)
+  if (WIN32)
+    set(DOXYGEN_PREDEFINED _WIN32)
+  endif(WIN32)
+  doxygen_add_docs(doc_${PROJECT_NAME}
+                   README.md
+                   ChangeLog.md
+                   ${public_net_headers}
+                   ${public_utils_headers}
+                   COMMENT "Generate documentation")
+  if(NOT TARGET doc)
+    add_custom_target(doc)
+  endif()
+  add_dependencies(doc doc_${PROJECT_NAME})
+  if (BUILD_DOC)
+    add_dependencies(${PROJECT_NAME} doc_${PROJECT_NAME})
+    # Don't install twice, so limit to Debug (assume developer)
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs/${PROJECT_NAME}
+            TYPE DOC
+            CONFIGURATIONS Debug)
+  endif(BUILD_DOC)
+endif(DOXYGEN_FOUND)
+
