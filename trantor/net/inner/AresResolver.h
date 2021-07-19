@@ -86,6 +86,7 @@ class AresResolver : public Resolver,
     void resolveInLoop(const std::string& hostname, const Callback& cb);
     void init();
     trantor::EventLoop* loop_;
+    std::shared_ptr<bool> loopValid_;
     ares_channel ctx_{nullptr};
     bool timerActive_{false};
     using ChannelList = std::map<int, std::unique_ptr<trantor::Channel>>;
