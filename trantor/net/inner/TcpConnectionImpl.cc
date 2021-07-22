@@ -967,7 +967,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
     {
         if (writeBufferList_.empty())
         {
-            BufferNodePtr node(new BufferNode);
+            BufferNodePtr node = std::make_shared<BufferNode>();
             node->msgBuffer_ = std::make_shared<MsgBuffer>();
             writeBufferList_.push_back(std::move(node));
         }
@@ -977,7 +977,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         else if (writeBufferList_.back()->sendFp_)
 #endif
         {
-            BufferNodePtr node(new BufferNode);
+            BufferNodePtr node = std::make_shared<BufferNode>();
             node->msgBuffer_ = std::make_shared<MsgBuffer>();
             writeBufferList_.push_back(std::move(node));
         }
@@ -1344,11 +1344,11 @@ void TcpConnectionImpl::sendFile(FILE *fp, size_t offset, size_t length)
     assert(length > 0);
 #ifndef _WIN32
     assert(sfd >= 0);
-    BufferNodePtr node(new BufferNode);
+    BufferNodePtr node = std::make_shared<BufferNode>();
     node->sendFd_ = sfd;
 #else
     assert(fp);
-    BufferNodePtr node(new BufferNode);
+    BufferNodePtr node = std::make_shared<BufferNode>();
     node->sendFp_ = fp;
 #endif
     node->offset_ = static_cast<off_t>(offset);
