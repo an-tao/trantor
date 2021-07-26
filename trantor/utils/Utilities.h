@@ -84,7 +84,7 @@ TRANTOR_EXPORT std::wstring toWidePath(const std::string &strUtf8Path);
 
 // Helpers for multi-platform development
 // OS dependent
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__MINGW32__)
 /**
  * @details Convert an UTF-8 path to a native path.
  *

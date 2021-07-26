@@ -237,7 +237,7 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
             filePath_ + fileBaseName_ + "." +
             creationDate_.toCustomedFormattedString("%y%m%d-%H%M%S") +
             std::string(seq) + fileExtName_;
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(__MINGW32__)
         rename(fileFullName_.c_str(), newName.c_str());
 #else   // _WIN32
         // Convert UTF-8 file to UCS-2
