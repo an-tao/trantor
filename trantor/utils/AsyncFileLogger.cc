@@ -239,12 +239,12 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
             std::string(seq) + fileExtName_;
 #if !defined(_WIN32) || defined(__MINGW32__)
         rename(fileFullName_.c_str(), newName.c_str());
-#else   // _WIN32
+#else
         // Convert UTF-8 file to UCS-2
         auto wFullName{utils::toNativePath(fileFullName_)};
         auto wNewName{utils::toNativePath(newName)};
         _wrename(wFullName.c_str(), wNewName.c_str());
-#endif  // _WIN32
+#endif
     }
 }
 
