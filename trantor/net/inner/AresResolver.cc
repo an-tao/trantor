@@ -73,6 +73,8 @@ AresResolver::AresResolver(EventLoop* loop, size_t timeout)
     {
         loop_ = getLoop();
     }
+    loopValid_ = std::make_shared<bool>(true);
+    loop_->runOnQuit([loopValid = loopValid_]() { *loopValid = false; });
 }
 void AresResolver::init()
 {
@@ -209,7 +211,7 @@ void AresResolver::onSockStateChange(int sockfd, bool read, bool write)
         // update
         // if (write) { } else { }
     }
-    else
+    else if (*loopValid_)
     {
         // remove
         it->second->disableAll();
