@@ -65,6 +65,10 @@ void NormalResolver::resolve(const std::string &hostname,
             if (error == -1 || res == nullptr)
             {
                 LOG_SYSERR << "InetAddress::resolve";
+                if (res != nullptr)
+                {
+                    freeaddrinfo(res);
+                }
                 callback(InetAddress{});
                 return;
             }
@@ -83,6 +87,7 @@ void NormalResolver::resolve(const std::string &hostname,
                 addr = *reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
                 inet = InetAddress(addr);
             }
+            freeaddrinfo(res);
             callback(inet);
             {
                 std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
