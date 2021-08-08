@@ -3,6 +3,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.1] - 2021-08-08
+
+### API changes list
+
+### Changed
+
+- Fix warning C4244 in MSVC
+
+- Disable strict compiler check on Windows with GCC
+
+- Added support for paths containing unicode characters on Windows
+
+- Add BUILD_DOC cmake option (doxygen)
+
+- Use make_shared instead of shared_ptr(new)
+
+- Detect and handle MinGW
+
+### Fixed
+
+- Fix the destructor of AresResolver
+
+- Fix memory leak in NormalResolver
+
 ## [1.5.0] - 2021-06-18
 
 ### API changes list
@@ -302,7 +326,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.1...HEAD
+
+[1.5.1]: https://github.com/an-tao/trantor/compare/v1.5.0...v1.5.1
 
 [1.5.0]: https://github.com/an-tao/trantor/compare/v1.4.1...v1.5.0
 
