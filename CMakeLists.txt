@@ -11,12 +11,14 @@ set(TRANTOR_PATCH_VERSION 1)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
 
+include(GNUInstallDirs)
 # Offer the user the choice of overriding the installation directories
-set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
+set(INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE PATH "Installation directory for binaries")
+set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Installation directory for libraries")
 set(INSTALL_INCLUDE_DIR
-    include
+    ${CMAKE_INSTALL_INCLUDEDIR}
     CACHE PATH "Installation directory for header files")
-set(DEF_INSTALL_TRANTOR_CMAKE_DIR lib/cmake/Trantor)
+set(DEF_INSTALL_TRANTOR_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Trantor)
 set(INSTALL_TRANTOR_CMAKE_DIR
     ${DEF_INSTALL_TRANTOR_CMAKE_DIR}
     CACHE PATH "Installation directory for cmake files")
