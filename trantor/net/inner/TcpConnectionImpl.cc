@@ -213,6 +213,7 @@ class SSLContext
             SSL_CONF_cmd(cctx, cmd.first.data(), cmd.second.data());
         }
         SSL_CONF_CTX_finish(cctx);
+        SSL_CONF_CTX_free(cctx);
         if (!useOldTLS)
         {
             SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
@@ -236,6 +237,7 @@ class SSLContext
             SSL_CONF_cmd(cctx, cmd.first.data(), cmd.second.data());
         }
         SSL_CONF_CTX_finish(cctx);
+        SSL_CONF_CTX_free(cctx);
         if (!useOldTLS)
         {
             SSL_CTX_set_options(ctxPtr_, SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
