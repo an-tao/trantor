@@ -202,9 +202,10 @@ class SSLContext
     {
 #ifdef LIBRESSL_VERSION_NUMBER
         ctxPtr_ = SSL_CTX_new(TLS_method());
-        if(sslConfCmds.size() != 0)
+        if (sslConfCmds.size() != 0)
         {
-            LOG_WARN << "LibreSSL does not support SSL confuration commands";
+            LOG_FATAL << "LibreSSL does not support SSL confuration commands";
+            exit(1);
         }
         if (!useOldTLS)
         {
