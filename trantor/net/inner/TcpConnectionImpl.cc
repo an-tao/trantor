@@ -200,7 +200,17 @@ class SSLContext
         bool enableValidtion,
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
     {
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+#ifdef LIBRESSL_VERSION_NUMBER
+        ctxPtr_ = SSL_CTX_new(TLS_method());
+        if (sslConfCmds.size() != 0)
+        {
+            LOG_WARN << "LibreSSL does not support SSL configuration commands";
+        }
+        if (!useOldTLS)
+        {
+            SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
+        }
+#elif (OPENSSL_VERSION_NUMBER >= 0x10100000L)
         ctxPtr_ = SSL_CTX_new(TLS_method());
         SSL_CONF_CTX *cctx = SSL_CONF_CTX_new();
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
