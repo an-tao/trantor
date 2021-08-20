@@ -204,7 +204,7 @@ class SSLContext
         ctxPtr_ = SSL_CTX_new(TLS_method());
         if (sslConfCmds.size() != 0)
         {
-            LOF_WARN << "LibreSSL does not support SSL confuration commands";
+            LOF_WARN << "LibreSSL does not support SSL configuration commands";
         }
         if (!useOldTLS)
         {
