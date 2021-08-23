@@ -267,7 +267,7 @@ class SSLContext
             SSL_CTX_set_default_verify_paths(ctxPtr_);
 #endif
 
-        if(enableValidtion)
+        if (enableValidtion)
         {
             X509_STORE *x509_store = SSL_CTX_get_cert_store(ctxPtr_);
             X509_VERIFY_PARAM *param = X509_VERIFY_PARAM_new();
