@@ -266,6 +266,15 @@ class SSLContext
         if (enableValidtion)
             SSL_CTX_set_default_verify_paths(ctxPtr_);
 #endif
+
+        if(enableValidtion)
+        {
+            X509_STORE *x509_store = SSL_CTX_get_cert_store(ctxPtr_);
+            X509_VERIFY_PARAM *param = X509_VERIFY_PARAM_new();
+            X509_VERIFY_PARAM_set_flags(param, X509_V_FLAG_CRL_CHECK);
+            X509_STORE_set1_param(x509_store, param);
+            X509_VERIFY_PARAM_free(param);
+        }
     }
     ~SSLContext()
     {
