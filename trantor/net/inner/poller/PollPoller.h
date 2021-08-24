@@ -16,7 +16,9 @@
 #include "../Poller.h"
 #include <vector>
 
+#if defined __unix__ || defined __HAIKU__
 #include <poll.h>
+#endif
 
 namespace trantor
 {
@@ -33,8 +35,10 @@ class PollPoller : public Poller
   private:
     void fillActiveChannels(int numEvents, ChannelList* activeChannels) const;
 
+#if defined __unix__ || defined __HAIKU__
     std::vector<struct pollfd> pollfds_;
     std::map<int, Channel*> channels_;
+#endif
 };
 
 }  // namespace trantor
