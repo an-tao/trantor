@@ -15,11 +15,13 @@
 #include <trantor/utils/Logger.h>
 #include <stdio.h>
 #include <thread>
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__HAIKU__)
 #include <unistd.h>
 #include <sys/syscall.h>
-#else
 #include <sstream>
+#elif defined __HAIKU__
+#include <sstream>
+#include <unistd.h>
 #endif
 #ifdef __FreeBSD__
 #include <pthread_np.h>
@@ -114,7 +116,7 @@ void Logger::formatTime()
     {
         threadId_ = getthrid();
     }
-#elif defined _WIN32
+#elif defined _WIN32 || defined __HAIKU__
     if (threadId_ == 0)
     {
         std::stringstream ss;

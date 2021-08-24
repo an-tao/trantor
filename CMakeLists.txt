@@ -43,8 +43,12 @@ else(BUILD_TRANTOR_SHARED)
   add_library(${PROJECT_NAME} STATIC)
 endif(BUILD_TRANTOR_SHARED)
 
-if (NOT ${CMAKE_PLATFORM_NAME} STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID MATCHES GNU)
+if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID MATCHES GNU)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Haiku")
+    target_link_libraries(${PROJECT_NAME} PRIVATE network)
 endif()
 
 include(GenerateExportHeader)
@@ -93,7 +97,8 @@ set(TRANTOR_SOURCES
     trantor/net/inner/Timer.cc
     trantor/net/inner/TimerQueue.cc
     trantor/net/inner/poller/EpollPoller.cc
-    trantor/net/inner/poller/KQueue.cc)
+    trantor/net/inner/poller/KQueue.cc
+    trantor/net/inner/poller/PollPoller.cc)
 set(private_headers
     trantor/net/inner/Acceptor.h
     trantor/net/inner/Connector.h
@@ -103,8 +108,8 @@ set(private_headers
     trantor/net/inner/Timer.h
     trantor/net/inner/TimerQueue.h
     trantor/net/inner/poller/EpollPoller.h
-    trantor/net/inner/poller/KQueue.h)
-
+    trantor/net/inner/poller/KQueue.h
+    trantor/net/inner/poller/PollPoller.h)
 
 if(WIN32)
   set(TRANTOR_SOURCES
