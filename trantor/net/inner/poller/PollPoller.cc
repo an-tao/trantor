@@ -21,7 +21,7 @@
 #include <poll.h>
 
 using namespace trantor;
-#if !(defined _WIN32 && defined __unix__)
+#if defined __unix__ || defined __unix__
 static std::once_flag warning_flag;
 PollPoller::PollPoller(EventLoop* loop) : Poller(loop)
 {
