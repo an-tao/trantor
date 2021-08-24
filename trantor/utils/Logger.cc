@@ -15,15 +15,16 @@
 #include <trantor/utils/Logger.h>
 #include <stdio.h>
 #include <thread>
-#if !defined(_WIN32) && !defined(__HAIKU__)
+#ifdef __unix__
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sstream>
 #elif defined __HAIKU__
 #include <sstream>
 #include <unistd.h>
-#endif
-#ifdef __FreeBSD__
+#elif defined _WIN32
+#include <sstream>
+#elif defined __FreeBSD__
 #include <pthread_np.h>
 #endif
 
