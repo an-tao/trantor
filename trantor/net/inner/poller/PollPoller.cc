@@ -169,7 +169,4 @@ void PollPoller::updateChannel(Channel *)
 void PollPoller::removeChannel(Channel *)
 {
 }
-void PollPoller::resetAfterFork()
-{
-}
 #endif
