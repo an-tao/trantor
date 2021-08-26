@@ -280,6 +280,7 @@ class TRANTOR_EXPORT Channel : NonCopyable
     friend class EventLoop;
     friend class EpollPoller;
     friend class KQueue;
+    friend class PollPoller;
     void update();
     void handleEvent();
     void handleEventSafely();

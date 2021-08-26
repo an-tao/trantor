@@ -215,7 +215,7 @@ uint32_t InetAddress::ipNetEndian() const
 const uint32_t *InetAddress::ip6NetEndian() const
 {
 // assert(family() == AF_INET6);
-#ifdef __linux__
+#if defined __linux__ || defined __HAIKU__
     return addr6_.sin6_addr.s6_addr32;
 #elif defined _WIN32
     // TODO is this OK ?
