@@ -322,13 +322,11 @@ std::shared_ptr<SSLContext> newSSLServerContext(
 {
     auto ctx = newSSLContext(useOldTLS, false, sslConfCmds);
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
+    char errbuf[BUFSIZ];
     if (!r)
     {
-#ifndef _MSC_VER
-        LOG_FATAL << strerror(errno);
-#else
-        LOG_FATAL << strerror_tl(errno);
-#endif
+        ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
+        LOG_FATAL << errbuf;
         abort();
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
@@ -336,21 +334,15 @@ std::shared_ptr<SSLContext> newSSLServerContext(
                                     SSL_FILETYPE_PEM);
     if (!r)
     {
-#ifndef _MSC_VER
-        LOG_FATAL << strerror(errno);
-#else
-        LOG_FATAL << strerror_tl(errno);
-#endif
+        ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
+        LOG_FATAL << errbuf;
         abort();
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
-#ifndef _MSC_VER
-        LOG_FATAL << strerror(errno);
-#else
-        LOG_FATAL << strerror_tl(errno);
-#endif
+        ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
+        LOG_FATAL << errbuf;
         abort();
     }
     return ctx;
