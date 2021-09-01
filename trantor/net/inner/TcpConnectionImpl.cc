@@ -326,7 +326,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << errbuf;
+        LOG_FATAL << "Reading certificate: " << errbuf;
         abort();
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
@@ -335,14 +335,14 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << errbuf;
+        LOG_FATAL << "Reading private key: " << errbuf;
         abort();
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << errbuf;
+        LOG_FATAL << "Checking private key matches certificate: " << errbuf;
         abort();
     }
     return ctx;
