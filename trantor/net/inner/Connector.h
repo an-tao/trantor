@@ -16,6 +16,7 @@
 
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
+#include <trantor/utils/Logger.h>
 #include <atomic>
 #include <memory>
 
@@ -52,6 +53,10 @@ class Connector : public NonCopyable,
     void start();
     void restart();
     void stop();
+    ~Connector()
+    {
+        LOG_INFO << "Connector destruct!!!!";
+    }
 
   private:
     NewConnectionCallback newConnectionCallback_;
