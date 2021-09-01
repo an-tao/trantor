@@ -99,7 +99,6 @@ TcpClient::~TcpClient()
     }
     else
     {
-        /// TODO need test in this condition
         connector_->stop();
     }
 }

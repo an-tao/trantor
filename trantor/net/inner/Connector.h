@@ -53,10 +53,6 @@ class Connector : public NonCopyable,
     void start();
     void restart();
     void stop();
-    ~Connector()
-    {
-        LOG_INFO << "Connector destruct!!!!";
-    }
 
   private:
     NewConnectionCallback newConnectionCallback_;
