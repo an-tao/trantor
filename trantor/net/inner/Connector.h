@@ -16,6 +16,7 @@
 
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
+#include <trantor/utils/Logger.h>
 #include <atomic>
 #include <memory>
 

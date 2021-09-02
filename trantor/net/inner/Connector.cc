@@ -37,6 +37,17 @@ void Connector::restart()
 }
 void Connector::stop()
 {
+    status_ = Status::Disconnected;
+    if (loop_->isInLoopThread())
+    {
+        removeAndResetChannel();
+    }
+    else
+    {
+        loop_->queueInLoop([thisPtr = shared_from_this()]() {
+            thisPtr->removeAndResetChannel();
+        });
+    }
 }
 
 void Connector::startInLoop()
@@ -202,7 +213,7 @@ void Connector::handleWrite()
     }
     else
     {
-        // what happened?
+        // has been stopped
         assert(status_ == Status::Disconnected);
     }
 }
