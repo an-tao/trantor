@@ -139,6 +139,10 @@ void Connector::connecting(int sockfd)
 
 int Connector::removeAndResetChannel()
 {
+    if (!channelPtr_)
+    {
+        return -1;
+    }
     channelPtr_->disableAll();
     channelPtr_->remove();
     int sockfd = channelPtr_->fd();
