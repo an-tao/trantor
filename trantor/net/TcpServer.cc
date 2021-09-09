@@ -195,6 +195,13 @@ void TcpServer::enableSSL(
     /* Create a new OpenSSL context */
     sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds);
 #else
+    // When not using OpenSSL, using `void` here will
+    // work around the unused parameter warnings without overhead.
+    (void)certPath;
+    (void)keyPath;
+    (void)useOldTLS;
+    (void)sslConfCmds;
+    
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #endif
