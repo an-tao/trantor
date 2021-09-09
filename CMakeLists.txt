@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(trantor)
 
 option(BUILD_DOC "Build Doxygen documentation" OFF)
+option(BUILD_C-ARES "Build C-ARES" ON)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
@@ -130,24 +131,26 @@ if(OpenSSL_FOUND)
   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
 endif()
 
-find_package(c-ares)
-if(c-ares_FOUND)
-  message(STATUS "c-ares found!")
-  target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
-  set(TRANTOR_SOURCES
-      ${TRANTOR_SOURCES}
-      trantor/net/inner/AresResolver.cc)
-  set(private_headers
-      ${private_headers}
-      trantor/net/inner/AresResolver.h)
-else(c-ares_FOUND)
-  set(TRANTOR_SOURCES
-      ${TRANTOR_SOURCES}
-      trantor/net/inner/NormalResolver.cc)
-  set(private_headers
-      ${private_headers}
-      trantor/net/inner/NormalResolver.h)
-endif(c-ares_FOUND)
+if (BUILD_C-ARES)
+    find_package(c-ares)
+    if(c-ares_FOUND)
+      message(STATUS "c-ares found!")
+      target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
+      set(TRANTOR_SOURCES
+          ${TRANTOR_SOURCES}
+          trantor/net/inner/AresResolver.cc)
+      set(private_headers
+          ${private_headers}
+          trantor/net/inner/AresResolver.h)
+    else(c-ares_FOUND)
+      set(TRANTOR_SOURCES
+          ${TRANTOR_SOURCES}
+          trantor/net/inner/NormalResolver.cc)
+      set(private_headers
+          ${private_headers}
+          trantor/net/inner/NormalResolver.h)
+    endif(c-ares_FOUND)
+endif (BUILD_C-ARES)
 
 find_package(Threads)
 target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
