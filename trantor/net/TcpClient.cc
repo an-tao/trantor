@@ -228,7 +228,7 @@ void TcpClient::enableSSL(
     (void)validateCert;
     (void)hostname;
     (void)sslConfCmds;
-    
+
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #endif

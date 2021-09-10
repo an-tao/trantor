@@ -201,7 +201,7 @@ void TcpServer::enableSSL(
     (void)keyPath;
     (void)useOldTLS;
     (void)sslConfCmds;
-    
+
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #endif
