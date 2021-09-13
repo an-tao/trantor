@@ -19,7 +19,7 @@
 #else  // _WIN32
 #if __cplusplus < 201103L || __cplusplus >= 201703L
 #include <stdlib.h>
-#include <xlocale.h>
+#include <locale.h>
 #else  // __cplusplus
 #include <locale>
 #include <codecvt>
