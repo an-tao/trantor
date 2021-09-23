@@ -111,6 +111,8 @@ void KQueue::fillActiveChannels(int numEvents,
 void KQueue::updateChannel(Channel *channel)
 {
     assertInLoopThread();
+    assert(channel->fd() >= 0);
+
     const int index = channel->index();
     // LOG_TRACE << "fd = " << channel->fd()
     //           << " events = " << channel->events() << " index = " << index;

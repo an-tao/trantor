@@ -135,6 +135,8 @@ void EpollPoller::fillActiveChannels(int numEvents,
 void EpollPoller::updateChannel(Channel *channel)
 {
     assertInLoopThread();
+    assert(channel->fd() >= 0);
+
     const int index = channel->index();
     // LOG_TRACE << "fd = " << channel->fd()
     //  << " events = " << channel->events() << " index = " << index;

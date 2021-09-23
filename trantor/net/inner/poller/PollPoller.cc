@@ -89,6 +89,8 @@ void PollPoller::fillActiveChannels(int numEvents,
 void PollPoller::updateChannel(Channel* channel)
 {
     Poller::assertInLoopThread();
+    assert(channel->fd() >= 0);
+
     // LOG_TRACE << "fd = " << channel->fd() << " events = " <<
     // channel->events();
     if (channel->index() < 0)
