@@ -63,6 +63,7 @@ TcpClient::TcpClient(EventLoop *loop,
       retry_(false),
       connect_(true)
 {
+    (void)validateCert_;
     connector_->setNewConnectionCallback(
         std::bind(&TcpClient::newConnection, this, _1));
     connector_->setErrorCallback([this]() {
