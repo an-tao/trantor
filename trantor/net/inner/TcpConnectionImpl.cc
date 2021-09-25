@@ -552,9 +552,11 @@ void TcpConnectionImpl::readCallback()
         }
         else if (n < 0)
         {
-            if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
+            if (errno == EPIPE || errno == ECONNRESET ||
+                errno == EAGAIN)  // TODO: any others?
             {
-                LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+                LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno
+                          << " fd=" << socketPtr_->fd();
                 return;
             }
 #ifdef _WIN32

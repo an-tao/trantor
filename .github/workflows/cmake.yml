@@ -62,10 +62,10 @@ jobs:
             buildname: 'ubuntu-20.04/gcc'
             triplet: x64-linux
             compiler: gcc_64
-          - os: ubuntu-16.04
-            buildname: 'ubuntu-16.04/gcc'
-            triplet: x64-linux
-            compiler: gcc_64
+          # - os: ubuntu-16.04
+          #   buildname: 'ubuntu-16.04/gcc'
+          #   triplet: x64-linux
+          #   compiler: gcc_64
           - os: macos-latest
             buildname: 'macos/clang'
             triplet: x64-osx
