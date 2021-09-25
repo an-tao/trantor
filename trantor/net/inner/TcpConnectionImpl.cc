@@ -352,10 +352,10 @@ std::shared_ptr<SSLContext> newSSLServerContext(
 namespace trantor
 {
 std::shared_ptr<SSLContext> newSSLServerContext(
-    const std::string &certPath,
-    const std::string &keyPath,
-    bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::string &,
+    const std::string &,
+    bool,
+    const std::vector<std::pair<std::string, std::string>> &)
 {
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
@@ -470,6 +470,11 @@ void TcpConnectionImpl::startServerEncryption(
     std::function<void()> callback)
 {
 #ifndef USE_OPENSSL
+    // When not using OpenSSL, using `void` here will
+    // work around the unused parameter warnings without overhead.
+    (void)ctx;
+    (void)callback;
+
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #else
@@ -496,6 +501,14 @@ void TcpConnectionImpl::startClientEncryption(
     const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
 {
 #ifndef USE_OPENSSL
+    // When not using OpenSSL, using `void` here will
+    // work around the unused parameter warnings without overhead.
+    (void)callback;
+    (void)useOldTLS;
+    (void)validateCert;
+    (void)hostname;
+    (void)sslConfCmds;
+
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #else

@@ -221,6 +221,13 @@ void TcpClient::enableSSL(
     }
 
 #else
+    // When not using OpenSSL, using `void` here will
+    // work around the unused parameter warnings without overhead.
+    (void)useOldTLS;
+    (void)validateCert;
+    (void)hostname;
+    (void)sslConfCmds;
+
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
 #endif
