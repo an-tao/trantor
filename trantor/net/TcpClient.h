@@ -229,12 +229,8 @@ class TRANTOR_EXPORT TcpClient : NonCopyable
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
     std::shared_ptr<SSLContext> sslCtxPtr_;
     std::string SSLHostName_;
-
-// This member variable is only needed when using OpenSSL, so
-// we can safely remove it when not using OpenSSL.
-#ifdef USE_OPENSSL
     bool validateCert_{false};
-#endif
+
 #ifndef _WIN32
     class IgnoreSigPipe
     {
