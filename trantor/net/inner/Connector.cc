@@ -147,7 +147,8 @@ int Connector::removeAndResetChannel()
     channelPtr_->remove();
     int sockfd = channelPtr_->fd();
     // Can't reset channel_ here, because we are inside Channel::handleEvent
-    loop_->queueInLoop([this]() { channelPtr_.reset(); });
+    loop_->queueInLoop([channelPtr = channelPtr_]() {});
+    channelPtr_.reset();
     return sockfd;
 }
 
