@@ -3,6 +3,44 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.2] - 2021-10-17
+
+### API changes list
+
+### Changed
+
+- Disable setting SSL Configs when using LibreSSL
+
+- cmake: Use GNUInstallDirs to figure out install dirs
+
+- support HaikuOS
+
+- Improve Error handling for certificates/private keys
+
+- Make c-ares support optional when building
+
+- Use locale.h
+
+- Assert fd >= 0 in updateChannel()
+
+- Add Clang support for -Wall -Wextra -Werror; fix -Wunused-parameter
+
+### Fixed
+
+- Fix a small memory leak
+
+- Fix errors in log macros
+
+- Fix a race condition when TcpClient destroyed before connected
+
+- Fix the error of calling removeAndResetChannel twice
+
+- Fix a bug when EAGAIN on reading sockets
+
+- Fix compilation warnings
+
+- Fix a potential race condition
+
 ## [1.5.1] - 2021-08-08
 
 ### API changes list
@@ -13,7 +51,7 @@ All notable changes to this project will be documented in this file.
 
 - Disable strict compiler check on Windows with GCC
 
-- Added support for paths containing unicode characters on Windows
+- Add support for paths containing unicode characters on Windows
 
 - Add BUILD_DOC cmake option (doxygen)
 
@@ -326,7 +364,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.2...HEAD
+
+[1.5.2]: https://github.com/an-tao/trantor/compare/v1.5.1...v1.5.2
 
 [1.5.1]: https://github.com/an-tao/trantor/compare/v1.5.0...v1.5.1
 
