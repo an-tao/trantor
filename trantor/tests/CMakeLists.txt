@@ -15,7 +15,9 @@ add_executable(async_file_logger_test1 AsyncFileLoggerTest1.cc)
 add_executable(sendfile_test SendfileTest.cc)
 add_executable(timing_wheel_test TimingWheelTest.cc)
 add_executable(kickoff_test KickoffTest.cc)
-add_executable(dns_test DnsTest.cc)
+if (BUILD_C-ARES)
+    add_executable(dns_test DnsTest.cc)
+endif()
 add_executable(delayed_ssl_server_test DelayedSSLServerTest.cc)
 add_executable(delayed_ssl_client_test DelayedSSLClientTest.cc)
 add_executable(run_on_quit_test RunOnQuitTest.cc)
@@ -38,11 +40,14 @@ set(targets_list
     sendfile_test
     timing_wheel_test
     kickoff_test
-    dns_test
     delayed_ssl_server_test
     delayed_ssl_client_test
     run_on_quit_test
     path_conversion_test)
+
+if (BUILD_C-ARES)
+    list(APPEND targets_list dns_test)
+endif()
 
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD_REQUIRED ON)
