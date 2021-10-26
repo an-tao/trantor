@@ -131,26 +131,31 @@ if(OpenSSL_FOUND)
   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
 endif()
 
+set(HAVE_C-ARES NO)
 if (BUILD_C-ARES)
     find_package(c-ares)
     if(c-ares_FOUND)
       message(STATUS "c-ares found!")
-      target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
-      set(TRANTOR_SOURCES
-          ${TRANTOR_SOURCES}
-          trantor/net/inner/AresResolver.cc)
-      set(private_headers
-          ${private_headers}
-          trantor/net/inner/AresResolver.h)
-    else(c-ares_FOUND)
-      set(TRANTOR_SOURCES
-          ${TRANTOR_SOURCES}
-          trantor/net/inner/NormalResolver.cc)
-      set(private_headers
-          ${private_headers}
-          trantor/net/inner/NormalResolver.h)
-    endif(c-ares_FOUND)
-endif (BUILD_C-ARES)
+      set(HAVE_C-ARES TRUE)
+    endif()
+endif ()
+
+if(HAVE_C-ARES)
+  target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
+  set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/net/inner/AresResolver.cc)
+  set(private_headers
+      ${private_headers}
+      trantor/net/inner/AresResolver.h)
+else()
+  set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/net/inner/NormalResolver.cc)
+  set(private_headers
+      ${private_headers}
+      trantor/net/inner/NormalResolver.h)
+endif()
 
 find_package(Threads)
 target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
