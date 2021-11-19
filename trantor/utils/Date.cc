@@ -310,8 +310,7 @@ Date Date::fromDbStringLocal(const std::string &datetime)
             }
         }
     }
-    return std::move(
-        trantor::Date(year, month, day, hour, minute, second, microSecond));
+    return trantor::Date(year, month, day, hour, minute, second, microSecond);
 }
 std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr,
                                                  bool showMicroseconds) const
