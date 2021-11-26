@@ -347,6 +347,43 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     }
     return ctx;
 }
+std::shared_ptr<SSLContext> newSSLClientContext(
+    bool useOldTLS,
+    bool validateCert,
+    const std::string &certPath,
+    const std::string &keyPath,
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+{
+    auto ctx = newSSLContext(useOldTLS, validateCert, sslConfCmds);
+    if (certPath.empty() || keyPath.empty())
+        return ctx;
+
+    auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
+    char errbuf[BUFSIZ];
+    if (!r)
+    {
+        ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
+        LOG_FATAL << "Reading certificate: " << errbuf;
+        abort();
+    }
+    r = SSL_CTX_use_PrivateKey_file(ctx->get(),
+                                    keyPath.c_str(),
+                                    SSL_FILETYPE_PEM);
+    if (!r)
+    {
+        ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
+        LOG_FATAL << "Reading private key: " << errbuf;
+        abort();
+    }
+    r = SSL_CTX_check_private_key(ctx->get());
+    if (!r)
+    {
+        ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
+        LOG_FATAL << "Checking private key matches certificate: " << errbuf;
+        abort();
+    }
+    return ctx;
+}
 }  // namespace trantor
 #else
 namespace trantor

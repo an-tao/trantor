@@ -206,11 +206,14 @@ void TcpClient::enableSSL(
     bool useOldTLS,
     bool validateCert,
     std::string hostname,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &certPath,
+    const std::string &keyPath)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLContext(useOldTLS, validateCert, sslConfCmds);
+    sslCtxPtr_ = newSSLClientContext(
+        useOldTLS, validateCert, certPath, keyPath, sslConfCmds);
     validateCert_ = validateCert;
     if (!hostname.empty())
     {
@@ -228,6 +231,8 @@ void TcpClient::enableSSL(
     (void)validateCert;
     (void)hostname;
     (void)sslConfCmds;
+    (void)certPath;
+    (void)keyPath;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
     abort();
