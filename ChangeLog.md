@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.3] - 2021-11-28
+
+### API changes list
+
+- TcpClientImpl support SSL client certificate
+
+### Changed
+
+- Allow RVO in fromDbStringLocal
+
+### Fixed
+
+- Make sure resolvers are added when C-Ares is manually disabled
+
 ## [1.5.2] - 2021-10-17
 
 ### API changes list
@@ -364,7 +378,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.3...HEAD
+
+[1.5.3]: https://github.com/an-tao/trantor/compare/v1.5.2...v1.5.3
 
 [1.5.2]: https://github.com/an-tao/trantor/compare/v1.5.1...v1.5.2
 
