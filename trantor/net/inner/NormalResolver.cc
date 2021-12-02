@@ -56,13 +56,13 @@ void NormalResolver::resolve(const std::string &hostname,
                     }
                 }
             }
-            struct addrinfo hints, *res;
+            struct addrinfo hints, *res = nullptr;
             memset(&hints, 0, sizeof(hints));
             hints.ai_family = PF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
             hints.ai_flags = AI_PASSIVE;
             auto error = getaddrinfo(hostname.data(), nullptr, &hints, &res);
-            if (error == -1 || res == nullptr)
+            if (error != 0 || res == nullptr)
             {
                 LOG_SYSERR << "InetAddress::resolve";
                 if (res != nullptr)
