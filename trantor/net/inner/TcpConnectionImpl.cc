@@ -1524,11 +1524,12 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     }
     while (filePtr->fileBytesToSend_ > 0)
     {
+        auto bytes = static_cast<decltype(fileBufferPtr_->size())>(
+            filePtr->fileBytesToSend_);
         auto n = fread(&(*fileBufferPtr_)[0],
                        1,
-                       std::min(fileBufferPtr_->size(),
-                                static_cast<decltype(fileBufferPtr_->size())>(
-                                    filePtr->fileBytesToSend_)),
+                       (fileBufferPtr_->size() < bytes ? fileBufferPtr_->size()
+                                                       : bytes),
                        filePtr->sendFp_);
 #endif
         if (n > 0)
