@@ -1513,7 +1513,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     {
         auto n = read(filePtr->sendFd_,
                       &(*fileBufferPtr_)[0],
-                      fileBufferPtr_->size());
+                      std::min(fileBufferPtr_->size(),
+                               static_cast<decltype(fileBufferPtr_->size())>(
+                                   filePtr->fileBytesToSend_)));
 #else
     _fseeki64(filePtr->sendFp_, filePtr->offset_, SEEK_SET);
     if (!fileBufferPtr_)
@@ -1524,7 +1526,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     {
         auto n = fread(&(*fileBufferPtr_)[0],
                        1,
-                       fileBufferPtr_->size(),
+                       std::min(fileBufferPtr_->size(),
+                                static_cast<decltype(fileBufferPtr_->size())>(
+                                    filePtr->fileBytesToSend_)),
                        filePtr->sendFp_);
 #endif
         if (n > 0)
