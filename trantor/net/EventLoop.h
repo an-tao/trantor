@@ -122,18 +122,6 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      * f is executed directly before the method exiting.
      */
     template <typename Functor>
-    inline void runInLoop(const Functor &f)
-    {
-        if (isInLoopThread())
-        {
-            f();
-        }
-        else
-        {
-            queueInLoop(f);
-        }
-    }
-    template <typename Functor>
     inline void runInLoop(Functor &&f)
     {
         if (isInLoopThread())
