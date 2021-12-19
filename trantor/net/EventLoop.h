@@ -121,8 +121,30 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      * @note If the current thread is the thread of the event loop, the function
      * f is executed directly before the method exiting.
      */
-    void runInLoop(const Func &f);
-    void runInLoop(Func &&f);
+    template <typename Functor>
+    inline void runInLoop(const Functor &f)
+    {
+        if (isInLoopThread())
+        {
+            f();
+        }
+        else
+        {
+            queueInLoop(f);
+        }
+    }
+    template <typename Functor>
+    inline void runInLoop(Functor &&f)
+    {
+        if (isInLoopThread())
+        {
+            f();
+        }
+        else
+        {
+            queueInLoop(std::forward<Functor>(f));
+        }
+    }
 
     /**
      * @brief Run the function f in the thread of the event loop.
