@@ -202,28 +202,6 @@ void EventLoop::abortNotInLoopThread()
                  "thread";
     exit(1);
 }
-void EventLoop::runInLoop(const Func &cb)
-{
-    if (isInLoopThread())
-    {
-        cb();
-    }
-    else
-    {
-        queueInLoop(cb);
-    }
-}
-void EventLoop::runInLoop(Func &&cb)
-{
-    if (isInLoopThread())
-    {
-        cb();
-    }
-    else
-    {
-        queueInLoop(std::move(cb));
-    }
-}
 void EventLoop::queueInLoop(const Func &cb)
 {
     funcs_.enqueue(cb);
