@@ -30,7 +30,7 @@ static_assert(EPOLLRDHUP == POLLRDHUP, "EPOLLRDHUP != POLLRDHUP");
 static_assert(EPOLLERR == POLLERR, "EPOLLERR != POLLERR");
 static_assert(EPOLLHUP == POLLHUP, "EPOLLHUP != POLLHUP");
 
-#ifdef __linux__
+#if defined(__linux__) and USE_LIBURING
 namespace
 {
 const int kNew = -1;
