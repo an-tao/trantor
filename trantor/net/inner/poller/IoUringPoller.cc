@@ -232,7 +232,7 @@ void IoUringPoller::update(int operation, Channel *channel)
         }
     }
 }
-}
+}  // namespace trantor
 #else
 namespace trantor
 {
