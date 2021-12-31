@@ -16,13 +16,13 @@
 #include "Channel.h"
 #include "IoUringPoller.h"
 #include <assert.h>
-#include <strings.h>
 #include <iostream>
 
 #if defined(__linux__) && USE_LIBURING
 #include <poll.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <strings.h>
 namespace trantor
 {
 static_assert(EPOLLIN == POLLIN, "EPOLLIN != POLLIN");
