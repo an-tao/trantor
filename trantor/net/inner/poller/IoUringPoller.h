@@ -23,7 +23,7 @@
 #include <memory>
 #include <map>
 
-#if defined(__linux__) and USE_LIBURING
+#if defined(__linux__) && USE_LIBURING
 #include <liburing.h>
 #endif
 
@@ -64,7 +64,7 @@ class IoUringPoller : public Poller
 
   private:
     static const int kInitEventListSize = 16;
-#if defined(__linux__) and USE_LIBURING
+#if defined(__linux__) && USE_LIBURING
     int epollfd_;
     EventList events_;
     io_uring ring_;

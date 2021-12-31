@@ -20,10 +20,9 @@
 #include <strings.h>
 #include <iostream>
 
-#if defined(__linux__) and USE_LIBURING
+#if defined(__linux__) && USE_LIBURING
 #include <poll.h>
 #include <sys/epoll.h>
-#endif
 namespace trantor
 {
 static_assert(EPOLLIN == POLLIN, "EPOLLIN != POLLIN");
@@ -33,7 +32,6 @@ static_assert(EPOLLRDHUP == POLLRDHUP, "EPOLLRDHUP != POLLRDHUP");
 static_assert(EPOLLERR == POLLERR, "EPOLLERR != POLLERR");
 static_assert(EPOLLHUP == POLLHUP, "EPOLLHUP != POLLHUP");
 
-#if defined(__linux__) and USE_LIBURING
 namespace
 {
 const int kNew = -1;
@@ -234,7 +232,10 @@ void IoUringPoller::update(int operation, Channel *channel)
         }
     }
 }
+}
 #else
+namespace trantor
+{
 IoUringPoller::IoUringPoller(EventLoop *loop) : Poller(loop)
 {
     assert(false);
@@ -251,6 +252,5 @@ void IoUringPoller::updateChannel(Channel *)
 void IoUringPoller::removeChannel(Channel *)
 {
 }
-
-#endif
 }  // namespace trantor
+#endif
