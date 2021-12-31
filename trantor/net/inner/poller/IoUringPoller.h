@@ -64,12 +64,12 @@ class IoUringPoller : public Poller
 
   private:
     static const int kInitEventListSize = 16;
+#ifdef __linux__
     int epollfd_;
     EventList events_;
     io_uring ring_;
     int iouringEventFd_;
 
-#ifdef __linux__
     void update(int operation, Channel *channel);
     std::map<int, epoll_event> epoll_events_;
 #ifndef NDEBUG
