@@ -281,6 +281,7 @@ class TRANTOR_EXPORT Channel : NonCopyable
     friend class EpollPoller;
     friend class KQueue;
     friend class PollPoller;
+    friend class IoUringPoller;
     void update();
     void handleEvent();
     void handleEventSafely();

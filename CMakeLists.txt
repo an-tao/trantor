@@ -101,7 +101,7 @@ set(TRANTOR_SOURCES
     trantor/net/inner/TimerQueue.cc
     trantor/net/inner/poller/EpollPoller.cc
     trantor/net/inner/poller/KQueue.cc
-    trantor/net/inner/poller/PollPoller.cc)
+    trantor/net/inner/poller/IoUringPoller.cc)
 set(private_headers
     trantor/net/inner/Acceptor.h
     trantor/net/inner/Connector.h
@@ -112,7 +112,8 @@ set(private_headers
     trantor/net/inner/TimerQueue.h
     trantor/net/inner/poller/EpollPoller.h
     trantor/net/inner/poller/KQueue.h
-    trantor/net/inner/poller/PollPoller.h)
+    trantor/net/inner/poller/PollPoller.h
+    trantor/net/inner/poller/IoUringPoller.h)
 
 if(WIN32)
   set(TRANTOR_SOURCES
@@ -138,6 +139,18 @@ if (BUILD_C-ARES)
       message(STATUS "c-ares found!")
       set(HAVE_C-ARES TRUE)
     endif()
+endif ()
+
+set(HAVE_LIBURING NO)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(LibUring)
+    if (LibUring_FOUND)
+        set(HAVE_LIBURING TRUE)
+        message(STATUS "LibUring found!")
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${LibUring_LIBRARIES})
+        target_include_directories(${PROJECT_NAME} PRIVATE ${LibUring_INCLUDE_DIR})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ${USE_LIBURING})
+    endif ()
 endif ()
 
 if(HAVE_C-ARES)
