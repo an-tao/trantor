@@ -171,8 +171,10 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
         (void)n;
         assert(n == 1);
     });
-
-    static_cast<TcpConnectionImpl *>(connectionPtr.get())->connectDestroyed();
+    loop_->queueInLoop([connectionPtr]() {
+        static_cast<TcpConnectionImpl *>(connectionPtr.get())
+            ->connectDestroyed();
+    });
 }
 
 const std::string TcpServer::ipPort() const

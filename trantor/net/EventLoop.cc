@@ -136,13 +136,6 @@ void EventLoop::removeChannel(Channel *channel)
 {
     assert(channel->ownerLoop() == this);
     assertInLoopThread();
-    if (eventHandling_)
-    {
-        assert(currentActiveChannel_ == channel ||
-               std::find(activeChannels_.begin(),
-                         activeChannels_.end(),
-                         channel) == activeChannels_.end());
-    }
     poller_->removeChannel(channel);
 }
 void EventLoop::quit()
