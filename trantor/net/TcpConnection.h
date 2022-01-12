@@ -76,6 +76,16 @@ class TRANTOR_EXPORT TcpConnection
     virtual void sendFile(const wchar_t *fileName,
                           size_t offset = 0,
                           size_t length = 0) = 0;
+    /**
+     * @brief Send a stream to the peer.
+     *
+     * @param callback function to retrieve the stream data (stream ends when a zero size is returned)
+     *                 the callback will be called with nullptr when the send is finished/interrupted, so that it cleans up any internal data (ex: close file).
+     * @param chunked  if true, sends the data in HTTP chunked Transfer-Encoding format
+     *                 The Transfer-Encoding MUST be chunked if the connection is Keep-Alive since the size of the stream is not known.
+     */
+    virtual void sendStream(std::function<std::size_t(char*, std::size_t)> callback,  // (buffer, buffer size) -> size of data put in buffer
+                            bool chunked = true) = 0;
 
     /**
      * @brief Get the local address of the connection.
