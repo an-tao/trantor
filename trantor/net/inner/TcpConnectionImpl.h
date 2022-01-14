@@ -125,8 +125,9 @@ class TcpConnectionImpl : public TcpConnection,
     virtual void sendFile(const wchar_t *fileName,
                           size_t offset = 0,
                           size_t length = 0) override;
-    virtual void sendStream(std::function<std::size_t(char*, std::size_t)> callback,
-                            bool chunked = true) override;
+    virtual void sendStream(
+        std::function<std::size_t(char *, std::size_t)> callback,
+        bool chunked = true) override;
 
     virtual const InetAddress &localAddr() const override
     {
