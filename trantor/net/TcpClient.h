@@ -34,7 +34,8 @@ class SSLContext;
  * @brief This class represents a TCP client.
  *
  */
-class TRANTOR_EXPORT TcpClient : NonCopyable, public std::enable_shared_from_this<TcpClient>
+class TRANTOR_EXPORT TcpClient : NonCopyable,
+                                 public std::enable_shared_from_this<TcpClient>
 {
   public:
     /**
