@@ -26,6 +26,7 @@
 #include <assert.h>
 #ifdef _WIN32
 #include <io.h>
+#include <synchapi.h>
 using ssize_t = long long;
 #else
 #include <poll.h>
@@ -111,8 +112,29 @@ void EventLoop::resetAfterFork()
 }
 EventLoop::~EventLoop()
 {
+#ifdef _WIN32
+    DWORD delay = 1;    /* 1 msec */
+#else
+    struct timespec delay = { 0, 1000000 }; /* 1 msec */
+#endif
+
     quit();
-    assert(!looping_);
+
+    // Spin waiting for the loop to exit because
+    // this may take some time to complete. We
+    // assume the loop thread will *always* exit.
+    // If this cannot be guaranteed then one option
+    // might be to abort waiting and
+    // assert(!looping_) after some delay;
+    while ( looping_ )
+    {
+#ifdef _WIN32
+        Sleep(delay);
+#else
+        nanosleep(&delay, nullptr);
+#endif
+    }
+
     t_loopInThisThread = nullptr;
 #ifdef __linux__
     close(wakeupFd_);

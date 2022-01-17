@@ -297,9 +297,9 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
     void abortNotInLoopThread();
     void wakeup();
     void wakeupRead();
-    bool looping_;
+    volatile bool looping_;
     std::thread::id threadId_;
-    bool quit_;
+    volatile bool quit_;
     std::unique_ptr<Poller> poller_;
 
     ChannelList activeChannels_;
