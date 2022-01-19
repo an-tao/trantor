@@ -184,7 +184,7 @@ void TcpClient::newConnection(int sockfd)
                               std::dynamic_pointer_cast<TcpConnectionImpl>(c)));
             }
         });
-    conn->setCloseCallback(closeCb);
+    conn->setCloseCallback(std::move(closeCb));
     {
         std::lock_guard<std::mutex> lock(mutex_);
         connection_ = conn;
