@@ -168,20 +168,22 @@ void TcpClient::newConnection(int sockfd)
     conn->setWriteCompleteCallback(writeCompleteCallback_);
 
     std::weak_ptr<TcpClient> weakSelf(shared_from_this());
-    auto closeCb = std::function<void(const TcpConnectionPtr &)>([weakSelf](const TcpConnectionPtr & c) {
-        if ( auto self = weakSelf.lock() )
-        {
-            self->removeConnection(c);
-        }
-        // Else the TcpClient instance has already been destroyed
-        else
-        {
-            LOG_DEBUG << "TcpClient::removeConnection was skipped because TcpClient instanced already freed";
-            c->getLoop()->queueInLoop(
-                std::bind(&TcpConnectionImpl::connectDestroyed,
-                  std::dynamic_pointer_cast<TcpConnectionImpl>(c)));
-        }
-    });
+    auto closeCb = std::function<void(const TcpConnectionPtr &)>(
+        [weakSelf](const TcpConnectionPtr &c) {
+            if (auto self = weakSelf.lock())
+            {
+                self->removeConnection(c);
+            }
+            // Else the TcpClient instance has already been destroyed
+            else
+            {
+                LOG_DEBUG << "TcpClient::removeConnection was skipped because "
+                             "TcpClient instanced already freed";
+                c->getLoop()->queueInLoop(
+                    std::bind(&TcpConnectionImpl::connectDestroyed,
+                              std::dynamic_pointer_cast<TcpConnectionImpl>(c)));
+            }
+        });
     conn->setCloseCallback(closeCb);
     {
         std::lock_guard<std::mutex> lock(mutex_);
