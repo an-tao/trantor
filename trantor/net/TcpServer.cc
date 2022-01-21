@@ -165,14 +165,26 @@ void TcpServer::stop()
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
-    // loop_->assertInLoopThread();
-    loop_->runInLoop([this, connectionPtr]() {
+    if (loop_->isInLoopThread())
+    {
         size_t n = connSet_.erase(connectionPtr);
         (void)n;
         assert(n == 1);
-    });
-
-    static_cast<TcpConnectionImpl *>(connectionPtr.get())->connectDestroyed();
+        loop_->queueInLoop([connectionPtr]() {
+            static_cast<TcpConnectionImpl *>(connectionPtr.get())
+                ->connectDestroyed();
+        });
+    }
+    else
+    {
+        loop_->queueInLoop([this, connectionPtr]() {
+            size_t n = connSet_.erase(connectionPtr);
+            (void)n;
+            assert(n == 1);
+            static_cast<TcpConnectionImpl *>(connectionPtr.get())
+                ->connectDestroyed();
+        });
+    }
 }
 
 const std::string TcpServer::ipPort() const
