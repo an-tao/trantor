@@ -113,9 +113,9 @@ void EventLoop::resetAfterFork()
 EventLoop::~EventLoop()
 {
 #ifdef _WIN32
-    DWORD delay = 1;    /* 1 msec */
+    DWORD delay = 1; /* 1 msec */
 #else
-    struct timespec delay = { 0, 1000000 }; /* 1 msec */
+    struct timespec delay = {0, 1000000}; /* 1 msec */
 #endif
 
     quit();
@@ -126,7 +126,7 @@ EventLoop::~EventLoop()
     // If this cannot be guaranteed then one option
     // might be to abort waiting and
     // assert(!looping_) after some delay;
-    while ( looping_ )
+    while (looping_)
     {
 #ifdef _WIN32
         Sleep(delay);
