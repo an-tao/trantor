@@ -82,25 +82,25 @@ TcpClient::~TcpClient()
     {
         std::lock_guard<std::mutex> lock(mutex_);
         conn = std::dynamic_pointer_cast<TcpConnectionImpl>(connection_);
-    }
-    if (conn)
-    {
-        assert(loop_ == conn->getLoop());
-        // TODO: not 100% safe, if we are in different thread
-        auto loop = loop_;
-        loop_->runInLoop([conn, loop]() {
-            conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
-                loop->queueInLoop([connPtr]() {
-                    static_cast<TcpConnectionImpl *>(connPtr.get())
-                        ->connectDestroyed();
+        if (conn)
+        {
+            assert(loop_ == conn->getLoop());
+            // TODO: not 100% safe, if we are in different thread
+            auto loop = loop_;
+            loop_->runInLoop([conn, loop]() {
+                conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
+                    loop->queueInLoop([connPtr]() {
+                        static_cast<TcpConnectionImpl *>(connPtr.get())
+                            ->connectDestroyed();
+                    });
                 });
             });
-        });
-        conn->forceClose();
-    }
-    else
-    {
-        connector_->stop();
+            conn->forceClose();
+        }
+        else
+        {
+            connector_->stop();
+        }
     }
 }
 
@@ -166,7 +166,25 @@ void TcpClient::newConnection(int sockfd)
     conn->setConnectionCallback(connectionCallback_);
     conn->setRecvMsgCallback(messageCallback_);
     conn->setWriteCompleteCallback(writeCompleteCallback_);
-    conn->setCloseCallback(std::bind(&TcpClient::removeConnection, this, _1));
+
+    std::weak_ptr<TcpClient> weakSelf(shared_from_this());
+    auto closeCb = std::function<void(const TcpConnectionPtr &)>(
+        [weakSelf](const TcpConnectionPtr &c) {
+            if (auto self = weakSelf.lock())
+            {
+                self->removeConnection(c);
+            }
+            // Else the TcpClient instance has already been destroyed
+            else
+            {
+                LOG_DEBUG << "TcpClient::removeConnection was skipped because "
+                             "TcpClient instanced already freed";
+                c->getLoop()->queueInLoop(
+                    std::bind(&TcpConnectionImpl::connectDestroyed,
+                              std::dynamic_pointer_cast<TcpConnectionImpl>(c)));
+            }
+        });
+    conn->setCloseCallback(std::move(closeCb));
     {
         std::lock_guard<std::mutex> lock(mutex_);
         connection_ = conn;
