@@ -25,6 +25,7 @@
 #include <thread>
 #include <assert.h>
 #ifdef _WIN32
+#include <windows.h>
 #include <io.h>
 #include <synchapi.h>
 using ssize_t = long long;
