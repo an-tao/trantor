@@ -102,7 +102,7 @@ EventLoop::EventLoop()
 void EventLoop::resetTimerQueue()
 {
     assertInLoopThread();
-    assert(!looping_);
+    assert(!looping_.load(std::memory_order_acquire));
     timerQueue_->reset();
 }
 #endif
@@ -126,7 +126,7 @@ EventLoop::~EventLoop()
     // If this cannot be guaranteed then one option
     // might be to abort waiting and
     // assert(!looping_) after some delay;
-    while (looping_)
+    while (looping_.load(std::memory_order_acquire))
     {
 #ifdef _WIN32
         Sleep(delay);
@@ -169,7 +169,7 @@ void EventLoop::removeChannel(Channel *channel)
 }
 void EventLoop::quit()
 {
-    quit_ = true;
+    quit_.store(true, std::memory_order_release);
 
     Func f;
     while (funcsOnQuit_.dequeue(f))
@@ -189,10 +189,10 @@ void EventLoop::loop()
 {
     assert(!looping_);
     assertInLoopThread();
-    looping_ = true;
-    quit_ = false;
+    looping_.store(true, std::memory_order_release);
+    quit_.store(false, std::memory_order_release);
 
-    while (!quit_)
+    while (!quit_.load(std::memory_order_acquire))
     {
         activeChannels_.clear();
 #ifdef __linux__
@@ -216,7 +216,7 @@ void EventLoop::loop()
         // std::cout << "looping" << endl;
         doRunInLoopFuncs();
     }
-    looping_ = false;
+    looping_.store(false, std::memory_order_release);
 }
 void EventLoop::abortNotInLoopThread()
 {
@@ -227,7 +227,7 @@ void EventLoop::abortNotInLoopThread()
 void EventLoop::queueInLoop(const Func &cb)
 {
     funcs_.enqueue(cb);
-    if (!isInLoopThread() || !looping_)
+    if (!isInLoopThread() || !looping_.load(std::memory_order_acquire))
     {
         wakeup();
     }
@@ -235,7 +235,7 @@ void EventLoop::queueInLoop(const Func &cb)
 void EventLoop::queueInLoop(Func &&cb)
 {
     funcs_.enqueue(std::move(cb));
-    if (!isInLoopThread() || !looping_)
+    if (!isInLoopThread() || !looping_.load(std::memory_order_acquire))
     {
         wakeup();
     }

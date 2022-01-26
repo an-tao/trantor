@@ -271,7 +271,8 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      */
     bool isRunning()
     {
-        return looping_ && (!quit_);
+        return looping_.load(std::memory_order_acquire) &&
+               (!quit_.load(std::memory_order_acquire));
     }
 
     /**
