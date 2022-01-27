@@ -230,23 +230,42 @@ class TcpConnectionImpl : public TcpConnection,
     {
         recvMsgCallback_ = cb;
     }
+    void setRecvMsgCallback(RecvMessageCallback &&cb)
+    {
+        recvMsgCallback_ = std::move(cb);
+    }
     void setConnectionCallback(const ConnectionCallback &cb)
     {
         connectionCallback_ = cb;
+    }
+    void setConnectionCallback(ConnectionCallback &&cb)
+    {
+        connectionCallback_ = std::move(cb);
     }
     void setWriteCompleteCallback(const WriteCompleteCallback &cb)
     {
         writeCompleteCallback_ = cb;
     }
+    void setWriteCompleteCallback(WriteCompleteCallback &&cb)
+    {
+        writeCompleteCallback_ = std::move(cb);
+    }
     void setCloseCallback(const CloseCallback &cb)
     {
         closeCallback_ = cb;
+    }
+    void setCloseCallback(CloseCallback &&cb)
+    {
+        closeCallback_ = std::move(cb);
     }
     void setSSLErrorCallback(const SSLErrorCallback &cb)
     {
         sslErrorCallback_ = cb;
     }
-
+    void setSSLErrorCallback(SSLErrorCallback &&cb)
+    {
+        sslErrorCallback_ = std::move(cb);
+    }
     void connectDestroyed();
     virtual void connectEstablished();
 
