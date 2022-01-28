@@ -12,16 +12,16 @@
  *
  */
 
-#include <trantor/utils/Logger.h>
 #include <stdio.h>
+#include <trantor/utils/Logger.h>
 #include <thread>
 #ifdef __unix__
-#include <unistd.h>
 #include <sys/syscall.h>
+#include <unistd.h>
 #include <sstream>
 #elif defined __HAIKU__
-#include <sstream>
 #include <unistd.h>
+#include <sstream>
 #elif defined _WIN32
 #include <sstream>
 #elif defined __FreeBSD__
@@ -76,6 +76,16 @@ static thread_local pid_t threadId_{0};
 static thread_local uint64_t threadId_{0};
 #endif
 //   static thread_local LogStream logStream_;
+
+std::function<void(const char *msg, const uint64_t len)>
+    Logger::defaultOutputFunc_ = [](const char *msg, const uint64_t len) {
+        fwrite(msg, 1, static_cast<size_t>(len), stdout);
+    };
+std::function<void()> Logger::defaultFlushFunc_ = []() { fflush(stdout); };
+
+std::vector<std::function<void(const char *msg, const uint64_t len)>>
+    Logger::outputFuncs_;
+std::vector<std::function<void()>> Logger::flushFuncs_;
 
 void Logger::formatTime()
 {

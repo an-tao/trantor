@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include <trantor/utils/NonCopyable.h>
+#include <trantor/exports.h>
 #include <trantor/utils/Date.h>
 #include <trantor/utils/LogStream.h>
-#include <trantor/exports.h>
+#include <trantor/utils/NonCopyable.h>
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -31,6 +31,8 @@ namespace trantor
  */
 class TRANTOR_EXPORT Logger : public NonCopyable
 {
+    friend class RawLogger;
+
   public:
     enum LogLevel
     {
@@ -132,14 +134,6 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     }
 
   protected:
-    static void defaultOutputFunction(const char *msg, const uint64_t len)
-    {
-        fwrite(msg, 1, static_cast<size_t>(len), stdout);
-    }
-    static void defaultFlushFunction()
-    {
-        fflush(stdout);
-    }
     void formatTime();
     static LogLevel &logLevel_()
     {
@@ -153,45 +147,45 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     static std::function<void(const char *msg, const uint64_t len)>
         &outputFunc_()
     {
-        static std::function<void(const char *msg, const uint64_t len)>
-            outputFunc = Logger::defaultOutputFunction;
-        return outputFunc;
+        return defaultOutputFunc_;
     }
     static std::function<void()> &flushFunc_()
     {
-        static std::function<void()> flushFunc = Logger::defaultFlushFunction;
-        return flushFunc;
+        return defaultFlushFunc_;
     }
     static std::function<void(const char *msg, const uint64_t len)>
         &outputFunc_(size_t index)
     {
-        static std::vector<
-            std::function<void(const char *msg, const uint64_t len)>>
-            outputFuncs;
-        if (index < outputFuncs.size())
+        if (index < outputFuncs_.size())
         {
-            return outputFuncs[index];
+            return outputFuncs_[index];
         }
-        while (index >= outputFuncs.size())
+        while (index >= outputFuncs_.size())
         {
-            outputFuncs.emplace_back(outputFunc_());
+            outputFuncs_.emplace_back(outputFunc_());
         }
-        return outputFuncs[index];
+        return outputFuncs_[index];
     }
     static std::function<void()> &flushFunc_(size_t index)
     {
-        static std::vector<std::function<void()>> flushFuncs;
-        if (index < flushFuncs.size())
+        if (index < flushFuncs_.size())
         {
-            return flushFuncs[index];
+            return flushFuncs_[index];
         }
-        while (index >= flushFuncs.size())
+        while (index >= flushFuncs_.size())
         {
-            flushFuncs.emplace_back(flushFunc_());
+            flushFuncs_.emplace_back(flushFunc_());
         }
-        return flushFuncs[index];
+        return flushFuncs_[index];
     }
-    friend class RawLogger;
+
+    static std::function<void(const char *msg, const uint64_t len)>
+        defaultOutputFunc_;
+    static std::function<void()> defaultFlushFunc_;
+    static std::vector<std::function<void(const char *msg, const uint64_t len)>>
+        outputFuncs_;
+    static std::vector<std::function<void()>> flushFuncs_;
+
     LogStream logStream_;
     Date date_{Date::now()};
     SourceFile sourceFile_;
