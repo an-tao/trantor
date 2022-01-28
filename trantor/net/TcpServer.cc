@@ -162,28 +162,36 @@ void TcpServer::stop()
         f.get();
     }
 }
+void TcpServer::handleCloseInLoop(const TcpConnectionPtr &connectionPtr)
+{
+    size_t n = connSet_.erase(connectionPtr);
+    (void)n;
+    assert(n == 1);
+    auto connLoop = connectionPtr->getLoop();
+    if (connLoop == loop_)
+    {
+        static_cast<TcpConnectionImpl *>(connectionPtr.get())
+            ->connectDestroyed();
+    }
+    else
+    {
+        connLoop->queueInLoop([connectionPtr]() {
+            static_cast<TcpConnectionImpl *>(connectionPtr.get())
+                ->connectDestroyed();
+        });
+    }
+}
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
     if (loop_->isInLoopThread())
     {
-        size_t n = connSet_.erase(connectionPtr);
-        (void)n;
-        assert(n == 1);
-        loop_->queueInLoop([connectionPtr]() {
-            static_cast<TcpConnectionImpl *>(connectionPtr.get())
-                ->connectDestroyed();
-        });
+        handleCloseInLoop(connectionPtr);
     }
     else
     {
-        loop_->queueInLoop([this, connectionPtr]() {
-            size_t n = connSet_.erase(connectionPtr);
-            (void)n;
-            assert(n == 1);
-            static_cast<TcpConnectionImpl *>(connectionPtr.get())
-                ->connectDestroyed();
-        });
+        loop_->queueInLoop(
+            [this, connectionPtr]() { handleCloseInLoop(connectionPtr); });
     }
 }
 
