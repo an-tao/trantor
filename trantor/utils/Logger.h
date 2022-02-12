@@ -170,7 +170,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         static std::vector<
             std::function<void(const char *msg, const uint64_t len)>>
             outputFuncs;
-        TRANTOR_IF_(index < outputFuncs.size())
+        if (index < outputFuncs.size())
         {
             return outputFuncs[index];
         }
@@ -183,7 +183,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     static std::function<void()> &flushFunc_(size_t index)
     {
         static std::vector<std::function<void()>> flushFuncs;
-        TRANTOR_IF_(index < flushFuncs.size())
+        if (index < flushFuncs.size())
         {
             return flushFuncs[index];
         }
@@ -385,7 +385,7 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
 #define DLOG_FATAL_IF(cond) \
     TRANTOR_IF_(cond)       \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
-#endif
+#endif 
 
 const char *strerror_tl(int savedErrno);
 }  // namespace trantor
