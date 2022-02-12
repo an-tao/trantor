@@ -219,16 +219,20 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
 };
 #ifdef NDEBUG
 #define LOG_TRACE                                                          \
-    if (0)                                                                 \
+    for (; false;)                                                         \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #else
 #define LOG_TRACE                                                          \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kTrace)            \
+    for (int r = 0;                                                        \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kTrace; \
+         r = 1)                                                            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #define LOG_TRACE_TO(index)                                                \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kTrace)            \
+    for (int r = 0;                                                        \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kTrace; \
+         r = 1)                                                            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .setIndex(index)                                                   \
         .stream()
@@ -236,19 +240,27 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
 #endif
 
 #define LOG_DEBUG                                                          \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kDebug)            \
+    for (int r = 0;                                                        \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kDebug; \
+         r = 1)                                                            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
         .stream()
 #define LOG_DEBUG_TO(index)                                                \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kDebug)            \
+    for (int r = 0;                                                        \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kDebug; \
+         r = 1)                                                            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
         .setIndex(index)                                                   \
         .stream()
-#define LOG_INFO                                               \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
+#define LOG_INFO                                                          \
+    for (int r = 0;                                                       \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kInfo; \
+         r = 1)                                                           \
     trantor::Logger(__FILE__, __LINE__).stream()
-#define LOG_INFO_TO(index)                                     \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
+#define LOG_INFO_TO(index)                                                \
+    for (int r = 0;                                                       \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kInfo; \
+         r = 1)                                                           \
     trantor::Logger(__FILE__, __LINE__).setIndex(index).stream()
 #define LOG_WARN \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn).stream()
@@ -275,80 +287,95 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
 #define LOG_RAW trantor::RawLogger().stream()
 #define LOG_RAW_TO(index) trantor::RawLogger().setIndex(index).stream()
 
-#define LOG_TRACE_IF(cond)                                                  \
-    if ((trantor::Logger::logLevel() <= trantor::Logger::kTrace) && (cond)) \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__)  \
+#define LOG_TRACE_IF(cond)                                                     \
+    for (int r = 0;                                                            \
+         r == 0 && (trantor::Logger::logLevel() <= trantor::Logger::kTrace) && \
+         (cond);                                                               \
+         r = 1)                                                                \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__)     \
         .stream()
-#define LOG_DEBUG_IF(cond)                                                  \
-    if ((trantor::Logger::logLevel() <= trantor::Logger::kDebug) && (cond)) \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__)  \
+#define LOG_DEBUG_IF(cond)                                                     \
+    for (int r = 0;                                                            \
+         r == 0 && (trantor::Logger::logLevel() <= trantor::Logger::kDebug) && \
+         (cond);                                                               \
+         r = 1)                                                                \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__)     \
         .stream()
-#define LOG_INFO_IF(cond)                                                  \
-    if ((trantor::Logger::logLevel() <= trantor::Logger::kInfo) && (cond)) \
+#define LOG_INFO_IF(cond)                                                     \
+    for (int r = 0;                                                           \
+         r == 0 && (trantor::Logger::logLevel() <= trantor::Logger::kInfo) && \
+         (cond);                                                              \
+         r = 1)                                                               \
     trantor::Logger(__FILE__, __LINE__).stream()
-#define LOG_WARN_IF(cond) \
-    if (cond)             \
+#define LOG_WARN_IF(cond)                  \
+    for (int r = 0; r == 0 && cond; r = 1) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn).stream()
-#define LOG_ERROR_IF(cond) \
-    if (cond)              \
+#define LOG_ERROR_IF(cond)                 \
+    for (int r = 0; r == 0 && cond; r = 1) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kError).stream()
-#define LOG_FATAL_IF(cond) \
-    if (cond)              \
+#define LOG_FATAL_IF(cond)                 \
+    for (int r = 0; r == 0 && cond; r = 1) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
 
 #ifdef NDEBUG
 #define DLOG_TRACE                                                         \
-    if (0)                                                                 \
+    for (; false;)                                                         \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #define DLOG_DEBUG                                                         \
-    if (0)                                                                 \
+    for (; false;)                                                         \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
         .stream()
-#define DLOG_INFO \
-    if (0)        \
+#define DLOG_INFO  \
+    for (; false;) \
     trantor::Logger(__FILE__, __LINE__).stream()
-#define DLOG_WARN \
-    if (0)        \
+#define DLOG_WARN  \
+    for (; false;) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn).stream()
 #define DLOG_ERROR \
-    if (0)         \
+    for (; false;) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kError).stream()
 #define DLOG_FATAL \
-    if (0)         \
+    for (; false;) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
 
 #define DLOG_TRACE_IF(cond)                                                \
-    if (0)                                                                 \
+    for (; false;)                                                         \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #define DLOG_DEBUG_IF(cond)                                                \
-    if (0)                                                                 \
+    for (; false;)                                                         \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
         .stream()
 #define DLOG_INFO_IF(cond) \
-    if (0)                 \
+    for (; false;)         \
     trantor::Logger(__FILE__, __LINE__).stream()
 #define DLOG_WARN_IF(cond) \
-    if (0)                 \
+    for (; false;)         \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn).stream()
 #define DLOG_ERROR_IF(cond) \
-    if (0)                  \
+    for (; false;)          \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kError).stream()
 #define DLOG_FATAL_IF(cond) \
-    if (0)                  \
+    for (; false;)          \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
 #else
 #define DLOG_TRACE                                                         \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kTrace)            \
+    for (int r = 0;                                                        \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kTrace; \
+         r = 1)                                                            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__) \
         .stream()
 #define DLOG_DEBUG                                                         \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kDebug)            \
+    for (int r = 0;                                                        \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kDebug; \
+         r = 1)                                                            \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__) \
         .stream()
-#define DLOG_INFO                                              \
-    if (trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
+#define DLOG_INFO                                                         \
+    for (int r = 0;                                                       \
+         r == 0 && trantor::Logger::logLevel() <= trantor::Logger::kInfo; \
+         r = 1)                                                           \
     trantor::Logger(__FILE__, __LINE__).stream()
 #define DLOG_WARN \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn).stream()
@@ -357,25 +384,34 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
 #define DLOG_FATAL \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
 
-#define DLOG_TRACE_IF(cond)                                                 \
-    if ((trantor::Logger::logLevel() <= trantor::Logger::kTrace) && (cond)) \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__)  \
+#define DLOG_TRACE_IF(cond)                                                    \
+    for (int r = 0;                                                            \
+         r == 0 && (trantor::Logger::logLevel() <= trantor::Logger::kTrace) && \
+         (cond);                                                               \
+         r = 1)                                                                \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kTrace, __func__)     \
         .stream()
-#define DLOG_DEBUG_IF(cond)                                                 \
-    if ((trantor::Logger::logLevel() <= trantor::Logger::kDebug) && (cond)) \
-    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__)  \
+#define DLOG_DEBUG_IF(cond)                                                    \
+    for (int r = 0;                                                            \
+         r == 0 && (trantor::Logger::logLevel() <= trantor::Logger::kDebug) && \
+         (cond);                                                               \
+         r = 1)                                                                \
+    trantor::Logger(__FILE__, __LINE__, trantor::Logger::kDebug, __func__)     \
         .stream()
-#define DLOG_INFO_IF(cond)                                                 \
-    if ((trantor::Logger::logLevel() <= trantor::Logger::kInfo) && (cond)) \
+#define DLOG_INFO_IF(cond)                                                    \
+    for (int r = 0;                                                           \
+         r == 0 && (trantor::Logger::logLevel() <= trantor::Logger::kInfo) && \
+         (cond);                                                              \
+         r = 1)                                                               \
     trantor::Logger(__FILE__, __LINE__).stream()
-#define DLOG_WARN_IF(cond) \
-    if (cond)              \
+#define DLOG_WARN_IF(cond)                 \
+    for (int r = 0; r == 0 && cond; r = 1) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kWarn).stream()
-#define DLOG_ERROR_IF(cond) \
-    if (cond)               \
+#define DLOG_ERROR_IF(cond)                \
+    for (int r = 0; r == 0 && cond; r = 1) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kError).stream()
-#define DLOG_FATAL_IF(cond) \
-    if (cond)               \
+#define DLOG_FATAL_IF(cond)                \
+    for (int r = 0; r == 0 && cond; r = 1) \
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
 #endif
 
