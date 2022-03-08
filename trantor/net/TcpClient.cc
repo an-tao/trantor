@@ -153,7 +153,7 @@ void TcpClient::newConnection(int sockfd)
                                                    SSLHostName_);
 #else
         LOG_FATAL << "OpenSSL is not found in your system!";
-        abort();
+        throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
     }
     else
@@ -253,6 +253,6 @@ void TcpClient::enableSSL(
     (void)keyPath;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
 }
