@@ -168,18 +168,15 @@ void TcpServer::handleCloseInLoop(const TcpConnectionPtr &connectionPtr)
     (void)n;
     assert(n == 1);
     auto connLoop = connectionPtr->getLoop();
-    if (connLoop == loop_)
-    {
+
+    // NOTE: always queue this operation in connLoop, because this connection
+    // may be in loop_'s current active channels, waiting to be processed.
+    // If `connectDestroyed()` is called here, we will be using an wild pointer
+    // later.
+    connLoop->queueInLoop([connectionPtr]() {
         static_cast<TcpConnectionImpl *>(connectionPtr.get())
             ->connectDestroyed();
-    }
-    else
-    {
-        connLoop->queueInLoop([connectionPtr]() {
-            static_cast<TcpConnectionImpl *>(connectionPtr.get())
-                ->connectDestroyed();
-        });
-    }
+    });
 }
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
