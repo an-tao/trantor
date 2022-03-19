@@ -28,6 +28,7 @@
 #include <functional>
 #include <chrono>
 #include <limits>
+#include <atomic>
 
 namespace trantor
 {
@@ -270,7 +271,8 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
      */
     bool isRunning()
     {
-        return looping_ && (!quit_);
+        return looping_.load(std::memory_order_acquire) &&
+               (!quit_.load(std::memory_order_acquire));
     }
 
     /**
@@ -297,9 +299,9 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
     void abortNotInLoopThread();
     void wakeup();
     void wakeupRead();
-    bool looping_;
+    std::atomic<bool> looping_;
     std::thread::id threadId_;
-    bool quit_;
+    std::atomic<bool> quit_;
     std::unique_ptr<Poller> poller_;
 
     ChannelList activeChannels_;

@@ -162,17 +162,37 @@ void TcpServer::stop()
         f.get();
     }
 }
+void TcpServer::handleCloseInLoop(const TcpConnectionPtr &connectionPtr)
+{
+    size_t n = connSet_.erase(connectionPtr);
+    (void)n;
+    assert(n == 1);
+    auto connLoop = connectionPtr->getLoop();
+    if (connLoop == loop_)
+    {
+        static_cast<TcpConnectionImpl *>(connectionPtr.get())
+            ->connectDestroyed();
+    }
+    else
+    {
+        connLoop->queueInLoop([connectionPtr]() {
+            static_cast<TcpConnectionImpl *>(connectionPtr.get())
+                ->connectDestroyed();
+        });
+    }
+}
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
-    // loop_->assertInLoopThread();
-    loop_->runInLoop([this, connectionPtr]() {
-        size_t n = connSet_.erase(connectionPtr);
-        (void)n;
-        assert(n == 1);
-    });
-
-    static_cast<TcpConnectionImpl *>(connectionPtr.get())->connectDestroyed();
+    if (loop_->isInLoopThread())
+    {
+        handleCloseInLoop(connectionPtr);
+    }
+    else
+    {
+        loop_->queueInLoop(
+            [this, connectionPtr]() { handleCloseInLoop(connectionPtr); });
+    }
 }
 
 const std::string TcpServer::ipPort() const

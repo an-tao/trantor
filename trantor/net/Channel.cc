@@ -53,6 +53,8 @@ void Channel::update()
 void Channel::handleEvent()
 {
     // LOG_TRACE<<"revents_="<<revents_;
+    if (events_ == kNoneEvent)
+        return;
     if (tied_)
     {
         std::shared_ptr<void> guard = tie_.lock();

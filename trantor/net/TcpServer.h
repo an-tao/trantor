@@ -215,6 +215,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
 
   private:
     EventLoop *loop_;
+    void handleCloseInLoop(const TcpConnectionPtr &connectionPtr);
     std::unique_ptr<Acceptor> acceptorPtr_;
     void newConnection(int fd, const InetAddress &peer);
     std::string serverName_;

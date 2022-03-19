@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.5] - 2022-02-19
+
+### API changes list
+
+### Changed
+
+- Move EventLoop::runAfter to a template.
+
+- Remove an assertion when removing channels.
+
+- Prevent TcpClient::removeConnection call on deleted TcpClient instance.
+
+- Wait for loop to exit in EventLoop destructor.
+
+- Add r-reference version of set-callback methods to TcpConnectionImpl.
+
+### Fixed
+
+- Fix a bug when closing connections on Windows/MacOS.
+
+- Fix logger causes if statement mismatch.
+
 ## [1.5.4] - 2021-12-10
 
 ### API changes list
@@ -390,7 +412,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.4...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.5...HEAD
+
+[1.5.5]: https://github.com/an-tao/trantor/compare/v1.5.4...v1.5.5
 
 [1.5.4]: https://github.com/an-tao/trantor/compare/v1.5.3...v1.5.4
 
