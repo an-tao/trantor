@@ -1502,7 +1502,7 @@ void TcpConnectionImpl::sendStream(
     node->offset_ =
         0;  // not used, the offset should be handled by the callback
     node->fileBytesToSend_ = 1;  // force to > 0 until stream sent
-    node->streamCallback_ = callback;
+    node->streamCallback_ = std::move(callback);
     if (loop_->isInLoopThread())
     {
         std::lock_guard<std::mutex> guard(sendNumMutex_);
