@@ -13,6 +13,7 @@ add_executable(concurrent_task_queue_test ConcurrentTaskQueueTest.cc)
 add_executable(tcp_client_test TcpClientTest.cc)
 add_executable(async_file_logger_test1 AsyncFileLoggerTest1.cc)
 add_executable(sendfile_test SendfileTest.cc)
+add_executable(sendstream_test SendstreamTest.cc)
 add_executable(timing_wheel_test TimingWheelTest.cc)
 add_executable(kickoff_test KickoffTest.cc)
 add_executable(dns_test DnsTest.cc)
@@ -37,6 +38,7 @@ set(targets_list
     tcp_client_test
     async_file_logger_test1
     sendfile_test
+    sendstream_test
     timing_wheel_test
     kickoff_test
     dns_test

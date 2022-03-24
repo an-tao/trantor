@@ -126,8 +126,7 @@ class TcpConnectionImpl : public TcpConnection,
                           size_t offset = 0,
                           size_t length = 0) override;
     virtual void sendStream(
-        std::function<std::size_t(char *, std::size_t)> callback,
-        bool chunked = true) override;
+        std::function<std::size_t(char *, std::size_t)> callback) override;
 
     virtual const InetAddress &localAddr() const override
     {
@@ -286,7 +285,9 @@ class TcpConnectionImpl : public TcpConnection,
         ssize_t fileBytesToSend_{0};
         // sendStream() specific
         std::function<std::size_t(char *, std::size_t)> streamCallback_;
-        bool chunked_{false};
+#ifndef NDEBUG  // defined by CMake for release build
+        std::size_t nDataWritten_{0};
+#endif
         // generic
         std::shared_ptr<MsgBuffer> msgBuffer_;
         bool isFile() const
