@@ -24,7 +24,9 @@
 #include <unistd.h>
 #elif defined _WIN32
 #include <sstream>
-#elif defined __FreeBSD__
+#endif
+
+#if defined __FreeBSD__
 #include <pthread_np.h>
 #endif
 
