@@ -83,10 +83,12 @@ class TRANTOR_EXPORT TcpConnection
      * zero size is returned) the callback will be called with nullptr when the
      * send is finished/interrupted, so that it cleans up any internal data (ex:
      * close file).
-     * @warning The buffer size should be >= 10 to allow http chunked-encoding data stream
+     * @warning The buffer size should be >= 10 to allow http chunked-encoding
+     * data stream
      */
-    virtual void sendStream(
-        std::function<std::size_t(char *, std::size_t)> callback) = 0;  // (buffer, buffer size) -> size of data put in buffer
+    virtual void sendStream(std::function<std::size_t(char *, std::size_t)>
+                                callback) = 0;  // (buffer, buffer size) -> size
+                                                // of data put in buffer
 
     /**
      * @brief Get the local address of the connection.

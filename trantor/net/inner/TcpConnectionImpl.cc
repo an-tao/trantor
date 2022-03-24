@@ -619,8 +619,8 @@ void TcpConnectionImpl::readCallback()
                 LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno=" << errno
                           << " fd=" << socketPtr_->fd();
 #else
-                LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno
-                          << " fd=" << socketPtr_->fd();
+            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno
+                      << " fd=" << socketPtr_->fd();
 #endif
                 return;
             }
@@ -778,7 +778,7 @@ void TcpConnectionImpl::writeCallback()
 #ifdef _WIN32
                         if (errno != 0 && errno != EWOULDBLOCK)
 #else
-                        if (errno != EWOULDBLOCK)
+                    if (errno != EWOULDBLOCK)
 #endif
                         {
                             // TODO: any others?
@@ -789,9 +789,7 @@ void TcpConnectionImpl::writeCallback()
                                     << "WSAENOTCONN or WSAECONNRESET, errno="
                                     << errno;
 #else
-                                LOG_DEBUG
-                                    << "EPIPE or ECONNRESET, errno="
-                                    << errno;
+                            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
                                 return;
                             }
@@ -839,7 +837,7 @@ void TcpConnectionImpl::writeCallback()
 #ifdef _WIN32
                                 if (errno != 0 && errno != EWOULDBLOCK)
 #else
-                                if (errno != EWOULDBLOCK)
+                            if (errno != EWOULDBLOCK)
 #endif
                                 {
                                     // TODO: any others?
@@ -850,9 +848,9 @@ void TcpConnectionImpl::writeCallback()
                                                      "WSAECONNRESET, errno="
                                                   << errno;
 #else
-                                        LOG_DEBUG << "EPIPE or "
-                                                     "ECONNRESET, erron="
-                                                  << errno;
+                                    LOG_DEBUG << "EPIPE or "
+                                                 "ECONNRESET, erron="
+                                              << errno;
 #endif
                                         return;
                                     }
@@ -1048,8 +1046,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
                     LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
                               << errno;
 #else
-                    LOG_DEBUG << "EPIPE or ECONNRESET, errno="
-                              << errno;
+                    LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
                     return;
                 }
@@ -1502,7 +1499,8 @@ void TcpConnectionImpl::sendStream(
     std::function<std::size_t(char *, std::size_t)> callback)
 {
     BufferNodePtr node = std::make_shared<BufferNode>();
-    node->offset_ = 0;  // not used, the offset should be handled by the callback
+    node->offset_ =
+        0;  // not used, the offset should be handled by the callback
     node->fileBytesToSend_ = 1;  // force to > 0 until stream sent
     node->streamCallback_ = callback;
     if (loop_->isInLoopThread())
@@ -1610,7 +1608,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             // get next chunk
             if (fileBufferPtr_->empty())
             {
-//                LOG_TRACE << "send stream in loop: fetch data on buffer empty";
+                //                LOG_TRACE << "send stream in loop: fetch data
+                //                on buffer empty";
                 fileBufferPtr_->resize(16 * 1024);
                 std::size_t nData;
                 nData = filePtr->streamCallback_(fileBufferPtr_->data(),
@@ -1644,10 +1643,12 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                                           fileBufferPtr_->begin() + nWritten);
                     if (!ioChannelPtr_->isWriting())
                         ioChannelPtr_->enableWriting();
-                    LOG_TRACE << "send stream in loop: return on partial write (socket buffer full?)";
+                    LOG_TRACE << "send stream in loop: return on partial write "
+                                 "(socket buffer full?)";
                     return;
                 }
-//                LOG_TRACE << "send stream in loop: continue on data written";
+                //                LOG_TRACE << "send stream in loop: continue on
+                //                data written";
                 fileBufferPtr_->resize(0);
                 continue;
             }
@@ -1664,16 +1665,17 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                     LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
                               << errno;
 #else
-                    LOG_DEBUG << "EPIPE or ECONNRESET, errno="
-                              << errno;
+                    LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
                     // abort
-                    LOG_DEBUG << "send stream in loop: return on connection closed";
+                    LOG_DEBUG
+                        << "send stream in loop: return on connection closed";
                     filePtr->fileBytesToSend_ = 0;
                     return;
                 }
                 // TODO: any others?
-                LOG_SYSERR << "send stream in loop: return on unexpected error(" << errno << ")";
+                LOG_SYSERR << "send stream in loop: return on unexpected error("
+                           << errno << ")";
                 filePtr->fileBytesToSend_ = 0;
                 return;
             }
@@ -1705,7 +1707,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     _fseeki64(filePtr->sendFp_, filePtr->offset_, SEEK_SET);
     while (filePtr->fileBytesToSend_ > 0)
     {
-//        LOG_TRACE << "send file in loop: fetch more remaining data";
+        //        LOG_TRACE << "send file in loop: fetch more remaining data";
         auto bytes = static_cast<decltype(fileBufferPtr_->size())>(
             filePtr->fileBytesToSend_);
         auto n = fread(&(*fileBufferPtr_)[0],
@@ -1727,12 +1729,14 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                     {
                         ioChannelPtr_->enableWriting();
                     }
-                    LOG_TRACE << "send file in loop: return on partial write (socket buffer full?)";
+                    LOG_TRACE << "send file in loop: return on partial write "
+                                 "(socket buffer full?)";
                     return;
                 }
                 else if (nSend == n)
                 {
-//                    LOG_TRACE << "send file in loop: continue on data written";
+                    //                    LOG_TRACE << "send file in loop:
+                    //                    continue on data written";
                     continue;
                 }
             }
@@ -1751,16 +1755,19 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                         LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
                                   << errno;
 #else
-                        LOG_DEBUG << "EPIPE or ECONNRESET, errno="
-                                  << errno;
+                        LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
-                        LOG_DEBUG << "send file in loop: return on connection closed";
+                        LOG_DEBUG
+                            << "send file in loop: return on connection closed";
                         return;
                     }
-                    LOG_SYSERR << "send file in loop: return on unexpected error(" << errno << ")";
+                    LOG_SYSERR
+                        << "send file in loop: return on unexpected error("
+                        << errno << ")";
                     return;
                 }
-                LOG_TRACE << "send file in loop: break on socket buffer full (?)";
+                LOG_TRACE
+                    << "send file in loop: break on socket buffer full (?)";
                 break;
             }
         }
@@ -1773,7 +1780,8 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         }
         if (n == 0)
         {
-            LOG_SYSERR << "send file in loop: return on read 0 (file truncated)";
+            LOG_SYSERR
+                << "send file in loop: return on read 0 (file truncated)";
             return;
         }
     }
@@ -1797,9 +1805,9 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 #ifndef _WIN32
         int nWritten = write(socketPtr_->fd(), buffer, length);
 #else
-        int nWritten =
-            ::send(socketPtr_->fd(), buffer, static_cast<int>(length), 0);
-        errno = (nWritten < 0) ? ::WSAGetLastError() : 0;
+    int nWritten =
+        ::send(socketPtr_->fd(), buffer, static_cast<int>(length), 0);
+    errno = (nWritten < 0) ? ::WSAGetLastError() : 0;
 #endif
         if (nWritten > 0)
             bytesSent_ += nWritten;
@@ -1808,7 +1816,7 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
     }
     else
     {
-//        LOG_TRACE << "write encrypted in loop";
+        //        LOG_TRACE << "write encrypted in loop";
         loop_->assertInLoopThread();
         if (status_ != ConnStatus::Connected &&
             status_ != ConnStatus::Disconnecting)

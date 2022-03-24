@@ -12,7 +12,7 @@
 #include <io.h>
 #endif
 
-std::size_t fileCallback(const std::string&, int, char*, std::size_t);
+std::size_t fileCallback(const std::string &, int, char *, std::size_t);
 
 using namespace trantor;
 #define USE_IPV6 0
@@ -58,36 +58,13 @@ int main(int argc, char *argv[])
             // LOG_DEBUG<<"recv callback!";
         });
     int counter = 0;
-    server.setConnectionCallback(
-        [argv, &counter](const TcpConnectionPtr &connPtr) {
-            if (connPtr->connected())
-            {
-                LOG_DEBUG << "New connection";
-                std::thread t([connPtr, argv, &counter]() {
-                    for (int i = 0; i < 5; ++i)
-                    {
-                        int fd;
-#ifdef _WIN32
-                        _sopen_s(
-                            &fd, argv[1], _O_BINARY | _O_RDONLY, _SH_DENYNO, 0);
-#else
-                        fd = open(argv[1], O_RDONLY);
-#endif
-                        auto callback = std::bind(fileCallback,
-                                                  argv[1],
-                                                  fd,
-                                                  std::placeholders::_1,
-                                                  std::placeholders::_2);
-                        connPtr->sendStream(callback);
-                        char str[64];
-                        ++counter;
-                        sprintf(str, "\n%d streams sent!\n", counter);
-                        connPtr->send(str, strlen(str));
-                    }
-                });
-                t.detach();
-
-                for (int i = 0; i < 3; ++i)
+    server.setConnectionCallback([argv,
+                                  &counter](const TcpConnectionPtr &connPtr) {
+        if (connPtr->connected())
+        {
+            LOG_DEBUG << "New connection";
+            std::thread t([connPtr, argv, &counter]() {
+                for (int i = 0; i < 5; ++i)
                 {
                     int fd;
 #ifdef _WIN32
@@ -107,23 +84,49 @@ int main(int argc, char *argv[])
                     sprintf(str, "\n%d streams sent!\n", counter);
                     connPtr->send(str, strlen(str));
                 }
-            }
-            else if (connPtr->disconnected())
+            });
+            t.detach();
+
+            for (int i = 0; i < 3; ++i)
             {
-                LOG_DEBUG << "connection disconnected";
+                int fd;
+#ifdef _WIN32
+                _sopen_s(&fd, argv[1], _O_BINARY | _O_RDONLY, _SH_DENYNO, 0);
+#else
+                fd = open(argv[1], O_RDONLY);
+#endif
+                auto callback = std::bind(fileCallback,
+                                          argv[1],
+                                          fd,
+                                          std::placeholders::_1,
+                                          std::placeholders::_2);
+                connPtr->sendStream(callback);
+                char str[64];
+                ++counter;
+                sprintf(str, "\n%d streams sent!\n", counter);
+                connPtr->send(str, strlen(str));
             }
-        });
+        }
+        else if (connPtr->disconnected())
+        {
+            LOG_DEBUG << "connection disconnected";
+        }
+    });
     server.setIoLoopNum(3);
     server.start();
     loopThread.wait();
     return 0;
 }
 
-std::size_t fileCallback(const std::string& strFile, int nFd, char* pBuffer, std::size_t nBuffSize)
+std::size_t fileCallback(const std::string &strFile,
+                         int nFd,
+                         char *pBuffer,
+                         std::size_t nBuffSize)
 {
     if (nFd < 0)
         return 0;
-    if (pBuffer == nullptr) {
+    if (pBuffer == nullptr)
+    {
         LOG_DEBUG << strFile.c_str() << " closed.";
 #ifdef _WIN32
         _close(nFd);
