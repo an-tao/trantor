@@ -148,6 +148,9 @@ if(HAVE_C-ARES)
   set(private_headers
       ${private_headers}
       trantor/net/inner/AresResolver.h)
+  if(APPLE)
+      target_link_libraries(${PROJECT_NAME} PRIVATE resolv)
+  endif()
 else()
   set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}
