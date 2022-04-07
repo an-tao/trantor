@@ -554,7 +554,7 @@ void TcpConnectionImpl::startClientEncryption(
         std::transform(hostname.begin(),
                        hostname.end(),
                        hostname.begin(),
-                       tolower);
+                       [](unsigned char c) { return tolower(c); });
         assert(sslEncryptionPtr_ != nullptr);
         sslEncryptionPtr_->hostname_ = hostname;
     }
