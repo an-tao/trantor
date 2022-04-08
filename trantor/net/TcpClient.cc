@@ -238,7 +238,7 @@ void TcpClient::enableSSL(
         std::transform(hostname.begin(),
                        hostname.end(),
                        hostname.begin(),
-                       tolower);
+                       [](unsigned char c) { return tolower(c); });
         SSLHostName_ = std::move(hostname);
     }
 
