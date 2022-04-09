@@ -76,7 +76,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
             sslCtxPtr_);
 #else
         LOG_FATAL << "OpenSSL is not found in your system!";
-        abort();
+        throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
     }
     else
@@ -220,6 +220,6 @@ void TcpServer::enableSSL(
     (void)sslConfCmds;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
 }

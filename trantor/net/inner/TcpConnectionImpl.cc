@@ -327,7 +327,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
         LOG_FATAL << "Reading certificate: " << errbuf;
-        abort();
+        throw std::runtime_error("SSL_CTX_use_certificate_chain_file error.");
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
                                     keyPath.c_str(),
@@ -336,14 +336,14 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
         LOG_FATAL << "Reading private key: " << errbuf;
-        abort();
+        throw std::runtime_error("SSL_CTX_use_PrivateKey_file error");
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
         LOG_FATAL << "Checking private key matches certificate: " << errbuf;
-        abort();
+        throw std::runtime_error("SSL_CTX_check_private_key error");
     }
     return ctx;
 }
@@ -364,7 +364,7 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
         LOG_FATAL << "Reading certificate: " << errbuf;
-        abort();
+        throw std::runtime_error("SSL_CTX_use_certificate_chain_file error.");
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
                                     keyPath.c_str(),
@@ -373,14 +373,14 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
         LOG_FATAL << "Reading private key: " << errbuf;
-        abort();
+        throw std::runtime_error("SSL_CTX_use_PrivateKey_file error.");
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
         LOG_FATAL << "Checking private key matches certificate: " << errbuf;
-        abort();
+        throw std::runtime_error("SSL_CTX_check_private_key error.");
     }
     return ctx;
 }
@@ -395,7 +395,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::vector<std::pair<std::string, std::string>> &)
 {
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 }
 }  // namespace trantor
 #endif
@@ -513,7 +513,7 @@ void TcpConnectionImpl::startServerEncryption(
     (void)callback;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 #else
     if (loop_->isInLoopThread())
     {
@@ -547,7 +547,7 @@ void TcpConnectionImpl::startClientEncryption(
     (void)sslConfCmds;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 #else
     if (!hostname.empty())
     {
