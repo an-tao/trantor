@@ -662,6 +662,24 @@ void TcpConnectionImpl::readCallback()
                     {
                         break;
                     }
+                    else if (sslerr == SSL_ERROR_SYSCALL && errno == 0)
+                    {
+                        // Special handling of OpenSSL bug:
+                        // The SSL_ERROR_SYSCALL with errno value of 0
+                        // indicates unexpected EOF from the peer. This will
+                        // be properly reported as SSL_ERROR_SSL ...
+
+                        ioChannelPtr_->disableReading();
+                        return;
+                    }
+#if OPENSSL_VERSION_MAJOR >= 3
+                    else if (sslerr == SSL_R_UNEXPECTED_EOF_WHILE_READING)
+                    {
+                        // Remote terminated the connection early.
+                        ioChannelPtr_->disableReading();
+                        return;
+                    }
+#endif
                     else
                     {
                         LOG_TRACE << "ssl read err:" << sslerr;
