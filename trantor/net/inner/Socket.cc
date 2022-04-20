@@ -228,7 +228,11 @@ int Socket::getSocketError()
 
     if (::getsockopt(sockFd_, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
     {
+#ifdef _WIN32
+        return ::WSAGetLastError();
+#else
         return errno;
+#endif
     }
     else
     {
