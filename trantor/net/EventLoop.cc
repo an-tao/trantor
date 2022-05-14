@@ -165,9 +165,6 @@ void EventLoop::quit()
 {
     quit_.store(true, std::memory_order_release);
 
-    // There is a chance that loop() just executes while(!quit_) and exits,
-    // then EventLoop destructs, then we are accessing an invalid object.
-    // Can be fixed using mutex_ in both places.
     if (!isInLoopThread())
     {
         wakeup();
