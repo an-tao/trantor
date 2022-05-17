@@ -369,7 +369,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
             ctx->mtlsEnabled = true;
-            sk_X509_NAME_pop_free(cert_names, X509_NAME_free);
+            GENERAL_NAMES_free(cert_names);
         }else{
             LOG_FATAL << "caPath location error ";
             throw std::runtime_error("SSL_CTX_load_verify_locations error");
@@ -423,7 +423,7 @@ std::shared_ptr<SSLContext> newSSLClientContext(
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
             ctx->mtlsEnabled = true;
-            sk_X509_NAME_pop_free(cert_names, X509_NAME_free);
+            GENERAL_NAMES_free(cert_names);
         }else{
             LOG_FATAL << "caPath location error ";
             throw std::runtime_error("SSL_CTX_load_verify_locations error");
