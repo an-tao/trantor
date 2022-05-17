@@ -498,7 +498,7 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
     if (validateCert)
     {
-        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
@@ -540,7 +540,7 @@ void TcpConnectionImpl::startServerEncryptionInLoop(
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
     if (sslEncryptionPtr_->isServer_ == false){
-        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
@@ -1941,7 +1941,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     sslEncryptionPtr_->isServer_ = isServer;
     validateCert_ = validateCert;
     if (isServer == false){
-        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
