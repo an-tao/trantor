@@ -1939,7 +1939,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     socketPtr_->setKeepAlive(true);
     name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
-    sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get(), sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
+    sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get(), ctxPtr->mtlsEnabled);
     sslEncryptionPtr_->isServer_ = isServer;
     validateCert_ = validateCert;
     if (isServer == false){
