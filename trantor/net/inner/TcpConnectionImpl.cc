@@ -290,15 +290,17 @@ class SSLContext
     {
         return ctxPtr_;
     }
+    bool mtlsEnabled = false;
   private:
     SSL_CTX *ctxPtr_;
 };
 class SSLConn
 {
   public:
-    explicit SSLConn(SSL_CTX *ctx)
+    explicit SSLConn(SSL_CTX *ctx, bool mtlsEnabled_)
     {
         SSL_ = SSL_new(ctx);
+        mtlsEnabled = mtlsEnabled_;
     }
     ~SSLConn()
     {
@@ -495,7 +497,7 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     sslEncryptionPtr_->sslCtxPtr_ =
         newSSLContext(useOldTLS, validateCert_, sslConfCmds);
     sslEncryptionPtr_->sslPtr_ =
-        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get(), sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
     if (validateCert)
     {
         LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
@@ -536,7 +538,7 @@ void TcpConnectionImpl::startServerEncryptionInLoop(
     sslEncryptionPtr_->sslCtxPtr_ = ctx;
     sslEncryptionPtr_->isServer_ = true;
     sslEncryptionPtr_->sslPtr_ =
-        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get(), sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
     if (sslEncryptionPtr_->isServer_ == false){
@@ -1937,7 +1939,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     socketPtr_->setKeepAlive(true);
     name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
-    sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get());
+    sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get(), sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
     sslEncryptionPtr_->isServer_ = isServer;
     validateCert_ = validateCert;
     if (isServer == false){
