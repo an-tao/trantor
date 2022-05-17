@@ -226,12 +226,13 @@ void TcpClient::enableSSL(
     std::string hostname,
     const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
     const std::string &certPath,
-    const std::string &keyPath)
+    const std::string &keyPath,
+    const std::string &caPath)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
     sslCtxPtr_ = newSSLClientContext(
-        useOldTLS, validateCert, certPath, keyPath, sslConfCmds);
+        useOldTLS, validateCert, certPath, keyPath, sslConfCmds, caPath);
     validateCert_ = validateCert;
     if (!hostname.empty())
     {

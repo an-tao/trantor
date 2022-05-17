@@ -211,7 +211,8 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
                    const std::string &keyPath,
                    bool useOldTLS = false,
                    const std::vector<std::pair<std::string, std::string>>
-                       &sslConfCmds = {});
+                       &sslConfCmds = {},
+                    const std::string &caPath);
 
   private:
     EventLoop *loop_;

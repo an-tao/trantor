@@ -329,7 +329,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath)
 {
     auto ctx = newSSLContext(useOldTLS, false, sslConfCmds);
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
@@ -356,6 +357,22 @@ std::shared_ptr<SSLContext> newSSLServerContext(
         LOG_FATAL << "Checking private key matches certificate: " << errbuf;
         throw std::runtime_error("SSL_CTX_check_private_key error");
     }
+
+     if(!caPath.empty()){
+        auto checkCA = SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
+        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
+        if(checkCA){
+            STACK_OF(X509_NAME) * cert_names = SSL_load_client_CA_file(caPath.c_str());
+            if(cert_names != NULL){
+                SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
+            }
+            //TODO free stack
+        }else{
+            LOG_FATAL << "caPath location error ";
+            throw std::runtime_error("SSL_CTX_load_verify_locations error");
+        }
+    }
+
     return ctx;
 }
 std::shared_ptr<SSLContext> newSSLClientContext(
@@ -363,7 +380,7 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     bool validateCert,
     const std::string &certPath,
     const std::string &keyPath,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds, const std::string &caPath)
 {
     auto ctx = newSSLContext(useOldTLS, validateCert, sslConfCmds);
     if (certPath.empty() || keyPath.empty())
@@ -393,6 +410,22 @@ std::shared_ptr<SSLContext> newSSLClientContext(
         LOG_FATAL << "Checking private key matches certificate: " << errbuf;
         throw std::runtime_error("SSL_CTX_check_private_key error.");
     }
+
+     if(!caPath.empty()){
+        auto checkCA = SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
+        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
+        if(checkCA){
+            STACK_OF(X509_NAME) * cert_names = SSL_load_client_CA_file(caPath.c_str());
+            if(cert_names != NULL){
+                SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
+            }
+            //TODO free stack
+        }else{
+            LOG_FATAL << "caPath location error ";
+            throw std::runtime_error("SSL_CTX_load_verify_locations error");
+        }
+    }
+
     return ctx;
 }
 }  // namespace trantor
@@ -403,7 +436,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &,
     const std::string &,
     bool,
-    const std::vector<std::pair<std::string, std::string>> &)
+    const std::vector<std::pair<std::string, std::string>> &,
+    const std::string &)
 {
     LOG_FATAL << "OpenSSL is not found in your system!";
     throw std::runtime_error("OpenSSL is not found in your system!");

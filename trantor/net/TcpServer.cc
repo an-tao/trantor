@@ -206,11 +206,12 @@ void TcpServer::enableSSL(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds);
+    sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds, caPath);
 #else
     // When not using OpenSSL, using `void` here will
     // work around the unused parameter warnings without overhead.
