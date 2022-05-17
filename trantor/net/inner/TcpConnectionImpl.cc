@@ -359,7 +359,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     }
 
      if(!caPath.empty()){
-        auto checkCA = SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
+        ctx->mtlsEnabled = true;
+        /*auto checkCA = SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
         LOG_DEBUG << "CA CHECK LOC: " << checkCA;
         if(checkCA){
             STACK_OF(X509_NAME) * cert_names = SSL_load_client_CA_file(caPath.c_str());
@@ -371,7 +372,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
         }else{
             LOG_FATAL << "caPath location error ";
             throw std::runtime_error("SSL_CTX_load_verify_locations error");
-        }
+        }*/
     }
 
     return ctx;
@@ -413,7 +414,8 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     }
 
      if(!caPath.empty()){
-        auto checkCA = SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
+        ctx->mtlsEnabled = true;
+        /*auto checkCA = SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
         LOG_DEBUG << "CA CHECK LOC: " << checkCA;
         if(checkCA){
             STACK_OF(X509_NAME) * cert_names = SSL_load_client_CA_file(caPath.c_str());
@@ -425,7 +427,7 @@ std::shared_ptr<SSLContext> newSSLClientContext(
         }else{
             LOG_FATAL << "caPath location error ";
             throw std::runtime_error("SSL_CTX_load_verify_locations error");
-        }
+        }*/
     }
 
     return ctx;
@@ -496,6 +498,7 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
     if (validateCert)
     {
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
@@ -536,10 +539,13 @@ void TcpConnectionImpl::startServerEncryptionInLoop(
         std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
-    if (sslEncryptionPtr_->isServer_ == false)
+    if (sslEncryptionPtr_->isServer_ == false){
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
+    }
+        
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
     (void)r;
     assert(r);
@@ -1934,10 +1940,13 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get());
     sslEncryptionPtr_->isServer_ = isServer;
     validateCert_ = validateCert;
-    if (isServer == false)
+    if (isServer == false){
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        SSL_VERIFY_NONE,
                        nullptr);
+    }
+        
     if (!isServer && !hostname.empty())
     {
         SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
