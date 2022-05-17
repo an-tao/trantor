@@ -290,7 +290,7 @@ class SSLContext
     {
         return ctxPtr_;
     }
-
+    bool mtlsEnabled = false;
   private:
     SSL_CTX *ctxPtr_;
 };
@@ -366,6 +366,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
             if(cert_names != NULL){
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
+            ctx->mtlsEnabled = true;
             //TODO free stack
         }else{
             LOG_FATAL << "caPath location error ";
@@ -419,6 +420,7 @@ std::shared_ptr<SSLContext> newSSLClientContext(
             if(cert_names != NULL){
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
+            ctx->mtlsEnabled = true;
             //TODO free stack
         }else{
             LOG_FATAL << "caPath location error ";
