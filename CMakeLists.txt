@@ -128,7 +128,7 @@ endif(WIN32)
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL ALLOW_LOCAL_CRT)
 endif()
 
 set(HAVE_C-ARES NO)

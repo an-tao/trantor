@@ -369,7 +369,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
             ctx->mtlsEnabled = true;
-            sk_X509_NAME_free(cert_names);
+            //sk_X509_NAME_free(cert_names); //segmentation fault
         }else{
             LOG_FATAL << "caPath location error ";
             throw std::runtime_error("SSL_CTX_load_verify_locations error");
@@ -423,7 +423,7 @@ std::shared_ptr<SSLContext> newSSLClientContext(
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
             ctx->mtlsEnabled = true;
-            sk_X509_NAME_free(cert_names);
+            //sk_X509_NAME_free(cert_names); //segmentation fault
         }else{
             LOG_FATAL << "caPath location error ";
             throw std::runtime_error("SSL_CTX_load_verify_locations error");
@@ -1970,7 +1970,8 @@ bool TcpConnectionImpl::validatePeerCertificate()
     SSL *ssl = sslEncryptionPtr_->sslPtr_->get();
 
     auto result = SSL_get_verify_result(ssl);
-    //TODO set flags for local test
+    
+    #ifdef ALLOW_CRT_LOCAL
     if (
         result != X509_V_OK && result != X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
         && result != X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN 
@@ -1980,6 +1981,15 @@ bool TcpConnectionImpl::validatePeerCertificate()
         LOG_ERROR << "Server certificate is not valid";
         return false;
     }
+    #else
+    if (
+        result != X509_V_OK && result)
+    {
+        LOG_DEBUG << "cert error code: " << result;
+        LOG_ERROR << "Server certificate is not valid";
+        return false;
+    }
+    #endif
 
     X509 *cert = SSL_get_peer_certificate(ssl);
     if (cert == nullptr)
@@ -1995,17 +2005,16 @@ bool TcpConnectionImpl::validatePeerCertificate()
 
     LOG_DEBUG << "domainIsValid: " << domainIsValid;
 
-    /*if (domainIsValid)
-    {
+    //if mtlsEnabled, ignore domain validation
+    if(sslEncryptionPtr_->sslPtr_->mtlsEnabled || domainIsValid)
+    {  
         return true;
     }
     else
     {
         LOG_ERROR << "Domain validation failed";
         return false;
-    }*/
-
-    return true;
+    }
 }
 
 void TcpConnectionImpl::doHandshaking()
