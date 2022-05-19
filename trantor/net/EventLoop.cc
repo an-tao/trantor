@@ -165,15 +165,6 @@ void EventLoop::quit()
 {
     quit_.store(true, std::memory_order_release);
 
-    Func f;
-    while (funcsOnQuit_.dequeue(f))
-    {
-        f();
-    }
-
-    // There is a chance that loop() just executes while(!quit_) and exits,
-    // then EventLoop destructs, then we are accessing an invalid object.
-    // Can be fixed using mutex_ in both places.
     if (!isInLoopThread())
     {
         wakeup();
@@ -205,12 +196,18 @@ void EventLoop::loop()
             currentActiveChannel_ = *it;
             currentActiveChannel_->handleEvent();
         }
-        currentActiveChannel_ = NULL;
+        currentActiveChannel_ = nullptr;
         eventHandling_ = false;
         // std::cout << "looping" << endl;
         doRunInLoopFuncs();
     }
     looping_.store(false, std::memory_order_release);
+
+    Func f;
+    while (funcsOnQuit_.dequeue(f))
+    {
+        f();
+    }
 }
 void EventLoop::abortNotInLoopThread()
 {
