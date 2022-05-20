@@ -211,7 +211,8 @@ void TcpServer::enableSSL(
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds, caPath);
+    sslCtxPtr_ =
+        newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds, caPath);
 #else
     // When not using OpenSSL, using `void` here will
     // work around the unused parameter warnings without overhead.
