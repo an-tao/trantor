@@ -220,6 +220,7 @@ void TcpServer::enableSSL(
     (void)keyPath;
     (void)useOldTLS;
     (void)sslConfCmds;
+    (void)caPath;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
     throw std::runtime_error("OpenSSL is not found in your system!");
