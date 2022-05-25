@@ -375,7 +375,6 @@ std::shared_ptr<SSLContext> newSSLServerContext(
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
             ctx->mtlsEnabled = true;
-            // sk_X509_NAME_free(cert_names); //segmentation fault
         }
         else
         {
@@ -437,7 +436,6 @@ std::shared_ptr<SSLContext> newSSLClientContext(
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
             ctx->mtlsEnabled = true;
-            // sk_X509_NAME_free(cert_names); //segmentation fault
         }
         else
         {

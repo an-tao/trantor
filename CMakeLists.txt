@@ -128,7 +128,11 @@ endif(WIN32)
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL) #ALLOW_CRT_LOCAL
+  
+  # To enable the acceptance of local issued certificates
+  # Add the flag: ALLOW_CRT_LOCAL
+  # ONLY FOR TESTING PURPOSES
+  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
 endif()
 
 set(HAVE_C-ARES NO)
