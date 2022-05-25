@@ -1997,7 +1997,7 @@ bool TcpConnectionImpl::validatePeerCertificate()
 
     auto result = SSL_get_verify_result(ssl);
 
-#ifdef ALLOW_CRT_LOCAL
+#ifdef ALLOW_SELF_SIGNED_CERTS
     if (result != X509_V_OK &&
         result != X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT &&
         result != X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN &&

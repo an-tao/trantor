@@ -130,7 +130,7 @@ if(OpenSSL_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
   
   # To enable the acceptance of local issued certificates
-  # Add the flag: ALLOW_CRT_LOCAL
+  # Add the flag: ALLOW_SELF_SIGNED_CERTS
   # ONLY FOR TESTING PURPOSES
   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
 endif()
