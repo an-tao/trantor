@@ -30,7 +30,8 @@ TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS = false,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {});
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {},
+    const std::string &caPath = "");
 /**
  * @brief This class represents a TCP connection.
  *

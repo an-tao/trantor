@@ -46,13 +46,15 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath);
 std::shared_ptr<SSLContext> newSSLClientContext(
     bool useOldTLS,
     bool validateCert,
     const std::string &certPath = "",
     const std::string &keyPath = "",
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {});
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {},
+    const std::string &caPath = "");
 
 // void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
 //                           const std::string &certPath,

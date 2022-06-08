@@ -290,6 +290,7 @@ class SSLContext
     {
         return ctxPtr_;
     }
+    bool mtlsEnabled = false;
 
   private:
     SSL_CTX *ctxPtr_;
@@ -297,9 +298,10 @@ class SSLContext
 class SSLConn
 {
   public:
-    explicit SSLConn(SSL_CTX *ctx)
+    explicit SSLConn(SSL_CTX *ctx, bool mtlsEnabled_)
     {
         SSL_ = SSL_new(ctx);
+        mtlsEnabled = mtlsEnabled_;
     }
     ~SSLConn()
     {
@@ -312,6 +314,7 @@ class SSLConn
     {
         return SSL_;
     }
+    bool mtlsEnabled = false;
 
   private:
     SSL *SSL_;
@@ -329,7 +332,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath)
 {
     auto ctx = newSSLContext(useOldTLS, false, sslConfCmds);
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
@@ -356,6 +360,29 @@ std::shared_ptr<SSLContext> newSSLServerContext(
         LOG_FATAL << "Checking private key matches certificate: " << errbuf;
         throw std::runtime_error("SSL_CTX_check_private_key error");
     }
+
+    if (!caPath.empty())
+    {
+        auto checkCA =
+            SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
+        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
+        if (checkCA)
+        {
+            STACK_OF(X509_NAME) *cert_names =
+                SSL_load_client_CA_file(caPath.c_str());
+            if (cert_names != NULL)
+            {
+                SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
+            }
+            ctx->mtlsEnabled = true;
+        }
+        else
+        {
+            LOG_FATAL << "caPath location error ";
+            throw std::runtime_error("SSL_CTX_load_verify_locations error");
+        }
+    }
+
     return ctx;
 }
 std::shared_ptr<SSLContext> newSSLClientContext(
@@ -363,7 +390,8 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     bool validateCert,
     const std::string &certPath,
     const std::string &keyPath,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath)
 {
     auto ctx = newSSLContext(useOldTLS, validateCert, sslConfCmds);
     if (certPath.empty() || keyPath.empty())
@@ -393,6 +421,29 @@ std::shared_ptr<SSLContext> newSSLClientContext(
         LOG_FATAL << "Checking private key matches certificate: " << errbuf;
         throw std::runtime_error("SSL_CTX_check_private_key error.");
     }
+
+    if (!caPath.empty())
+    {
+        auto checkCA =
+            SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
+        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
+        if (checkCA)
+        {
+            STACK_OF(X509_NAME) *cert_names =
+                SSL_load_client_CA_file(caPath.c_str());
+            if (cert_names != NULL)
+            {
+                SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
+            }
+            ctx->mtlsEnabled = true;
+        }
+        else
+        {
+            LOG_FATAL << "caPath location error ";
+            throw std::runtime_error("SSL_CTX_load_verify_locations error");
+        }
+    }
+
     return ctx;
 }
 }  // namespace trantor
@@ -403,7 +454,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &,
     const std::string &,
     bool,
-    const std::vector<std::pair<std::string, std::string>> &)
+    const std::vector<std::pair<std::string, std::string>> &,
+    const std::string &)
 {
     LOG_FATAL << "OpenSSL is not found in your system!";
     throw std::runtime_error("OpenSSL is not found in your system!");
@@ -457,11 +509,15 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     sslEncryptionPtr_->sslCtxPtr_ =
         newSSLContext(useOldTLS, validateCert_, sslConfCmds);
     sslEncryptionPtr_->sslPtr_ =
-        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
-    if (validateCert)
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get(),
+                                  sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
+    if (validateCert || sslEncryptionPtr_->sslPtr_->mtlsEnabled)
     {
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
-                       SSL_VERIFY_NONE,
+                       sslEncryptionPtr_->sslPtr_->mtlsEnabled
+                           ? SSL_VERIFY_PEER
+                           : SSL_VERIFY_NONE,
                        nullptr);
         validateCert_ = validateCert;
     }
@@ -497,13 +553,21 @@ void TcpConnectionImpl::startServerEncryptionInLoop(
     sslEncryptionPtr_->sslCtxPtr_ = ctx;
     sslEncryptionPtr_->isServer_ = true;
     sslEncryptionPtr_->sslPtr_ =
-        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get(),
+                                  sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
-    if (sslEncryptionPtr_->isServer_ == false)
+    if (sslEncryptionPtr_->isServer_ == false ||
+        sslEncryptionPtr_->sslPtr_->mtlsEnabled)
+    {
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
-                       SSL_VERIFY_NONE,
+                       sslEncryptionPtr_->sslPtr_->mtlsEnabled
+                           ? SSL_VERIFY_PEER
+                           : SSL_VERIFY_NONE,
                        nullptr);
+    }
+
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
     (void)r;
     assert(r);
@@ -1895,13 +1959,20 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     socketPtr_->setKeepAlive(true);
     name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
-    sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get());
+    sslEncryptionPtr_->sslPtr_ =
+        std::make_unique<SSLConn>(ctxPtr->get(), ctxPtr->mtlsEnabled);
     sslEncryptionPtr_->isServer_ = isServer;
     validateCert_ = validateCert;
-    if (isServer == false)
+    if (isServer == false || sslEncryptionPtr_->sslPtr_->mtlsEnabled)
+    {
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
-                       SSL_VERIFY_NONE,
+                       sslEncryptionPtr_->sslPtr_->mtlsEnabled
+                           ? SSL_VERIFY_PEER
+                           : SSL_VERIFY_NONE,
                        nullptr);
+    }
+
     if (!isServer && !hostname.empty())
     {
         SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
@@ -1925,12 +1996,25 @@ bool TcpConnectionImpl::validatePeerCertificate()
     SSL *ssl = sslEncryptionPtr_->sslPtr_->get();
 
     auto result = SSL_get_verify_result(ssl);
-    if (result != X509_V_OK)
+
+#ifdef ALLOW_SELF_SIGNED_CERTS
+    if (result != X509_V_OK &&
+        result != X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT &&
+        result != X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN &&
+        result != X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
     {
         LOG_DEBUG << "cert error code: " << result;
         LOG_ERROR << "Server certificate is not valid";
         return false;
     }
+#else
+    if (result != X509_V_OK && result)
+    {
+        LOG_DEBUG << "cert error code: " << result;
+        LOG_ERROR << "Server certificate is not valid";
+        return false;
+    }
+#endif
 
     X509 *cert = SSL_get_peer_certificate(ssl);
     if (cert == nullptr)
@@ -1944,7 +2028,10 @@ bool TcpConnectionImpl::validatePeerCertificate()
         internal::verifyAltName(cert, sslEncryptionPtr_->hostname_);
     X509_free(cert);
 
-    if (domainIsValid)
+    LOG_DEBUG << "domainIsValid: " << domainIsValid;
+
+    // if mtlsEnabled, ignore domain validation
+    if (sslEncryptionPtr_->sslPtr_->mtlsEnabled || domainIsValid)
     {
         return true;
     }
@@ -1965,7 +2052,8 @@ void TcpConnectionImpl::doHandshaking()
     {
         // Clients don't commonly have certificates. Let's not validate
         // that
-        if (validateCert_ && sslEncryptionPtr_->isServer_ == false)
+        if (validateCert_ && (!sslEncryptionPtr_->isServer_ ||
+                              sslEncryptionPtr_->sslPtr_->mtlsEnabled))
         {
             if (validatePeerCertificate() == false)
             {

@@ -211,7 +211,8 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
                    const std::vector<std::pair<std::string, std::string>>
                        &sslConfCmds = {},
                    const std::string &certPath = "",
-                   const std::string &keyPath = "");
+                   const std::string &keyPath = "",
+                   const std::string &caPath = "");
 
   private:
     /// Not thread safe, but in loop
