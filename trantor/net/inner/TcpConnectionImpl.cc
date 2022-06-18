@@ -34,8 +34,6 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #endif
-#include <regex>
-
 using namespace trantor;
 
 #ifdef _WIN32
@@ -88,47 +86,41 @@ inline bool loadWindowsSystemCert(X509_STORE *store)
 }
 #endif
 
-inline std::string certNameToRegex(const std::string &certName)
-{
-    std::string result;
-    result.reserve(certName.size() + 11);
-
-    bool isStar = false;
-    bool isLeadingStar = true;
-    for (char ch : certName)
-    {
-        if (isStar == false)
-        {
-            if (ch == '*')
-                isStar = true;
-            else if (ch == '.')
-            {
-                result += "\\.";
-                isLeadingStar = false;
-            }
-            else
-            {
-                result.push_back(ch);
-                isLeadingStar = false;
-            }
-        }
-        else
-        {
-            if (ch == '.' && isLeadingStar)
-                result += "([^.]*\\.|)?";
-            else
-                result += std::string("[^.]*") + ch;
-            isStar = false;
-        }
-    }
-    assert(isStar == false);
-    return result;
-}
-
 inline bool verifyName(const std::string &certName, const std::string &hostname)
 {
-    std::regex re(certNameToRegex(certName));
-    return std::regex_match(hostname, re);
+    size_t firstDot = certName.find('.');
+    size_t hostFirstDot = hostname.find('.');
+    size_t pos, len, hostPos, hostLen;
+
+    if (firstDot != std::string::npos)
+    {
+        pos = firstDot + 1;
+    }
+    else
+    {
+        firstDot = pos = certName.size();
+    }
+
+    len = certName.size() - pos;
+
+    if (hostFirstDot != std::string::npos)
+    {
+        hostPos = hostFirstDot + 1;
+    }
+    else
+    {
+        hostFirstDot = hostPos = hostname.size();
+    }
+
+    hostLen = hostname.size() - hostPos;
+
+    if (certName.compare(0, firstDot, "*") == 0)
+    {
+        return certName.compare(pos, len, hostname) == 0 ||
+               certName.compare(pos, len, hostname, hostPos, hostLen) == 0;
+    }
+
+    return certName == hostname;
 }
 
 inline bool verifyCommonName(X509 *cert, const std::string &hostname)
