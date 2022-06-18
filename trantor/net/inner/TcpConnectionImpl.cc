@@ -341,7 +341,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading certificate: " << errbuf;
+        LOG_FATAL << "Reading certificate: " << certPath
+                  << " failed. Error is: " << errbuf;
         throw std::runtime_error("SSL_CTX_use_certificate_chain_file error.");
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
@@ -350,14 +351,16 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading private key: " << errbuf;
+        LOG_FATAL << "Reading private key: " << keyPath
+                  << " failed. Error is: " << errbuf;
         throw std::runtime_error("SSL_CTX_use_PrivateKey_file error");
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Checking private key matches certificate: " << errbuf;
+        LOG_FATAL << "Checking private key matches certificate: " << certPath
+                  << " and " << keyPath << " mismatches. Error is: " << errbuf;
         throw std::runtime_error("SSL_CTX_check_private_key error");
     }
 
@@ -402,7 +405,8 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading certificate: " << errbuf;
+        LOG_FATAL << "Reading certificate: " << certPath
+                  << " failed. Error is: " << errbuf;
         throw std::runtime_error("SSL_CTX_use_certificate_chain_file error.");
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
@@ -411,15 +415,17 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading private key: " << errbuf;
-        throw std::runtime_error("SSL_CTX_use_PrivateKey_file error.");
+        LOG_FATAL << "Reading private key: " << keyPath
+                  << " failed. Error is: " << errbuf;
+        throw std::runtime_error("SSL_CTX_use_PrivateKey_file error");
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Checking private key matches certificate: " << errbuf;
-        throw std::runtime_error("SSL_CTX_check_private_key error.");
+        LOG_FATAL << "Checking private key matches certificate: " << certPath
+                  << " and " << keyPath << " mismatches. Error is: " << errbuf;
+        throw std::runtime_error("SSL_CTX_check_private_key error");
     }
 
     if (!caPath.empty())
