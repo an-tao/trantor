@@ -86,43 +86,6 @@ inline bool loadWindowsSystemCert(X509_STORE *store)
 }
 #endif
 
-inline bool verifyName(const std::string &certName, const std::string &hostname)
-{
-    size_t firstDot = certName.find('.');
-    size_t hostFirstDot = hostname.find('.');
-    size_t pos, len, hostPos, hostLen;
-
-    if (firstDot != std::string::npos)
-    {
-        pos = firstDot + 1;
-    }
-    else
-    {
-        firstDot = pos = certName.size();
-    }
-
-    len = certName.size() - pos;
-
-    if (hostFirstDot != std::string::npos)
-    {
-        hostPos = hostFirstDot + 1;
-    }
-    else
-    {
-        hostFirstDot = hostPos = hostname.size();
-    }
-
-    hostLen = hostname.size() - hostPos;
-
-    if (certName.compare(0, firstDot, "*") == 0)
-    {
-        return certName.compare(pos, len, hostname) == 0 ||
-               certName.compare(pos, len, hostname, hostPos, hostLen) == 0;
-    }
-
-    return certName == hostname;
-}
-
 inline bool verifyCommonName(X509 *cert, const std::string &hostname)
 {
     X509_NAME *subjectName = X509_get_subject_name(cert);
@@ -137,8 +100,9 @@ inline bool verifyCommonName(X509 *cert, const std::string &hostname)
         if (length == -1)
             return false;
 
-        return verifyName(std::string(name.begin(), name.begin() + length),
-                          hostname);
+        return utils::verifySslName(std::string(name.begin(),
+                                                name.begin() + length),
+                                    hostname);
     }
 
     return false;
@@ -169,7 +133,8 @@ inline bool verifyAltName(X509 *cert, const std::string &hostname)
             auto name = (const char *)ASN1_STRING_data(val->d.ia5);
 #endif
             auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
-            good = verifyName(std::string(name, name + name_len), hostname);
+            good = utils::verifySslName(std::string(name, name + name_len),
+                                        hostname);
         }
     }
 
