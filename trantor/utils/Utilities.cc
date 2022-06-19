@@ -25,7 +25,6 @@
 #include <codecvt>
 #endif  // __cplusplus
 #endif  // _WIN32
-#include <iostream>
 
 namespace trantor
 {
