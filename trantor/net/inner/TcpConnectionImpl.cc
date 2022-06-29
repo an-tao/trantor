@@ -327,7 +327,6 @@ std::shared_ptr<SSLContext> newSSLServerContext(
         LOG_TRACE << "set_ecdh_auto ENABLED";
     }
 
-    LOG_TRACE << "caPath defined: " << checkCA;
     if (!caPath.empty())
     {
         auto checkCA =
