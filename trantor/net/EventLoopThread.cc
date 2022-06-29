@@ -27,6 +27,7 @@ EventLoopThread::EventLoopThread(const std::string &threadName)
     auto f = promiseForLoopPointer_.get_future();
     loop_ = f.get();
 }
+
 EventLoopThread::~EventLoopThread()
 {
     run();
@@ -39,28 +40,27 @@ EventLoopThread::~EventLoopThread()
         thread_.join();
     }
 }
-// void EventLoopThread::stop() {
-//    if(loop_)
-//        loop_->quit();
-//}
+
 void EventLoopThread::wait()
 {
     thread_.join();
 }
+
 void EventLoopThread::loopFuncs()
 {
 #ifdef __linux__
     ::prctl(PR_SET_NAME, loopThreadName_.c_str());
 #endif
-    EventLoop loop;
+    thread_local static EventLoop loop;
     loop.queueInLoop([this]() { promiseForLoop_.set_value(1); });
     promiseForLoopPointer_.set_value(&loop);
     auto f = promiseForRun_.get_future();
     (void)f.get();
     loop.loop();
     // LOG_DEBUG << "loop out";
-    loop_ = NULL;
+    loop_ = nullptr;
 }
+
 void EventLoopThread::run()
 {
     std::call_once(once_, [this]() {

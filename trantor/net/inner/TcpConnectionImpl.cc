@@ -34,8 +34,6 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #endif
-#include <regex>
-
 using namespace trantor;
 
 #ifdef _WIN32
@@ -88,49 +86,6 @@ inline bool loadWindowsSystemCert(X509_STORE *store)
 }
 #endif
 
-inline std::string certNameToRegex(const std::string &certName)
-{
-    std::string result;
-    result.reserve(certName.size() + 11);
-
-    bool isStar = false;
-    bool isLeadingStar = true;
-    for (char ch : certName)
-    {
-        if (isStar == false)
-        {
-            if (ch == '*')
-                isStar = true;
-            else if (ch == '.')
-            {
-                result += "\\.";
-                isLeadingStar = false;
-            }
-            else
-            {
-                result.push_back(ch);
-                isLeadingStar = false;
-            }
-        }
-        else
-        {
-            if (ch == '.' && isLeadingStar)
-                result += "([^.]*\\.|)?";
-            else
-                result += std::string("[^.]*") + ch;
-            isStar = false;
-        }
-    }
-    assert(isStar == false);
-    return result;
-}
-
-inline bool verifyName(const std::string &certName, const std::string &hostname)
-{
-    std::regex re(certNameToRegex(certName));
-    return std::regex_match(hostname, re);
-}
-
 inline bool verifyCommonName(X509 *cert, const std::string &hostname)
 {
     X509_NAME *subjectName = X509_get_subject_name(cert);
@@ -145,8 +100,9 @@ inline bool verifyCommonName(X509 *cert, const std::string &hostname)
         if (length == -1)
             return false;
 
-        return verifyName(std::string(name.begin(), name.begin() + length),
-                          hostname);
+        return utils::verifySslName(std::string(name.begin(),
+                                                name.begin() + length),
+                                    hostname);
     }
 
     return false;
@@ -177,7 +133,8 @@ inline bool verifyAltName(X509 *cert, const std::string &hostname)
             auto name = (const char *)ASN1_STRING_data(val->d.ia5);
 #endif
             auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
-            good = verifyName(std::string(name, name + name_len), hostname);
+            good = utils::verifySslName(std::string(name, name + name_len),
+                                        hostname);
         }
     }
 
@@ -341,7 +298,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading certificate: " << errbuf;
+        LOG_FATAL << "Reading certificate: " << certPath
+                  << " failed. Error: " << errbuf;
         throw std::runtime_error("SSL_CTX_use_certificate_chain_file error.");
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
@@ -350,14 +308,16 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading private key: " << errbuf;
+        LOG_FATAL << "Reading private key: " << keyPath
+                  << " failed. Error: " << errbuf;
         throw std::runtime_error("SSL_CTX_use_PrivateKey_file error");
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Checking private key matches certificate: " << errbuf;
+        LOG_FATAL << "Checking private key matches certificate: " << certPath
+                  << " and " << keyPath << " mismatches. Error: " << errbuf;
         throw std::runtime_error("SSL_CTX_check_private_key error");
     }
 
@@ -402,7 +362,8 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading certificate: " << errbuf;
+        LOG_FATAL << "Reading certificate: " << certPath
+                  << " failed. Error: " << errbuf;
         throw std::runtime_error("SSL_CTX_use_certificate_chain_file error.");
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
@@ -411,15 +372,17 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading private key: " << errbuf;
-        throw std::runtime_error("SSL_CTX_use_PrivateKey_file error.");
+        LOG_FATAL << "Reading private key: " << keyPath
+                  << " failed. Error: " << errbuf;
+        throw std::runtime_error("SSL_CTX_use_PrivateKey_file error");
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Checking private key matches certificate: " << errbuf;
-        throw std::runtime_error("SSL_CTX_check_private_key error.");
+        LOG_FATAL << "Checking private key matches certificate: " << certPath
+                  << " and " << keyPath << " mismatches. Error: " << errbuf;
+        throw std::runtime_error("SSL_CTX_check_private_key error");
     }
 
     if (!caPath.empty())
