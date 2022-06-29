@@ -327,11 +327,11 @@ std::shared_ptr<SSLContext> newSSLServerContext(
         LOG_TRACE << "set_ecdh_auto ENABLED";
     }
 
+    LOG_TRACE << "caPath defined: " << checkCA;
     if (!caPath.empty())
     {
         auto checkCA =
             SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
-        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
         if (checkCA)
         {
             STACK_OF(X509_NAME) *cert_names =
@@ -341,6 +341,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
             ctx->mtlsEnabled = true;
+            LOG_TRACE << "mTLS session ENABLED";
         }
         else
         {
@@ -2078,7 +2079,7 @@ void TcpConnectionImpl::doHandshaking()
     {
         // ERR_print_errors(err);
         LOG_TRACE << "SSL handshake err: " << err;
-        LOG_TRACE << getOpenSSLErrorStack();
+        LOG_TRACE << "SSL error stack: " << getOpenSSLErrorStack();
         ioChannelPtr_->disableReading();
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
         if (sslErrorCallback_)
