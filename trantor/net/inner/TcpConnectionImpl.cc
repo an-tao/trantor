@@ -2030,8 +2030,8 @@ void TcpConnectionImpl::doHandshaking()
     LOG_TRACE << "hand shaking: " << r;
     if (r == 1)
     {
-        // Clients don't commonly have certificates. Let's not validate
-        // that
+        // Clients don't commonly have certificates (except on mTLS).
+        // So if the SSL session is on server-side and without mTLS enabled, let's not validate the client certificate. 
         if (validateCert_ && (!sslEncryptionPtr_->isServer_ ||
                               sslEncryptionPtr_->sslPtr_->mtlsEnabled))
         {
@@ -2078,6 +2078,7 @@ void TcpConnectionImpl::doHandshaking()
     {
         // ERR_print_errors(err);
         LOG_TRACE << "SSL handshake err: " << err;
+        // ERR_print_errors_fp (stderr);
         LOG_TRACE << "SSL error stack: " << getOpenSSLErrorStack();
         ioChannelPtr_->disableReading();
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
