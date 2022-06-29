@@ -370,6 +370,7 @@ class TcpConnectionImpl : public TcpConnection,
   private:
     void doHandshaking();
     bool validatePeerCertificate();
+    std::string getOpenSSLErrorStack();
     struct SSLEncryption
     {
         SSLStatus statusOfSSL_ = SSLStatus::Handshaking;
