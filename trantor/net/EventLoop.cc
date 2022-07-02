@@ -25,7 +25,9 @@
 #include <thread>
 #include <assert.h>
 #ifdef _WIN32
+#include <windows.h>
 #include <io.h>
+#include <synchapi.h>
 using ssize_t = long long;
 #else
 #include <poll.h>
@@ -101,7 +103,7 @@ EventLoop::EventLoop()
 void EventLoop::resetTimerQueue()
 {
     assertInLoopThread();
-    assert(!looping_);
+    assert(!looping_.load(std::memory_order_acquire));
     timerQueue_->reset();
 }
 #endif
@@ -111,8 +113,29 @@ void EventLoop::resetAfterFork()
 }
 EventLoop::~EventLoop()
 {
+#ifdef _WIN32
+    DWORD delay = 1; /* 1 msec */
+#else
+    struct timespec delay = {0, 1000000}; /* 1 msec */
+#endif
+
     quit();
-    assert(!looping_);
+
+    // Spin waiting for the loop to exit because
+    // this may take some time to complete. We
+    // assume the loop thread will *always* exit.
+    // If this cannot be guaranteed then one option
+    // might be to abort waiting and
+    // assert(!looping_) after some delay;
+    while (looping_.load(std::memory_order_acquire))
+    {
+#ifdef _WIN32
+        Sleep(delay);
+#else
+        nanosleep(&delay, nullptr);
+#endif
+    }
+
     t_loopInThisThread = nullptr;
 #ifdef __linux__
     close(wakeupFd_);
@@ -136,28 +159,12 @@ void EventLoop::removeChannel(Channel *channel)
 {
     assert(channel->ownerLoop() == this);
     assertInLoopThread();
-    if (eventHandling_)
-    {
-        assert(currentActiveChannel_ == channel ||
-               std::find(activeChannels_.begin(),
-                         activeChannels_.end(),
-                         channel) == activeChannels_.end());
-    }
     poller_->removeChannel(channel);
 }
 void EventLoop::quit()
 {
-    quit_ = true;
+    quit_.store(true, std::memory_order_release);
 
-    Func f;
-    while (funcsOnQuit_.dequeue(f))
-    {
-        f();
-    }
-
-    // There is a chance that loop() just executes while(!quit_) and exits,
-    // then EventLoop destructs, then we are accessing an invalid object.
-    // Can be fixed using mutex_ in both places.
     if (!isInLoopThread())
     {
         wakeup();
@@ -167,10 +174,10 @@ void EventLoop::loop()
 {
     assert(!looping_);
     assertInLoopThread();
-    looping_ = true;
-    quit_ = false;
+    looping_.store(true, std::memory_order_release);
+    quit_.store(false, std::memory_order_release);
 
-    while (!quit_)
+    while (!quit_.load(std::memory_order_acquire))
     {
         activeChannels_.clear();
 #ifdef __linux__
@@ -189,12 +196,18 @@ void EventLoop::loop()
             currentActiveChannel_ = *it;
             currentActiveChannel_->handleEvent();
         }
-        currentActiveChannel_ = NULL;
+        currentActiveChannel_ = nullptr;
         eventHandling_ = false;
         // std::cout << "looping" << endl;
         doRunInLoopFuncs();
     }
-    looping_ = false;
+    looping_.store(false, std::memory_order_release);
+
+    Func f;
+    while (funcsOnQuit_.dequeue(f))
+    {
+        f();
+    }
 }
 void EventLoop::abortNotInLoopThread()
 {
@@ -205,7 +218,7 @@ void EventLoop::abortNotInLoopThread()
 void EventLoop::queueInLoop(const Func &cb)
 {
     funcs_.enqueue(cb);
-    if (!isInLoopThread() || !looping_)
+    if (!isInLoopThread() || !looping_.load(std::memory_order_acquire))
     {
         wakeup();
     }
@@ -213,7 +226,7 @@ void EventLoop::queueInLoop(const Func &cb)
 void EventLoop::queueInLoop(Func &&cb)
 {
     funcs_.enqueue(std::move(cb));
-    if (!isInLoopThread() || !looping_)
+    if (!isInLoopThread() || !looping_.load(std::memory_order_acquire))
     {
         wakeup();
     }

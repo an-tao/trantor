@@ -211,10 +211,12 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
                    const std::string &keyPath,
                    bool useOldTLS = false,
                    const std::vector<std::pair<std::string, std::string>>
-                       &sslConfCmds = {});
+                       &sslConfCmds = {},
+                   const std::string &caPath = "");
 
   private:
     EventLoop *loop_;
+    void handleCloseInLoop(const TcpConnectionPtr &connectionPtr);
     std::unique_ptr<Acceptor> acceptorPtr_;
     void newConnection(int fd, const InetAddress &peer);
     std::string serverName_;

@@ -43,7 +43,7 @@ class TRANTOR_EXPORT MsgBuffer
      *
      * @param len The initial size of the buffer.
      */
-    MsgBuffer(size_t len = kBufferDefaultLength);
+    explicit MsgBuffer(size_t len = kBufferDefaultLength);
 
     /**
      * @brief Get the beginning of the buffer.

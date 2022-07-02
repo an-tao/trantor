@@ -30,7 +30,8 @@ TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS = false,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {});
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {},
+    const std::string &caPath = "");
 /**
  * @brief This class represents a TCP connection.
  *
@@ -76,6 +77,19 @@ class TRANTOR_EXPORT TcpConnection
     virtual void sendFile(const wchar_t *fileName,
                           size_t offset = 0,
                           size_t length = 0) = 0;
+    /**
+     * @brief Send a stream to the peer.
+     *
+     * @param callback function to retrieve the stream data (stream ends when a
+     * zero size is returned) the callback will be called with nullptr when the
+     * send is finished/interrupted, so that it cleans up any internal data (ex:
+     * close file).
+     * @warning The buffer size should be >= 10 to allow http chunked-encoding
+     * data stream
+     */
+    virtual void sendStream(std::function<std::size_t(char *, std::size_t)>
+                                callback) = 0;  // (buffer, buffer size) -> size
+                                                // of data put in buffer
 
     /**
      * @brief Get the local address of the connection.

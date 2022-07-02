@@ -3,12 +3,13 @@ project(trantor)
 
 option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_C-ARES "Build C-ARES" ON)
+option(BUILD_SHARED_LIBS "Build trantor as a shared lib" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
 set(TRANTOR_MAJOR_VERSION 1)
 set(TRANTOR_MINOR_VERSION 5)
-set(TRANTOR_PATCH_VERSION 4)
+set(TRANTOR_PATCH_VERSION 5)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
 
@@ -24,14 +25,13 @@ set(INSTALL_TRANTOR_CMAKE_DIR
     ${DEF_INSTALL_TRANTOR_CMAKE_DIR}
     CACHE PATH "Installation directory for cmake files")
 
-if(BUILD_TRANTOR_SHARED)
-  set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+add_library(${PROJECT_NAME})
+if(BUILD_SHARED_LIBS)
   list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
             "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}" isSystemDir)
   if("${isSystemDir}" STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
   endif("${isSystemDir}" STREQUAL "-1")
-  add_library(${PROJECT_NAME} SHARED)
   set_target_properties(${PROJECT_NAME} PROPERTIES
       VERSION ${TRANTOR_VERSION}
       SOVERSION ${TRANTOR_MAJOR_VERSION})
@@ -42,9 +42,7 @@ if(BUILD_TRANTOR_SHARED)
     # exact same compiler for drogon and your app.
     target_compile_options(${PROJECT_NAME} PUBLIC /wd4251 /wd4275)
   endif()
-else(BUILD_TRANTOR_SHARED)
-  add_library(${PROJECT_NAME} STATIC)
-endif(BUILD_TRANTOR_SHARED)
+endif(BUILD_SHARED_LIBS)
 
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID MATCHES Clang|GNU)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
@@ -129,6 +127,10 @@ endif(WIN32)
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+  
+  # To enable the acceptance of local issued certificates
+  # Add the flag: ALLOW_SELF_SIGNED_CERTS
+  # ONLY FOR TESTING PURPOSES
   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
 endif()
 
@@ -161,6 +163,9 @@ if(HAVE_C-ARES)
   set(private_headers
       ${private_headers}
       trantor/net/inner/AresResolver.h)
+  if(APPLE)
+      target_link_libraries(${PROJECT_NAME} PRIVATE resolv)
+  endif()
 else()
   set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}

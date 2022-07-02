@@ -34,9 +34,18 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #endif
-#include <regex>
-
 using namespace trantor;
+
+#ifdef _WIN32
+// Winsock does not set errno, and WSAGetLastError() has different values than
+// errno socket errors
+#undef EWOULDBLOCK
+#define EWOULDBLOCK WSAEWOULDBLOCK
+#undef EPIPE
+#define EPIPE WSAENOTCONN
+#undef ECONNRESET
+#define ECONNRESET WSAECONNRESET
+#endif
 
 #ifdef USE_OPENSSL
 namespace trantor
@@ -77,49 +86,6 @@ inline bool loadWindowsSystemCert(X509_STORE *store)
 }
 #endif
 
-inline std::string certNameToRegex(const std::string &certName)
-{
-    std::string result;
-    result.reserve(certName.size() + 11);
-
-    bool isStar = false;
-    bool isLeadingStar = true;
-    for (char ch : certName)
-    {
-        if (isStar == false)
-        {
-            if (ch == '*')
-                isStar = true;
-            else if (ch == '.')
-            {
-                result += "\\.";
-                isLeadingStar = false;
-            }
-            else
-            {
-                result.push_back(ch);
-                isLeadingStar = false;
-            }
-        }
-        else
-        {
-            if (ch == '.' && isLeadingStar)
-                result += "([^.]*\\.|)?";
-            else
-                result += std::string("[^.]*") + ch;
-            isStar = false;
-        }
-    }
-    assert(isStar == false);
-    return result;
-}
-
-inline bool verifyName(const std::string &certName, const std::string &hostname)
-{
-    std::regex re(certNameToRegex(certName));
-    return std::regex_match(hostname, re);
-}
-
 inline bool verifyCommonName(X509 *cert, const std::string &hostname)
 {
     X509_NAME *subjectName = X509_get_subject_name(cert);
@@ -134,8 +100,9 @@ inline bool verifyCommonName(X509 *cert, const std::string &hostname)
         if (length == -1)
             return false;
 
-        return verifyName(std::string(name.begin(), name.begin() + length),
-                          hostname);
+        return utils::verifySslName(std::string(name.begin(),
+                                                name.begin() + length),
+                                    hostname);
     }
 
     return false;
@@ -166,7 +133,8 @@ inline bool verifyAltName(X509 *cert, const std::string &hostname)
             auto name = (const char *)ASN1_STRING_data(val->d.ia5);
 #endif
             auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
-            good = verifyName(std::string(name, name + name_len), hostname);
+            good = utils::verifySslName(std::string(name, name + name_len),
+                                        hostname);
         }
     }
 
@@ -279,6 +247,7 @@ class SSLContext
     {
         return ctxPtr_;
     }
+    bool mtlsEnabled = false;
 
   private:
     SSL_CTX *ctxPtr_;
@@ -286,9 +255,10 @@ class SSLContext
 class SSLConn
 {
   public:
-    explicit SSLConn(SSL_CTX *ctx)
+    explicit SSLConn(SSL_CTX *ctx, bool mtlsEnabled_)
     {
         SSL_ = SSL_new(ctx);
+        mtlsEnabled = mtlsEnabled_;
     }
     ~SSLConn()
     {
@@ -301,6 +271,7 @@ class SSLConn
     {
         return SSL_;
     }
+    bool mtlsEnabled = false;
 
   private:
     SSL *SSL_;
@@ -318,7 +289,8 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath)
 {
     auto ctx = newSSLContext(useOldTLS, false, sslConfCmds);
     auto r = SSL_CTX_use_certificate_chain_file(ctx->get(), certPath.c_str());
@@ -326,8 +298,9 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading certificate: " << errbuf;
-        abort();
+        LOG_FATAL << "Reading certificate: " << certPath
+                  << " failed. Error: " << errbuf;
+        throw std::runtime_error("SSL_CTX_use_certificate_chain_file error.");
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
                                     keyPath.c_str(),
@@ -335,16 +308,41 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading private key: " << errbuf;
-        abort();
+        LOG_FATAL << "Reading private key: " << keyPath
+                  << " failed. Error: " << errbuf;
+        throw std::runtime_error("SSL_CTX_use_PrivateKey_file error");
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Checking private key matches certificate: " << errbuf;
-        abort();
+        LOG_FATAL << "Checking private key matches certificate: " << certPath
+                  << " and " << keyPath << " mismatches. Error: " << errbuf;
+        throw std::runtime_error("SSL_CTX_check_private_key error");
     }
+
+    if (!caPath.empty())
+    {
+        auto checkCA =
+            SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
+        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
+        if (checkCA)
+        {
+            STACK_OF(X509_NAME) *cert_names =
+                SSL_load_client_CA_file(caPath.c_str());
+            if (cert_names != NULL)
+            {
+                SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
+            }
+            ctx->mtlsEnabled = true;
+        }
+        else
+        {
+            LOG_FATAL << "caPath location error ";
+            throw std::runtime_error("SSL_CTX_load_verify_locations error");
+        }
+    }
+
     return ctx;
 }
 std::shared_ptr<SSLContext> newSSLClientContext(
@@ -352,7 +350,8 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     bool validateCert,
     const std::string &certPath,
     const std::string &keyPath,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath)
 {
     auto ctx = newSSLContext(useOldTLS, validateCert, sslConfCmds);
     if (certPath.empty() || keyPath.empty())
@@ -363,8 +362,9 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading certificate: " << errbuf;
-        abort();
+        LOG_FATAL << "Reading certificate: " << certPath
+                  << " failed. Error: " << errbuf;
+        throw std::runtime_error("SSL_CTX_use_certificate_chain_file error.");
     }
     r = SSL_CTX_use_PrivateKey_file(ctx->get(),
                                     keyPath.c_str(),
@@ -372,16 +372,41 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Reading private key: " << errbuf;
-        abort();
+        LOG_FATAL << "Reading private key: " << keyPath
+                  << " failed. Error: " << errbuf;
+        throw std::runtime_error("SSL_CTX_use_PrivateKey_file error");
     }
     r = SSL_CTX_check_private_key(ctx->get());
     if (!r)
     {
         ERR_error_string_n(ERR_get_error(), errbuf, sizeof(errbuf));
-        LOG_FATAL << "Checking private key matches certificate: " << errbuf;
-        abort();
+        LOG_FATAL << "Checking private key matches certificate: " << certPath
+                  << " and " << keyPath << " mismatches. Error: " << errbuf;
+        throw std::runtime_error("SSL_CTX_check_private_key error");
     }
+
+    if (!caPath.empty())
+    {
+        auto checkCA =
+            SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
+        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
+        if (checkCA)
+        {
+            STACK_OF(X509_NAME) *cert_names =
+                SSL_load_client_CA_file(caPath.c_str());
+            if (cert_names != NULL)
+            {
+                SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
+            }
+            ctx->mtlsEnabled = true;
+        }
+        else
+        {
+            LOG_FATAL << "caPath location error ";
+            throw std::runtime_error("SSL_CTX_load_verify_locations error");
+        }
+    }
+
     return ctx;
 }
 }  // namespace trantor
@@ -392,10 +417,11 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &,
     const std::string &,
     bool,
-    const std::vector<std::pair<std::string, std::string>> &)
+    const std::vector<std::pair<std::string, std::string>> &,
+    const std::string &)
 {
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 }
 }  // namespace trantor
 #endif
@@ -446,11 +472,15 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
     sslEncryptionPtr_->sslCtxPtr_ =
         newSSLContext(useOldTLS, validateCert_, sslConfCmds);
     sslEncryptionPtr_->sslPtr_ =
-        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
-    if (validateCert)
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get(),
+                                  sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
+    if (validateCert || sslEncryptionPtr_->sslPtr_->mtlsEnabled)
     {
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
-                       SSL_VERIFY_NONE,
+                       sslEncryptionPtr_->sslPtr_->mtlsEnabled
+                           ? SSL_VERIFY_PEER
+                           : SSL_VERIFY_NONE,
                        nullptr);
         validateCert_ = validateCert;
     }
@@ -486,13 +516,21 @@ void TcpConnectionImpl::startServerEncryptionInLoop(
     sslEncryptionPtr_->sslCtxPtr_ = ctx;
     sslEncryptionPtr_->isServer_ = true;
     sslEncryptionPtr_->sslPtr_ =
-        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get());
+        std::make_unique<SSLConn>(sslEncryptionPtr_->sslCtxPtr_->get(),
+                                  sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
     isEncrypted_ = true;
     sslEncryptionPtr_->isUpgrade_ = true;
-    if (sslEncryptionPtr_->isServer_ == false)
+    if (sslEncryptionPtr_->isServer_ == false ||
+        sslEncryptionPtr_->sslPtr_->mtlsEnabled)
+    {
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
-                       SSL_VERIFY_NONE,
+                       sslEncryptionPtr_->sslPtr_->mtlsEnabled
+                           ? SSL_VERIFY_PEER
+                           : SSL_VERIFY_NONE,
                        nullptr);
+    }
+
     auto r = SSL_set_fd(sslEncryptionPtr_->sslPtr_->get(), socketPtr_->fd());
     (void)r;
     assert(r);
@@ -513,7 +551,7 @@ void TcpConnectionImpl::startServerEncryption(
     (void)callback;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 #else
     if (loop_->isInLoopThread())
     {
@@ -547,14 +585,14 @@ void TcpConnectionImpl::startClientEncryption(
     (void)sslConfCmds;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 #else
     if (!hostname.empty())
     {
         std::transform(hostname.begin(),
                        hostname.end(),
                        hostname.begin(),
-                       tolower);
+                       [](unsigned char c) { return tolower(c); });
         assert(sslEncryptionPtr_ != nullptr);
         sslEncryptionPtr_->hostname_ = hostname;
     }
@@ -602,11 +640,15 @@ void TcpConnectionImpl::readCallback()
         }
         else if (n < 0)
         {
-            if (errno == EPIPE || errno == ECONNRESET ||
-                errno == EAGAIN)  // TODO: any others?
+            if (errno == EPIPE || errno == ECONNRESET)
             {
-                LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno
+#ifdef _WIN32
+                LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno=" << errno
                           << " fd=" << socketPtr_->fd();
+#else
+            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno
+                      << " fd=" << socketPtr_->fd();
+#endif
                 return;
             }
 #ifdef _WIN32
@@ -616,6 +658,13 @@ void TcpConnectionImpl::readCallback()
                 handleClose();
                 return;
             }
+#else
+        if (errno == EAGAIN)  // TODO: any others?
+        {
+            LOG_DEBUG << "EAGAIN, errno=" << errno
+                      << " fd=" << socketPtr_->fd();
+            return;
+        }
 #endif
             LOG_SYSERR << "read socket error";
             handleClose();
@@ -714,19 +763,17 @@ void TcpConnectionImpl::writeCallback()
         {
             assert(!writeBufferList_.empty());
             auto writeBuffer_ = writeBufferList_.front();
-#ifndef _WIN32
-            if (writeBuffer_->sendFd_ < 0)
-#else
-        if (writeBuffer_->sendFp_ == nullptr)
-#endif
+            if (!writeBuffer_->isFile())
             {
+                // not a file
                 if (writeBuffer_->msgBuffer_->readableBytes() <= 0)
                 {
+                    // finished sending
                     writeBufferList_.pop_front();
                     if (writeBufferList_.empty())
                     {
+                        // stop writing
                         ioChannelPtr_->disableWriting();
-                        //
                         if (writeCompleteCallback_)
                             writeCompleteCallback_(shared_from_this());
                         if (status_ == ConnStatus::Disconnecting)
@@ -736,17 +783,16 @@ void TcpConnectionImpl::writeCallback()
                     }
                     else
                     {
+                        // send next
+                        // what if the next is not a file???
                         auto fileNode = writeBufferList_.front();
-#ifndef _WIN32
-                        assert(fileNode->sendFd_ >= 0);
-#else
-                    assert(fileNode->sendFp_);
-#endif
+                        assert(fileNode->isFile());
                         sendFileInLoop(fileNode);
                     }
                 }
                 else
                 {
+                    // continue sending
                     auto n =
                         writeInLoop(writeBuffer_->msgBuffer_->peek(),
                                     writeBuffer_->msgBuffer_->readableBytes());
@@ -765,8 +811,13 @@ void TcpConnectionImpl::writeCallback()
                             // TODO: any others?
                             if (errno == EPIPE || errno == ECONNRESET)
                             {
-                                LOG_DEBUG << "EPIPE or ECONNRESET, erron="
-                                          << errno;
+#ifdef _WIN32
+                                LOG_DEBUG
+                                    << "WSAENOTCONN or WSAECONNRESET, errno="
+                                    << errno;
+#else
+                            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+#endif
                                 return;
                             }
                             LOG_SYSERR << "Unexpected error(" << errno << ")";
@@ -777,12 +828,14 @@ void TcpConnectionImpl::writeCallback()
             }
             else
             {
-                // file
+                // is a file
                 if (writeBuffer_->fileBytesToSend_ <= 0)
                 {
+                    // finished sending
                     writeBufferList_.pop_front();
                     if (writeBufferList_.empty())
                     {
+                        // stop writing
                         ioChannelPtr_->disableWriting();
                         if (writeCompleteCallback_)
                             writeCompleteCallback_(shared_from_this());
@@ -793,11 +846,8 @@ void TcpConnectionImpl::writeCallback()
                     }
                     else
                     {
-#ifndef _WIN32
-                        if (writeBufferList_.front()->sendFd_ < 0)
-#else
-                    if (writeBufferList_.front()->sendFp_ == nullptr)
-#endif
+                        // next is not a file
+                        if (!writeBufferList_.front()->isFile())
                         {
                             // There is data to be sent in the buffer.
                             auto n = writeInLoop(
@@ -820,9 +870,15 @@ void TcpConnectionImpl::writeCallback()
                                     // TODO: any others?
                                     if (errno == EPIPE || errno == ECONNRESET)
                                     {
-                                        LOG_DEBUG
-                                            << "EPIPE or ECONNRESET, erron="
-                                            << errno;
+#ifdef _WIN32
+                                        LOG_DEBUG << "WSAENOTCONN or "
+                                                     "WSAECONNRESET, errno="
+                                                  << errno;
+#else
+                                    LOG_DEBUG << "EPIPE or "
+                                                 "ECONNRESET, erron="
+                                              << errno;
+#endif
                                         return;
                                     }
                                     LOG_SYSERR << "Unexpected error(" << errno
@@ -833,7 +889,7 @@ void TcpConnectionImpl::writeCallback()
                         }
                         else
                         {
-                            // more file
+                            // next is a file
                             sendFileInLoop(writeBufferList_.front());
                         }
                     }
@@ -846,7 +902,7 @@ void TcpConnectionImpl::writeCallback()
         }
         else
         {
-            LOG_SYSERR << "no writing but call write callback";
+            LOG_SYSERR << "no writing but write callback called";
         }
 #ifdef USE_OPENSSL
     }
@@ -925,7 +981,11 @@ void TcpConnectionImpl::handleError()
     int err = socketPtr_->getSocketError();
     if (err == 0)
         return;
-    if (err == EPIPE || err == ECONNRESET || err == 104)
+    if (err == EPIPE ||
+#ifndef _WIN32
+        err == EBADMSG ||  // ??? 104=EBADMSG
+#endif
+        err == ECONNRESET)
     {
         LOG_DEBUG << "[" << name_ << "] - SO_ERROR = " << err << " "
                   << strerror_tl(err);
@@ -1009,7 +1069,12 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             {
                 if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
                 {
-                    LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
+#ifdef _WIN32
+                    LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
+                              << errno;
+#else
+                    LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+#endif
                     return;
                 }
                 LOG_SYSERR << "Unexpected error(" << errno << ")";
@@ -1027,11 +1092,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             node->msgBuffer_ = std::make_shared<MsgBuffer>();
             writeBufferList_.push_back(std::move(node));
         }
-#ifndef _WIN32
-        else if (writeBufferList_.back()->sendFd_ >= 0)
-#else
-        else if (writeBufferList_.back()->sendFp_)
-#endif
+        else if (writeBufferList_.back()->isFile())
         {
             BufferNodePtr node = std::make_shared<BufferNode>();
             node->msgBuffer_ = std::make_shared<MsgBuffer>();
@@ -1461,17 +1522,74 @@ void TcpConnectionImpl::sendFile(FILE *fp, size_t offset, size_t length)
     }
 }
 
+void TcpConnectionImpl::sendStream(
+    std::function<std::size_t(char *, std::size_t)> callback)
+{
+    BufferNodePtr node = std::make_shared<BufferNode>();
+    node->offset_ =
+        0;  // not used, the offset should be handled by the callback
+    node->fileBytesToSend_ = 1;  // force to > 0 until stream sent
+    node->streamCallback_ = std::move(callback);
+    if (loop_->isInLoopThread())
+    {
+        std::lock_guard<std::mutex> guard(sendNumMutex_);
+        if (sendNum_ == 0)
+        {
+            writeBufferList_.push_back(node);
+            if (writeBufferList_.size() == 1)
+            {
+                sendFileInLoop(writeBufferList_.front());
+                return;
+            }
+        }
+        else
+        {
+            ++sendNum_;
+            auto thisPtr = shared_from_this();
+            loop_->queueInLoop([thisPtr, node]() {
+                thisPtr->writeBufferList_.push_back(node);
+                {
+                    std::lock_guard<std::mutex> guard1(thisPtr->sendNumMutex_);
+                    --thisPtr->sendNum_;
+                }
+
+                if (thisPtr->writeBufferList_.size() == 1)
+                {
+                    thisPtr->sendFileInLoop(thisPtr->writeBufferList_.front());
+                }
+            });
+        }
+    }
+    else
+    {
+        auto thisPtr = shared_from_this();
+        std::lock_guard<std::mutex> guard(sendNumMutex_);
+        ++sendNum_;
+        loop_->queueInLoop([thisPtr, node]() {
+            LOG_TRACE << "Push sendstream to list";
+            thisPtr->writeBufferList_.push_back(node);
+
+            {
+                std::lock_guard<std::mutex> guard1(thisPtr->sendNumMutex_);
+                --thisPtr->sendNum_;
+            }
+
+            if (thisPtr->writeBufferList_.size() == 1)
+            {
+                thisPtr->sendFileInLoop(thisPtr->writeBufferList_.front());
+            }
+        });
+    }
+}
+
 void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
 {
     loop_->assertInLoopThread();
-#ifndef _WIN32
-    assert(filePtr->sendFd_ >= 0);
-#else
-    assert(filePtr->sendFp_);
-#endif
+    assert(filePtr->isFile());
 #ifdef __linux__
-    if (!isEncrypted_)
+    if (!isEncrypted_ && !filePtr->streamCallback_)
     {
+        LOG_TRACE << "send file in loop using linux kernel sendfile()";
         auto bytesSent = sendfile(socketPtr_->fd(),
                                   filePtr->sendFd_,
                                   &filePtr->offset_,
@@ -1503,12 +1621,108 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         return;
     }
 #endif
-#ifndef _WIN32
-    lseek(filePtr->sendFd_, filePtr->offset_, SEEK_SET);
+    // Send stream
+    if (filePtr->streamCallback_)
+    {
+        LOG_TRACE << "send stream in loop";
+        if (!fileBufferPtr_)
+        {
+            fileBufferPtr_ = std::make_unique<std::vector<char>>();
+            fileBufferPtr_->reserve(16 * 1024);
+        }
+        while ((filePtr->fileBytesToSend_ > 0) || !fileBufferPtr_->empty())
+        {
+            // get next chunk
+            if (fileBufferPtr_->empty())
+            {
+                //                LOG_TRACE << "send stream in loop: fetch data
+                //                on buffer empty";
+                fileBufferPtr_->resize(16 * 1024);
+                std::size_t nData;
+                nData = filePtr->streamCallback_(fileBufferPtr_->data(),
+                                                 fileBufferPtr_->size());
+                fileBufferPtr_->resize(nData);
+                if (nData == 0)  // no more data!
+                {
+                    LOG_TRACE << "send stream in loop: no more data";
+                    filePtr->fileBytesToSend_ = 0;
+                }
+            }
+            if (fileBufferPtr_->empty())
+            {
+                LOG_TRACE << "send stream in loop: break on buffer empty";
+                break;
+            }
+            auto nToWrite = fileBufferPtr_->size();
+            auto nWritten = writeInLoop(fileBufferPtr_->data(), nToWrite);
+            if (nWritten >= 0)
+            {
+#ifndef NDEBUG  // defined by CMake for release build
+                filePtr->nDataWritten_ += nWritten;
+                LOG_TRACE << "send stream in loop: bytes written: " << nWritten
+                          << " / total bytes written: "
+                          << filePtr->nDataWritten_;
+#endif
+                if (static_cast<std::size_t>(nWritten) < nToWrite)
+                {
+                    // Partial write - return and wait for next call to continue
+                    fileBufferPtr_->erase(fileBufferPtr_->begin(),
+                                          fileBufferPtr_->begin() + nWritten);
+                    if (!ioChannelPtr_->isWriting())
+                        ioChannelPtr_->enableWriting();
+                    LOG_TRACE << "send stream in loop: return on partial write "
+                                 "(socket buffer full?)";
+                    return;
+                }
+                //                LOG_TRACE << "send stream in loop: continue on
+                //                data written";
+                fileBufferPtr_->resize(0);
+                continue;
+            }
+            // nWritten < 0
+#ifdef _WIN32
+            if (errno != 0 && errno != EWOULDBLOCK)
+#else
+            if (errno != EWOULDBLOCK)
+#endif
+            {
+                if (errno == EPIPE || errno == ECONNRESET)
+                {
+#ifdef _WIN32
+                    LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
+                              << errno;
+#else
+                    LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+#endif
+                    // abort
+                    LOG_DEBUG
+                        << "send stream in loop: return on connection closed";
+                    filePtr->fileBytesToSend_ = 0;
+                    return;
+                }
+                // TODO: any others?
+                LOG_SYSERR << "send stream in loop: return on unexpected error("
+                           << errno << ")";
+                filePtr->fileBytesToSend_ = 0;
+                return;
+            }
+            // Socket buffer full - return and wait for next call
+            LOG_TRACE << "send stream in loop: break on socket buffer full (?)";
+            break;
+        }
+        if (!ioChannelPtr_->isWriting())
+            ioChannelPtr_->enableWriting();
+        LOG_TRACE << "send stream in loop: return on loop exit";
+        return;
+    }
+    // Send file
+    LOG_TRACE << "send file in loop";
     if (!fileBufferPtr_)
     {
         fileBufferPtr_ = std::make_unique<std::vector<char>>(16 * 1024);
     }
+#ifndef _WIN32
+    lseek(filePtr->sendFd_, filePtr->offset_, SEEK_SET);
     while (filePtr->fileBytesToSend_ > 0)
     {
         auto n = read(filePtr->sendFd_,
@@ -1518,12 +1732,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                                    filePtr->fileBytesToSend_)));
 #else
     _fseeki64(filePtr->sendFp_, filePtr->offset_, SEEK_SET);
-    if (!fileBufferPtr_)
-    {
-        fileBufferPtr_ = std::make_unique<std::vector<char>>(16 * 1024);
-    }
     while (filePtr->fileBytesToSend_ > 0)
     {
+        //        LOG_TRACE << "send file in loop: fetch more remaining data";
         auto bytes = static_cast<decltype(fileBufferPtr_->size())>(
             filePtr->fileBytesToSend_);
         auto n = fread(&(*fileBufferPtr_)[0],
@@ -1545,10 +1756,16 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                     {
                         ioChannelPtr_->enableWriting();
                     }
+                    LOG_TRACE << "send file in loop: return on partial write "
+                                 "(socket buffer full?)";
                     return;
                 }
                 else if (nSend == n)
+                {
+                    //                    LOG_TRACE << "send file in loop:
+                    //                    continue on data written";
                     continue;
+                }
             }
             if (nSend < 0)
             {
@@ -1561,28 +1778,41 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                     // TODO: any others?
                     if (errno == EPIPE || errno == ECONNRESET)
                     {
-                        LOG_DEBUG << "EPIPE or ECONNRESET, erron=" << errno;
+#ifdef _WIN32
+                        LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
+                                  << errno;
+#else
+                        LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+#endif
+                        LOG_DEBUG
+                            << "send file in loop: return on connection closed";
                         return;
                     }
-                    LOG_SYSERR << "Unexpected error(" << errno << ")";
+                    LOG_SYSERR
+                        << "send file in loop: return on unexpected error("
+                        << errno << ")";
                     return;
                 }
+                LOG_TRACE
+                    << "send file in loop: break on socket buffer full (?)";
                 break;
             }
         }
         if (n < 0)
         {
-            LOG_SYSERR << "read error";
+            LOG_SYSERR << "send file in loop: return on read error";
             if (ioChannelPtr_->isWriting())
                 ioChannelPtr_->disableWriting();
             return;
         }
         if (n == 0)
         {
-            LOG_SYSERR << "read";
+            LOG_SYSERR
+                << "send file in loop: return on read 0 (file truncated)";
             return;
         }
     }
+    LOG_TRACE << "send file in loop: return on loop exit";
     if (!ioChannelPtr_->isWriting())
     {
         ioChannelPtr_->enableWriting();
@@ -1597,19 +1827,23 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 #ifdef USE_OPENSSL
     if (!isEncrypted_)
     {
+//        LOG_TRACE << "write in loop";
 #endif
-        bytesSent_ += length;
 #ifndef _WIN32
-        return write(socketPtr_->fd(), buffer, length);
+        int nWritten = write(socketPtr_->fd(), buffer, length);
 #else
-    errno = 0;
-    return ::send(socketPtr_->fd(), buffer, static_cast<int>(length), 0);
+    int nWritten =
+        ::send(socketPtr_->fd(), buffer, static_cast<int>(length), 0);
+    errno = (nWritten < 0) ? ::WSAGetLastError() : 0;
 #endif
+        if (nWritten > 0)
+            bytesSent_ += nWritten;
+        return nWritten;
 #ifdef USE_OPENSSL
     }
     else
     {
-        LOG_TRACE << "send in loop";
+        //        LOG_TRACE << "write encrypted in loop";
         loop_->assertInLoopThread();
         if (status_ != ConnStatus::Connected &&
             status_ != ConnStatus::Disconnecting)
@@ -1688,13 +1922,20 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     socketPtr_->setKeepAlive(true);
     name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
     sslEncryptionPtr_ = std::make_unique<SSLEncryption>();
-    sslEncryptionPtr_->sslPtr_ = std::make_unique<SSLConn>(ctxPtr->get());
+    sslEncryptionPtr_->sslPtr_ =
+        std::make_unique<SSLConn>(ctxPtr->get(), ctxPtr->mtlsEnabled);
     sslEncryptionPtr_->isServer_ = isServer;
     validateCert_ = validateCert;
-    if (isServer == false)
+    if (isServer == false || sslEncryptionPtr_->sslPtr_->mtlsEnabled)
+    {
+        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
-                       SSL_VERIFY_NONE,
+                       sslEncryptionPtr_->sslPtr_->mtlsEnabled
+                           ? SSL_VERIFY_PEER
+                           : SSL_VERIFY_NONE,
                        nullptr);
+    }
+
     if (!isServer && !hostname.empty())
     {
         SSL_set_tlsext_host_name(sslEncryptionPtr_->sslPtr_->get(),
@@ -1718,12 +1959,25 @@ bool TcpConnectionImpl::validatePeerCertificate()
     SSL *ssl = sslEncryptionPtr_->sslPtr_->get();
 
     auto result = SSL_get_verify_result(ssl);
-    if (result != X509_V_OK)
+
+#ifdef ALLOW_SELF_SIGNED_CERTS
+    if (result != X509_V_OK &&
+        result != X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT &&
+        result != X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN &&
+        result != X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
     {
         LOG_DEBUG << "cert error code: " << result;
         LOG_ERROR << "Server certificate is not valid";
         return false;
     }
+#else
+    if (result != X509_V_OK && result)
+    {
+        LOG_DEBUG << "cert error code: " << result;
+        LOG_ERROR << "Server certificate is not valid";
+        return false;
+    }
+#endif
 
     X509 *cert = SSL_get_peer_certificate(ssl);
     if (cert == nullptr)
@@ -1737,7 +1991,10 @@ bool TcpConnectionImpl::validatePeerCertificate()
         internal::verifyAltName(cert, sslEncryptionPtr_->hostname_);
     X509_free(cert);
 
-    if (domainIsValid)
+    LOG_DEBUG << "domainIsValid: " << domainIsValid;
+
+    // if mtlsEnabled, ignore domain validation
+    if (sslEncryptionPtr_->sslPtr_->mtlsEnabled || domainIsValid)
     {
         return true;
     }
@@ -1758,7 +2015,8 @@ void TcpConnectionImpl::doHandshaking()
     {
         // Clients don't commonly have certificates. Let's not validate
         // that
-        if (validateCert_ && sslEncryptionPtr_->isServer_ == false)
+        if (validateCert_ && (!sslEncryptionPtr_->isServer_ ||
+                              sslEncryptionPtr_->sslPtr_->mtlsEnabled))
         {
             if (validatePeerCertificate() == false)
             {

@@ -34,7 +34,8 @@ class SSLContext;
  * @brief This class represents a TCP client.
  *
  */
-class TRANTOR_EXPORT TcpClient : NonCopyable
+class TRANTOR_EXPORT TcpClient : NonCopyable,
+                                 public std::enable_shared_from_this<TcpClient>
 {
   public:
     /**
@@ -210,7 +211,8 @@ class TRANTOR_EXPORT TcpClient : NonCopyable
                    const std::vector<std::pair<std::string, std::string>>
                        &sslConfCmds = {},
                    const std::string &certPath = "",
-                   const std::string &keyPath = "");
+                   const std::string &keyPath = "",
+                   const std::string &caPath = "");
 
   private:
     /// Not thread safe, but in loop

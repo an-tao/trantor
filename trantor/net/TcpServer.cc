@@ -76,7 +76,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
             sslCtxPtr_);
 #else
         LOG_FATAL << "OpenSSL is not found in your system!";
-        abort();
+        throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
     }
     else
@@ -162,17 +162,34 @@ void TcpServer::stop()
         f.get();
     }
 }
+void TcpServer::handleCloseInLoop(const TcpConnectionPtr &connectionPtr)
+{
+    size_t n = connSet_.erase(connectionPtr);
+    (void)n;
+    assert(n == 1);
+    auto connLoop = connectionPtr->getLoop();
+
+    // NOTE: always queue this operation in connLoop, because this connection
+    // may be in loop_'s current active channels, waiting to be processed.
+    // If `connectDestroyed()` is called here, we will be using an wild pointer
+    // later.
+    connLoop->queueInLoop([connectionPtr]() {
+        static_cast<TcpConnectionImpl *>(connectionPtr.get())
+            ->connectDestroyed();
+    });
+}
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
     LOG_TRACE << "connectionClosed";
-    // loop_->assertInLoopThread();
-    loop_->runInLoop([this, connectionPtr]() {
-        size_t n = connSet_.erase(connectionPtr);
-        (void)n;
-        assert(n == 1);
-    });
-
-    static_cast<TcpConnectionImpl *>(connectionPtr.get())->connectDestroyed();
+    if (loop_->isInLoopThread())
+    {
+        handleCloseInLoop(connectionPtr);
+    }
+    else
+    {
+        loop_->queueInLoop(
+            [this, connectionPtr]() { handleCloseInLoop(connectionPtr); });
+    }
 }
 
 const std::string TcpServer::ipPort() const
@@ -189,11 +206,13 @@ void TcpServer::enableSSL(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath)
 {
 #ifdef USE_OPENSSL
     /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds);
+    sslCtxPtr_ =
+        newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds, caPath);
 #else
     // When not using OpenSSL, using `void` here will
     // work around the unused parameter warnings without overhead.
@@ -201,8 +220,9 @@ void TcpServer::enableSSL(
     (void)keyPath;
     (void)useOldTLS;
     (void)sslConfCmds;
+    (void)caPath;
 
     LOG_FATAL << "OpenSSL is not found in your system!";
-    abort();
+    throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
 }

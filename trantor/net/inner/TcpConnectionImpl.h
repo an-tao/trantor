@@ -46,13 +46,15 @@ std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &certPath,
     const std::string &keyPath,
     bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    const std::string &caPath);
 std::shared_ptr<SSLContext> newSSLClientContext(
     bool useOldTLS,
     bool validateCert,
     const std::string &certPath = "",
     const std::string &keyPath = "",
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {});
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {},
+    const std::string &caPath = "");
 
 // void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
 //                           const std::string &certPath,
@@ -125,6 +127,8 @@ class TcpConnectionImpl : public TcpConnection,
     virtual void sendFile(const wchar_t *fileName,
                           size_t offset = 0,
                           size_t length = 0) override;
+    virtual void sendStream(
+        std::function<std::size_t(char *, std::size_t)> callback) override;
 
     virtual const InetAddress &localAddr() const override
     {
@@ -230,38 +234,77 @@ class TcpConnectionImpl : public TcpConnection,
     {
         recvMsgCallback_ = cb;
     }
+    void setRecvMsgCallback(RecvMessageCallback &&cb)
+    {
+        recvMsgCallback_ = std::move(cb);
+    }
     void setConnectionCallback(const ConnectionCallback &cb)
     {
         connectionCallback_ = cb;
+    }
+    void setConnectionCallback(ConnectionCallback &&cb)
+    {
+        connectionCallback_ = std::move(cb);
     }
     void setWriteCompleteCallback(const WriteCompleteCallback &cb)
     {
         writeCompleteCallback_ = cb;
     }
+    void setWriteCompleteCallback(WriteCompleteCallback &&cb)
+    {
+        writeCompleteCallback_ = std::move(cb);
+    }
     void setCloseCallback(const CloseCallback &cb)
     {
         closeCallback_ = cb;
+    }
+    void setCloseCallback(CloseCallback &&cb)
+    {
+        closeCallback_ = std::move(cb);
     }
     void setSSLErrorCallback(const SSLErrorCallback &cb)
     {
         sslErrorCallback_ = cb;
     }
-
+    void setSSLErrorCallback(SSLErrorCallback &&cb)
+    {
+        sslErrorCallback_ = std::move(cb);
+    }
     void connectDestroyed();
     virtual void connectEstablished();
 
   protected:
     struct BufferNode
     {
+        // sendFile() specific
 #ifndef _WIN32
         int sendFd_{-1};
-        off_t offset_;
+        off_t offset_{0};
 #else
         FILE *sendFp_{nullptr};
-        long long offset_;
+        long long offset_{0};
 #endif
-        ssize_t fileBytesToSend_;
+        ssize_t fileBytesToSend_{0};
+        // sendStream() specific
+        std::function<std::size_t(char *, std::size_t)> streamCallback_;
+#ifndef NDEBUG  // defined by CMake for release build
+        std::size_t nDataWritten_{0};
+#endif
+        // generic
         std::shared_ptr<MsgBuffer> msgBuffer_;
+        bool isFile() const
+        {
+            if (streamCallback_)
+                return true;
+#ifndef _WIN32
+            if (sendFd_ >= 0)
+                return true;
+#else
+            if (sendFp_)
+                return true;
+#endif
+            return false;
+        }
         ~BufferNode()
         {
 #ifndef _WIN32
@@ -271,6 +314,8 @@ class TcpConnectionImpl : public TcpConnection,
             if (sendFp_)
                 fclose(sendFp_);
 #endif
+            if (streamCallback_)
+                streamCallback_(nullptr, 0);  // cleanup callback internals
         }
     };
     using BufferNodePtr = std::shared_ptr<BufferNode>;
