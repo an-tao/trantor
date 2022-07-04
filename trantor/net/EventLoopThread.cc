@@ -31,9 +31,14 @@ EventLoopThread::EventLoopThread(const std::string &threadName)
 EventLoopThread::~EventLoopThread()
 {
     run();
-    if (loop_)
+    std::shared_ptr<EventLoop> loop;
     {
-        loop_->quit();
+        std::unique_lock<std::mutex> lk(loopMutex_);
+        loop = loop_;
+    }
+    if (loop)
+    {
+        loop->quit();
     }
     if (thread_.joinable())
     {
@@ -51,14 +56,18 @@ void EventLoopThread::loopFuncs()
 #ifdef __linux__
     ::prctl(PR_SET_NAME, loopThreadName_.c_str());
 #endif
-    thread_local static EventLoop loop;
-    loop.queueInLoop([this]() { promiseForLoop_.set_value(1); });
-    promiseForLoopPointer_.set_value(&loop);
+    thread_local static std::shared_ptr<EventLoop> loop =
+        std::make_shared<EventLoop>();
+    loop->queueInLoop([this]() { promiseForLoop_.set_value(1); });
+    promiseForLoopPointer_.set_value(loop);
     auto f = promiseForRun_.get_future();
     (void)f.get();
-    loop.loop();
+    loop->loop();
     // LOG_DEBUG << "loop out";
-    loop_ = nullptr;
+    {
+        std::unique_lock<std::mutex> lk(loopMutex_);
+        loop_ = nullptr;
+    }
 }
 
 void EventLoopThread::run()
