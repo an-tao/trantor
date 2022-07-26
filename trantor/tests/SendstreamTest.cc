@@ -143,4 +143,4 @@ std::size_t fileCallback(const std::string &strFile,
     if (nRead < 0)
         return 0;
     return std::size_t(nRead);
-};
+}
