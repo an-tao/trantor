@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <string>
 
-#define MICRO_SECONDS_PRE_SEC 1000000
+#define MICRO_SECONDS_PRE_SEC 1000000LL
 
 namespace trantor
 {
