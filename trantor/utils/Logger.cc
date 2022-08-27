@@ -119,6 +119,11 @@ void Logger::formatTime()
     {
         threadId_ = getthrid();
     }
+#elif defined __sun
+    if (threadId_ == 0)
+    {
+        threadId_ = static_cast<uint64_t>(pthread_self());
+    }
 #elif defined _WIN32 || defined __HAIKU__
     if (threadId_ == 0)
     {

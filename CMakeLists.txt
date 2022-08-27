@@ -169,6 +169,8 @@ if(WIN32)
   if(OpenSSL_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE Crypt32 Secur32)
   endif(OpenSSL_FOUND)
+else(WIN32)
+  target_link_libraries(${PROJECT_NAME} PRIVATE pthread $<$<PLATFORM_ID:SunOS>:socket>)
 endif(WIN32)
 
 file(WRITE ${CMAKE_BINARY_DIR}/test_atomic.cpp
