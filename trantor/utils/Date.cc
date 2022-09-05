@@ -274,6 +274,11 @@ std::string Date::toDbStringLocal() const
     }
     return buf;
 }
+std::string Date::toDbString() const
+{
+    return after(static_cast<double>(-timezoneOffset())).toDbStringLocal();
+}
+
 Date Date::fromDbStringLocal(const std::string &datetime)
 {
     unsigned int year = {0}, month = {0}, day = {0}, hour = {0}, minute = {0},
@@ -312,6 +317,12 @@ Date Date::fromDbStringLocal(const std::string &datetime)
     }
     return trantor::Date(year, month, day, hour, minute, second, microSecond);
 }
+Date Date::fromDbString(const std::string &datetime)
+{
+    return fromDbStringLocal(datetime).after(
+        static_cast<double>(timezoneOffset()));
+}
+
 std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr,
                                                  bool showMicroseconds) const
 {
@@ -352,7 +363,8 @@ Date::Date(unsigned int year,
     tm.tm_min = minute;
     tm.tm_sec = second;
     epoch = mktime(&tm);
-    microSecondsSinceEpoch_ = epoch * MICRO_SECONDS_PRE_SEC + microSecond;
+    microSecondsSinceEpoch_ =
+        static_cast<int64_t>(epoch) * MICRO_SECONDS_PRE_SEC + microSecond;
 }
 
 }  // namespace trantor

@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <string>
 
-#define MICRO_SECONDS_PRE_SEC 1000000
+#define MICRO_SECONDS_PRE_SEC 1000000LL
 
 namespace trantor
 {
@@ -72,6 +72,13 @@ class TRANTOR_EXPORT Date
     static const Date now()
     {
         return Date::date();
+    }
+
+    static int64_t timezoneOffset()
+    {
+        static int64_t offset =
+            0 - Date::fromDbStringLocal("1970-01-01").secondsSinceEpoch();
+        return offset;
     }
 
     /**
@@ -233,6 +240,10 @@ class TRANTOR_EXPORT Date
      * is zero 2018-01-01 10:10:25:102414   //If the microsecond is not zero
      */
     std::string toDbStringLocal() const;
+    /**
+     * @brief Generate a UTC time string for database.
+     */
+    std::string toDbString() const;
 
     /**
      * @brief From DB string to trantor local time zone.
@@ -240,6 +251,12 @@ class TRANTOR_EXPORT Date
      * Inverse of toDbStringLocal()
      */
     static Date fromDbStringLocal(const std::string &datetime);
+    /**
+     * @brief From DB string to trantor UTC time.
+     *
+     * Inverse of toDbString()
+     */
+    static Date fromDbString(const std::string &datetime);
 
     /**
      * @brief Generate a UTC time string.

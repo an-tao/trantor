@@ -145,19 +145,36 @@ void TcpServer::start()
 }
 void TcpServer::stop()
 {
-    loop_->runInLoop([this]() { acceptorPtr_.reset(); });
-    for (auto connection : connSet_)
+    if (loop_->isInLoopThread())
     {
-        connection->forceClose();
+        acceptorPtr_.reset();
+        for (auto connection : connSet_)
+        {
+            connection->forceClose();
+        }
+    }
+    else
+    {
+        std::promise<void> pro;
+        auto f = pro.get_future();
+        loop_->queueInLoop([this, &pro]() {
+            acceptorPtr_.reset();
+            for (auto connection : connSet_)
+            {
+                connection->forceClose();
+            }
+            pro.set_value();
+        });
+        f.get();
     }
     loopPoolPtr_.reset();
     for (auto &iter : timingWheelMap_)
     {
-        std::promise<int> pro;
+        std::promise<void> pro;
         auto f = pro.get_future();
         iter.second->getLoop()->runInLoop([&iter, &pro]() mutable {
             iter.second.reset();
-            pro.set_value(1);
+            pro.set_value();
         });
         f.get();
     }

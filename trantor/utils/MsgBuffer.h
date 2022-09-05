@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <string.h>
 #ifdef _WIN32
-using ssize_t = long long;
+using ssize_t = std::intptr_t;
 #endif
 
 namespace trantor

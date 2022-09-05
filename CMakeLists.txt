@@ -9,7 +9,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
 set(TRANTOR_MAJOR_VERSION 1)
 set(TRANTOR_MINOR_VERSION 5)
-set(TRANTOR_PATCH_VERSION 5)
+set(TRANTOR_PATCH_VERSION 6)
 set(TRANTOR_VERSION
     ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_PATCH_VERSION})
 
@@ -169,6 +169,8 @@ if(WIN32)
   if(OpenSSL_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE Crypt32 Secur32)
   endif(OpenSSL_FOUND)
+else(WIN32)
+  target_link_libraries(${PROJECT_NAME} PRIVATE pthread $<$<PLATFORM_ID:SunOS>:socket>)
 endif(WIN32)
 
 file(WRITE ${CMAKE_BINARY_DIR}/test_atomic.cpp

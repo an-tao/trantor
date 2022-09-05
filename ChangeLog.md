@@ -3,6 +3,38 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.6] - 2022-07-09
+
+### API changes list
+
+- Add support for sending data streams via callback.
+
+- Added mTLS support.
+
+### Changed
+
+- Make MsgBuffer constructor explicit.
+
+- Always queue connectDestroyed() in loop.
+
+- Stop calling abort() in runtime.
+
+- Give EventLoopThread::loop_ static lifetime.
+
+- Optimization SSL name matching.
+
+- Clarify SSL error message.
+
+- Rename BUILD_TRANTOR_SHARED to BUILD_SHARED_LIBS.
+
+### Fixed
+
+- Fix tolower with sanitizer cfi
+
+- include <pthread_np.h> unconditionally on freebsd
+
+- Fix thread sanitizer.
+
 ## [1.5.5] - 2022-02-19
 
 ### API changes list
@@ -412,7 +444,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.5...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.6...HEAD
+
+[1.5.6]: https://github.com/an-tao/trantor/compare/v1.5.5...v1.5.6
 
 [1.5.5]: https://github.com/an-tao/trantor/compare/v1.5.4...v1.5.5
 

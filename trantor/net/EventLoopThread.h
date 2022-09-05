@@ -48,7 +48,7 @@ class TRANTOR_EXPORT EventLoopThread : NonCopyable
      */
     EventLoop *getLoop() const
     {
-        return loop_;
+        return loop_.get();
     }
 
     /**
@@ -59,10 +59,13 @@ class TRANTOR_EXPORT EventLoopThread : NonCopyable
     void run();
 
   private:
-    EventLoop *loop_;
+    // With C++20, use std::atomic<std::shared_ptr<EventLoop>>
+    std::shared_ptr<EventLoop> loop_;
+    std::mutex loopMutex_;
+
     std::string loopThreadName_;
     void loopFuncs();
-    std::promise<EventLoop *> promiseForLoopPointer_;
+    std::promise<std::shared_ptr<EventLoop>> promiseForLoopPointer_;
     std::promise<int> promiseForRun_;
     std::promise<int> promiseForLoop_;
     std::once_flag once_;
