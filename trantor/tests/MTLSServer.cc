@@ -1,47 +1,49 @@
 /**
- * 
+ *
  * # Generate CA file
  * openssl req -new -x509 -days 365 -keyout ca-key.pem -out ca-crt.pem
- * 
- * # Generate Key File (ie: same for client and server, but you can create one for each one)
- * openssl genrsa -out server-key.pem 4096
- * 
+ *
+ * # Generate Key File (ie: same for client and server, but you can create one
+ * for each one) openssl genrsa -out server-key.pem 4096
+ *
  * # Generate Server certificate:
  * openssl req -new -sha256 -key server-key.pem -out ca-csr.pem
- * openssl x509 -req -days 365 -in ca-csr.pem -CA ca-crt.pem -CAkey ca-key.pem -CAcreateserial -out server-crt.pem
- * openssl verify -CAfile ca-crt.pem server-crt.pem
- * 
- * 
+ * openssl x509 -req -days 365 -in ca-csr.pem -CA ca-crt.pem -CAkey ca-key.pem
+ * -CAcreateserial -out server-crt.pem openssl verify -CAfile ca-crt.pem
+ * server-crt.pem
+ *
+ *
  * # For client (to specify a certificate client mode only - no domain):
  * # Create file client_cert_ext.cnf:
  * cat client_cert_ext.cnf
-
-    keyUsage = critical, digitalSignature, keyEncipherment
-    extendedKeyUsage = clientAuth
-    basicConstraints = critical, CA:FALSE
-    authorityKeyIdentifier = keyid,issuer
-    subjectAltName = DNS:Client
- * 
+ *
+ *   keyUsage = critical, digitalSignature, keyEncipherment
+ *   extendedKeyUsage = clientAuth
+ *   basicConstraints = critical, CA:FALSE
+ *   authorityKeyIdentifier = keyid,issuer
+ *   subjectAltName = DNS:Client
+ *
  * Create client cert (using the same serve key and CA)
- * openssl x509 -req -in ca-csr.pem -days 1000 -CA ca-crt.pem -CAkey ca-key.pem -set_serial 01 -extfile client_cert_ext.cnf  > client-crt.pem
- * 
+ * openssl x509 -req -in ca-csr.pem -days 1000 -CA ca-crt.pem -CAkey ca-key.pem
+ * -set_serial 01 -extfile client_cert_ext.cnf  > client-crt.pem
+ *
  * openssl verify -CAfile ca-crt.pem client-crt.pem
  * openssl x509 -in client-crt.pem -text -noout -purpose
- * 
+ *
  * # Compile sample:
- * 
+ *
  * g++ -o MTLSServer MTLSServer.cc -ltrantor -lssl -lcrypto -lpthread
- * 
+ *
  * # Tests
- * 
+ *
  * # Should Fail
  * openssl s_client -connect 0.0.0.0:8888 -state
- * 
- * # Should Connect (the CA file must be the server CA), for this sample the CA is common for both
- * openssl s_client -connect 0.0.0.0:8888 -key ./server-key.pem -cert ./server-crt.pem -CAfile ./ca-crt.pem -state
- * 
+ *
+ * # Should Connect (the CA file must be the server CA), for this sample the CA
+ * is common for both openssl s_client -connect 0.0.0.0:8888 -key
+ * ./server-key.pem -cert ./server-crt.pem -CAfile ./ca-crt.pem -state
+ *
  * **/
-
 
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
@@ -64,8 +66,10 @@ int main()
     TcpServer server(loopThread.getLoop(), addr, "test");
     std::vector<std::pair<std::string, std::string>> sslcmd = {};
 
-    //the CA file must be the client CA, for this sample the CA is common for both
-    server.enableSSL("server-crt.pem", "server-key.pem",false, sslcmd, "ca-crt.pem");
+    // the CA file must be the client CA, for this sample the CA is common for
+    // both
+    server.enableSSL(
+        "server-crt.pem", "server-key.pem", false, sslcmd, "ca-crt.pem");
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             // LOG_DEBUG<<"recv callback!";
