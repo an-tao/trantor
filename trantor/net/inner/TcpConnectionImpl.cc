@@ -321,9 +321,12 @@ std::shared_ptr<SSLContext> newSSLServerContext(
         throw std::runtime_error("SSL_CTX_check_private_key error");
     }
 
-    if (!SSL_CTX_set_ecdh_auto(ctx->get(),1)){
+    if (!SSL_CTX_set_ecdh_auto(ctx->get(), 1))
+    {
         LOG_TRACE << "Failed to set_ecdh_auto, set_ecdh_auto DISABLED";
-    }else{
+    }
+    else
+    {
         LOG_TRACE << "set_ecdh_auto ENABLED";
     }
 
@@ -2020,7 +2023,7 @@ std::string TcpConnectionImpl::getOpenSSLErrorStack()
     std::string ret(buf, len);
     BIO_free(bio);
     return ret;
-} 
+}
 
 void TcpConnectionImpl::doHandshaking()
 {
@@ -2031,7 +2034,8 @@ void TcpConnectionImpl::doHandshaking()
     if (r == 1)
     {
         // Clients don't commonly have certificates (except on mTLS).
-        // So if the SSL session is on server-side and without mTLS enabled, let's not validate the client certificate. 
+        // So if the SSL session is on server-side and without mTLS enabled,
+        // let's not validate the client certificate.
         if (validateCert_ && (!sslEncryptionPtr_->isServer_ ||
                               sslEncryptionPtr_->sslPtr_->mtlsEnabled))
         {
@@ -2076,9 +2080,7 @@ void TcpConnectionImpl::doHandshaking()
     }
     else
     {
-        // ERR_print_errors(err);
         LOG_TRACE << "SSL handshake err: " << err;
-        // ERR_print_errors_fp (stderr);
         LOG_TRACE << "SSL error stack: " << getOpenSSLErrorStack();
         ioChannelPtr_->disableReading();
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
