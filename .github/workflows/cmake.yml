@@ -62,10 +62,10 @@ jobs:
             buildname: 'ubuntu-20.04/gcc'
             triplet: x64-linux
             compiler: gcc_64
-          # - os: ubuntu-16.04
-          #   buildname: 'ubuntu-16.04/gcc'
-          #   triplet: x64-linux
-          #   compiler: gcc_64
+          - os: ubuntu-20.04
+            buildname: 'ubuntu-20.04/gcc without openssl'
+            triplet: x64-linux
+            compiler: gcc_64
           - os: macos-latest
             buildname: 'macos/clang'
             triplet: x64-osx
@@ -84,14 +84,20 @@ jobs:
         brew install c-ares openssl
 
     - name: (Linux) Install dependencies
-      if: runner.os == 'Linux'
+      if: matrix.buildname == 'ubuntu-20.04/gcc'
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
         # These aren't available or don't work well in vcpkg
         sudo apt install openssl libssl-dev
         sudo apt install dos2unix
-
+    - name: (Linux) Install dependencies
+      if: matrix.buildname == 'ubuntu-20.04/gcc without openssl'
+      run: |
+        # Installing packages might fail as the github image becomes outdated
+        sudo apt update
+        # These aren't available or don't work well in vcpkg
+        sudo apt install dos2unix
     - name: install gtest
       run: |
         wget https://github.com/google/googletest/archive/release-1.10.0.tar.gz
