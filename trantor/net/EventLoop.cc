@@ -170,6 +170,31 @@ void EventLoop::quit()
         wakeup();
     }
 }
+
+
+// The event loop needs a scope exit, so here's the simplest most limited
+// C++14 scope exit available (from https://stackoverflow.com/a/42506763/3173540)
+//
+// TODO: If this is needed anywhere else, introduce a proper on_exit from, for example,
+// the GSL library
+namespace
+{   
+template <typename F>
+struct ScopeExit
+{
+    ScopeExit(F&& f) : m_f(std::forward<F>(f)) {}
+    ~ScopeExit() { m_f(); }
+    F m_f;
+};
+
+
+template <typename F>
+ScopeExit<F> makeScopeExit(F&& f)
+{
+    return ScopeExit<F>(std::forward<F>(f));
+};
+}
+
 void EventLoop::loop()
 {
     assert(!looping_);
@@ -177,36 +202,55 @@ void EventLoop::loop()
     looping_.store(true, std::memory_order_release);
     quit_.store(false, std::memory_order_release);
 
-    while (!quit_.load(std::memory_order_acquire))
-    {
-        activeChannels_.clear();
-#ifdef __linux__
-        poller_->poll(kPollTimeMs, &activeChannels_);
-#else
-        poller_->poll(static_cast<int>(timerQueue_->getTimeout()),
-                      &activeChannels_);
-        timerQueue_->processTimers();
-#endif
-        // TODO sort channel by priority
-        // std::cout<<"after ->poll()"<<std::endl;
-        eventHandling_ = true;
-        for (auto it = activeChannels_.begin(); it != activeChannels_.end();
-             ++it)
+    std::exception_ptr loopException;
+    try
+    { //Scope where the loop flag is set
+    
+        auto loopFlagCleaner = makeScopeExit([this](){looping_.store(false, std::memory_order_release);});
+        while (!quit_.load(std::memory_order_acquire))
         {
-            currentActiveChannel_ = *it;
-            currentActiveChannel_->handleEvent();
+            activeChannels_.clear();
+#ifdef __linux__
+            poller_->poll(kPollTimeMs, &activeChannels_);
+#else
+            poller_->poll(static_cast<int>(timerQueue_->getTimeout()),
+                        &activeChannels_);
+            timerQueue_->processTimers();
+#endif
+            // TODO sort channel by priority
+            // std::cout<<"after ->poll()"<<std::endl;
+            eventHandling_ = true;
+            for (auto it = activeChannels_.begin(); it != activeChannels_.end();
+                ++it)
+            {
+                currentActiveChannel_ = *it;
+                currentActiveChannel_->handleEvent();
+            }
+            currentActiveChannel_ = nullptr;
+            eventHandling_ = false;
+            // std::cout << "looping" << endl;
+            doRunInLoopFuncs();
         }
-        currentActiveChannel_ = nullptr;
-        eventHandling_ = false;
-        // std::cout << "looping" << endl;
-        doRunInLoopFuncs();
+        // loopFlagCleaner clears the loop flag here
     }
-    looping_.store(false, std::memory_order_release);
+    catch (std::exception & e) {
+        LOG_WARN << "Exception thrown from event loop, rethrowing after running functions on quit";
+        loopException = std::current_exception();
+    }
 
+    // Run the quit functions even if exceptions were thrown
+    // TOOD: if more exceptions are thrown in the quit functions, some are left 
+    // un-run. Can this be made exception safe?
     Func f;
     while (funcsOnQuit_.dequeue(f))
     {
         f();
+    }
+
+    // Throw the exception from the end
+    if (loopException) {
+        LOG_WARN << "Rethrowing exception from even loop";
+        std::rethrow_exception(loopException);
     }
 }
 void EventLoop::abortNotInLoopThread()
@@ -283,8 +327,13 @@ void EventLoop::doRunInLoopFuncs()
 {
     callingFuncs_ = true;
     {
+        // Assure the flag is cleared even if func throws
+        auto callingFlagCleaner = makeScopeExit([this](){callingFuncs_ = false;});
         // the destructor for the Func may itself insert a new entry into the
         // queue
+        // TODO: The following is exception-unsafe. If one  of the funcs throws,
+        // the remaining ones will not get run. The simplest fix is to catch any exceptions
+        // and rethrow them later, but somehow that seems fishy...
         while (!funcs_.empty())
         {
             Func func;
@@ -294,7 +343,6 @@ void EventLoop::doRunInLoopFuncs()
             }
         }
     }
-    callingFuncs_ = false;
 }
 void EventLoop::wakeup()
 {
