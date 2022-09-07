@@ -148,7 +148,14 @@ void TcpServer::stop()
     if (loop_->isInLoopThread())
     {
         acceptorPtr_.reset();
-        for (auto connection : connSet_)
+        // copy the connSet_ to a vector, use the vector to close the
+        // connections to avoid the iterator invalid.
+        std::vector<TcpConnectionPtr> connPtrs;
+        for (auto &conn : connSet_)
+        {
+            connPtrs.push_back(conn);
+        }
+        for (auto connection : connPtrs)
         {
             connection->forceClose();
         }
@@ -159,7 +166,12 @@ void TcpServer::stop()
         auto f = pro.get_future();
         loop_->queueInLoop([this, &pro]() {
             acceptorPtr_.reset();
-            for (auto connection : connSet_)
+            std::vector<TcpConnectionPtr> connPtrs;
+            for (auto &conn : connSet_)
+            {
+                connPtrs.push_back(conn);
+            }
+            for (auto connection : connPtrs)
             {
                 connection->forceClose();
             }
