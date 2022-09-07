@@ -149,8 +149,9 @@ void TcpServer::stop()
     {
         acceptorPtr_.reset();
         // copy the connSet_ to a vector, use the vector to close the
-        // connections to avoid the iterator invalid.
+        // connections to avoid the iterator invalidation.
         std::vector<TcpConnectionPtr> connPtrs;
+        connPtrs.reserve(connSet_.size());
         for (auto &conn : connSet_)
         {
             connPtrs.push_back(conn);
@@ -167,6 +168,7 @@ void TcpServer::stop()
         loop_->queueInLoop([this, &pro]() {
             acceptorPtr_.reset();
             std::vector<TcpConnectionPtr> connPtrs;
+            connPtrs.reserve(connSet_.size());
             for (auto &conn : connSet_)
             {
                 connPtrs.push_back(conn);
