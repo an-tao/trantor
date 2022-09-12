@@ -182,14 +182,14 @@ namespace
 template <typename F>
 struct ScopeExit
 {
-    ScopeExit(F &&f) : m_f(std::forward<F>(f))
+    ScopeExit(F &&f) : f_(std::forward<F>(f))
     {
     }
     ~ScopeExit()
     {
-        m_f();
+        f_();
     }
-    F m_f;
+    F f_;
 };
 
 template <typename F>
@@ -246,7 +246,7 @@ void EventLoop::loop()
     }
 
     // Run the quit functions even if exceptions were thrown
-    // TOOD: if more exceptions are thrown in the quit functions, some are left
+    // TODO: if more exceptions are thrown in the quit functions, some are left
     // un-run. Can this be made exception safe?
     Func f;
     while (funcsOnQuit_.dequeue(f))
@@ -257,7 +257,7 @@ void EventLoop::loop()
     // Throw the exception from the end
     if (loopException)
     {
-        LOG_WARN << "Rethrowing exception from even loop";
+        LOG_WARN << "Rethrowing exception from event loop";
         std::rethrow_exception(loopException);
     }
 }
