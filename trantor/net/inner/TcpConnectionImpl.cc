@@ -321,11 +321,19 @@ std::shared_ptr<SSLContext> newSSLServerContext(
         throw std::runtime_error("SSL_CTX_check_private_key error");
     }
 
+    if (!SSL_CTX_set_ecdh_auto(ctx->get(), 1))
+    {
+        LOG_TRACE << "Failed to set_ecdh_auto, set_ecdh_auto DISABLED";
+    }
+    else
+    {
+        LOG_TRACE << "set_ecdh_auto ENABLED";
+    }
+
     if (!caPath.empty())
     {
         auto checkCA =
             SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
-        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
         if (checkCA)
         {
             STACK_OF(X509_NAME) *cert_names =
@@ -335,6 +343,7 @@ std::shared_ptr<SSLContext> newSSLServerContext(
                 SSL_CTX_set_client_CA_list(ctx->get(), cert_names);
             }
             ctx->mtlsEnabled = true;
+            LOG_TRACE << "mTLS session ENABLED";
         }
         else
         {
@@ -2005,6 +2014,17 @@ bool TcpConnectionImpl::validatePeerCertificate()
     }
 }
 
+std::string TcpConnectionImpl::getOpenSSLErrorStack()
+{
+    BIO *bio = BIO_new(BIO_s_mem());
+    ERR_print_errors(bio);
+    char *buf;
+    size_t len = BIO_get_mem_data(bio, &buf);
+    std::string ret(buf, len);
+    BIO_free(bio);
+    return ret;
+}
+
 void TcpConnectionImpl::doHandshaking()
 {
     assert(sslEncryptionPtr_->statusOfSSL_ == SSLStatus::Handshaking);
@@ -2013,8 +2033,9 @@ void TcpConnectionImpl::doHandshaking()
     LOG_TRACE << "hand shaking: " << r;
     if (r == 1)
     {
-        // Clients don't commonly have certificates. Let's not validate
-        // that
+        // Clients don't commonly have certificates (except on mTLS).
+        // So if the SSL session is on server-side and without mTLS enabled,
+        // let's not validate the client certificate.
         if (validateCert_ && (!sslEncryptionPtr_->isServer_ ||
                               sslEncryptionPtr_->sslPtr_->mtlsEnabled))
         {
@@ -2059,8 +2080,8 @@ void TcpConnectionImpl::doHandshaking()
     }
     else
     {
-        // ERR_print_errors(err);
         LOG_TRACE << "SSL handshake err: " << err;
+        LOG_TRACE << "SSL error stack: " << getOpenSSLErrorStack();
         ioChannelPtr_->disableReading();
         sslEncryptionPtr_->statusOfSSL_ = SSLStatus::DisConnected;
         if (sslErrorCallback_)
