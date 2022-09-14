@@ -63,7 +63,6 @@ void EventLoopThread::loopFuncs()
     auto f = promiseForRun_.get_future();
     (void)f.get();
     loop->loop();
-    // LOG_DEBUG << "loop out";
     {
         std::unique_lock<std::mutex> lk(loopMutex_);
         loop_ = nullptr;
