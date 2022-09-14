@@ -131,7 +131,6 @@ void AresResolver::resolveInLoop(const std::string& hostname,
     struct timeval tv;
     struct timeval* tvp = ares_timeout(ctx_, NULL, &tv);
     double timeout = getSeconds(tvp);
-    // LOG_DEBUG << "timeout " << timeout << " active " << timerActive_;
     if (!timerActive_ && timeout >= 0.0)
     {
         loop_->runAfter(timeout,

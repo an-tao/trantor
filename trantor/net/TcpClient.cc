@@ -177,7 +177,7 @@ void TcpClient::newConnection(int sockfd)
             // Else the TcpClient instance has already been destroyed
             else
             {
-                LOG_DEBUG << "TcpClient::removeConnection was skipped because "
+                LOG_TRACE << "TcpClient::removeConnection was skipped because "
                              "TcpClient instanced already freed";
                 c->getLoop()->queueInLoop(
                     std::bind(&TcpConnectionImpl::connectDestroyed,

@@ -398,7 +398,7 @@ std::shared_ptr<SSLContext> newSSLClientContext(
     {
         auto checkCA =
             SSL_CTX_load_verify_locations(ctx->get(), caPath.c_str(), NULL);
-        LOG_DEBUG << "CA CHECK LOC: " << checkCA;
+        LOG_TRACE << "CA CHECK LOC: " << checkCA;
         if (checkCA)
         {
             STACK_OF(X509_NAME) *cert_names =
@@ -485,7 +485,7 @@ void TcpConnectionImpl::startClientEncryptionInLoop(
                                   sslEncryptionPtr_->sslCtxPtr_->mtlsEnabled);
     if (validateCert || sslEncryptionPtr_->sslPtr_->mtlsEnabled)
     {
-        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
+        LOG_TRACE << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        sslEncryptionPtr_->sslPtr_->mtlsEnabled
                            ? SSL_VERIFY_PEER
@@ -532,7 +532,7 @@ void TcpConnectionImpl::startServerEncryptionInLoop(
     if (sslEncryptionPtr_->isServer_ == false ||
         sslEncryptionPtr_->sslPtr_->mtlsEnabled)
     {
-        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
+        LOG_TRACE << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        sslEncryptionPtr_->sslPtr_->mtlsEnabled
                            ? SSL_VERIFY_PEER
@@ -652,10 +652,10 @@ void TcpConnectionImpl::readCallback()
             if (errno == EPIPE || errno == ECONNRESET)
             {
 #ifdef _WIN32
-                LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno=" << errno
+                LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << errno
                           << " fd=" << socketPtr_->fd();
 #else
-            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno
+            LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno
                       << " fd=" << socketPtr_->fd();
 #endif
                 return;
@@ -663,14 +663,14 @@ void TcpConnectionImpl::readCallback()
 #ifdef _WIN32
             if (errno == WSAECONNABORTED)
             {
-                LOG_DEBUG << "WSAECONNABORTED, errno=" << errno;
+                LOG_TRACE << "WSAECONNABORTED, errno=" << errno;
                 handleClose();
                 return;
             }
 #else
         if (errno == EAGAIN)  // TODO: any others?
         {
-            LOG_DEBUG << "EAGAIN, errno=" << errno
+            LOG_TRACE << "EAGAIN, errno=" << errno
                       << " fd=" << socketPtr_->fd();
             return;
         }
@@ -821,11 +821,11 @@ void TcpConnectionImpl::writeCallback()
                             if (errno == EPIPE || errno == ECONNRESET)
                             {
 #ifdef _WIN32
-                                LOG_DEBUG
+                                LOG_TRACE
                                     << "WSAENOTCONN or WSAECONNRESET, errno="
                                     << errno;
 #else
-                            LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+                            LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
                                 return;
                             }
@@ -880,11 +880,11 @@ void TcpConnectionImpl::writeCallback()
                                     if (errno == EPIPE || errno == ECONNRESET)
                                     {
 #ifdef _WIN32
-                                        LOG_DEBUG << "WSAENOTCONN or "
+                                        LOG_TRACE << "WSAENOTCONN or "
                                                      "WSAECONNRESET, errno="
                                                   << errno;
 #else
-                                    LOG_DEBUG << "EPIPE or "
+                                    LOG_TRACE << "EPIPE or "
                                                  "ECONNRESET, erron="
                                               << errno;
 #endif
@@ -996,7 +996,7 @@ void TcpConnectionImpl::handleError()
 #endif
         err == ECONNRESET)
     {
-        LOG_DEBUG << "[" << name_ << "] - SO_ERROR = " << err << " "
+        LOG_TRACE << "[" << name_ << "] - SO_ERROR = " << err << " "
                   << strerror_tl(err);
     }
     else
@@ -1079,10 +1079,10 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
                 if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
                 {
 #ifdef _WIN32
-                    LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
+                    LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno="
                               << errno;
 #else
-                    LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+                    LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
                     return;
                 }
@@ -1698,13 +1698,13 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                 if (errno == EPIPE || errno == ECONNRESET)
                 {
 #ifdef _WIN32
-                    LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
+                    LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno="
                               << errno;
 #else
-                    LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+                    LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
                     // abort
-                    LOG_DEBUG
+                    LOG_TRACE
                         << "send stream in loop: return on connection closed";
                     filePtr->fileBytesToSend_ = 0;
                     return;
@@ -1788,12 +1788,12 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
                     if (errno == EPIPE || errno == ECONNRESET)
                     {
 #ifdef _WIN32
-                        LOG_DEBUG << "WSAENOTCONN or WSAECONNRESET, errno="
+                        LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno="
                                   << errno;
 #else
-                        LOG_DEBUG << "EPIPE or ECONNRESET, errno=" << errno;
+                        LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
-                        LOG_DEBUG
+                        LOG_TRACE
                             << "send file in loop: return on connection closed";
                         return;
                     }
@@ -1937,7 +1937,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     validateCert_ = validateCert;
     if (isServer == false || sslEncryptionPtr_->sslPtr_->mtlsEnabled)
     {
-        LOG_DEBUG << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
+        LOG_TRACE << "MTLS: " << sslEncryptionPtr_->sslPtr_->mtlsEnabled;
         SSL_set_verify(sslEncryptionPtr_->sslPtr_->get(),
                        sslEncryptionPtr_->sslPtr_->mtlsEnabled
                            ? SSL_VERIFY_PEER
@@ -1975,14 +1975,14 @@ bool TcpConnectionImpl::validatePeerCertificate()
         result != X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN &&
         result != X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
     {
-        LOG_DEBUG << "cert error code: " << result;
+        LOG_TRACE << "cert error code: " << result;
         LOG_ERROR << "Server certificate is not valid";
         return false;
     }
 #else
     if (result != X509_V_OK && result)
     {
-        LOG_DEBUG << "cert error code: " << result;
+        LOG_TRACE << "cert error code: " << result;
         LOG_ERROR << "Server certificate is not valid";
         return false;
     }
@@ -2000,7 +2000,7 @@ bool TcpConnectionImpl::validatePeerCertificate()
         internal::verifyAltName(cert, sslEncryptionPtr_->hostname_);
     X509_free(cert);
 
-    LOG_DEBUG << "domainIsValid: " << domainIsValid;
+    LOG_TRACE << "domainIsValid: " << domainIsValid;
 
     // if mtlsEnabled, ignore domain validation
     if (sslEncryptionPtr_->sslPtr_->mtlsEnabled || domainIsValid)

@@ -60,7 +60,7 @@ void Connector::startInLoop()
     }
     else
     {
-        LOG_DEBUG << "do not connect";
+        LOG_TRACE << "do not connect";
     }
 }
 void Connector::connect()
@@ -272,6 +272,6 @@ void Connector::retry(int sockfd)
     }
     else
     {
-        LOG_DEBUG << "do not connect";
+        LOG_TRACE << "do not connect";
     }
 }
