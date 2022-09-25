@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.7] - 2022-09-25
+
+### API changes list
+
+- Add utc methods for trantor::Date.
+
+### Changed
+
+- Remove an unnecessary semi-colon.
+
+- Added support for Solaris.
+
+- Define ssize_t as std::intptr_t on Windows.
+
+- Add an environment without openssl to github actions.
+
+- Added SSL Error Trace Log and mTLS Samples.
+
+- Use LOG_TRACE instead of LOG_DEBUG.
+
+### Fixed
+
+- Fix a race condition.
+
+- Fix iterator invalidation bug when stopping TCP server.
+
+- Partial fix of exception safety in the event loop.
+
 ## [1.5.6] - 2022-07-09
 
 ### API changes list
@@ -444,7 +472,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.6...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.7...HEAD
+
+[1.5.7]: https://github.com/an-tao/trantor/compare/v1.5.6...v1.5.7
 
 [1.5.6]: https://github.com/an-tao/trantor/compare/v1.5.5...v1.5.6
 
