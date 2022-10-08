@@ -77,7 +77,7 @@ class Connector : public NonCopyable,
     int maxRetryInterval_{kMaxRetryDelayMs};
 
     bool retry_;
-    bool sockedHanded_{false};
+    bool socketHanded_{false};
     int fd_{-1};
 
     void startInLoop();

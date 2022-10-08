@@ -29,7 +29,7 @@ Connector::Connector(EventLoop *loop, InetAddress &&addr, bool retry)
 
 Connector::~Connector()
 {
-    if (sockedHanded_ == false && fd_ != -1)
+    if (socketHanded_ == false && fd_ != -1)
     {
         close(fd_);
     }
@@ -73,7 +73,7 @@ void Connector::startInLoop()
 }
 void Connector::connect()
 {
-    sockedHanded_ = false;
+    socketHanded_ = false;
     fd_ = Socket::createNonblockingSocketOrDie(serverAddr_.family());
     errno = 0;
     int ret = Socket::connect(fd_, serverAddr_);
@@ -108,6 +108,7 @@ void Connector::connect()
         case ENOTSOCK:
             LOG_SYSERR << "connect error in Connector::startInLoop "
                        << savedErrno;
+            socketHanded_ = true;
 #ifndef _WIN32
             ::close(fd_);
 #else
@@ -120,6 +121,7 @@ void Connector::connect()
         default:
             LOG_SYSERR << "Unexpected error in Connector::startInLoop "
                        << savedErrno;
+            socketHanded_ = true;
 #ifndef _WIN32
             ::close(fd_);
 #else
@@ -163,7 +165,7 @@ int Connector::removeAndResetChannel()
 
 void Connector::handleWrite()
 {
-    sockedHanded_ = true;
+    socketHanded_ = true;
     if (status_ == Status::Connecting)
     {
         int sockfd = removeAndResetChannel();
@@ -178,6 +180,7 @@ void Connector::handleWrite()
             }
             else
             {
+                socketHanded_ = true;
 #ifndef _WIN32
                 ::close(sockfd);
 #else
@@ -198,6 +201,7 @@ void Connector::handleWrite()
             }
             else
             {
+                socketHanded_ = true;
 #ifndef _WIN32
                 ::close(sockfd);
 #else
@@ -218,6 +222,7 @@ void Connector::handleWrite()
             }
             else
             {
+                socketHanded_ = true;
 #ifndef _WIN32
                 ::close(sockfd);
 #else
@@ -235,7 +240,7 @@ void Connector::handleWrite()
 
 void Connector::handleError()
 {
-    sockedHanded_ = true;
+    socketHanded_ = true;
     if (status_ == Status::Connecting)
     {
         status_ = Status::Disconnected;
