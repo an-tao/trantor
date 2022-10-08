@@ -41,7 +41,7 @@ Connector::~Connector()
 
 void Connector::start()
 {
-    connect_.store(true, std::memory_order_acq_rel);
+    connect_ = true;
     loop_->runInLoop([this]() { startInLoop(); });
 }
 void Connector::restart()
