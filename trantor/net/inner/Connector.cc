@@ -31,13 +31,17 @@ Connector::~Connector()
 {
     if (socketHanded_ == false && fd_ != -1)
     {
-        close(fd_);
+#ifndef _WIN32
+            ::close(fd_);
+#else
+            closesocket(fd_);
+#endif
     }
 }
 
 void Connector::start()
 {
-    connect_.store(true, std::memory_order_acquire);
+    connect_.store(true, std::memory_order_acq_rel);
     loop_->runInLoop([this]() { startInLoop(); });
 }
 void Connector::restart()
