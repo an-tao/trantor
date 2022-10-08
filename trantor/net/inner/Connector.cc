@@ -27,6 +27,18 @@ Connector::Connector(EventLoop *loop, InetAddress &&addr, bool retry)
 {
 }
 
+Connector::~Connector()
+{
+    if (socketHanded_ == false && fd_ != -1)
+    {
+#ifndef _WIN32
+        ::close(fd_);
+#else
+        closesocket(fd_);
+#endif
+    }
+}
+
 void Connector::start()
 {
     connect_ = true;
@@ -65,9 +77,10 @@ void Connector::startInLoop()
 }
 void Connector::connect()
 {
-    int sockfd = Socket::createNonblockingSocketOrDie(serverAddr_.family());
+    socketHanded_ = false;
+    fd_ = Socket::createNonblockingSocketOrDie(serverAddr_.family());
     errno = 0;
-    int ret = Socket::connect(sockfd, serverAddr_);
+    int ret = Socket::connect(fd_, serverAddr_);
     int savedErrno = (ret == 0) ? 0 : errno;
     switch (savedErrno)
     {
@@ -76,7 +89,7 @@ void Connector::connect()
         case EINTR:
         case EISCONN:
             LOG_TRACE << "connecting";
-            connecting(sockfd);
+            connecting(fd_);
             break;
 
         case EAGAIN:
@@ -86,7 +99,7 @@ void Connector::connect()
         case ENETUNREACH:
             if (retry_)
             {
-                retry(sockfd);
+                retry(fd_);
             }
             break;
 
@@ -99,10 +112,11 @@ void Connector::connect()
         case ENOTSOCK:
             LOG_SYSERR << "connect error in Connector::startInLoop "
                        << savedErrno;
+            socketHanded_ = true;
 #ifndef _WIN32
-            ::close(sockfd);
+            ::close(fd_);
 #else
-            closesocket(sockfd);
+            closesocket(fd_);
 #endif
             if (errorCallback_)
                 errorCallback_();
@@ -111,10 +125,11 @@ void Connector::connect()
         default:
             LOG_SYSERR << "Unexpected error in Connector::startInLoop "
                        << savedErrno;
+            socketHanded_ = true;
 #ifndef _WIN32
-            ::close(sockfd);
+            ::close(fd_);
 #else
-            closesocket(sockfd);
+            closesocket(fd_);
 #endif
             if (errorCallback_)
                 errorCallback_();
@@ -154,6 +169,7 @@ int Connector::removeAndResetChannel()
 
 void Connector::handleWrite()
 {
+    socketHanded_ = true;
     if (status_ == Status::Connecting)
     {
         int sockfd = removeAndResetChannel();
@@ -168,6 +184,7 @@ void Connector::handleWrite()
             }
             else
             {
+                socketHanded_ = true;
 #ifndef _WIN32
                 ::close(sockfd);
 #else
@@ -188,6 +205,7 @@ void Connector::handleWrite()
             }
             else
             {
+                socketHanded_ = true;
 #ifndef _WIN32
                 ::close(sockfd);
 #else
@@ -208,6 +226,7 @@ void Connector::handleWrite()
             }
             else
             {
+                socketHanded_ = true;
 #ifndef _WIN32
                 ::close(sockfd);
 #else
@@ -225,6 +244,7 @@ void Connector::handleWrite()
 
 void Connector::handleError()
 {
+    socketHanded_ = true;
     if (status_ == Status::Connecting)
     {
         status_ = Status::Disconnected;

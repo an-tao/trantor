@@ -30,6 +30,7 @@ class Connector : public NonCopyable,
     using ConnectionErrorCallback = std::function<void()>;
     Connector(EventLoop *loop, const InetAddress &addr, bool retry = true);
     Connector(EventLoop *loop, InetAddress &&addr, bool retry = true);
+    ~Connector();
     void setNewConnectionCallback(const NewConnectionCallback &cb)
     {
         newConnectionCallback_ = cb;
@@ -76,6 +77,8 @@ class Connector : public NonCopyable,
     int maxRetryInterval_{kMaxRetryDelayMs};
 
     bool retry_;
+    bool socketHanded_{false};
+    int fd_{-1};
 
     void startInLoop();
     void connect();
