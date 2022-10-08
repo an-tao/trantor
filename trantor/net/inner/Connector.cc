@@ -27,9 +27,17 @@ Connector::Connector(EventLoop *loop, InetAddress &&addr, bool retry)
 {
 }
 
+Connector::~Connector()
+{
+    if (sockedHanded_ == false && fd_ != -1)
+    {
+        close(fd_);
+    }
+}
+
 void Connector::start()
 {
-    connect_ = true;
+    connect_.store(true, std::memory_order_acquire);
     loop_->runInLoop([this]() { startInLoop(); });
 }
 void Connector::restart()
@@ -65,9 +73,10 @@ void Connector::startInLoop()
 }
 void Connector::connect()
 {
-    int sockfd = Socket::createNonblockingSocketOrDie(serverAddr_.family());
+    sockedHanded_ = false;
+    fd_ = Socket::createNonblockingSocketOrDie(serverAddr_.family());
     errno = 0;
-    int ret = Socket::connect(sockfd, serverAddr_);
+    int ret = Socket::connect(fd_, serverAddr_);
     int savedErrno = (ret == 0) ? 0 : errno;
     switch (savedErrno)
     {
@@ -76,7 +85,7 @@ void Connector::connect()
         case EINTR:
         case EISCONN:
             LOG_TRACE << "connecting";
-            connecting(sockfd);
+            connecting(fd_);
             break;
 
         case EAGAIN:
@@ -86,7 +95,7 @@ void Connector::connect()
         case ENETUNREACH:
             if (retry_)
             {
-                retry(sockfd);
+                retry(fd_);
             }
             break;
 
@@ -100,9 +109,9 @@ void Connector::connect()
             LOG_SYSERR << "connect error in Connector::startInLoop "
                        << savedErrno;
 #ifndef _WIN32
-            ::close(sockfd);
+            ::close(fd_);
 #else
-            closesocket(sockfd);
+            closesocket(fd_);
 #endif
             if (errorCallback_)
                 errorCallback_();
@@ -112,9 +121,9 @@ void Connector::connect()
             LOG_SYSERR << "Unexpected error in Connector::startInLoop "
                        << savedErrno;
 #ifndef _WIN32
-            ::close(sockfd);
+            ::close(fd_);
 #else
-            closesocket(sockfd);
+            closesocket(fd_);
 #endif
             if (errorCallback_)
                 errorCallback_();
@@ -154,6 +163,7 @@ int Connector::removeAndResetChannel()
 
 void Connector::handleWrite()
 {
+    sockedHanded_ = true;
     if (status_ == Status::Connecting)
     {
         int sockfd = removeAndResetChannel();
@@ -225,6 +235,7 @@ void Connector::handleWrite()
 
 void Connector::handleError()
 {
+    sockedHanded_ = true;
     if (status_ == Status::Connecting)
     {
         status_ = Status::Disconnected;
