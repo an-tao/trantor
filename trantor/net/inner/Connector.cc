@@ -32,9 +32,9 @@ Connector::~Connector()
     if (socketHanded_ == false && fd_ != -1)
     {
 #ifndef _WIN32
-            ::close(fd_);
+        ::close(fd_);
 #else
-            closesocket(fd_);
+        closesocket(fd_);
 #endif
     }
 }
