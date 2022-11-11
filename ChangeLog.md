@@ -1,7 +1,20 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [1.5.8] - 2022-11-11
+
+### API Changes list
+
+### Changed
+
+### Fixed
+
+- Fix Date::timezoneOffset().
+
+- Fix socket fd leak if Connector destruct before connection callback is made.
 
 ## [1.5.7] - 2022-09-25
 
@@ -401,7 +414,6 @@ All notable changes to this project will be documented in this file.
 
 - Use the std::chrono::steady_clock for timers
 
-
 ## [1.0.0-rc7] - 2019-11-21
 
 ### Changed
@@ -430,7 +442,7 @@ All notable changes to this project will be documented in this file.
 
 - Add the Resolver class that provides high-performance DNS functionality(with c-ares library)
 - Add some unit tests.
-  
+
 ## [1.0.0-rc4] - 2019-08-08
 
 ### API changes list
@@ -472,7 +484,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.7...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.8...HEAD
+
+[1.5.8]: https://github.com/an-tao/trantor/compare/v1.5.7...v1.5.8
 
 [1.5.7]: https://github.com/an-tao/trantor/compare/v1.5.6...v1.5.7
 
