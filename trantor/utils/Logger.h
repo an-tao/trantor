@@ -56,7 +56,11 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         inline SourceFile(const char (&arr)[N]) : data_(arr), size_(N - 1)
         {
             // std::cout<<data_<<std::endl;
+#ifndef _MSC_VER
             const char *slash = strrchr(data_, '/');  // builtin function
+#else
+            const char *slash = strrchr(data_, '\\');
+#endif
             if (slash)
             {
                 data_ = slash + 1;
@@ -66,7 +70,11 @@ class TRANTOR_EXPORT Logger : public NonCopyable
 
         explicit SourceFile(const char *filename) : data_(filename)
         {
+#ifndef _MSC_VER
             const char *slash = strrchr(filename, '/');
+#else
+            const char *slash = strrchr(filename, '\\');
+#endif
             if (slash)
             {
                 data_ = slash + 1;
