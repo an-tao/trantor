@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.10] - 2023-01-23
+
+### API Changes list
+
+### Changed
+
+- Use gtest 1.13 in github actions
+
+### Fixed
+
 ## [1.5.9] - 2023-01-23
 
 ### API Changes list
@@ -494,7 +504,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.9...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.10...HEAD
+
+[1.5.10]: https://github.com/an-tao/trantor/compare/v1.5.9...v1.5.10
 
 [1.5.9]: https://github.com/an-tao/trantor/compare/v1.5.8...v1.5.9
 
