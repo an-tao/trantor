@@ -51,4 +51,5 @@ int main()
         client[i]->connect();
     }
     loop.loop();
+    LOG_WARN << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Loop ended!";
 }

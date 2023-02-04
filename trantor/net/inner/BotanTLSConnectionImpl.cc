@@ -19,8 +19,20 @@ BotanTLSConnectionImpl::BotanTLSConnectionImpl(TcpConnectionPtr rawConn)
 
 void BotanTLSConnectionImpl::onConnection(const TcpConnectionPtr &conn)
 {
-    LOG_TRACE << "Low level connection established. Starting TLS handshake.";
-    startClientEncryption([]{}, false, true);
+    if(conn->connected())
+    {
+        LOG_TRACE << "Low level connection established. Starting TLS handshake.";
+        rawConnPtr_->setContext(shared_from_this());
+        startClientEncryption([]{}, false, true);
+    }
+    else
+    {
+        LOG_TRACE << "Low level connection closed.";
+        closeCallback_(shared_from_this());
+        rawConnPtr_->getLoop()->queueInLoop([this]() {
+            rawConnPtr_->setContext(nullptr);
+        });
+    }
 }
 
 void BotanTLSConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn, MsgBuffer *buffer)
@@ -76,6 +88,11 @@ void BotanTLSConnectionImpl::tls_record_received(uint64_t, const uint8_t data[],
 void BotanTLSConnectionImpl::tls_alert(Botan::TLS::Alert alert)
 {
     LOG_TRACE << "tls_alert: " << alert.type_string();
+    if(alert.type() == Botan::TLS::Alert::CLOSE_NOTIFY)
+    {
+        closingTLS_ = true;
+        rawConnPtr_->shutdown();
+    }
 }
 
 bool BotanTLSConnectionImpl::tls_session_established(const Botan::TLS::Session& session)
@@ -89,5 +106,6 @@ bool BotanTLSConnectionImpl::tls_session_established(const Botan::TLS::Session& 
 
 void BotanTLSConnectionImpl::shutdown()
 {
-    client_->close();
+    // client_->close();
+    rawConnPtr_->shutdown();
 }

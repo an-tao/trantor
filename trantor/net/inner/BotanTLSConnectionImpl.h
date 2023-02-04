@@ -40,16 +40,16 @@ public:
     return nullptr;
   }
 
-    void tls_verify_cert_chain(
-          const std::vector<Botan::X509_Certificate>& cert_chain,
-          const std::vector<std::shared_ptr<const Botan::OCSP::Response>>& ocsp_responses,
-          const std::vector<Botan::Certificate_Store*>& trusted_roots,
-          Botan::Usage_Type usage,
-          const std::string& hostname,
-          const Botan::TLS::Policy& policy)
-    {
+    // void tls_verify_cert_chain(
+    //       const std::vector<Botan::X509_Certificate>& cert_chain,
+    //       const std::vector<std::shared_ptr<const Botan::OCSP::Response>>& ocsp_responses,
+    //       const std::vector<Botan::Certificate_Store*>& trusted_roots,
+    //       Botan::Usage_Type usage,
+    //       const std::string& hostname,
+    //       const Botan::TLS::Policy& policy)
+    // {
 
-    }
+    // }
 
 private:
   Botan::System_Certificate_Store m_cert_store;
@@ -88,8 +88,8 @@ public:
     virtual const InetAddress &peerAddr() const override { return rawConnPtr_->peerAddr(); }
 
     // TODO: add state to these functions
-    virtual bool connected() const override { return rawConnPtr_->connected(); }
-    virtual bool disconnected() const override { return rawConnPtr_->disconnected(); }
+    virtual bool connected() const override { return rawConnPtr_->connected() && !closingTLS_; }
+    virtual bool disconnected() const override { return rawConnPtr_->disconnected() || closingTLS_; }
 
     virtual MsgBuffer *getRecvBuffer() override { throw std::runtime_error("Not implemented"); }
     virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
@@ -141,5 +141,7 @@ protected:
     Client_Credentials creds_;
     std::unique_ptr<Botan::TLS::Client> client_;
     MsgBuffer recvBuffer_;
+
+    bool closingTLS_ = false;
 };
 }
