@@ -129,7 +129,7 @@ class TRANTOR_EXPORT TcpConnection
      *
      * @return MsgBuffer*
      */
-    virtual MsgBuffer *getRecvBuffer() = 0;
+    // virtual MsgBuffer *getRecvBuffer() = 0;
 
     /**
      * @brief Set the high water mark callback

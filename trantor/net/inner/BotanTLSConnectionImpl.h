@@ -91,7 +91,7 @@ public:
     virtual bool connected() const override { return rawConnPtr_->connected() && !closingTLS_; }
     virtual bool disconnected() const override { return rawConnPtr_->disconnected() || closingTLS_; }
 
-    virtual MsgBuffer *getRecvBuffer() override { throw std::runtime_error("Not implemented"); }
+    // virtual MsgBuffer *getRecvBuffer() override { throw std::runtime_error("Not implemented"); }
     virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
                                           size_t markLen) override { throw std::runtime_error("Not implemented"); }
     
@@ -101,7 +101,7 @@ public:
     virtual void setTcpNoDelay(bool on) override {rawConnPtr_->setTcpNoDelay(on);}
 
     virtual void shutdown() override;
-    virtual void forceClose() override { throw std::runtime_error("Not implemented"); }
+    virtual void forceClose() override;
 
     virtual EventLoop *getLoop() override { return rawConnPtr_->getLoop();}
     virtual size_t bytesSent() const override { return rawConnPtr_->bytesSent(); }

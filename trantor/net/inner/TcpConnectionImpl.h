@@ -105,10 +105,10 @@ class TcpConnectionImpl : public TcpConnection,
     }
 
     // virtual MsgBuffer* getSendBuffer() override{ return  &writeBuffer_;}
-    virtual MsgBuffer *getRecvBuffer() override
-    {
-        return &readBuffer_;
-    }
+    // virtual MsgBuffer *getRecvBuffer() override
+    // {
+    //     return &readBuffer_;
+    // }
     // set callbacks
     virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
                                           size_t markLen) override
