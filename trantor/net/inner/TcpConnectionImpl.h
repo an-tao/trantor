@@ -186,46 +186,6 @@ class TcpConnectionImpl : public TcpConnection,
 #else
     void sendFile(FILE *fp, size_t offset = 0, size_t length = 0);
 #endif
-    void setRecvMsgCallback(const RecvMessageCallback &cb)
-    {
-        recvMsgCallback_ = cb;
-    }
-    void setRecvMsgCallback(RecvMessageCallback &&cb)
-    {
-        recvMsgCallback_ = std::move(cb);
-    }
-    void setConnectionCallback(const ConnectionCallback &cb)
-    {
-        connectionCallback_ = cb;
-    }
-    void setConnectionCallback(ConnectionCallback &&cb)
-    {
-        connectionCallback_ = std::move(cb);
-    }
-    void setWriteCompleteCallback(const WriteCompleteCallback &cb)
-    {
-        writeCompleteCallback_ = cb;
-    }
-    void setWriteCompleteCallback(WriteCompleteCallback &&cb)
-    {
-        writeCompleteCallback_ = std::move(cb);
-    }
-    void setCloseCallback(const CloseCallback &cb)
-    {
-        closeCallback_ = cb;
-    }
-    void setCloseCallback(CloseCallback &&cb)
-    {
-        closeCallback_ = std::move(cb);
-    }
-    void setSSLErrorCallback(const SSLErrorCallback &cb)
-    {
-        sslErrorCallback_ = cb;
-    }
-    void setSSLErrorCallback(SSLErrorCallback &&cb)
-    {
-        sslErrorCallback_ = std::move(cb);
-    }
     void connectDestroyed();
     virtual void connectEstablished();
 
@@ -292,13 +252,6 @@ class TcpConnectionImpl : public TcpConnection,
     void writeCallback();
     InetAddress localAddr_, peerAddr_;
     ConnStatus status_{ConnStatus::Connecting};
-    // callbacks
-    RecvMessageCallback recvMsgCallback_;
-    ConnectionCallback connectionCallback_;
-    CloseCallback closeCallback_;
-    WriteCompleteCallback writeCompleteCallback_;
-    HighWaterMarkCallback highWaterMarkCallback_;
-    SSLErrorCallback sslErrorCallback_;
     void handleClose();
     void handleError();
     // virtual void sendInLoop(const std::string &msg);

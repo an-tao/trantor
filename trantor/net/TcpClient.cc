@@ -14,6 +14,7 @@
 #include <trantor/utils/Logger.h>
 #include "Connector.h"
 #include "inner/TcpConnectionImpl.h"
+#include "inner/BotanTLSConnectionImpl.h"
 #include <trantor/net/EventLoop.h>
 
 #include <functional>
@@ -139,9 +140,17 @@ void TcpClient::newConnection(int sockfd)
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
     // TODO poll with zero timeout to double confirm the new connection
     // TODO use make_shared if necessary
-    std::shared_ptr<TcpConnectionImpl> conn;
-    if (sslCtxPtr_)
+    TcpConnectionPtr conn;
+    TcpConnectionImplPtr lowLevelConn;
+    LOG_TRACE << "SSL enabled: " << (sslCtxPtr_ ? "true" : "false");
+    if (true)
     {
+        lowLevelConn = std::make_shared<TcpConnectionImpl>(loop_,
+                                                           sockfd,
+                                                           localAddr,
+                                                           peerAddr);
+        conn = std::make_shared<BotanTLSConnectionImpl>(lowLevelConn);
+        // TODO: Add other parameters
 #ifdef USE_OPENSSL
         conn = std::make_shared<TcpConnectionImpl>(loop_,
                                                    sockfd,
@@ -151,9 +160,6 @@ void TcpClient::newConnection(int sockfd)
                                                    false,
                                                    validateCert_,
                                                    SSLHostName_);
-#else
-        LOG_FATAL << "OpenSSL is not found in your system!";
-        throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
     }
     else
@@ -195,7 +201,13 @@ void TcpClient::newConnection(int sockfd)
             sslErrorCallback_(err);
         }
     });
-    conn->connectEstablished();
+
+    // HACK: implement the same API for BotanTLSConnectionImpl
+    auto ptr = std::dynamic_pointer_cast<TcpConnectionImpl>(conn);
+    if (ptr)
+        ptr->connectEstablished();
+    else if (lowLevelConn)
+        lowLevelConn->connectEstablished();
 }
 
 void TcpClient::removeConnection(const TcpConnectionPtr &conn)
@@ -254,7 +266,7 @@ void TcpClient::enableSSL(
     (void)keyPath;
     (void)caPath;
 
-    LOG_FATAL << "OpenSSL is not found in your system!";
-    throw std::runtime_error("OpenSSL is not found in your system!");
+    // LOG_FATAL << "OpenSSL is not found in your system!";
+    // throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
 }

@@ -45,7 +45,7 @@ if(BUILD_SHARED_LIBS)
 endif(BUILD_SHARED_LIBS)
 
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID MATCHES Clang|GNU)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
+    # target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Haiku")
@@ -106,6 +106,7 @@ set(private_headers
     trantor/net/inner/Poller.h
     trantor/net/inner/Socket.h
     trantor/net/inner/TcpConnectionImpl.h
+    trantor/net/inner/BotanTLSConnectionImpl.h
     trantor/net/inner/Timer.h
     trantor/net/inner/TimerQueue.h
     trantor/net/inner/poller/EpollPoller.h
@@ -123,14 +124,28 @@ if(WIN32)
       trantor/utils/WindowsSupport.h)
 endif(WIN32)
 
-find_package(OpenSSL)
-if(OpenSSL_FOUND)
-  target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+# Temp disabled because OpenSSL is hard to work with
+# find_package(OpenSSL)
+# if(OpenSSL_FOUND)
+#   target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
   
-  # To enable the acceptance of local issued certificates
-  # Add the flag: ALLOW_SELF_SIGNED_CERTS
-  # ONLY FOR TESTING PURPOSES
-  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+#   # To enable the acceptance of local issued certificates
+#   # Add the flag: ALLOW_SELF_SIGNED_CERTS
+#   # ONLY FOR TESTING PURPOSES
+#   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+# endif()
+
+find_package(Botan)
+if(Botan_FOUND)
+  message(STATUS "Botan found!")
+  set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/net/inner/BotanTLSConnectionImpl.cc)
+  set(private_headers
+      ${private_headers}
+      trantor/net/inner/BotanTLSConnectionImpl.h)
+
+  target_link_libraries(${PROJECT_NAME} PUBLIC Botan::Botan)
 endif()
 
 set(HAVE_C-ARES NO)

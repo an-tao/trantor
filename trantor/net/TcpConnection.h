@@ -275,8 +275,56 @@ class TRANTOR_EXPORT TcpConnection
     virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
                                        std::function<void()> callback) = 0;
 
+    void setRecvMsgCallback(const RecvMessageCallback &cb)
+    {
+        recvMsgCallback_ = cb;
+    }
+    void setRecvMsgCallback(RecvMessageCallback &&cb)
+    {
+        recvMsgCallback_ = std::move(cb);
+    }
+    void setConnectionCallback(const ConnectionCallback &cb)
+    {
+        connectionCallback_ = cb;
+    }
+    void setConnectionCallback(ConnectionCallback &&cb)
+    {
+        connectionCallback_ = std::move(cb);
+    }
+    void setWriteCompleteCallback(const WriteCompleteCallback &cb)
+    {
+        writeCompleteCallback_ = cb;
+    }
+    void setWriteCompleteCallback(WriteCompleteCallback &&cb)
+    {
+        writeCompleteCallback_ = std::move(cb);
+    }
+    void setCloseCallback(const CloseCallback &cb)
+    {
+        closeCallback_ = cb;
+    }
+    void setCloseCallback(CloseCallback &&cb)
+    {
+        closeCallback_ = std::move(cb);
+    }
+    void setSSLErrorCallback(const SSLErrorCallback &cb)
+    {
+        sslErrorCallback_ = cb;
+    }
+    void setSSLErrorCallback(SSLErrorCallback &&cb)
+    {
+        sslErrorCallback_ = std::move(cb);
+    }
+
   protected:
     bool validateCert_ = false;
+    // callbacks
+    RecvMessageCallback recvMsgCallback_;
+    ConnectionCallback connectionCallback_;
+    CloseCallback closeCallback_;
+    WriteCompleteCallback writeCompleteCallback_;
+    HighWaterMarkCallback highWaterMarkCallback_;
+    SSLErrorCallback sslErrorCallback_;
 
   private:
     std::shared_ptr<void> contextPtr_;
