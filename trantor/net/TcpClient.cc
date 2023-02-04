@@ -82,16 +82,14 @@ TcpClient::~TcpClient()
     TcpConnectionPtr conn;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if(connection_ == nullptr)
+        if (connection_ == nullptr)
             return;
         assert(loop_ == connection_->getLoop());
         // TODO: not 100% safe, if we are in different thread
         auto loop = loop_;
-        loop_->runInLoop([conn=connection_, loop]() {
+        loop_->runInLoop([conn = connection_, loop]() {
             conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
-                loop->queueInLoop([connPtr]() {
-                    connPtr->connectDestroyed();
-                });
+                loop->queueInLoop([connPtr]() { connPtr->connectDestroyed(); });
             });
         });
         conn->forceClose();
@@ -138,10 +136,11 @@ void TcpClient::newConnection(int sockfd)
     if (true)
     {
         auto lowLevelConn = std::make_shared<TcpConnectionImpl>(loop_,
-                                                           sockfd,
-                                                           localAddr,
-                                                           peerAddr);
-        conn = std::make_shared<BotanTLSConnectionImpl>(std::move(lowLevelConn));
+                                                                sockfd,
+                                                                localAddr,
+                                                                peerAddr);
+        conn =
+            std::make_shared<BotanTLSConnectionImpl>(std::move(lowLevelConn));
         // TODO: Add other parameters
 #ifdef USE_OPENSSL
         conn = std::make_shared<TcpConnectionImpl>(loop_,
@@ -177,7 +176,7 @@ void TcpClient::newConnection(int sockfd)
             {
                 LOG_TRACE << "TcpClient::removeConnection was skipped because "
                              "TcpClient instanced already freed";
-                c->getLoop()->queueInLoop([c]{ c->connectDestroyed(); });
+                c->getLoop()->queueInLoop([c] { c->connectDestroyed(); });
             }
         });
     conn->setCloseCallback(std::move(closeCb));

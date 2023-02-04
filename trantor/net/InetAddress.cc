@@ -9,7 +9,7 @@
 #include <trantor/net/InetAddress.h>
 
 #include <trantor/utils/Logger.h>
-//#include <muduo/net/Endian.h>
+// #include <muduo/net/Endian.h>
 
 #ifdef _WIN32
 struct in6_addr_uint

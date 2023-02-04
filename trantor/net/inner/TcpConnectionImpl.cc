@@ -116,37 +116,37 @@ void TcpConnectionImpl::startClientEncryption(
 }
 void TcpConnectionImpl::readCallback()
 {
-// LOG_TRACE<<"read Callback";
-        loop_->assertInLoopThread();
-        int ret = 0;
+    // LOG_TRACE<<"read Callback";
+    loop_->assertInLoopThread();
+    int ret = 0;
 
-        ssize_t n = readBuffer_.readFd(socketPtr_->fd(), &ret);
-        // LOG_TRACE<<"read "<<n<<" bytes from socket";
-        if (n == 0)
+    ssize_t n = readBuffer_.readFd(socketPtr_->fd(), &ret);
+    // LOG_TRACE<<"read "<<n<<" bytes from socket";
+    if (n == 0)
+    {
+        // socket closed by peer
+        handleClose();
+    }
+    else if (n < 0)
+    {
+        if (errno == EPIPE || errno == ECONNRESET)
         {
-            // socket closed by peer
-            handleClose();
-        }
-        else if (n < 0)
-        {
-            if (errno == EPIPE || errno == ECONNRESET)
-            {
 #ifdef _WIN32
-                LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << errno
-                          << " fd=" << socketPtr_->fd();
+            LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << errno
+                      << " fd=" << socketPtr_->fd();
 #else
             LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno
                       << " fd=" << socketPtr_->fd();
 #endif
-                return;
-            }
+            return;
+        }
 #ifdef _WIN32
-            if (errno == WSAECONNABORTED)
-            {
-                LOG_TRACE << "WSAECONNABORTED, errno=" << errno;
-                handleClose();
-                return;
-            }
+        if (errno == WSAECONNABORTED)
+        {
+            LOG_TRACE << "WSAECONNABORTED, errno=" << errno;
+            handleClose();
+            return;
+        }
 #else
         if (errno == EAGAIN)  // TODO: any others?
         {
@@ -155,19 +155,19 @@ void TcpConnectionImpl::readCallback()
             return;
         }
 #endif
-            LOG_SYSERR << "read socket error";
-            handleClose();
-            return;
-        }
-        extendLife();
-        if (n > 0)
+        LOG_SYSERR << "read socket error";
+        handleClose();
+        return;
+    }
+    extendLife();
+    if (n > 0)
+    {
+        bytesReceived_ += n;
+        if (recvMsgCallback_)
         {
-            bytesReceived_ += n;
-            if (recvMsgCallback_)
-            {
-                recvMsgCallback_(shared_from_this(), &readBuffer_);
-            }
+            recvMsgCallback_(shared_from_this(), &readBuffer_);
         }
+    }
 }
 void TcpConnectionImpl::extendLife()
 {
@@ -188,166 +188,163 @@ void TcpConnectionImpl::extendLife()
 }
 void TcpConnectionImpl::writeCallback()
 {
-        loop_->assertInLoopThread();
-        extendLife();
-        if (ioChannelPtr_->isWriting())
+    loop_->assertInLoopThread();
+    extendLife();
+    if (ioChannelPtr_->isWriting())
+    {
+        assert(!writeBufferList_.empty());
+        auto writeBuffer_ = writeBufferList_.front();
+        if (!writeBuffer_->isFile())
         {
-            assert(!writeBufferList_.empty());
-            auto writeBuffer_ = writeBufferList_.front();
-            if (!writeBuffer_->isFile())
+            // not a file
+            if (writeBuffer_->msgBuffer_->readableBytes() <= 0)
             {
-                // not a file
-                if (writeBuffer_->msgBuffer_->readableBytes() <= 0)
+                // finished sending
+                writeBufferList_.pop_front();
+                if (writeBufferList_.empty())
                 {
-                    // finished sending
-                    writeBufferList_.pop_front();
-                    if (writeBufferList_.empty())
+                    // stop writing
+                    ioChannelPtr_->disableWriting();
+                    if (writeCompleteCallback_)
+                        writeCompleteCallback_(shared_from_this());
+                    if (status_ == ConnStatus::Disconnecting)
                     {
-                        // stop writing
-                        ioChannelPtr_->disableWriting();
-                        if (writeCompleteCallback_)
-                            writeCompleteCallback_(shared_from_this());
-                        if (status_ == ConnStatus::Disconnecting)
-                        {
-                            socketPtr_->closeWrite();
-                        }
-                    }
-                    else
-                    {
-                        // send next
-                        // what if the next is not a file???
-                        auto fileNode = writeBufferList_.front();
-                        assert(fileNode->isFile());
-                        sendFileInLoop(fileNode);
+                        socketPtr_->closeWrite();
                     }
                 }
                 else
                 {
-                    // continue sending
-                    auto n =
-                        writeInLoop(writeBuffer_->msgBuffer_->peek(),
-                                    writeBuffer_->msgBuffer_->readableBytes());
-                    if (n >= 0)
-                    {
-                        writeBuffer_->msgBuffer_->retrieve(n);
-                    }
-                    else
-                    {
-#ifdef _WIN32
-                        if (errno != 0 && errno != EWOULDBLOCK)
-#else
-                    if (errno != EWOULDBLOCK)
-#endif
-                        {
-                            // TODO: any others?
-                            if (errno == EPIPE || errno == ECONNRESET)
-                            {
-#ifdef _WIN32
-                                LOG_TRACE
-                                    << "WSAENOTCONN or WSAECONNRESET, errno="
-                                    << errno;
-#else
-                            LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
-#endif
-                                return;
-                            }
-                            LOG_SYSERR << "Unexpected error(" << errno << ")";
-                            return;
-                        }
-                    }
+                    // send next
+                    // what if the next is not a file???
+                    auto fileNode = writeBufferList_.front();
+                    assert(fileNode->isFile());
+                    sendFileInLoop(fileNode);
                 }
             }
             else
             {
-                // is a file
-                if (writeBuffer_->fileBytesToSend_ <= 0)
+                // continue sending
+                auto n = writeInLoop(writeBuffer_->msgBuffer_->peek(),
+                                     writeBuffer_->msgBuffer_->readableBytes());
+                if (n >= 0)
                 {
-                    // finished sending
-                    writeBufferList_.pop_front();
-                    if (writeBufferList_.empty())
-                    {
-                        // stop writing
-                        ioChannelPtr_->disableWriting();
-                        if (writeCompleteCallback_)
-                            writeCompleteCallback_(shared_from_this());
-                        if (status_ == ConnStatus::Disconnecting)
-                        {
-                            socketPtr_->closeWrite();
-                        }
-                    }
-                    else
-                    {
-                        // next is not a file
-                        if (!writeBufferList_.front()->isFile())
-                        {
-                            // There is data to be sent in the buffer.
-                            auto n = writeInLoop(
-                                writeBufferList_.front()->msgBuffer_->peek(),
-                                writeBufferList_.front()
-                                    ->msgBuffer_->readableBytes());
-                            if (n >= 0)
-                            {
-                                writeBufferList_.front()->msgBuffer_->retrieve(
-                                    n);
-                            }
-                            else
-                            {
-#ifdef _WIN32
-                                if (errno != 0 && errno != EWOULDBLOCK)
-#else
-                            if (errno != EWOULDBLOCK)
-#endif
-                                {
-                                    // TODO: any others?
-                                    if (errno == EPIPE || errno == ECONNRESET)
-                                    {
-#ifdef _WIN32
-                                        LOG_TRACE << "WSAENOTCONN or "
-                                                     "WSAECONNRESET, errno="
-                                                  << errno;
-#else
-                                    LOG_TRACE << "EPIPE or "
-                                                 "ECONNRESET, erron="
-                                              << errno;
-#endif
-                                        return;
-                                    }
-                                    LOG_SYSERR << "Unexpected error(" << errno
-                                               << ")";
-                                    return;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // next is a file
-                            sendFileInLoop(writeBufferList_.front());
-                        }
-                    }
+                    writeBuffer_->msgBuffer_->retrieve(n);
                 }
                 else
                 {
-                    sendFileInLoop(writeBuffer_);
+#ifdef _WIN32
+                    if (errno != 0 && errno != EWOULDBLOCK)
+#else
+                    if (errno != EWOULDBLOCK)
+#endif
+                    {
+                        // TODO: any others?
+                        if (errno == EPIPE || errno == ECONNRESET)
+                        {
+#ifdef _WIN32
+                            LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno="
+                                      << errno;
+#else
+                            LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
+#endif
+                            return;
+                        }
+                        LOG_SYSERR << "Unexpected error(" << errno << ")";
+                        return;
+                    }
                 }
             }
         }
         else
         {
-            LOG_SYSERR << "no writing but write callback called";
+            // is a file
+            if (writeBuffer_->fileBytesToSend_ <= 0)
+            {
+                // finished sending
+                writeBufferList_.pop_front();
+                if (writeBufferList_.empty())
+                {
+                    // stop writing
+                    ioChannelPtr_->disableWriting();
+                    if (writeCompleteCallback_)
+                        writeCompleteCallback_(shared_from_this());
+                    if (status_ == ConnStatus::Disconnecting)
+                    {
+                        socketPtr_->closeWrite();
+                    }
+                }
+                else
+                {
+                    // next is not a file
+                    if (!writeBufferList_.front()->isFile())
+                    {
+                        // There is data to be sent in the buffer.
+                        auto n = writeInLoop(
+                            writeBufferList_.front()->msgBuffer_->peek(),
+                            writeBufferList_.front()
+                                ->msgBuffer_->readableBytes());
+                        if (n >= 0)
+                        {
+                            writeBufferList_.front()->msgBuffer_->retrieve(n);
+                        }
+                        else
+                        {
+#ifdef _WIN32
+                            if (errno != 0 && errno != EWOULDBLOCK)
+#else
+                            if (errno != EWOULDBLOCK)
+#endif
+                            {
+                                // TODO: any others?
+                                if (errno == EPIPE || errno == ECONNRESET)
+                                {
+#ifdef _WIN32
+                                    LOG_TRACE << "WSAENOTCONN or "
+                                                 "WSAECONNRESET, errno="
+                                              << errno;
+#else
+                                    LOG_TRACE << "EPIPE or "
+                                                 "ECONNRESET, erron="
+                                              << errno;
+#endif
+                                    return;
+                                }
+                                LOG_SYSERR << "Unexpected error(" << errno
+                                           << ")";
+                                return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // next is a file
+                        sendFileInLoop(writeBufferList_.front());
+                    }
+                }
+            }
+            else
+            {
+                sendFileInLoop(writeBuffer_);
+            }
         }
+    }
+    else
+    {
+        LOG_SYSERR << "no writing but write callback called";
+    }
 }
 void TcpConnectionImpl::connectEstablished()
 {
-        auto thisPtr = shared_from_this();
-        loop_->runInLoop([thisPtr]() {
-            LOG_TRACE << "connectEstablished";
-            assert(thisPtr->status_ == ConnStatus::Connecting);
-            thisPtr->ioChannelPtr_->tie(thisPtr);
-            thisPtr->ioChannelPtr_->enableReading();
-            thisPtr->status_ = ConnStatus::Connected;
-            if (thisPtr->connectionCallback_)
-                thisPtr->connectionCallback_(thisPtr);
-        });
+    auto thisPtr = shared_from_this();
+    loop_->runInLoop([thisPtr]() {
+        LOG_TRACE << "connectEstablished";
+        assert(thisPtr->status_ == ConnStatus::Connecting);
+        thisPtr->ioChannelPtr_->tie(thisPtr);
+        thisPtr->ioChannelPtr_->enableReading();
+        thisPtr->status_ = ConnStatus::Connected;
+        if (thisPtr->connectionCallback_)
+            thisPtr->connectionCallback_(thisPtr);
+    });
 }
 void TcpConnectionImpl::handleClose()
 {
@@ -1215,13 +1212,13 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 {
     // TODO: Abstract this away to support io_uring (and IOCP?)
 #ifndef _WIN32
-        int nWritten = write(socketPtr_->fd(), buffer, length);
+    int nWritten = write(socketPtr_->fd(), buffer, length);
 #else
     int nWritten =
         ::send(socketPtr_->fd(), buffer, static_cast<int>(length), 0);
     errno = (nWritten < 0) ? ::WSAGetLastError() : 0;
 #endif
-        if (nWritten > 0)
-            bytesSent_ += nWritten;
-        return nWritten;
+    if (nWritten > 0)
+        bytesSent_ += nWritten;
+    return nWritten;
 }
