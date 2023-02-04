@@ -14,6 +14,7 @@
 
 #include "Acceptor.h"
 #include "inner/TcpConnectionImpl.h"
+#include "inner/BotanTLSConnectionImpl.h"
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
 #include <functional>
@@ -64,9 +65,14 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     }
     if (ioLoop == NULL)
         ioLoop = loop_;
-    std::shared_ptr<TcpConnectionImpl> newPtr;
+    TcpConnectionPtr newPtr;
     if (sslCtxPtr_)
     {
+        newPtr = std::make_shared<BotanTLSConnectionImpl>(std::make_shared<TcpConnectionImpl>(
+            ioLoop,
+            sockfd,
+            InetAddress(Socket::getLocalAddr(sockfd)),
+            peer));
 #ifdef USE_OPENSSL
         newPtr = std::make_shared<TcpConnectionImpl>(
             ioLoop,
@@ -74,9 +80,6 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
             InetAddress(Socket::getLocalAddr(sockfd)),
             peer,
             sslCtxPtr_);
-#else
-        LOG_FATAL << "OpenSSL is not found in your system!";
-        throw std::runtime_error("OpenSSL is not found in your system!");
 #endif
     }
     else
@@ -88,7 +91,8 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     if (idleTimeout_ > 0)
     {
         assert(timingWheelMap_[ioLoop]);
-        newPtr->enableKickingOff(idleTimeout_, timingWheelMap_[ioLoop]);
+        // TODO: enable this
+        //newPtr->enableKickingOff(idleTimeout_, timingWheelMap_[ioLoop]);
     }
     newPtr->setRecvMsgCallback(recvMessageCallback_);
 

@@ -1,9 +1,6 @@
 #include "BotanTLSConnectionImpl.h"
 #include <trantor/utils/Logger.h>
 
-#include <sstream>
-#include <iomanip>
-
 using namespace trantor;
 using namespace std::placeholders;
 
@@ -40,7 +37,7 @@ void BotanTLSConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
 {
     LOG_TRACE << "Low level connection received " << buffer->readableBytes()
               << " bytes.";
-    client_->received_data((const uint8_t *)buffer->peek(),
+    channel_->received_data((const uint8_t *)buffer->peek(),
                            buffer->readableBytes());
     buffer->retrieveAll();
 }
@@ -62,16 +59,20 @@ void BotanTLSConnectionImpl::onClosed(const TcpConnectionPtr &conn)
 
 void BotanTLSConnectionImpl::send(const char *msg, size_t len)
 {
-    client_->send((const uint8_t *)msg, len);
+    channel_->send((const uint8_t *)msg, len);
 }
 void BotanTLSConnectionImpl::startClientEncryption(
     std::function<void()> callback,
     bool useOldTLS,
     bool validateCert,
     std::string hostname,
-    const std::vector<std::pair<std::string, std::string>> &)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
 {
-    client_ = std::make_unique<Botan::TLS::Client>(
+    if (sslConfCmds.size() != 0)
+    {
+        LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
+    }
+    channel_ = std::make_unique<Botan::TLS::Client>(
         *this,
         sessionManager_,
         creds_,
@@ -82,13 +83,19 @@ void BotanTLSConnectionImpl::startClientEncryption(
                   : Botan::TLS::Protocol_Version::latest_tls_version());
 }
 
+void BotanTLSConnectionImpl::startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
+                            std::function<void()> callback)
+{
+    throw std::runtime_error("BotanTLSConnectionImpl does not support server mode. yet.");
+}
+
 void BotanTLSConnectionImpl::tls_emit_data(const uint8_t data[], size_t size)
 {
     LOG_TRACE << "tls_emit_data: sending " << size << " bytes";
     rawConnPtr_->send(data, size);
 }
 
-void BotanTLSConnectionImpl::tls_record_received(uint64_t,
+void BotanTLSConnectionImpl::tls_record_received(uint64_t /*seq*/,
                                                  const uint8_t data[],
                                                  size_t size)
 {
@@ -118,11 +125,11 @@ bool BotanTLSConnectionImpl::tls_session_established(
 
 void BotanTLSConnectionImpl::shutdown()
 {
-    client_->close();
+    channel_->close();
 }
 
 void BotanTLSConnectionImpl::forceClose()
 {
-    client_->close();
+    channel_->close();
     getLoop()->queueInLoop([this]() { rawConnPtr_->forceClose(); });
 }

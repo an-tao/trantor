@@ -196,10 +196,7 @@ class BotanTLSConnectionImpl
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
             {});
     virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
-                                       std::function<void()> callback) override
-    {
-        throw std::runtime_error("Not implemented");
-    }
+                                       std::function<void()> callback) override;
 
   protected:
     TcpConnectionPtr rawConnPtr_;
@@ -230,9 +227,10 @@ class BotanTLSConnectionImpl
     Botan::TLS::Session_Manager_In_Memory sessionManager_;
     TestPolicy policy_;
     Client_Credentials creds_;
-    std::unique_ptr<Botan::TLS::Client> client_;
+    std::unique_ptr<Botan::TLS::Channel> channel_;
     MsgBuffer recvBuffer_;
 
     bool closingTLS_ = false;
+    bool isServer_ = false;
 };
 }  // namespace trantor
