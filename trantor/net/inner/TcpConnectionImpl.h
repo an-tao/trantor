@@ -159,6 +159,8 @@ class TcpConnectionImpl : public TcpConnection,
     {
         return isEncrypted_;
     }
+    virtual void connectEstablished() override;
+    virtual void connectDestroyed() override;
 
   private:
     /// Internal use only.
@@ -186,8 +188,6 @@ class TcpConnectionImpl : public TcpConnection,
 #else
     void sendFile(FILE *fp, size_t offset = 0, size_t length = 0);
 #endif
-    void connectDestroyed();
-    virtual void connectEstablished();
 
   protected:
     struct BufferNode

@@ -39,6 +39,9 @@ TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
 class TRANTOR_EXPORT TcpConnection
 {
   public:
+    friend class TcpServer;
+    friend class TcpClient;
+
     TcpConnection() = default;
     virtual ~TcpConnection(){};
 
@@ -315,6 +318,10 @@ class TRANTOR_EXPORT TcpConnection
     {
         sslErrorCallback_ = std::move(cb);
     }
+
+    // TODO: These should be internal APIs
+    virtual void connectEstablished() = 0;
+    virtual void connectDestroyed() = 0;
 
   protected:
     bool validateCert_ = false;

@@ -28,7 +28,6 @@ void BotanTLSConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     else
     {
         LOG_TRACE << "Low level connection closed.";
-        closeCallback_(shared_from_this());
         rawConnPtr_->getLoop()->queueInLoop([this]() {
             rawConnPtr_->setContext(nullptr);
         });

@@ -79,29 +79,20 @@ TcpClient::TcpClient(EventLoop *loop,
 TcpClient::~TcpClient()
 {
     LOG_TRACE << "TcpClient::~TcpClient[" << name_ << "] - connector ";
-    TcpConnectionImplPtr conn;
+    TcpConnectionPtr conn;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        conn = std::dynamic_pointer_cast<TcpConnectionImpl>(connection_);
-        if (conn)
-        {
-            assert(loop_ == conn->getLoop());
-            // TODO: not 100% safe, if we are in different thread
-            auto loop = loop_;
-            loop_->runInLoop([conn, loop]() {
-                conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
-                    loop->queueInLoop([connPtr]() {
-                        static_cast<TcpConnectionImpl *>(connPtr.get())
-                            ->connectDestroyed();
-                    });
+        assert(loop_ == connection_->getLoop());
+        // TODO: not 100% safe, if we are in different thread
+        auto loop = loop_;
+        loop_->runInLoop([conn=connection_, loop]() {
+            conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
+                loop->queueInLoop([connPtr]() {
+                    connPtr->connectDestroyed();
                 });
             });
-            conn->forceClose();
-        }
-        else
-        {
-            connector_->stop();
-        }
+        });
+        conn->forceClose();
     }
 }
 
@@ -141,15 +132,14 @@ void TcpClient::newConnection(int sockfd)
     // TODO poll with zero timeout to double confirm the new connection
     // TODO use make_shared if necessary
     TcpConnectionPtr conn;
-    TcpConnectionImplPtr lowLevelConn;
     LOG_TRACE << "SSL enabled: " << (sslCtxPtr_ ? "true" : "false");
     if (true)
     {
-        lowLevelConn = std::make_shared<TcpConnectionImpl>(loop_,
+        auto lowLevelConn = std::make_shared<TcpConnectionImpl>(loop_,
                                                            sockfd,
                                                            localAddr,
                                                            peerAddr);
-        conn = std::make_shared<BotanTLSConnectionImpl>(lowLevelConn);
+        conn = std::make_shared<BotanTLSConnectionImpl>(std::move(lowLevelConn));
         // TODO: Add other parameters
 #ifdef USE_OPENSSL
         conn = std::make_shared<TcpConnectionImpl>(loop_,
@@ -185,9 +175,7 @@ void TcpClient::newConnection(int sockfd)
             {
                 LOG_TRACE << "TcpClient::removeConnection was skipped because "
                              "TcpClient instanced already freed";
-                c->getLoop()->queueInLoop(
-                    std::bind(&TcpConnectionImpl::connectDestroyed,
-                              std::dynamic_pointer_cast<TcpConnectionImpl>(c)));
+                c->getLoop()->queueInLoop([c]{ c->connectDestroyed(); });
             }
         });
     conn->setCloseCallback(std::move(closeCb));
@@ -202,12 +190,7 @@ void TcpClient::newConnection(int sockfd)
         }
     });
 
-    // HACK: implement the same API for BotanTLSConnectionImpl
-    auto ptr = std::dynamic_pointer_cast<TcpConnectionImpl>(conn);
-    if (ptr)
-        ptr->connectEstablished();
-    else if (lowLevelConn)
-        lowLevelConn->connectEstablished();
+    conn->connectEstablished();
 }
 
 void TcpClient::removeConnection(const TcpConnectionPtr &conn)
@@ -221,9 +204,7 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
         connection_.reset();
     }
 
-    loop_->queueInLoop(
-        std::bind(&TcpConnectionImpl::connectDestroyed,
-                  std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
+    loop_->queueInLoop([conn]() { conn->connectDestroyed(); });
     if (retry_ && connect_)
     {
         LOG_TRACE << "TcpClient::connect[" << name_ << "] - Reconnecting to "

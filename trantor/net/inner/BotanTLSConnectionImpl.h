@@ -128,6 +128,9 @@ protected:
     void onDisconnection(const TcpConnectionPtr &conn);
     void onClosed(const TcpConnectionPtr &conn);
 
+    virtual void connectEstablished() override { rawConnPtr_->connectEstablished(); }
+    virtual void connectDestroyed() override { rawConnPtr_->connectDestroyed(); }
+
     void tls_emit_data(const uint8_t data[], size_t size) override;
     void tls_record_received(uint64_t seq_no,
                              const uint8_t data[],
