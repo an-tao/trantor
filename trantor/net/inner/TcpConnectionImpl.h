@@ -26,40 +26,6 @@
 
 namespace trantor
 {
-#ifdef USE_OPENSSL
-enum class SSLStatus
-{
-    Handshaking,
-    Connecting,
-    Connected,
-    DisConnecting,
-    DisConnected
-};
-class SSLContext;
-class SSLConn;
-
-std::shared_ptr<SSLContext> newSSLContext(
-    bool useOldTLS,
-    bool validateCert,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
-std::shared_ptr<SSLContext> newSSLServerContext(
-    const std::string &certPath,
-    const std::string &keyPath,
-    bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
-    const std::string &caPath);
-std::shared_ptr<SSLContext> newSSLClientContext(
-    bool useOldTLS,
-    bool validateCert,
-    const std::string &certPath = "",
-    const std::string &keyPath = "",
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {},
-    const std::string &caPath = "");
-
-// void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
-//                           const std::string &certPath,
-//                           const std::string &keyPath);
-#endif
 class Channel;
 class Socket;
 class TcpServer;
@@ -102,16 +68,6 @@ class TcpConnectionImpl : public TcpConnection,
                       int socketfd,
                       const InetAddress &localAddr,
                       const InetAddress &peerAddr);
-#ifdef USE_OPENSSL
-    TcpConnectionImpl(EventLoop *loop,
-                      int socketfd,
-                      const InetAddress &localAddr,
-                      const InetAddress &peerAddr,
-                      const std::shared_ptr<SSLContext> &ctxPtr,
-                      bool isServer = true,
-                      bool validateCert = true,
-                      const std::string &hostname = "");
-#endif
     virtual ~TcpConnectionImpl();
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override;
@@ -365,34 +321,6 @@ class TcpConnectionImpl : public TcpConnection,
     size_t bytesReceived_{0};
 
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
-
-#ifdef USE_OPENSSL
-  private:
-    void doHandshaking();
-    bool validatePeerCertificate();
-    std::string getOpenSSLErrorStack();
-    struct SSLEncryption
-    {
-        SSLStatus statusOfSSL_ = SSLStatus::Handshaking;
-        // OpenSSL
-        std::shared_ptr<SSLContext> sslCtxPtr_;
-        std::unique_ptr<SSLConn> sslPtr_;
-        std::unique_ptr<std::array<char, 8192>> sendBufferPtr_;
-        bool isServer_{false};
-        bool isUpgrade_{false};
-        std::function<void()> upgradeCallback_;
-        std::string hostname_;
-    };
-    std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
-    void startClientEncryptionInLoop(
-        std::function<void()> &&callback,
-        bool useOldTLS,
-        bool validateCert,
-        const std::string &hostname,
-        const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
-    void startServerEncryptionInLoop(const std::shared_ptr<SSLContext> &ctx,
-                                     std::function<void()> &&callback);
-#endif
 };
 
 using TcpConnectionImplPtr = std::shared_ptr<TcpConnectionImpl>;
