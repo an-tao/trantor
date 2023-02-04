@@ -82,6 +82,8 @@ TcpClient::~TcpClient()
     TcpConnectionPtr conn;
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        if(connection_ == nullptr)
+            return;
         assert(loop_ == connection_->getLoop());
         // TODO: not 100% safe, if we are in different thread
         auto loop = loop_;
