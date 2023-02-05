@@ -132,26 +132,15 @@ void TcpClient::newConnection(int sockfd)
     // TODO poll with zero timeout to double confirm the new connection
     // TODO use make_shared if necessary
     TcpConnectionPtr conn;
-    LOG_TRACE << "SSL enabled: " << (sslCtxPtr_ ? "true" : "false");
-    if (true)
+    LOG_TRACE << "SSL enabled: " << (sslPolicyPtr_ ? "true" : "false");
+    if (sslPolicyPtr_)
     {
-        auto lowLevelConn = std::make_shared<TcpConnectionImpl>(loop_,
+        conn =
+            std::make_shared<BotanTLSConnectionImpl>(std::make_shared<TcpConnectionImpl>(loop_,
                                                                 sockfd,
                                                                 localAddr,
-                                                                peerAddr);
-        conn =
-            std::make_shared<BotanTLSConnectionImpl>(std::move(lowLevelConn));
-        // TODO: Add other parameters
-#ifdef USE_OPENSSL
-        conn = std::make_shared<TcpConnectionImpl>(loop_,
-                                                   sockfd,
-                                                   localAddr,
-                                                   peerAddr,
-                                                   sslCtxPtr_,
-                                                   false,
-                                                   validateCert_,
-                                                   SSLHostName_);
-#endif
+                                                                peerAddr)
+                                                                , sslPolicyPtr_);
     }
     else
     {
@@ -223,11 +212,6 @@ void TcpClient::enableSSL(
     const std::string &keyPath,
     const std::string &caPath)
 {
-#ifdef USE_OPENSSL
-    /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLClientContext(
-        useOldTLS, validateCert, certPath, keyPath, sslConfCmds, caPath);
-    validateCert_ = validateCert;
     if (!hostname.empty())
     {
         std::transform(hostname.begin(),
@@ -237,18 +221,12 @@ void TcpClient::enableSSL(
         SSLHostName_ = std::move(hostname);
     }
 
-#else
-    // When not using OpenSSL, using `void` here will
-    // work around the unused parameter warnings without overhead.
-    (void)useOldTLS;
-    (void)validateCert;
-    (void)hostname;
-    (void)sslConfCmds;
-    (void)certPath;
-    (void)keyPath;
-    (void)caPath;
-
-    // LOG_FATAL << "OpenSSL is not found in your system!";
-    // throw std::runtime_error("OpenSSL is not found in your system!");
-#endif
+    sslPolicyPtr_ = std::make_shared<SSLPolicy>();
+    sslPolicyPtr_->setValidate(validateCert)
+        .setConfCmds(sslConfCmds)
+        .setCertPath(certPath)
+        .setKeyPath(keyPath)
+        .setHostname(hostname)
+        .setValidate(validateCert)
+        .setCaPath(caPath);
 }

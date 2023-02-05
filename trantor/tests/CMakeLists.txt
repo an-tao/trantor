@@ -17,8 +17,8 @@ add_executable(sendstream_test SendstreamTest.cc)
 add_executable(timing_wheel_test TimingWheelTest.cc)
 add_executable(kickoff_test KickoffTest.cc)
 add_executable(dns_test DnsTest.cc)
-add_executable(delayed_ssl_server_test DelayedSSLServerTest.cc)
-add_executable(delayed_ssl_client_test DelayedSSLClientTest.cc)
+# add_executable(delayed_ssl_server_test DelayedSSLServerTest.cc)
+# add_executable(delayed_ssl_client_test DelayedSSLClientTest.cc)
 add_executable(run_on_quit_test RunOnQuitTest.cc)
 add_executable(path_conversion_test PathConversionTest.cc)
 add_executable(logger_macro_test LoggerMacroTest.cc)
@@ -42,8 +42,8 @@ set(targets_list
     timing_wheel_test
     kickoff_test
     dns_test
-    delayed_ssl_server_test
-    delayed_ssl_client_test
+    # delayed_ssl_server_test
+    # delayed_ssl_client_test
     run_on_quit_test
     path_conversion_test
     logger_macro_test)

@@ -48,6 +48,7 @@ class Client_Credentials : public Botan::Credentials_Manager
         return nullptr;
     }
 
+    // TOOD: Add ablity to disable cert verification from SSLPolicy
     // void tls_verify_cert_chain(
     //       const std::vector<Botan::X509_Certificate>& cert_chain,
     //       const std::vector<std::shared_ptr<const Botan::OCSP::Response>>&
@@ -77,7 +78,7 @@ class BotanTLSConnectionImpl
       public std::enable_shared_from_this<BotanTLSConnectionImpl>
 {
   public:
-    BotanTLSConnectionImpl(TcpConnectionPtr rawConn);
+    BotanTLSConnectionImpl(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy);
     virtual ~BotanTLSConnectionImpl(){};
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override
@@ -187,16 +188,17 @@ class BotanTLSConnectionImpl
         return true;
     }
 
+    void startClientEncryption();
     // TODO: Get rid of these functions
-    virtual void startClientEncryption(
-        std::function<void()> callback,
-        bool useOldTLS = false,
-        bool validateCert = true,
-        std::string hostname = "",
-        const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
-            {});
-    virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
-                                       std::function<void()> callback) override;
+    // virtual void startClientEncryption(
+    //     std::function<void()> callback,
+    //     bool useOldTLS = false,
+    //     bool validateCert = true,
+    //     std::string hostname = "",
+    //     const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
+    //         {});
+    // virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
+    //                                    std::function<void()> callback) override;
 
   protected:
     TcpConnectionPtr rawConnPtr_;
@@ -216,6 +218,8 @@ class BotanTLSConnectionImpl
         rawConnPtr_->connectDestroyed();
     }
 
+    void handleCertValidationFail(SSLError err);
+
     void tls_emit_data(const uint8_t data[], size_t size) override;
     void tls_record_received(uint64_t seq_no,
                              const uint8_t data[],
@@ -224,11 +228,13 @@ class BotanTLSConnectionImpl
     bool tls_session_established(const Botan::TLS::Session &session) override;
 
     Botan::AutoSeeded_RNG rng_;
-    Botan::TLS::Session_Manager_In_Memory sessionManager_;
+    Botan::TLS::Session_Manager_In_Memory sessionManager_; // TODO: Make this shated by all connections
     TestPolicy policy_;
     Client_Credentials creds_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
     MsgBuffer recvBuffer_;
+    // TODO: Rename this to avoid confusion
+    std::shared_ptr<SSLPolicy> policyPtr_;
 
     bool closingTLS_ = false;
     bool isServer_ = false;

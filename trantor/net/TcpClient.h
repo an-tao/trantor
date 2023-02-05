@@ -234,6 +234,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     mutable std::mutex mutex_;
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
     std::shared_ptr<SSLContext> sslCtxPtr_;
+    std::shared_ptr<SSLPolicy> sslPolicyPtr_;
     std::string SSLHostName_;
     bool validateCert_{false};
 

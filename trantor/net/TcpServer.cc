@@ -72,7 +72,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
             ioLoop,
             sockfd,
             InetAddress(Socket::getLocalAddr(sockfd)),
-            peer));
+            peer), nullptr); /*add policy*/
 #ifdef USE_OPENSSL
         newPtr = std::make_shared<TcpConnectionImpl>(
             ioLoop,

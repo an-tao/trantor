@@ -124,6 +124,8 @@ if(WIN32)
       trantor/utils/WindowsSupport.h)
 endif(WIN32)
 
+
+set(TRANTOR_SSL_PROVIDER "None")
 # Temp disabled because OpenSSL is hard to work with
 # find_package(OpenSSL)
 # if(OpenSSL_FOUND)
@@ -133,20 +135,30 @@ endif(WIN32)
 #   # Add the flag: ALLOW_SELF_SIGNED_CERTS
 #   # ONLY FOR TESTING PURPOSES
 #   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+#   set(TRANTOR_SSL_PROVIDER "OpenSSL")
 # endif()
 
-find_package(Botan)
-if(Botan_FOUND)
-  message(STATUS "Botan found!")
-  set(TRANTOR_SOURCES
-      ${TRANTOR_SOURCES}
-      trantor/net/inner/BotanTLSConnectionImpl.cc)
-  set(private_headers
-      ${private_headers}
-      trantor/net/inner/BotanTLSConnectionImpl.h)
+if(TRANTOR_SSL_PROVIDER STREQUAL "None")
+  find_package(Botan)
+  if(Botan_FOUND)
+    message(STATUS "Botan found!")
+    set(TRANTOR_SOURCES
+        ${TRANTOR_SOURCES}
+        trantor/net/inner/BotanTLSConnectionImpl.cc)
+    set(private_headers
+        ${private_headers}
+        trantor/net/inner/BotanTLSConnectionImpl.h)
+    set(TRANTOR_SSL_PROVIDER "Botan")
+    # Backwards compatibility
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
 
-  target_link_libraries(${PROJECT_NAME} PUBLIC Botan::Botan)
+    # Should this be PRIVATE?
+    target_link_libraries(${PROJECT_NAME} PUBLIC Botan::Botan)
+  endif()
 endif()
+
+message(STATUS "Trantor using SSL library: ${TRANTOR_SSL_PROVIDER}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE TRANTOR_SSL_PROVIDER=${TRANTOR_SSL_PROVIDER})
 
 set(HAVE_C-ARES NO)
 if (BUILD_C-ARES)

@@ -31,9 +31,9 @@ int main()
         {
             LOG_DEBUG << "New connection";
             connPtr->send("hello");
-            connPtr->startServerEncryption(ctx, [] {
-                LOG_INFO << "SSL established";
-            });
+            // connPtr->startServerEncryption(ctx, [] {
+            //     LOG_INFO << "SSL established";
+            // });
         }
         else if (connPtr->disconnected())
         {

@@ -4,8 +4,8 @@
 using namespace trantor;
 using namespace std::placeholders;
 
-BotanTLSConnectionImpl::BotanTLSConnectionImpl(TcpConnectionPtr rawConn)
-    : rawConnPtr_(std::move(rawConn)), sessionManager_(rng_)
+BotanTLSConnectionImpl::BotanTLSConnectionImpl(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy)
+    : rawConnPtr_(std::move(rawConn)), sessionManager_(rng_), policyPtr_(std::move(policy))
 {
     rawConnPtr_->setConnectionCallback(
         std::bind(&BotanTLSConnectionImpl::onConnection, this, _1));
@@ -23,7 +23,7 @@ void BotanTLSConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     {
         LOG_TRACE
             << "Low level connection established. Starting TLS handshake.";
-        startClientEncryption([] {}, false, true);
+        startClientEncryption();
     }
     else
     {
@@ -61,33 +61,29 @@ void BotanTLSConnectionImpl::send(const char *msg, size_t len)
 {
     channel_->send((const uint8_t *)msg, len);
 }
-void BotanTLSConnectionImpl::startClientEncryption(
-    std::function<void()> callback,
-    bool useOldTLS,
-    bool validateCert,
-    std::string hostname,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+void BotanTLSConnectionImpl::startClientEncryption()
 {
-    if (sslConfCmds.size() != 0)
+    if (policyPtr_->getConfCmds().empty() == false)
     {
         LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
     }
+
     channel_ = std::make_unique<Botan::TLS::Client>(
         *this,
         sessionManager_,
         creds_,
         policy_,
         rng_,
-        Botan::TLS::Server_Information(hostname),
-        useOldTLS ? Botan::TLS::Protocol_Version::TLS_V10
-                  : Botan::TLS::Protocol_Version::latest_tls_version());
+        Botan::TLS::Server_Information(policyPtr_->getHostname()),
+        policyPtr_->getUseOldTLS() ? Botan::TLS::Protocol_Version::TLS_V10
+                  : Botan::TLS::Protocol_Version::TLS_V12);
 }
 
-void BotanTLSConnectionImpl::startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
-                            std::function<void()> callback)
-{
-    throw std::runtime_error("BotanTLSConnectionImpl does not support server mode. yet.");
-}
+// void BotanTLSConnectionImpl::startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
+//                             std::function<void()> callback)
+// {
+//     throw std::runtime_error("BotanTLSConnectionImpl does not support server mode. yet.");
+// }
 
 void BotanTLSConnectionImpl::tls_emit_data(const uint8_t data[], size_t size)
 {
@@ -112,14 +108,44 @@ void BotanTLSConnectionImpl::tls_alert(Botan::TLS::Alert alert)
         closingTLS_ = true;
         rawConnPtr_->shutdown();
     }
+    // TODO: handle other alerts
+}
+
+void BotanTLSConnectionImpl::handleCertValidationFail(SSLError err)
+{
+    getLoop()->queueInLoop([this]() {
+        sslErrorCallback_(SSLError::kSSLInvalidCertificate);
+        channel_->close();
+    });
 }
 
 bool BotanTLSConnectionImpl::tls_session_established(
     const Botan::TLS::Session &session)
 {
-    LOG_TRACE << "tls_session_established.";
+    LOG_TRACE << "tls_session_established. Starting certificate validation.";
+    bool needCerts = policyPtr_->getValidateDate() || policyPtr_->getValidateDomain();
+    const auto& certs = session.peer_certs();
+    if(needCerts && session.peer_certs().empty()) {
+        handleCertValidationFail(SSLError::kSSLInvalidCertificate);
+        return false;
+    }
+    auto& cert = certs[0];
+    if(policyPtr_->getValidateDomain() && cert.matches_dns_name(policyPtr_->getHostname()) == false) {
+        handleCertValidationFail(SSLError::kSSLInvalidCertificate);
+        return false;
+    }
+    if(policyPtr_->getValidateDate()) {
+        auto notBefore = cert.not_before();
+        auto notAfter = cert.not_after();
+        auto now = Botan::ASN1_Time(std::chrono::system_clock::now());
+        if(now < notBefore || now > notAfter) {
+            handleCertValidationFail(SSLError::kSSLInvalidCertificate);
+            return false;
+        }
+    }
     rawConnPtr_->getLoop()->queueInLoop(
         [this]() { connectionCallback_(shared_from_this()); });
+    // Do we want to cache all sessions?
     return true;
 }
 
