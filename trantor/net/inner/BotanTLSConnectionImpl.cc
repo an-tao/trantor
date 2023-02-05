@@ -5,11 +5,14 @@
 using namespace trantor;
 using namespace std::placeholders;
 
+static Botan::AutoSeeded_RNG sessionManagerRng;
+// Is this Ok? C++ technically doesn't guarantee static object initialization order.
+static Botan::TLS::Session_Manager_In_Memory sessionManager(sessionManagerRng);
+
 BotanTLSConnectionImpl::BotanTLSConnectionImpl(
     TcpConnectionPtr rawConn,
-    std::shared_ptr<SSLPolicy> policy)
+    SSLPolicyPtr policy)
     : rawConnPtr_(std::move(rawConn)),
-      sessionManager_(rng_),
       policyPtr_(std::move(policy))
 {
     rawConnPtr_->setConnectionCallback(
@@ -90,7 +93,7 @@ void BotanTLSConnectionImpl::startClientEncryption()
     credsPtr_ = std::make_unique<ClientCredentials>();
     channel_ = std::make_unique<Botan::TLS::Client>(
         *this,
-        sessionManager_,
+        sessionManager,
         *credsPtr_,
         policy_,
         rng_,
@@ -109,7 +112,7 @@ void BotanTLSConnectionImpl::startServerEncryption()
     credsPtr_ = std::make_unique<ServerCredentials>(policyPtr_->getKeyPath(),
                                                     policyPtr_->getCertPath());
     channel_ = std::make_unique<Botan::TLS::Server>(
-        *this, sessionManager_, *credsPtr_, policy_, rng_);
+        *this, sessionManager, *credsPtr_, policy_, rng_);
 }
 
 void BotanTLSConnectionImpl::tls_emit_data(const uint8_t data[], size_t size)

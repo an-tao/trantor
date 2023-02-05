@@ -96,14 +96,6 @@ class ServerCredentials : public Botan::Credentials_Manager
     std::unique_ptr<Botan::X509_Certificate> cert_;
 };
 
-class TestPolicy : public Botan::TLS::Policy
-{
-    bool require_cert_revocation_info() const override
-    {
-        return false;
-    }
-};
-
 class BotanTLSConnectionImpl
     : public TcpConnection,
       public NonCopyable,
@@ -112,7 +104,7 @@ class BotanTLSConnectionImpl
 {
   public:
     BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
-                           std::shared_ptr<SSLPolicy> policy);
+                           SSLPolicyPtr policy);
     virtual ~BotanTLSConnectionImpl(){};
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override
@@ -266,15 +258,12 @@ class BotanTLSConnectionImpl
         const Botan::TLS::Policy &policy) override;
 
     Botan::AutoSeeded_RNG rng_;
-    Botan::TLS::Session_Manager_In_Memory
-        sessionManager_;  // TODO: Make this shared by all connections
-    TestPolicy policy_;
+    Botan::TLS::Default_Policy policy_;
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
     MsgBuffer recvBuffer_;
-    MsgBuffer rawRecvBuffer_;
     // TODO: Rename this to avoid confusion
-    std::shared_ptr<SSLPolicy> policyPtr_;
+    SSLPolicyPtr policyPtr_;
 
     bool closingTLS_ = false;
     bool isServer_ = false;
