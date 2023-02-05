@@ -59,11 +59,15 @@ jobs:
       matrix:
         include:
           - os: ubuntu-20.04
-            buildname: 'ubuntu-20.04/gcc'
+            buildname: 'ubuntu-20.04/gcc - OpenSSL'
             triplet: x64-linux
             compiler: gcc_64
           - os: ubuntu-20.04
-            buildname: 'ubuntu-20.04/gcc without openssl'
+            buildname: 'ubuntu-20.04/gcc'
+            triplet: x64-linux
+            compiler: gcc_64
+          - os: ubuntu-22.04
+            buildname: 'ubuntu-22.04/gcc - Botan'
             triplet: x64-linux
             compiler: gcc_64
           - os: macos-latest
@@ -84,19 +88,22 @@ jobs:
         brew install c-ares openssl
 
     - name: (Linux) Install dependencies - OpenSSL
-      if: matrix.buildname == 'ubuntu-20.04/gcc'
+      if: matrix.buildname == 'ubuntu-20.04/gcc - OpenSSL'
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
-        # These aren't available or don't work well in vcpkg
-        sudo apt install openssl libssl-dev
-        sudo apt install dos2unix
+        sudo apt install openssl libssl-dev dos2unix
+    - name: (Linux) Install dependencies - Botan
+      if: matrix.buildname == 'ubuntu-22.04/gcc - Botan'
+      run: |
+        # Installing packages might fail as the github image becomes outdated
+        sudo apt update
+        sudo apt install libbotan-2 libbotan-2-dev dos2unix
     - name: (Linux) Install dependencies
       if: matrix.buildname == 'ubuntu-20.04/gcc'
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
-        # These aren't available or don't work well in vcpkg
         sudo apt install dos2unix
     - name: install gtest
       run: |
