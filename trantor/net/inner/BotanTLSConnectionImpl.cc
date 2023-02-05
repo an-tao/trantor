@@ -106,9 +106,7 @@ void BotanTLSConnectionImpl::startServerEncryption()
         sessionManager_,
         *credsPtr_,
         policy_,
-        rng_,
-        policyPtr_->getUseOldTLS() ? Botan::TLS::Protocol_Version::TLS_V10
-                  : Botan::TLS::Protocol_Version::TLS_V12);
+        rng_);
 }
 
 void BotanTLSConnectionImpl::tls_emit_data(const uint8_t data[], size_t size)
