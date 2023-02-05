@@ -103,8 +103,7 @@ class BotanTLSConnectionImpl
       public std::enable_shared_from_this<BotanTLSConnectionImpl>
 {
   public:
-    BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
-                           SSLPolicyPtr policy);
+    BotanTLSConnectionImpl(TcpConnectionPtr rawConn, SSLPolicyPtr policy);
     virtual ~BotanTLSConnectionImpl(){};
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override
@@ -172,13 +171,8 @@ class BotanTLSConnectionImpl
         return rawConnPtr_->disconnected() || closingTLS_;
     }
 
-    // virtual MsgBuffer *getRecvBuffer() override { throw
-    // std::runtime_error("Not implemented"); }
     virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
-                                          size_t markLen) override
-    {
-        throw std::runtime_error("Not implemented");
-    }
+                                          size_t markLen) override;
 
     virtual void keepAlive() override
     {
@@ -230,6 +224,7 @@ class BotanTLSConnectionImpl
     void onWriteComplete(const TcpConnectionPtr &conn);
     void onDisconnection(const TcpConnectionPtr &conn);
     void onClosed(const TcpConnectionPtr &conn);
+    void onHighWaterMark(const TcpConnectionPtr &conn, size_t markLen);
 
     virtual void connectEstablished() override
     {

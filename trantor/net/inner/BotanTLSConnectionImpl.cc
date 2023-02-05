@@ -6,14 +6,13 @@ using namespace trantor;
 using namespace std::placeholders;
 
 static Botan::AutoSeeded_RNG sessionManagerRng;
-// Is this Ok? C++ technically doesn't guarantee static object initialization order.
+// Is this Ok? C++ technically doesn't guarantee static object initialization
+// order.
 static Botan::TLS::Session_Manager_In_Memory sessionManager(sessionManagerRng);
 
-BotanTLSConnectionImpl::BotanTLSConnectionImpl(
-    TcpConnectionPtr rawConn,
-    SSLPolicyPtr policy)
-    : rawConnPtr_(std::move(rawConn)),
-      policyPtr_(std::move(policy))
+BotanTLSConnectionImpl::BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
+                                               SSLPolicyPtr policy)
+    : rawConnPtr_(std::move(rawConn)), policyPtr_(std::move(policy))
 {
     rawConnPtr_->setConnectionCallback(
         std::bind(&BotanTLSConnectionImpl::onConnection, this, _1));
@@ -78,6 +77,22 @@ void BotanTLSConnectionImpl::onDisconnection(const TcpConnectionPtr &conn)
 void BotanTLSConnectionImpl::onClosed(const TcpConnectionPtr &conn)
 {
     closeCallback_(shared_from_this());
+}
+
+void BotanTLSConnectionImpl::onHighWaterMark(const TcpConnectionPtr &conn,
+                                             size_t bytesToSent)
+{
+    highWaterMarkCallback_(shared_from_this(), bytesToSent);
+}
+
+void BotanTLSConnectionImpl::setHighWaterMarkCallback(
+    const HighWaterMarkCallback &cb,
+    size_t mark)
+{
+    highWaterMarkCallback_ = cb;
+    rawConnPtr_->setHighWaterMarkCallback(
+        std::bind(&BotanTLSConnectionImpl::onHighWaterMark, this, _1, _2),
+        mark);
 }
 
 void BotanTLSConnectionImpl::send(const char *msg, size_t len)
