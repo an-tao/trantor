@@ -204,18 +204,18 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-    [[deprecated ("Use enableSSL(SSLPolicyPtr policy) instead")]]
-    void enableSSL(bool useOldTLS = false,
-                   bool validateCert = true,
-                   std::string hostname = "",
-                   const std::vector<std::pair<std::string, std::string>>
-                       &sslConfCmds = {},
-                   const std::string &certPath = "",
-                   const std::string &keyPath = "",
-                   const std::string &caPath = "");
+    [[deprecated("Use enableSSL(SSLPolicyPtr policy) instead")]] void enableSSL(
+        bool useOldTLS = false,
+        bool validateCert = true,
+        std::string hostname = "",
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
+            {},
+        const std::string &certPath = "",
+        const std::string &keyPath = "",
+        const std::string &caPath = "");
     /**
      * @brief Enable SSL encryption.
-    */
+     */
     void enableSSL(SSLPolicyPtr policy)
     {
         sslPolicyPtr_ = std::move(policy);
