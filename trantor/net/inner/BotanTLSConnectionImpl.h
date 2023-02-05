@@ -252,7 +252,6 @@ class BotanTLSConnectionImpl
         const std::string &hostname,
         const Botan::TLS::Policy &policy) override;
 
-    Botan::AutoSeeded_RNG rng_;
     Botan::TLS::Default_Policy policy_;
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
