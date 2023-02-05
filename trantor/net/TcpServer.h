@@ -28,7 +28,6 @@
 namespace trantor
 {
 class Acceptor;
-class SSLContext;
 /**
  * @brief This class represents a TCP server.
  *

@@ -17,7 +17,7 @@ int main()
     InetAddress addr(8888);
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
-    auto ctx = newSSLServerContext("server.pem", "server.pem", {});
+    // auto ctx = newSSLServerContext("server.pem", "server.pem", {});
     LOG_INFO << "start";
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
@@ -26,7 +26,7 @@ int main()
             buffer->retrieveAll();
             connectionPtr->shutdown();
         });
-    server.setConnectionCallback([ctx](const TcpConnectionPtr &connPtr) {
+    server.setConnectionCallback([/*ctx*/](const TcpConnectionPtr &connPtr) {
         if (connPtr->connected())
         {
             LOG_DEBUG << "New connection";

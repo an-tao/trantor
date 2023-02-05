@@ -25,13 +25,6 @@
 
 namespace trantor
 {
-class SSLContext;
-TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
-    const std::string &certPath,
-    const std::string &keyPath,
-    bool useOldTLS = false,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {},
-    const std::string &caPath = "");
 struct TRANTOR_EXPORT SSLPolicy final
 {
     SSLPolicy &setConfCmds(
@@ -382,35 +375,6 @@ class TRANTOR_EXPORT TcpConnection
      */
     virtual MsgBuffer *getRecvBuffer() = 0;
 
-    /**
-     * @brief Start the SSL encryption on the connection (as a client).
-     *
-     * @param callback The callback is called when the SSL connection is
-     * established.
-     * @param hostname The server hostname for SNI. If it is empty, the SNI is
-     * not used.
-     * @param sslConfCmds The commands used to call the SSL_CONF_cmd function in
-     * OpenSSL.
-     */
-    // virtual void startClientEncryption(
-    //     std::function<void()> callback,
-    //     bool useOldTLS = false,
-    //     bool validateCert = true,
-    //     std::string hostname = "",
-    //     const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
-    //         {}) = 0;
-
-    /**
-     * @brief Start the SSL encryption on the connection (as a server).
-     *
-     * @param ctx The SSL context.
-     * @param callback The callback is called when the SSL connection is
-     * established.
-     */
-    // virtual void startServerEncryption(const std::shared_ptr<SSLContext>
-    // &ctx,
-    //                                    std::function<void()> callback) = 0;
-
     void setValidationPolicy(SSLPolicy &&policy)
     {
         sslPolicy_ = std::move(policy);
@@ -462,7 +426,6 @@ class TRANTOR_EXPORT TcpConnection
     virtual void connectDestroyed() = 0;
 
   protected:
-    bool validateCert_ = false;
     // callbacks
     RecvMessageCallback recvMsgCallback_;
     ConnectionCallback connectionCallback_;

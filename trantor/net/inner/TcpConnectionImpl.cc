@@ -43,20 +43,6 @@ using namespace trantor;
 #define ECONNRESET WSAECONNRESET
 #endif
 
-namespace trantor
-{
-std::shared_ptr<SSLContext> newSSLServerContext(
-    const std::string &,
-    const std::string &,
-    bool,
-    const std::vector<std::pair<std::string, std::string>> &,
-    const std::string &)
-{
-    LOG_FATAL << "OpenSSL is not found in your system!";
-    throw std::runtime_error("OpenSSL is not found in your system!");
-}
-}  // namespace trantor
-
 TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
                                      const InetAddress &localAddr,
@@ -84,36 +70,6 @@ TcpConnectionImpl::~TcpConnectionImpl()
 {
 }
 
-// void TcpConnectionImpl::startServerEncryption(
-//     const std::shared_ptr<SSLContext> &ctx,
-//     std::function<void()> callback)
-// {
-//     // When not using OpenSSL, using `void` here will
-//     // work around the unused parameter warnings without overhead.
-//     (void)ctx;
-//     (void)callback;
-
-//     LOG_FATAL << "OpenSSL is not found in your system!";
-//     throw std::runtime_error("OpenSSL is not found in your system!");
-// }
-// void TcpConnectionImpl::startClientEncryption(
-//     std::function<void()> callback,
-//     bool useOldTLS,
-//     bool validateCert,
-//     std::string hostname,
-//     const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
-// {
-//     // When not using OpenSSL, using `void` here will
-//     // work around the unused parameter warnings without overhead.
-//     (void)callback;
-//     (void)useOldTLS;
-//     (void)validateCert;
-//     (void)hostname;
-//     (void)sslConfCmds;
-
-//     LOG_FATAL << "OpenSSL is not found in your system!";
-//     throw std::runtime_error("OpenSSL is not found in your system!");
-// }
 void TcpConnectionImpl::readCallback()
 {
     // LOG_TRACE<<"read Callback";

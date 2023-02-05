@@ -29,7 +29,6 @@ namespace trantor
 {
 class Connector;
 using ConnectorPtr = std::shared_ptr<Connector>;
-class SSLContext;
 /**
  * @brief This class represents a TCP client.
  *
@@ -233,7 +232,6 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     // always in loop thread
     mutable std::mutex mutex_;
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
-    std::shared_ptr<SSLContext> sslCtxPtr_;
     std::shared_ptr<SSLPolicy> sslPolicyPtr_;
     std::string SSLHostName_;
     bool validateCert_{false};
