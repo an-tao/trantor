@@ -34,64 +34,65 @@ TRANTOR_EXPORT std::shared_ptr<SSLContext> newSSLServerContext(
     const std::string &caPath = "");
 struct TRANTOR_EXPORT SSLPolicy final
 {
-    SSLPolicy& setConfCmds(const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    SSLPolicy &setConfCmds(
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
     {
         sslConfCmds_ = sslConfCmds;
         return *this;
     }
-    SSLPolicy& setHostname(const std::string &hostname)
+    SSLPolicy &setHostname(const std::string &hostname)
     {
         hostname_ = hostname;
         return *this;
     }
-    SSLPolicy& setCertPath(const std::string &certPath)
+    SSLPolicy &setCertPath(const std::string &certPath)
     {
         certPath_ = certPath;
         return *this;
     }
-    SSLPolicy& setKeyPath(const std::string &keyPath)
+    SSLPolicy &setKeyPath(const std::string &keyPath)
     {
         keyPath_ = keyPath;
         return *this;
     }
-    SSLPolicy& setCaPath(const std::string &caPath)
+    SSLPolicy &setCaPath(const std::string &caPath)
     {
         caPath_ = caPath;
         return *this;
     }
-    SSLPolicy& setUseOldTLS(bool useOldTLS)
+    SSLPolicy &setUseOldTLS(bool useOldTLS)
     {
         useOldTLS_ = useOldTLS;
         return *this;
     }
-    SSLPolicy& setValidateDomain(bool validateDomain)
+    SSLPolicy &setValidateDomain(bool validateDomain)
     {
         validateDomain_ = validateDomain;
         return *this;
     }
-    SSLPolicy& setValidateChain(bool validateChain)
+    SSLPolicy &setValidateChain(bool validateChain)
     {
         validateChain_ = validateChain;
         return *this;
     }
-    SSLPolicy& setValidateDate(bool validateDate)
+    SSLPolicy &setValidateDate(bool validateDate)
     {
         validateDate_ = validateDate;
         return *this;
     }
-    SSLPolicy& setAlpnProtocols(const std::vector<std::string> &alpnProtocols)
+    SSLPolicy &setAlpnProtocols(const std::vector<std::string> &alpnProtocols)
     {
         alpnProtocols_ = alpnProtocols;
         return *this;
     }
-    SSLPolicy& setIsServer(bool isServer)
+    SSLPolicy &setIsServer(bool isServer)
     {
         isServer_ = isServer;
         return *this;
     }
 
     // Composite pattern
-    SSLPolicy& setValidate(bool enable)
+    SSLPolicy &setValidate(bool enable)
     {
         validateDomain_ = enable;
         validateChain_ = enable;
@@ -99,23 +100,23 @@ struct TRANTOR_EXPORT SSLPolicy final
         return *this;
     }
 
-    const std::vector<std::pair<std::string, std::string>>& getConfCmds() const
+    const std::vector<std::pair<std::string, std::string>> &getConfCmds() const
     {
         return sslConfCmds_;
     }
-    const std::string& getHostname() const
+    const std::string &getHostname() const
     {
         return hostname_;
     }
-    const std::string& getCertPath() const
+    const std::string &getCertPath() const
     {
         return certPath_;
     }
-    const std::string& getKeyPath() const
+    const std::string &getKeyPath() const
     {
         return keyPath_;
     }
-    const std::string& getCaPath() const
+    const std::string &getCaPath() const
     {
         return caPath_;
     }
@@ -135,7 +136,7 @@ struct TRANTOR_EXPORT SSLPolicy final
     {
         return validateDate_;
     }
-    const std::vector<std::string>& getAlpnProtocols() const
+    const std::vector<std::string> &getAlpnProtocols() const
     {
         return alpnProtocols_;
     }
@@ -144,13 +145,13 @@ struct TRANTOR_EXPORT SSLPolicy final
         return isServer_;
     }
 
-protected:
+  protected:
     std::vector<std::pair<std::string, std::string>> sslConfCmds_ = {};
     std::string hostname_ = "";
     std::string certPath_ = "";
     std::string keyPath_ = "";
     std::string caPath_ = "";
-    bool useOldTLS_ = false; // turn into specific version
+    bool useOldTLS_ = false;  // turn into specific version
     bool validateDomain_ = true;
     bool validateChain_ = true;
     bool validateDate_ = true;
@@ -379,7 +380,7 @@ class TRANTOR_EXPORT TcpConnection
     /**
      * @brief Get buffer of unprompted data.
      */
-    virtual MsgBuffer* getRecvBuffer() = 0;
+    virtual MsgBuffer *getRecvBuffer() = 0;
 
     /**
      * @brief Start the SSL encryption on the connection (as a client).
@@ -406,10 +407,11 @@ class TRANTOR_EXPORT TcpConnection
      * @param callback The callback is called when the SSL connection is
      * established.
      */
-    // virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
+    // virtual void startServerEncryption(const std::shared_ptr<SSLContext>
+    // &ctx,
     //                                    std::function<void()> callback) = 0;
-    
-    void setValidationPolicy(SSLPolicy&& policy) 
+
+    void setValidationPolicy(SSLPolicy &&policy)
     {
         sslPolicy_ = std::move(policy);
     }
@@ -474,9 +476,11 @@ class TRANTOR_EXPORT TcpConnection
     std::shared_ptr<void> contextPtr_;
 };
 
-TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy);
+TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
+                                  std::shared_ptr<SSLPolicy> policy);
 #if !defined(USE_OPENSSL) && !defined(USE_BOTAN)
-inline TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy)
+inline TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
+                                         std::shared_ptr<SSLPolicy> policy)
 {
     throw std::runtime_error("SSL is not supported");
 }

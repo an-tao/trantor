@@ -5,8 +5,12 @@
 using namespace trantor;
 using namespace std::placeholders;
 
-BotanTLSConnectionImpl::BotanTLSConnectionImpl(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy)
-    : rawConnPtr_(std::move(rawConn)), sessionManager_(rng_), policyPtr_(std::move(policy))
+BotanTLSConnectionImpl::BotanTLSConnectionImpl(
+    TcpConnectionPtr rawConn,
+    std::shared_ptr<SSLPolicy> policy)
+    : rawConnPtr_(std::move(rawConn)),
+      sessionManager_(rng_),
+      policyPtr_(std::move(policy))
 {
     rawConnPtr_->setConnectionCallback(
         std::bind(&BotanTLSConnectionImpl::onConnection, this, _1));
@@ -24,7 +28,7 @@ void BotanTLSConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     {
         LOG_TRACE
             << "Low level connection established. Starting TLS handshake.";
-        if(policyPtr_->getIsServer())
+        if (policyPtr_->getIsServer())
             startServerEncryption();
         else
             startClientEncryption();
@@ -41,16 +45,18 @@ void BotanTLSConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
 {
     LOG_TRACE << "Low level connection received " << buffer->readableBytes()
               << " bytes.";
-    try {
+    try
+    {
         assert(channel_ != nullptr);
         channel_->received_data((const uint8_t *)buffer->peek(),
-                           buffer->readableBytes());
+                                buffer->readableBytes());
     }
-    catch (const Botan::TLS::TLS_Exception& e) {
+    catch (const Botan::TLS::TLS_Exception &e)
+    {
         LOG_ERROR << "Unexpected TLS Exception: " << e.what();
         conn->shutdown();
 
-        if(connected() == false)
+        if (connected() == false)
             handleSSLError(SSLError::kSSLHandshakeError);
     }
     buffer->retrieveAll();
@@ -90,7 +96,7 @@ void BotanTLSConnectionImpl::startClientEncryption()
         rng_,
         Botan::TLS::Server_Information(policyPtr_->getHostname()),
         policyPtr_->getUseOldTLS() ? Botan::TLS::Protocol_Version::TLS_V10
-                  : Botan::TLS::Protocol_Version::TLS_V12);
+                                   : Botan::TLS::Protocol_Version::TLS_V12);
 }
 
 void BotanTLSConnectionImpl::startServerEncryption()
@@ -100,13 +106,10 @@ void BotanTLSConnectionImpl::startServerEncryption()
         LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
     }
 
-    credsPtr_ = std::make_unique<ServerCredentials>(policyPtr_->getKeyPath(), policyPtr_->getCertPath());
+    credsPtr_ = std::make_unique<ServerCredentials>(policyPtr_->getKeyPath(),
+                                                    policyPtr_->getCertPath());
     channel_ = std::make_unique<Botan::TLS::Server>(
-        *this,
-        sessionManager_,
-        *credsPtr_,
-        policy_,
-        rng_);
+        *this, sessionManager_, *credsPtr_, policy_, rng_);
 }
 
 void BotanTLSConnectionImpl::tls_emit_data(const uint8_t data[], size_t size)
@@ -137,7 +140,7 @@ void BotanTLSConnectionImpl::tls_alert(Botan::TLS::Alert alert)
 
 void BotanTLSConnectionImpl::handleSSLError(SSLError err)
 {
-    if(!sslErrorCallback_)
+    if (!sslErrorCallback_)
         return;
     getLoop()->queueInLoop([this]() {
         sslErrorCallback_(SSLError::kSSLInvalidCertificate);
@@ -149,24 +152,31 @@ bool BotanTLSConnectionImpl::tls_session_established(
     const Botan::TLS::Session &session)
 {
     LOG_TRACE << "tls_session_established";
-    bool needCerts = policyPtr_->getValidateDate() || policyPtr_->getValidateDomain();
-    const auto& certs = session.peer_certs();
-    if(needCerts && session.peer_certs().empty()) {
+    bool needCerts =
+        policyPtr_->getValidateDate() || policyPtr_->getValidateDomain();
+    const auto &certs = session.peer_certs();
+    if (needCerts && session.peer_certs().empty())
+    {
         handleSSLError(SSLError::kSSLInvalidCertificate);
         throw std::runtime_error("No certificates provided by peer");
     }
-    auto& cert = certs[0];
-    if(policyPtr_->getValidateDomain() && cert.matches_dns_name(policyPtr_->getHostname()) == false) {
+    auto &cert = certs[0];
+    if (policyPtr_->getValidateDomain() &&
+        cert.matches_dns_name(policyPtr_->getHostname()) == false)
+    {
         handleSSLError(SSLError::kSSLInvalidCertificate);
         throw std::runtime_error("Certificate does not match hostname");
     }
-    if(policyPtr_->getValidateDate()) {
+    if (policyPtr_->getValidateDate())
+    {
         auto notBefore = cert.not_before();
         auto notAfter = cert.not_after();
         auto now = Botan::ASN1_Time(std::chrono::system_clock::now());
-        if(now < notBefore || now > notAfter) {
+        if (now < notBefore || now > notAfter)
+        {
             handleSSLError(SSLError::kSSLInvalidCertificate);
-            throw std::runtime_error("Certificate is not valid for current time");
+            throw std::runtime_error(
+                "Certificate is not valid for current time");
         }
     }
     rawConnPtr_->getLoop()->queueInLoop(
@@ -183,8 +193,9 @@ void BotanTLSConnectionImpl::tls_verify_cert_chain(
     const std::string &hostname,
     const Botan::TLS::Policy &policy)
 {
-    if(policyPtr_->getValidateChain())
-        Botan::TLS::Callbacks::tls_verify_cert_chain(certs, ocsp, trusted_roots, usage, hostname, policy);
+    if (policyPtr_->getValidateChain())
+        Botan::TLS::Callbacks::tls_verify_cert_chain(
+            certs, ocsp, trusted_roots, usage, hostname, policy);
 }
 
 void BotanTLSConnectionImpl::shutdown()
@@ -197,7 +208,9 @@ void BotanTLSConnectionImpl::forceClose()
     channel_->close();
     getLoop()->queueInLoop([this]() { rawConnPtr_->forceClose(); });
 }
-TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn, std::shared_ptr<SSLPolicy> policy)
+TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn,
+                                           std::shared_ptr<SSLPolicy> policy)
 {
-    return std::make_shared<BotanTLSConnectionImpl>(std::move(lowerConn), std::move(policy));
+    return std::make_shared<BotanTLSConnectionImpl>(std::move(lowerConn),
+                                                    std::move(policy));
 }

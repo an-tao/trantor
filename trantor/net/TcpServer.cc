@@ -68,10 +68,11 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     if (policyPtr_)
     {
         newPtr = newTLSConnection(std::make_shared<TcpConnectionImpl>(
-            ioLoop,
-            sockfd,
-            InetAddress(Socket::getLocalAddr(sockfd)),
-            peer), policyPtr_);
+                                      ioLoop,
+                                      sockfd,
+                                      InetAddress(Socket::getLocalAddr(sockfd)),
+                                      peer),
+                                  policyPtr_);
     }
     else
     {
@@ -83,7 +84,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     {
         assert(timingWheelMap_[ioLoop]);
         // TODO: enable this
-        //newPtr->enableKickingOff(idleTimeout_, timingWheelMap_[ioLoop]);
+        // newPtr->enableKickingOff(idleTimeout_, timingWheelMap_[ioLoop]);
     }
     newPtr->setRecvMsgCallback(recvMessageCallback_);
 

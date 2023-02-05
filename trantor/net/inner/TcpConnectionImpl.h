@@ -154,7 +154,7 @@ class TcpConnectionImpl : public TcpConnection,
     virtual void connectEstablished() override;
     virtual void connectDestroyed() override;
 
-    virtual MsgBuffer* getRecvBuffer() override
+    virtual MsgBuffer *getRecvBuffer() override
     {
         return &readBuffer_;
     }

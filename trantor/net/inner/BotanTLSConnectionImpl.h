@@ -53,42 +53,49 @@ class ClientCredentials : public Botan::Credentials_Manager
     Botan::System_Certificate_Store certStore_;
 };
 
-class ServerCredentials : public Botan::Credentials_Manager {
-public:
-  ServerCredentials(const std::string& keyFile, const std::string& certFile) {
-    Botan::DataSource_Stream in(keyFile);
-    key_ = Botan::PKCS8::load_key(in);
-    cert_ = std::make_unique<Botan::X509_Certificate>(certFile);
-  }
+class ServerCredentials : public Botan::Credentials_Manager
+{
+  public:
+    ServerCredentials(const std::string &keyFile, const std::string &certFile)
+    {
+        Botan::DataSource_Stream in(keyFile);
+        key_ = Botan::PKCS8::load_key(in);
+        cert_ = std::make_unique<Botan::X509_Certificate>(certFile);
+    }
 
-  std::vector<Botan::Certificate_Store *>
-  trusted_certificate_authorities(const std::string &type, const std::string &context) override {
-    // if client authentication is required, this function
-    // shall return a list of certificates of CAs we trust
-    // for tls client certificates, otherwise return an empty list
-    return {};
-  }
+    std::vector<Botan::Certificate_Store *> trusted_certificate_authorities(
+        const std::string &type,
+        const std::string &context) override
+    {
+        // if client authentication is required, this function
+        // shall return a list of certificates of CAs we trust
+        // for tls client certificates, otherwise return an empty list
+        return {};
+    }
 
-  std::vector<Botan::X509_Certificate> cert_chain(const std::vector<std::string> &cert_key_types,
-                                                  const std::string &type,
-                                                  const std::string &context) override {
-    // return the certificate chain being sent to the tls client
-    // e.g., the certificate file "botan.randombit.net.crt"
-    return {*cert_};
-  }
+    std::vector<Botan::X509_Certificate> cert_chain(
+        const std::vector<std::string> &cert_key_types,
+        const std::string &type,
+        const std::string &context) override
+    {
+        // return the certificate chain being sent to the tls client
+        // e.g., the certificate file "botan.randombit.net.crt"
+        return {*cert_};
+    }
 
-  Botan::Private_Key *private_key_for(const Botan::X509_Certificate &cert, const std::string &type,
-                                      const std::string &context) override {
-    // return the private key associated with the leaf certificate,
-    // in this case the one associated with "botan.randombit.net.crt"
-    return key_.get();
-  }
+    Botan::Private_Key *private_key_for(const Botan::X509_Certificate &cert,
+                                        const std::string &type,
+                                        const std::string &context) override
+    {
+        // return the private key associated with the leaf certificate,
+        // in this case the one associated with "botan.randombit.net.crt"
+        return key_.get();
+    }
 
-private:
-  std::unique_ptr<Botan::Private_Key> key_;
-  std::unique_ptr<Botan::X509_Certificate> cert_;
+  private:
+    std::unique_ptr<Botan::Private_Key> key_;
+    std::unique_ptr<Botan::X509_Certificate> cert_;
 };
-
 
 class TestPolicy : public Botan::TLS::Policy
 {
@@ -105,7 +112,8 @@ class BotanTLSConnectionImpl
       public std::enable_shared_from_this<BotanTLSConnectionImpl>
 {
   public:
-    BotanTLSConnectionImpl(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy);
+    BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
+                           std::shared_ptr<SSLPolicy> policy);
     virtual ~BotanTLSConnectionImpl(){};
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override
@@ -215,7 +223,7 @@ class BotanTLSConnectionImpl
         return true;
     }
 
-    virtual MsgBuffer* getRecvBuffer() override
+    virtual MsgBuffer *getRecvBuffer() override
     {
         return &recvBuffer_;
     }
@@ -251,14 +259,16 @@ class BotanTLSConnectionImpl
     bool tls_session_established(const Botan::TLS::Session &session) override;
     void tls_verify_cert_chain(
         const std::vector<Botan::X509_Certificate> &cert_chain,
-        const std::vector<std::shared_ptr<const Botan::OCSP::Response>> &ocsp_responses,
+        const std::vector<std::shared_ptr<const Botan::OCSP::Response>>
+            &ocsp_responses,
         const std::vector<Botan::Certificate_Store *> &trusted_roots,
         Botan::Usage_Type usage,
         const std::string &hostname,
         const Botan::TLS::Policy &policy) override;
 
     Botan::AutoSeeded_RNG rng_;
-    Botan::TLS::Session_Manager_In_Memory sessionManager_; // TODO: Make this shared by all connections
+    Botan::TLS::Session_Manager_In_Memory
+        sessionManager_;  // TODO: Make this shared by all connections
     TestPolicy policy_;
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
