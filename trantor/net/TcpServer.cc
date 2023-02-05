@@ -240,5 +240,6 @@ void TcpServer::enableSSL(
         .setUseOldTLS(useOldTLS)
         .setConfCmds(sslConfCmds)
         .setCaPath(caPath)
+        .setValidate(caPath.empty() ? false : true)
         .setIsServer(true);
 }
