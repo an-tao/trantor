@@ -137,6 +137,8 @@ void BotanTLSConnectionImpl::tls_alert(Botan::TLS::Alert alert)
 
 void BotanTLSConnectionImpl::handleSSLError(SSLError err)
 {
+    if(!sslErrorCallback_)
+        return;
     getLoop()->queueInLoop([this]() {
         sslErrorCallback_(SSLError::kSSLInvalidCertificate);
         channel_->close();
