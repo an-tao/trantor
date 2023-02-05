@@ -148,8 +148,10 @@ if(TRANTOR_SSL_PROVIDER STREQUAL "None")
         ${private_headers}
         trantor/net/inner/BotanTLSConnectionImpl.h)
     set(TRANTOR_SSL_PROVIDER "Botan")
+
     # Backwards compatibility
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOTAN)
 
     # Should this be PRIVATE?
     target_link_libraries(${PROJECT_NAME} PUBLIC Botan::Botan)

@@ -475,5 +475,11 @@ class TRANTOR_EXPORT TcpConnection
 };
 
 TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy);
+#if !defined(USE_OPENSSL) && !defined(USE_BOTAN)
+inline TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy)
+{
+    throw std::runtime_error("SSL is not supported");
+}
+#endif
 
 }  // namespace trantor
