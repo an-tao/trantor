@@ -24,7 +24,10 @@ void BotanTLSConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     {
         LOG_TRACE
             << "Low level connection established. Starting TLS handshake.";
-        startClientEncryption();
+        if(policyPtr_->getIsServer())
+            startServerEncryption();
+        else
+            startClientEncryption();
     }
     else
     {
@@ -39,6 +42,7 @@ void BotanTLSConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
     LOG_TRACE << "Low level connection received " << buffer->readableBytes()
               << " bytes.";
     try {
+        assert(channel_ != nullptr);
         channel_->received_data((const uint8_t *)buffer->peek(),
                            buffer->readableBytes());
     }
@@ -77,11 +81,11 @@ void BotanTLSConnectionImpl::startClientEncryption()
     {
         LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
     }
-
+    credsPtr_ = std::make_unique<ClientCredentials>();
     channel_ = std::make_unique<Botan::TLS::Client>(
         *this,
         sessionManager_,
-        creds_,
+        *credsPtr_,
         policy_,
         rng_,
         Botan::TLS::Server_Information(policyPtr_->getHostname()),
@@ -96,10 +100,11 @@ void BotanTLSConnectionImpl::startServerEncryption()
         LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
     }
 
+    credsPtr_ = std::make_unique<ServerCredentials>(policyPtr_->getKeyPath(), policyPtr_->getCertPath());
     channel_ = std::make_unique<Botan::TLS::Server>(
         *this,
         sessionManager_,
-        creds_,
+        *credsPtr_,
         policy_,
         rng_,
         policyPtr_->getUseOldTLS() ? Botan::TLS::Protocol_Version::TLS_V10

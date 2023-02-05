@@ -17,7 +17,7 @@ int main()
     InetAddress addr(8888);
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
-    server.enableSSL("server.pem", "server.pem");
+    server.enableSSL("server.cert", "server.key");
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             // LOG_DEBUG<<"recv callback!";

@@ -59,7 +59,7 @@ struct TRANTOR_EXPORT SSLPolicy final
         caPath_ = caPath;
         return *this;
     }
-    SSLPolicy& getUseOldTLS(bool useOldTLS)
+    SSLPolicy& setUseOldTLS(bool useOldTLS)
     {
         useOldTLS_ = useOldTLS;
         return *this;
@@ -82,6 +82,11 @@ struct TRANTOR_EXPORT SSLPolicy final
     SSLPolicy& setAlpnProtocols(const std::vector<std::string> &alpnProtocols)
     {
         alpnProtocols_ = alpnProtocols;
+        return *this;
+    }
+    SSLPolicy& setIsServer(bool isServer)
+    {
+        isServer_ = isServer;
         return *this;
     }
 
@@ -134,6 +139,10 @@ struct TRANTOR_EXPORT SSLPolicy final
     {
         return alpnProtocols_;
     }
+    bool getIsServer() const
+    {
+        return isServer_;
+    }
 
 protected:
     std::vector<std::pair<std::string, std::string>> sslConfCmds_ = {};
@@ -146,6 +155,7 @@ protected:
     bool validateChain_ = true;
     bool validateDate_ = true;
     std::vector<std::string> alpnProtocols_ = {};
+    bool isServer_ = false;
 };
 /**
  * @brief This class represents a TCP connection.
@@ -364,6 +374,11 @@ class TRANTOR_EXPORT TcpConnection
      * @return false
      */
     virtual bool isSSLConnection() const = 0;
+
+    /**
+     * @brief Get buffer of unprompted data.
+     */
+    virtual MsgBuffer* getRecvBuffer() = 0;
 
     /**
      * @brief Start the SSL encryption on the connection (as a client).

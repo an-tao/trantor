@@ -244,9 +244,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     IgnoreSigPipe initObj;
 #endif
     bool started_{false};
-
-    // OpenSSL SSL context Object;
-    std::shared_ptr<SSLContext> sslCtxPtr_;
+    std::shared_ptr<SSLPolicy> policyPtr_{nullptr};
 };
 
 }  // namespace trantor

@@ -66,21 +66,13 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     if (ioLoop == NULL)
         ioLoop = loop_;
     TcpConnectionPtr newPtr;
-    if (sslCtxPtr_)
+    if (policyPtr_)
     {
         newPtr = std::make_shared<BotanTLSConnectionImpl>(std::make_shared<TcpConnectionImpl>(
             ioLoop,
             sockfd,
             InetAddress(Socket::getLocalAddr(sockfd)),
-            peer), nullptr); /*add policy*/
-#ifdef USE_OPENSSL
-        newPtr = std::make_shared<TcpConnectionImpl>(
-            ioLoop,
-            sockfd,
-            InetAddress(Socket::getLocalAddr(sockfd)),
-            peer,
-            sslCtxPtr_);
-#endif
+            peer), policyPtr_);
     }
     else
     {
@@ -242,20 +234,11 @@ void TcpServer::enableSSL(
     const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
     const std::string &caPath)
 {
-#ifdef USE_OPENSSL
-    /* Create a new OpenSSL context */
-    sslCtxPtr_ =
-        newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds, caPath);
-#else
-    // When not using OpenSSL, using `void` here will
-    // work around the unused parameter warnings without overhead.
-    (void)certPath;
-    (void)keyPath;
-    (void)useOldTLS;
-    (void)sslConfCmds;
-    (void)caPath;
-
-    LOG_FATAL << "OpenSSL is not found in your system!";
-    throw std::runtime_error("OpenSSL is not found in your system!");
-#endif
+    policyPtr_ = std::make_shared<SSLPolicy>();
+    policyPtr_->setKeyPath(keyPath)
+        .setCertPath(certPath)
+        .setUseOldTLS(useOldTLS)
+        .setConfCmds(sslConfCmds)
+        .setCaPath(caPath)
+        .setIsServer(true);
 }

@@ -223,10 +223,12 @@ void TcpClient::enableSSL(
 
     sslPolicyPtr_ = std::make_shared<SSLPolicy>();
     sslPolicyPtr_->setValidate(validateCert)
+        .setUseOldTLS(useOldTLS)
         .setConfCmds(sslConfCmds)
         .setCertPath(certPath)
         .setKeyPath(keyPath)
         .setHostname(hostname)
         .setValidate(validateCert)
-        .setCaPath(caPath);
+        .setCaPath(caPath)
+        .setIsServer(false);
 }
