@@ -1,5 +1,6 @@
 #include "BotanTLSConnectionImpl.h"
 #include <trantor/utils/Logger.h>
+#include <botan/tls_exceptn.h>
 
 using namespace trantor;
 using namespace std::placeholders;
@@ -37,8 +38,17 @@ void BotanTLSConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
 {
     LOG_TRACE << "Low level connection received " << buffer->readableBytes()
               << " bytes.";
-    channel_->received_data((const uint8_t *)buffer->peek(),
+    try {
+        channel_->received_data((const uint8_t *)buffer->peek(),
                            buffer->readableBytes());
+    }
+    catch (const Botan::TLS::TLS_Exception& e) {
+        LOG_ERROR << "Unexpected TLS Exception: " << e.what();
+        conn->shutdown();
+
+        if(connected() == false)
+            handleSSLError(SSLError::kSSLHandshakeError);
+    }
     buffer->retrieveAll();
 }
 
@@ -79,11 +89,22 @@ void BotanTLSConnectionImpl::startClientEncryption()
                   : Botan::TLS::Protocol_Version::TLS_V12);
 }
 
-// void BotanTLSConnectionImpl::startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
-//                             std::function<void()> callback)
-// {
-//     throw std::runtime_error("BotanTLSConnectionImpl does not support server mode. yet.");
-// }
+void BotanTLSConnectionImpl::startServerEncryption()
+{
+    if (policyPtr_->getConfCmds().empty() == false)
+    {
+        LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
+    }
+
+    channel_ = std::make_unique<Botan::TLS::Server>(
+        *this,
+        sessionManager_,
+        creds_,
+        policy_,
+        rng_,
+        policyPtr_->getUseOldTLS() ? Botan::TLS::Protocol_Version::TLS_V10
+                  : Botan::TLS::Protocol_Version::TLS_V12);
+}
 
 void BotanTLSConnectionImpl::tls_emit_data(const uint8_t data[], size_t size)
 {
@@ -111,7 +132,7 @@ void BotanTLSConnectionImpl::tls_alert(Botan::TLS::Alert alert)
     // TODO: handle other alerts
 }
 
-void BotanTLSConnectionImpl::handleCertValidationFail(SSLError err)
+void BotanTLSConnectionImpl::handleSSLError(SSLError err)
 {
     getLoop()->queueInLoop([this]() {
         sslErrorCallback_(SSLError::kSSLInvalidCertificate);
@@ -122,25 +143,25 @@ void BotanTLSConnectionImpl::handleCertValidationFail(SSLError err)
 bool BotanTLSConnectionImpl::tls_session_established(
     const Botan::TLS::Session &session)
 {
-    LOG_TRACE << "tls_session_established. Starting certificate validation.";
+    LOG_TRACE << "tls_session_established";
     bool needCerts = policyPtr_->getValidateDate() || policyPtr_->getValidateDomain();
     const auto& certs = session.peer_certs();
     if(needCerts && session.peer_certs().empty()) {
-        handleCertValidationFail(SSLError::kSSLInvalidCertificate);
-        return false;
+        handleSSLError(SSLError::kSSLInvalidCertificate);
+        throw std::runtime_error("No certificates provided by peer");
     }
     auto& cert = certs[0];
     if(policyPtr_->getValidateDomain() && cert.matches_dns_name(policyPtr_->getHostname()) == false) {
-        handleCertValidationFail(SSLError::kSSLInvalidCertificate);
-        return false;
+        handleSSLError(SSLError::kSSLInvalidCertificate);
+        throw std::runtime_error("Certificate does not match hostname");
     }
     if(policyPtr_->getValidateDate()) {
         auto notBefore = cert.not_before();
         auto notAfter = cert.not_after();
         auto now = Botan::ASN1_Time(std::chrono::system_clock::now());
         if(now < notBefore || now > notAfter) {
-            handleCertValidationFail(SSLError::kSSLInvalidCertificate);
-            return false;
+            handleSSLError(SSLError::kSSLInvalidCertificate);
+            throw std::runtime_error("Certificate is not valid for current time");
         }
     }
     rawConnPtr_->getLoop()->queueInLoop(

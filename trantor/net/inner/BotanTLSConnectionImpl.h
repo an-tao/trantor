@@ -176,16 +176,7 @@ class BotanTLSConnectionImpl
     }
 
     void startClientEncryption();
-    // TODO: Get rid of these functions
-    // virtual void startClientEncryption(
-    //     std::function<void()> callback,
-    //     bool useOldTLS = false,
-    //     bool validateCert = true,
-    //     std::string hostname = "",
-    //     const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
-    //         {});
-    // virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
-    //                                    std::function<void()> callback) override;
+    void startServerEncryption();
 
   protected:
     TcpConnectionPtr rawConnPtr_;
@@ -205,7 +196,7 @@ class BotanTLSConnectionImpl
         rawConnPtr_->connectDestroyed();
     }
 
-    void handleCertValidationFail(SSLError err);
+    void handleSSLError(SSLError err);
 
     void tls_emit_data(const uint8_t data[], size_t size) override;
     void tls_record_received(uint64_t seq_no,
