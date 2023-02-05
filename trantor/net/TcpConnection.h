@@ -157,6 +157,7 @@ protected:
     std::vector<std::string> alpnProtocols_ = {};
     bool isServer_ = false;
 };
+using SSLPolicyPtr = std::shared_ptr<SSLPolicy>;
 /**
  * @brief This class represents a TCP connection.
  *
@@ -472,5 +473,7 @@ class TRANTOR_EXPORT TcpConnection
   private:
     std::shared_ptr<void> contextPtr_;
 };
+
+TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn, std::shared_ptr<SSLPolicy> policy);
 
 }  // namespace trantor

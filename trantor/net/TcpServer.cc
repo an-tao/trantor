@@ -14,7 +14,6 @@
 
 #include "Acceptor.h"
 #include "inner/TcpConnectionImpl.h"
-#include "inner/BotanTLSConnectionImpl.h"
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
 #include <functional>
@@ -68,7 +67,7 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     TcpConnectionPtr newPtr;
     if (policyPtr_)
     {
-        newPtr = std::make_shared<BotanTLSConnectionImpl>(std::make_shared<TcpConnectionImpl>(
+        newPtr = newTLSConnection(std::make_shared<TcpConnectionImpl>(
             ioLoop,
             sockfd,
             InetAddress(Socket::getLocalAddr(sockfd)),

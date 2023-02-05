@@ -14,7 +14,6 @@
 #include <trantor/utils/Logger.h>
 #include "Connector.h"
 #include "inner/TcpConnectionImpl.h"
-#include "inner/BotanTLSConnectionImpl.h"
 #include <trantor/net/EventLoop.h>
 
 #include <functional>
@@ -136,7 +135,7 @@ void TcpClient::newConnection(int sockfd)
     if (sslPolicyPtr_)
     {
         conn =
-            std::make_shared<BotanTLSConnectionImpl>(std::make_shared<TcpConnectionImpl>(loop_,
+            newTLSConnection(std::make_shared<TcpConnectionImpl>(loop_,
                                                                 sockfd,
                                                                 localAddr,
                                                                 peerAddr)

@@ -197,3 +197,7 @@ void BotanTLSConnectionImpl::forceClose()
     channel_->close();
     getLoop()->queueInLoop([this]() { rawConnPtr_->forceClose(); });
 }
+TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn, std::shared_ptr<SSLPolicy> policy)
+{
+    return std::make_shared<BotanTLSConnectionImpl>(std::move(lowerConn), std::move(policy));
+}

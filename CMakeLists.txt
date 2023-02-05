@@ -106,7 +106,6 @@ set(private_headers
     trantor/net/inner/Poller.h
     trantor/net/inner/Socket.h
     trantor/net/inner/TcpConnectionImpl.h
-    trantor/net/inner/BotanTLSConnectionImpl.h
     trantor/net/inner/Timer.h
     trantor/net/inner/TimerQueue.h
     trantor/net/inner/poller/EpollPoller.h
