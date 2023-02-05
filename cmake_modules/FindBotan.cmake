@@ -1,9 +1,9 @@
-find_package(PkgConfig REQUIRED)
-
 # TODO: Windows support
 if(WIN32)
   return()
 endif()
+
+find_package(PkgConfig REQUIRED)
 
 if (NOT TARGET Botan::Botan)
   pkg_check_modules(Botan QUIET IMPORTED_TARGET botan-2)
