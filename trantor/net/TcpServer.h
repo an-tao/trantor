@@ -13,18 +13,19 @@
  */
 
 #pragma once
-#include <trantor/net/callbacks.h>
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/Logger.h>
+#include <trantor/exports.h>
 #include <trantor/net/EventLoopThreadPool.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
+#include <trantor/net/callbacks.h>
+#include <trantor/utils/Logger.h>
+#include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/TimingWheel.h>
-#include <trantor/exports.h>
-#include <string>
+#include <csignal>
 #include <memory>
 #include <set>
-#include <signal.h>
+#include <string>
+
 namespace trantor
 {
 class Acceptor;
@@ -48,7 +49,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      */
     TcpServer(EventLoop *loop,
               const InetAddress &address,
-              const std::string &name,
+              std::string name,
               bool reUseAddr = true,
               bool reUsePort = true);
     ~TcpServer();
@@ -68,6 +69,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     /**
      * @brief Set the number of event loops in which the I/O of connections to
      * the server is handled.
+     * An EventLoopThreadPool is created and managed by TcpServer.
      *
      * @param num
      */
@@ -76,11 +78,13 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
         assert(!started_);
         loopPoolPtr_ = std::make_shared<EventLoopThreadPool>(num);
         loopPoolPtr_->start();
+        ioLoops_ = loopPoolPtr_->getLoops();
     }
 
     /**
      * @brief Set the event loops pool in which the I/O of connections to
      * the server is handled.
+     * A shared_ptr of EventLoopThreadPool is copied.
      *
      * @param pool
      */
@@ -89,7 +93,23 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
         assert(pool->size() > 0);
         assert(!started_);
         loopPoolPtr_ = pool;
-        loopPoolPtr_->start();
+        loopPoolPtr_->start();  // TODO: should not start by TcpServer
+        ioLoops_ = loopPoolPtr_->getLoops();
+    }
+
+    /**
+     * @brief Set the event loops in which the I/O of connections to
+     * the server is handled.
+     * The loops are managed by caller. Caller should ensure that ioLoops
+     * lives longer than TcpServer.
+     *
+     * @param ioLoops
+     */
+    void setIoLoops(const std::vector<trantor::EventLoop *> &ioLoops)
+    {
+        assert(!ioLoops.empty());
+        assert(!started_);
+        ioLoops_ = ioLoops;
     }
 
     /**
@@ -152,7 +172,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      *
      * @return const std::string
      */
-    const std::string ipPort() const;
+    std::string ipPort() const;
 
     /**
      * @brief Get the address of the server.
@@ -178,7 +198,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      */
     std::vector<EventLoop *> getIoLoops() const
     {
-        return loopPoolPtr_->getLoops();
+        return ioLoops_;
     }
 
     /**
@@ -215,10 +235,12 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
                    const std::string &caPath = "");
 
   private:
-    EventLoop *loop_;
     void handleCloseInLoop(const TcpConnectionPtr &connectionPtr);
-    std::unique_ptr<Acceptor> acceptorPtr_;
     void newConnection(int fd, const InetAddress &peer);
+    void connectionClosed(const TcpConnectionPtr &connectionPtr);
+
+    EventLoop *loop_;
+    std::unique_ptr<Acceptor> acceptorPtr_;
     std::string serverName_;
     std::set<TcpConnectionPtr> connSet_;
 
@@ -228,8 +250,17 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
 
     size_t idleTimeout_{0};
     std::map<EventLoop *, std::shared_ptr<TimingWheel>> timingWheelMap_;
-    void connectionClosed(const TcpConnectionPtr &connectionPtr);
+
+    // `loopPoolPtr_` may and may not hold the internal thread pool.
+    // We should not access it directly in codes.
+    // Instead, we should use its delegation variable `ioLoops_`.
     std::shared_ptr<EventLoopThreadPool> loopPoolPtr_;
+    // If one of `setIoLoopNum()`, `setIoLoopThreadPool()` and `setIoLoops()` is
+    // called, `ioLoops_` will hold the loops passed in.
+    // Otherwise, it should contain only one element, which is `loop_`.
+    std::vector<EventLoop *> ioLoops_;
+    size_t nextLoopIdx_{0};
+
 #ifndef _WIN32
     class IgnoreSigPipe
     {

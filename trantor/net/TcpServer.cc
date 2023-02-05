@@ -12,31 +12,32 @@
  *
  */
 
-#include "Acceptor.h"
-#include "inner/TcpConnectionImpl.h"
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
 #include <functional>
 #include <vector>
+#include "Acceptor.h"
+#include "inner/TcpConnectionImpl.h"
 using namespace trantor;
 using namespace std::placeholders;
 
 TcpServer::TcpServer(EventLoop *loop,
                      const InetAddress &address,
-                     const std::string &name,
+                     std::string name,
                      bool reUseAddr,
                      bool reUsePort)
     : loop_(loop),
       acceptorPtr_(new Acceptor(loop, address, reUseAddr, reUsePort)),
-      serverName_(name),
+      serverName_(std::move(name)),
       recvMessageCallback_([](const TcpConnectionPtr &, MsgBuffer *buffer) {
           LOG_ERROR << "unhandled recv message [" << buffer->readableBytes()
                     << " bytes]";
           buffer->retrieveAll();
-      })
+      }),
+      ioLoops_({loop})
 {
     acceptorPtr_->setNewConnectionCallback(
-        std::bind(&TcpServer::newConnection, this, _1, _2));
+        [this](int fd, const InetAddress &peer) { newConnection(fd, peer); });
 }
 
 TcpServer::~TcpServer()
@@ -49,21 +50,8 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 {
     LOG_TRACE << "new connection:fd=" << sockfd
               << " address=" << peer.toIpPort();
-    // test code for blocking or nonblocking
-    //    std::vector<char> str(1024*1024*100);
-    //    for(int i=0;i<str.size();i++)
-    //        str[i]='A';
-    //    LOG_TRACE<<"vector size:"<<str.size();
-    //    size_t n=write(sockfd,&str[0],str.size());
-    //    LOG_TRACE<<"write "<<n<<" bytes";
     loop_->assertInLoopThread();
-    EventLoop *ioLoop = NULL;
-    if (loopPoolPtr_ && loopPoolPtr_->size() > 0)
-    {
-        ioLoop = loopPoolPtr_->getNextLoop();
-    }
-    if (ioLoop == NULL)
-        ioLoop = loop_;
+    EventLoop *ioLoop = ioLoops_[nextLoopIdx_++ % ioLoops_.size()];
     std::shared_ptr<TcpConnectionImpl> newPtr;
     if (sslCtxPtr_)
     {
@@ -102,7 +90,10 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
             if (writeCompleteCallback_)
                 writeCompleteCallback_(connectionPtr);
         });
-    newPtr->setCloseCallback(std::bind(&TcpServer::connectionClosed, this, _1));
+
+    newPtr->setCloseCallback([this](const TcpConnectionPtr &closeConnPtr) {
+        connectionClosed(closeConnPtr);
+    });
     connSet_.insert(newPtr);
     newPtr->connectEstablished();
 }
@@ -114,29 +105,15 @@ void TcpServer::start()
         started_ = true;
         if (idleTimeout_ > 0)
         {
-            timingWheelMap_[loop_] =
-                std::make_shared<TimingWheel>(loop_,
-                                              idleTimeout_,
-                                              1.0F,
-                                              idleTimeout_ < 500
-                                                  ? idleTimeout_ + 1
-                                                  : 100);
-            if (loopPoolPtr_)
+            for (EventLoop *loop : ioLoops_)
             {
-                auto loopNum = loopPoolPtr_->size();
-                while (loopNum > 0)
-                {
-                    // LOG_TRACE << "new Wheel loopNum=" << loopNum;
-                    auto poolLoop = loopPoolPtr_->getNextLoop();
-                    timingWheelMap_[poolLoop] =
-                        std::make_shared<TimingWheel>(poolLoop,
-                                                      idleTimeout_,
-                                                      1.0F,
-                                                      idleTimeout_ < 500
-                                                          ? idleTimeout_ + 1
-                                                          : 100);
-                    --loopNum;
-                }
+                timingWheelMap_[loop] =
+                    std::make_shared<TimingWheel>(loop,
+                                                  idleTimeout_,
+                                                  1.0F,
+                                                  idleTimeout_ < 500
+                                                      ? idleTimeout_ + 1
+                                                      : 100);
             }
         }
         LOG_TRACE << "map size=" << timingWheelMap_.size();
@@ -156,7 +133,7 @@ void TcpServer::stop()
         {
             connPtrs.push_back(conn);
         }
-        for (auto connection : connPtrs)
+        for (auto &connection : connPtrs)
         {
             connection->forceClose();
         }
@@ -173,7 +150,7 @@ void TcpServer::stop()
             {
                 connPtrs.push_back(conn);
             }
-            for (auto connection : connPtrs)
+            for (auto &connection : connPtrs)
             {
                 connection->forceClose();
             }
@@ -223,7 +200,7 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
     }
 }
 
-const std::string TcpServer::ipPort() const
+std::string TcpServer::ipPort() const
 {
     return acceptorPtr_->addr().toIpPort();
 }
