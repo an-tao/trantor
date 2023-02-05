@@ -98,7 +98,7 @@ jobs:
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
-        sudo apt install libbotan-2 libbotan-2-dev dos2unix
+        sudo apt install libbotan-2-4 libbotan-2-dev dos2unix
     - name: (Linux) Install dependencies
       if: matrix.buildname == 'ubuntu-20.04/gcc'
       run: |
