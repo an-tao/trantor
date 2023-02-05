@@ -149,6 +149,18 @@ bool BotanTLSConnectionImpl::tls_session_established(
     return true;
 }
 
+void BotanTLSConnectionImpl::tls_verify_cert_chain(
+    const std::vector<Botan::X509_Certificate> &certs,
+    const std::vector<std::shared_ptr<const Botan::OCSP::Response>> &ocsp,
+    const std::vector<Botan::Certificate_Store *> &trusted_roots,
+    Botan::Usage_Type usage,
+    const std::string &hostname,
+    const Botan::TLS::Policy &policy)
+{
+    if(policyPtr_->getValidateChain())
+        Botan::TLS::Callbacks::tls_verify_cert_chain(certs, ocsp, trusted_roots, usage, hostname, policy);
+}
+
 void BotanTLSConnectionImpl::shutdown()
 {
     channel_->close();

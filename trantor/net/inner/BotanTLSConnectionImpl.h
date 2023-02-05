@@ -25,7 +25,7 @@ class Client_Credentials : public Botan::Credentials_Manager
         // return a list of certificates of CAs we trust for tls server
         // certificates ownership of the pointers remains with
         // Credentials_Manager
-        return {&m_cert_store};
+        return {&certStore_};
     }
 
     std::vector<Botan::X509_Certificate> cert_chain(
@@ -47,20 +47,7 @@ class Client_Credentials : public Botan::Credentials_Manager
         // associated with the leaf certificate here
         return nullptr;
     }
-
-    // TOOD: Add ablity to disable cert verification from SSLPolicy
-    // void tls_verify_cert_chain(
-    //       const std::vector<Botan::X509_Certificate>& cert_chain,
-    //       const std::vector<std::shared_ptr<const Botan::OCSP::Response>>&
-    //       ocsp_responses, const std::vector<Botan::Certificate_Store*>&
-    //       trusted_roots, Botan::Usage_Type usage, const std::string&
-    //       hostname, const Botan::TLS::Policy& policy)
-    // {
-
-    // }
-
-  private:
-    Botan::System_Certificate_Store m_cert_store;
+    Botan::System_Certificate_Store certStore_;
 };
 
 class TestPolicy : public Botan::TLS::Policy
@@ -226,6 +213,13 @@ class BotanTLSConnectionImpl
                              size_t size) override;
     void tls_alert(Botan::TLS::Alert alert) override;
     bool tls_session_established(const Botan::TLS::Session &session) override;
+    void tls_verify_cert_chain(
+        const std::vector<Botan::X509_Certificate> &cert_chain,
+        const std::vector<std::shared_ptr<const Botan::OCSP::Response>> &ocsp_responses,
+        const std::vector<Botan::Certificate_Store *> &trusted_roots,
+        Botan::Usage_Type usage,
+        const std::string &hostname,
+        const Botan::TLS::Policy &policy) override;
 
     Botan::AutoSeeded_RNG rng_;
     Botan::TLS::Session_Manager_In_Memory sessionManager_; // TODO: Make this shated by all connections
