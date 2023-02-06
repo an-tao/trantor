@@ -115,7 +115,8 @@ void BotanTLSConnectionImpl::startClientEncryption()
         rng,
         Botan::TLS::Server_Information(policyPtr_->getHostname()),
         policyPtr_->getUseOldTLS() ? Botan::TLS::Protocol_Version::TLS_V10
-                                   : Botan::TLS::Protocol_Version::TLS_V12);
+                                   : Botan::TLS::Protocol_Version::TLS_V12,
+        policyPtr_->getAlpnProtocols());
 }
 
 void BotanTLSConnectionImpl::startServerEncryption()
@@ -227,6 +228,7 @@ void BotanTLSConnectionImpl::forceClose()
     channel_->close();
     getLoop()->queueInLoop([this]() { rawConnPtr_->forceClose(); });
 }
+
 TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn,
                                            std::shared_ptr<SSLPolicy> policy)
 {

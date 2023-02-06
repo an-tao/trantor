@@ -159,16 +159,9 @@ class TcpConnectionImpl : public TcpConnection,
         return &readBuffer_;
     }
 
-  private:
-    /// Internal use only.
-
-    std::weak_ptr<KickoffEntry> kickoffEntry_;
-    std::weak_ptr<TimingWheel> timingWheelWeakPtr_;
-    size_t idleTimeout_{0};
-    Date lastTimingWheelUpdateTime_;
-
-    void enableKickingOff(size_t timeout,
-                          const std::shared_ptr<TimingWheel> &timingWheel)
+    void enableKickingOff(
+        size_t timeout,
+        const std::shared_ptr<TimingWheel> &timingWheel) override
     {
         assert(timingWheel);
         assert(timingWheel->getLoop() == loop_);
@@ -179,6 +172,14 @@ class TcpConnectionImpl : public TcpConnection,
         idleTimeout_ = timeout;
         timingWheel->insertEntry(timeout, entry);
     }
+
+  private:
+    /// Internal use only.
+
+    std::weak_ptr<KickoffEntry> kickoffEntry_;
+    std::weak_ptr<TimingWheel> timingWheelWeakPtr_;
+    size_t idleTimeout_{0};
+    Date lastTimingWheelUpdateTime_;
     void extendLife();
 #ifndef _WIN32
     void sendFile(int sfd, size_t offset = 0, size_t length = 0);

@@ -83,6 +83,11 @@ struct TRANTOR_EXPORT SSLPolicy final
         isServer_ = isServer;
         return *this;
     }
+    SSLPolicy &setAlpnProtocols(std::vector<std::string> &&alpnProtocols)
+    {
+        alpnProtocols_ = std::move(alpnProtocols);
+        return *this;
+    }
 
     // Composite pattern
     SSLPolicy &setValidate(bool enable)
@@ -137,6 +142,10 @@ struct TRANTOR_EXPORT SSLPolicy final
     {
         return isServer_;
     }
+    const std::vector<std::string> &getAlpnProtocols()
+    {
+        return alpnProtocols_;
+    }
 
   protected:
     std::vector<std::pair<std::string, std::string>> sslConfCmds_ = {};
@@ -144,14 +153,15 @@ struct TRANTOR_EXPORT SSLPolicy final
     std::string certPath_ = "";
     std::string keyPath_ = "";
     std::string caPath_ = "";
+    std::vector<std::string> alpnProtocols_ = {};
     bool useOldTLS_ = false;  // turn into specific version
     bool validateDomain_ = true;
     bool validateChain_ = true;
     bool validateDate_ = true;
-    std::vector<std::string> alpnProtocols_ = {};
     bool isServer_ = false;
 };
 using SSLPolicyPtr = std::shared_ptr<SSLPolicy>;
+class TimingWheel;
 /**
  * @brief This class represents a TCP connection.
  *
@@ -424,6 +434,8 @@ class TRANTOR_EXPORT TcpConnection
     // TODO: These should be internal APIs
     virtual void connectEstablished() = 0;
     virtual void connectDestroyed() = 0;
+    virtual void enableKickingOff(size_t timeout,
+                    const std::shared_ptr<TimingWheel> &timingWheel) = 0;
 
   protected:
     // callbacks
@@ -441,7 +453,7 @@ class TRANTOR_EXPORT TcpConnection
 
 TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
                                   std::shared_ptr<SSLPolicy> policy);
-#if !defined(USE_OPENSSL) && !defined(USE_BOTAN)
+#if !(defined(USE_OPENSSL) || defined(USE_BOTAN))
 inline TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
                                          std::shared_ptr<SSLPolicy> policy)
 {

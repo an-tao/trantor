@@ -235,6 +235,12 @@ class BotanTLSConnectionImpl
         rawConnPtr_->connectDestroyed();
     }
 
+    void enableKickingOff(size_t timeout,
+                          const std::shared_ptr<TimingWheel> &timingWheel)
+    {
+        rawConnPtr_->enableKickingOff(timeout, timingWheel);
+    }
+
     void handleSSLError(SSLError err);
 
     void tls_emit_data(const uint8_t data[], size_t size) override;
