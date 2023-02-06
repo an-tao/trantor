@@ -164,6 +164,12 @@ class TcpConnectionImpl : public TcpConnection,
         return "";
     }
 
+    virtual CertificatePtr peerCertificate() const override
+    {
+        // TcpConnectionImpl does not support SSL
+        return nullptr;
+    }
+
     void enableKickingOff(
         size_t timeout,
         const std::shared_ptr<TimingWheel> &timingWheel) override

@@ -219,6 +219,9 @@ bool BotanTLSConnectionImpl::tls_session_established(
                 "Certificate is not valid for current time");
         }
     }
+    if (!certs.size())
+        peerCertPtr_ = std::make_shared<BotanCertificate>(cert);
+
     rawConnPtr_->getLoop()->queueInLoop(
         [this]() { connectionCallback_(shared_from_this()); });
     // Do we want to cache all sessions?

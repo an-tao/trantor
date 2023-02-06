@@ -162,6 +162,16 @@ struct TRANTOR_EXPORT SSLPolicy final
 };
 using SSLPolicyPtr = std::shared_ptr<SSLPolicy>;
 class TimingWheel;
+
+struct Certificate
+{
+    virtual ~Certificate() = default;
+    virtual std::string sha1Fingerprint() const = 0;
+    virtual std::string sha256Fingerprint() const = 0;
+    virtual std::string pem() const = 0;
+};
+using CertificatePtr = std::shared_ptr<Certificate>;
+
 /**
  * @brief This class represents a TCP connection.
  *
@@ -385,6 +395,12 @@ class TRANTOR_EXPORT TcpConnection
      * @brief Get buffer of unprompted data.
      */
     virtual MsgBuffer *getRecvBuffer() = 0;
+
+    /**
+     * @brief Get peer certificate (if any).
+     */
+
+    virtual CertificatePtr peerCertificate() const = 0;
 
     void setValidationPolicy(SSLPolicy &&policy)
     {

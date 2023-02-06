@@ -96,6 +96,29 @@ class ServerCredentials : public Botan::Credentials_Manager
     std::unique_ptr<Botan::X509_Certificate> cert_;
 };
 
+struct BotanCertificate : public Certificate
+{
+    BotanCertificate(const Botan::X509_Certificate &cert) : cert_(cert)
+    {
+    }
+
+    virtual std::string sha1Fingerprint() const override
+    {
+        return cert_.fingerprint("SHA-1");
+    }
+
+    virtual std::string sha256Fingerprint() const override
+    {
+        return cert_.fingerprint("SHA-256");
+    }
+
+    virtual std::string pem() const override
+    {
+        return cert_.PEM_encode();
+    }
+    Botan::X509_Certificate cert_;
+};
+
 class BotanTLSConnectionImpl
     : public TcpConnection,
       public NonCopyable,
@@ -213,6 +236,11 @@ class BotanTLSConnectionImpl
         return &recvBuffer_;
     }
 
+    virtual CertificatePtr peerCertificate() const override
+    {
+        return nullptr;
+    }
+
     virtual std::string applicationProtocol() const override;
     void startClientEncryption();
     void startServerEncryption();
@@ -264,6 +292,7 @@ class BotanTLSConnectionImpl
     Botan::TLS::Default_Policy policy_;
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
+    CertificatePtr peerCertPtr_;
     MsgBuffer recvBuffer_;
     // TODO: Rename this to avoid confusion
     SSLPolicyPtr policyPtr_;
