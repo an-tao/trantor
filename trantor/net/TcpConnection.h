@@ -483,10 +483,10 @@ class TRANTOR_EXPORT TcpConnection
     std::shared_ptr<void> contextPtr_;
 };
 
-TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
+TRANTOR_EXPORT TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
                                   SSLPolicyPtr policy,
                                   SSLContextPtr ctx);
-SSLContextPtr newSSLContext(const SSLPolicy &policy);
+TRANTOR_EXPORT SSLContextPtr newSSLContext(const SSLPolicy &policy);
 #if !(defined(USE_OPENSSL) || defined(USE_BOTAN))
 inline TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
                                          SSLPolicyPtr policy,
