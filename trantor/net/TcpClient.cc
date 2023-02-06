@@ -216,7 +216,6 @@ void TcpClient::enableSSL(
                        hostname.end(),
                        hostname.begin(),
                        [](unsigned char c) { return tolower(c); });
-        SSLHostName_ = std::move(hostname);
     }
 
     sslPolicyPtr_ = std::make_shared<SSLPolicy>();
