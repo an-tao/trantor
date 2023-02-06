@@ -241,7 +241,8 @@ void EventLoop::loop()
     catch (std::exception &e)
     {
         LOG_WARN << "Exception thrown from event loop, rethrowing after "
-                    "running functions on quit: " << e.what();
+                    "running functions on quit: "
+                 << e.what();
         loopException = std::current_exception();
     }
 

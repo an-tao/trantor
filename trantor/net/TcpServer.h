@@ -110,6 +110,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
         assert(!ioLoops.empty());
         assert(!started_);
         ioLoops_ = ioLoops;
+        loopPoolPtr_.reset();
     }
 
     /**
