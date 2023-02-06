@@ -236,6 +236,7 @@ void BotanTLSConnectionImpl::tls_verify_cert_chain(
     const std::string &hostname,
     const Botan::TLS::Policy &policy)
 {
+    sniName_ = hostname;
     if (policyPtr_->getValidateChain())
         Botan::TLS::Callbacks::tls_verify_cert_chain(
             certs, ocsp, trusted_roots, usage, hostname, policy);

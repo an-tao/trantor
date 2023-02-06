@@ -238,7 +238,12 @@ class BotanTLSConnectionImpl
 
     virtual CertificatePtr peerCertificate() const override
     {
-        return nullptr;
+        return peerCertPtr_;
+    }
+
+    virtual std::string sniName() const override
+    {
+        return sniName_;
     }
 
     virtual std::string applicationProtocol() const override;
@@ -293,6 +298,7 @@ class BotanTLSConnectionImpl
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
     CertificatePtr peerCertPtr_;
+    std::string sniName_;
     MsgBuffer recvBuffer_;
     // TODO: Rename this to avoid confusion
     SSLPolicyPtr policyPtr_;

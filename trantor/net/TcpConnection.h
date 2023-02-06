@@ -398,9 +398,17 @@ class TRANTOR_EXPORT TcpConnection
 
     /**
      * @brief Get peer certificate (if any).
+     * 
+     * @return pointer to Certificate object or nullptr if no certificate was provided
      */
-
     virtual CertificatePtr peerCertificate() const = 0;
+
+    /**
+     * @brief Get the SNI name (for server connections only)
+     * 
+     * @return Empty string if no SNI name was provided (not an SSL connection or peer did not provide SNI)
+    */
+    virtual std::string sniName() const = 0;
 
     void setValidationPolicy(SSLPolicy &&policy)
     {

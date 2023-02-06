@@ -170,6 +170,11 @@ class TcpConnectionImpl : public TcpConnection,
         return nullptr;
     }
 
+    virtual std::string sniName() const override
+    {
+        return "";
+    }
+
     void enableKickingOff(
         size_t timeout,
         const std::shared_ptr<TimingWheel> &timingWheel) override
