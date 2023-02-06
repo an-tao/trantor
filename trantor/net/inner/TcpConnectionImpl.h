@@ -159,6 +159,11 @@ class TcpConnectionImpl : public TcpConnection,
         return &readBuffer_;
     }
 
+    virtual std::string applicationProtocol() const override
+    {
+        return "";
+    }
+
     void enableKickingOff(
         size_t timeout,
         const std::shared_ptr<TimingWheel> &timingWheel) override

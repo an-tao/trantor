@@ -310,6 +310,7 @@ class TRANTOR_EXPORT TcpConnection
     {
         contextPtr_ = std::move(context);
     }
+    virtual std::string applicationProtocol() const = 0;
 
     /**
      * @brief Get the custom data from the connection.

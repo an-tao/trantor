@@ -213,6 +213,7 @@ class BotanTLSConnectionImpl
         return &recvBuffer_;
     }
 
+    virtual std::string applicationProtocol() const override;
     void startClientEncryption();
     void startServerEncryption();
 
