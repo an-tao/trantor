@@ -25,8 +25,7 @@ int main()
                                                          serverAddr,
                                                          "tcpclienttest");
         auto policy = std::make_shared<trantor::SSLPolicy>();
-        policy->setValidate(false)
-            .setUseOldTLS(false);
+        policy->setValidate(false).setUseOldTLS(false);
         client[i]->enableSSL(std::move(policy));
         client[i]->setConnectionCallback(
             [i, &loop, &connCount](const TcpConnectionPtr &conn) {

@@ -152,7 +152,7 @@ std::string BotanTLSConnectionImpl::tls_server_choose_app_protocol(
 {
     assert(policyPtr_->getIsServer());
     const auto &serverProtos = policyPtr_->getAlpnProtocols();
-    if(serverProtos.empty() || client_protos.empty())
+    if (serverProtos.empty() || client_protos.empty())
         return "";
     // usually protocols have only a few elements, so N^2 is fine
     // (and actually faster than using a set)
@@ -164,7 +164,7 @@ std::string BotanTLSConnectionImpl::tls_server_choose_app_protocol(
                 return clientProto;
         }
     }
-    return "";
+    throw Botan::TLS::Alert(Botan::TLS::Alert::NO_APPLICATION_PROTOCOL);
 }
 
 void BotanTLSConnectionImpl::tls_alert(Botan::TLS::Alert alert)
