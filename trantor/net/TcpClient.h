@@ -243,7 +243,6 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
     SSLPolicyPtr sslPolicyPtr_;
     SSLContextPtr sslContextPtr_;
-    std::string SSLHostName_;
     bool validateCert_{false};
 
 #ifndef _WIN32
