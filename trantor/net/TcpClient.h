@@ -219,6 +219,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     void enableSSL(SSLPolicyPtr policy)
     {
         sslPolicyPtr_ = std::move(policy);
+        sslContextPtr_ = newSSLContext(*sslPolicyPtr_);
     }
 
   private:
@@ -240,7 +241,8 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     // always in loop thread
     mutable std::mutex mutex_;
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
-    std::shared_ptr<SSLPolicy> sslPolicyPtr_;
+    SSLPolicyPtr sslPolicyPtr_;
+    SSLContextPtr sslContextPtr_;
     std::string SSLHostName_;
     bool validateCert_{false};
 

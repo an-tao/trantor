@@ -219,6 +219,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     void enableSSL(SSLPolicyPtr policy)
     {
         policyPtr_ = std::move(policy);
+        sslContextPtr_ = newSSLContext(*policyPtr_);
     }
 
   private:
@@ -252,6 +253,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
 #endif
     bool started_{false};
     SSLPolicyPtr policyPtr_{nullptr};
+    SSLContextPtr sslContextPtr_{nullptr};
 };
 
 }  // namespace trantor

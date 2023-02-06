@@ -134,9 +134,11 @@ void TcpClient::newConnection(int sockfd)
     LOG_TRACE << "SSL enabled: " << (sslPolicyPtr_ ? "true" : "false");
     if (sslPolicyPtr_)
     {
+        assert(sslContextPtr_);
         conn = newTLSConnection(std::make_shared<TcpConnectionImpl>(
                                     loop_, sockfd, localAddr, peerAddr),
-                                sslPolicyPtr_);
+                                sslPolicyPtr_,
+                                sslContextPtr_);
     }
     else
     {
@@ -227,4 +229,5 @@ void TcpClient::enableSSL(
         .setValidate(validateCert)
         .setCaPath(caPath)
         .setIsServer(false);
+    sslContextPtr_ = newSSLContext(*sslPolicyPtr_);
 }

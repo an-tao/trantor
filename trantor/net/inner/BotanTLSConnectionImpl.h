@@ -55,11 +55,9 @@ class ClientCredentials : public Botan::Credentials_Manager
 class ServerCredentials : public Botan::Credentials_Manager
 {
   public:
-    ServerCredentials(const std::string &keyFile, const std::string &certFile)
+    ServerCredentials(Botan::Private_Key *key, Botan::X509_Certificate *cert)
+        : key_(key), cert_(cert)
     {
-        Botan::DataSource_Stream in(keyFile);
-        key_ = Botan::PKCS8::load_key(in);
-        cert_ = std::make_unique<Botan::X509_Certificate>(certFile);
     }
 
     std::vector<Botan::Certificate_Store *> trusted_certificate_authorities(
@@ -88,12 +86,12 @@ class ServerCredentials : public Botan::Credentials_Manager
     {
         // return the private key associated with the leaf certificate,
         // in this case the one associated with "botan.randombit.net.crt"
-        return key_.get();
+        return key_;
     }
 
   private:
-    std::unique_ptr<Botan::Private_Key> key_;
-    std::unique_ptr<Botan::X509_Certificate> cert_;
+    Botan::Private_Key *key_;
+    Botan::X509_Certificate *cert_;
 };
 
 struct BotanCertificate : public Certificate
@@ -119,6 +117,12 @@ struct BotanCertificate : public Certificate
     Botan::X509_Certificate cert_;
 };
 
+struct SSLContext
+{
+    std::unique_ptr<Botan::Private_Key> key;
+    std::unique_ptr<Botan::X509_Certificate> cert;
+};
+
 class BotanTLSConnectionImpl
     : public TcpConnection,
       public NonCopyable,
@@ -126,7 +130,9 @@ class BotanTLSConnectionImpl
       public std::enable_shared_from_this<BotanTLSConnectionImpl>
 {
   public:
-    BotanTLSConnectionImpl(TcpConnectionPtr rawConn, SSLPolicyPtr policy);
+    BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
+                           SSLPolicyPtr policy,
+                           SSLContextPtr context);
     virtual ~BotanTLSConnectionImpl(){};
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override
@@ -302,6 +308,7 @@ class BotanTLSConnectionImpl
     MsgBuffer recvBuffer_;
     // TODO: Rename this to avoid confusion
     SSLPolicyPtr policyPtr_;
+    SSLContextPtr contextPtr_;
 
     bool closingTLS_ = false;
     bool isServer_ = false;

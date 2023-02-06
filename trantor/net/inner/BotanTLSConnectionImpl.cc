@@ -12,8 +12,11 @@ static Botan::TLS::Session_Manager_In_Memory sessionManager(sessionManagerRng);
 static thread_local Botan::System_RNG rng;
 
 BotanTLSConnectionImpl::BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
-                                               SSLPolicyPtr policy)
-    : rawConnPtr_(std::move(rawConn)), policyPtr_(std::move(policy))
+                                               SSLPolicyPtr policy,
+                                               SSLContextPtr context)
+    : rawConnPtr_(std::move(rawConn)),
+      policyPtr_(std::move(policy)),
+      contextPtr_(std::move(context))
 {
     rawConnPtr_->setConnectionCallback(
         std::bind(&BotanTLSConnectionImpl::onConnection, this, _1));
@@ -126,8 +129,8 @@ void BotanTLSConnectionImpl::startServerEncryption()
         LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
     }
 
-    credsPtr_ = std::make_unique<ServerCredentials>(policyPtr_->getKeyPath(),
-                                                    policyPtr_->getCertPath());
+    credsPtr_ = std::make_unique<ServerCredentials>(contextPtr_->key.get(),
+                                                    contextPtr_->cert.get());
     channel_ = std::make_unique<Botan::TLS::Server>(
         *this, sessionManager, *credsPtr_, policy_, rng);
 }
@@ -259,8 +262,27 @@ std::string BotanTLSConnectionImpl::applicationProtocol() const
 }
 
 TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn,
-                                           std::shared_ptr<SSLPolicy> policy)
+                                           SSLPolicyPtr policy,
+                                           SSLContextPtr ctx)
 {
     return std::make_shared<BotanTLSConnectionImpl>(std::move(lowerConn),
-                                                    std::move(policy));
+                                                    std::move(policy),
+                                                    std::move(ctx));
+}
+
+SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
+{
+    auto ctx = std::make_shared<SSLContext>();
+    if (!policy.getKeyPath().empty())
+    {
+        Botan::DataSource_Stream in(policy.getKeyPath());
+        ctx->key = Botan::PKCS8::load_key(in);
+    }
+
+    if (!policy.getCertPath().empty())
+    {
+        ctx->cert =
+            std::make_unique<Botan::X509_Certificate>(policy.getCertPath());
+    }
+    return ctx;
 }

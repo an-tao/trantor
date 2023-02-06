@@ -170,6 +170,10 @@ struct Certificate
     virtual std::string sha256Fingerprint() const = 0;
     virtual std::string pem() const = 0;
 };
+
+struct SSLContext;
+using SSLContextPtr = std::shared_ptr<SSLContext>;
+
 using CertificatePtr = std::shared_ptr<Certificate>;
 
 /**
@@ -398,16 +402,18 @@ class TRANTOR_EXPORT TcpConnection
 
     /**
      * @brief Get peer certificate (if any).
-     * 
-     * @return pointer to Certificate object or nullptr if no certificate was provided
+     *
+     * @return pointer to Certificate object or nullptr if no certificate was
+     * provided
      */
     virtual CertificatePtr peerCertificate() const = 0;
 
     /**
      * @brief Get the SNI name (for server connections only)
-     * 
-     * @return Empty string if no SNI name was provided (not an SSL connection or peer did not provide SNI)
-    */
+     *
+     * @return Empty string if no SNI name was provided (not an SSL connection
+     * or peer did not provide SNI)
+     */
     virtual std::string sniName() const = 0;
 
     void setValidationPolicy(SSLPolicy &&policy)
@@ -478,10 +484,17 @@ class TRANTOR_EXPORT TcpConnection
 };
 
 TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
-                                  std::shared_ptr<SSLPolicy> policy);
+                                  SSLPolicyPtr policy,
+                                  SSLContextPtr ctx);
+SSLContextPtr newSSLContext(const SSLPolicy &policy);
 #if !(defined(USE_OPENSSL) || defined(USE_BOTAN))
 inline TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
-                                         std::shared_ptr<SSLPolicy> policy)
+                                         SSLPolicyPtr policy,
+                                         SSLContextPtr ctx)
+{
+    throw std::runtime_error("SSL is not supported");
+}
+inline SSLContextPtr newSSLContext(const SSLPolicy &policy)
 {
     throw std::runtime_error("SSL is not supported");
 }
