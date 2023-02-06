@@ -434,8 +434,9 @@ class TRANTOR_EXPORT TcpConnection
     // TODO: These should be internal APIs
     virtual void connectEstablished() = 0;
     virtual void connectDestroyed() = 0;
-    virtual void enableKickingOff(size_t timeout,
-                    const std::shared_ptr<TimingWheel> &timingWheel) = 0;
+    virtual void enableKickingOff(
+        size_t timeout,
+        const std::shared_ptr<TimingWheel> &timingWheel) = 0;
 
   protected:
     // callbacks
