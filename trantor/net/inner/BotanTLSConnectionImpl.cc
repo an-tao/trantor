@@ -147,6 +147,26 @@ void BotanTLSConnectionImpl::tls_record_received(uint64_t /*seq*/,
     recvMsgCallback_(shared_from_this(), &recvBuffer_);
 }
 
+std::string BotanTLSConnectionImpl::tls_server_choose_app_protocol(
+    const std::vector<std::string> &client_protos)
+{
+    assert(policyPtr_->getIsServer());
+    const auto &serverProtos = policyPtr_->getAlpnProtocols();
+    if(serverProtos.empty() || client_protos.empty())
+        return "";
+    // usually protocols have only a few elements, so N^2 is fine
+    // (and actually faster than using a set)
+    for (const auto &clientProto : client_protos)
+    {
+        for (const auto &serverProto : serverProtos)
+        {
+            if (clientProto == serverProto)
+                return clientProto;
+        }
+    }
+    return "";
+}
+
 void BotanTLSConnectionImpl::tls_alert(Botan::TLS::Alert alert)
 {
     LOG_TRACE << "tls_alert: " << alert.type_string();

@@ -24,7 +24,10 @@ int main()
         client[i] = std::make_shared<trantor::TcpClient>(&loop,
                                                          serverAddr,
                                                          "tcpclienttest");
-        client[i]->enableSSL(false, false);
+        auto policy = std::make_shared<trantor::SSLPolicy>();
+        policy->setValidate(false)
+            .setUseOldTLS(false);
+        client[i]->enableSSL(std::move(policy));
         client[i]->setConnectionCallback(
             [i, &loop, &connCount](const TcpConnectionPtr &conn) {
                 if (conn->connected())

@@ -257,6 +257,8 @@ class BotanTLSConnectionImpl
         Botan::Usage_Type usage,
         const std::string &hostname,
         const Botan::TLS::Policy &policy) override;
+    std::string tls_server_choose_app_protocol(
+        const std::vector<std::string> &client_protos) override;
 
     Botan::TLS::Default_Policy policy_;
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
