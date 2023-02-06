@@ -4,6 +4,7 @@ project(trantor)
 option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_C-ARES "Build C-ARES" ON)
 option(BUILD_SHARED_LIBS "Build trantor as a shared lib" OFF)
+option(TRANTOR_PREFERED_TLS_PROVIDER "Prefered TLS provider for trantor. Valid options are 'openssl', 'boran' or ''" "")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
@@ -123,24 +124,37 @@ if(WIN32)
       trantor/utils/WindowsSupport.h)
 endif(WIN32)
 
+set(VALID_TLS_PROVIDERS "openssl" "botan")
+list(FIND VALID_TLS_PROVIDERS ${TRANTOR_PREFERED_TLS_PROVIDER} PREFERED_TLS_IDX)
+if(PREFERED_TLS_IDX EQUAL -1 AND NOT TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "")
+  message(FATAL_ERROR "Invalid TLS provider: ${TRANTOR_PREFERED_TLS_PROVIDER}"
+                      "Valid TLS providers are: ${VALID_TLS_PROVIDERS}")
+endif()
 
 set(TRANTOR_SSL_PROVIDER "None")
-# Temp disabled because OpenSSL is hard to work with
-# find_package(OpenSSL)
-# if(OpenSSL_FOUND)
-#   target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-  
-#   # To enable the acceptance of local issued certificates
-#   # Add the flag: ALLOW_SELF_SIGNED_CERTS
-#   # ONLY FOR TESTING PURPOSES
-#   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
-#   set(TRANTOR_SSL_PROVIDER "OpenSSL")
-# endif()
+if(TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "openssl" OR TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "")
+  find_package(OpenSSL)
+  if(OpenSSL_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+    set(TRANTOR_SSL_PROVIDER "OpenSSL")
 
-if(TRANTOR_SSL_PROVIDER STREQUAL "None")
+    set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/net/inner/OpenSSLConnectionImpl.cc)
+    set(private_headers
+      ${private_headers}
+      trantor/net/inner/OpenSSLConnectionImpl.h)
+  endif()
+endif()
+
+if(TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "botan" OR TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "")
   find_package(Botan)
   if(Botan_FOUND)
-    message(STATUS "Botan found!")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOTAN)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Botan::Botan)
+
     set(TRANTOR_SOURCES
         ${TRANTOR_SOURCES}
         trantor/net/inner/BotanTLSConnectionImpl.cc)
@@ -148,13 +162,6 @@ if(TRANTOR_SSL_PROVIDER STREQUAL "None")
         ${private_headers}
         trantor/net/inner/BotanTLSConnectionImpl.h)
     set(TRANTOR_SSL_PROVIDER "Botan")
-
-    # Backwards compatibility
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOTAN)
-
-    # Should this be PRIVATE?
-    target_link_libraries(${PROJECT_NAME} PUBLIC Botan::Botan)
   endif()
 endif()
 
