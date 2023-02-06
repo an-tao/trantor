@@ -484,8 +484,8 @@ class TRANTOR_EXPORT TcpConnection
 };
 
 TRANTOR_EXPORT TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
-                                  SSLPolicyPtr policy,
-                                  SSLContextPtr ctx);
+                                                 SSLPolicyPtr policy,
+                                                 SSLContextPtr ctx);
 TRANTOR_EXPORT SSLContextPtr newSSLContext(const SSLPolicy &policy);
 #if !(defined(USE_OPENSSL) || defined(USE_BOTAN))
 inline TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
