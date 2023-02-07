@@ -483,10 +483,6 @@ class TRANTOR_EXPORT TcpConnection
     std::shared_ptr<void> contextPtr_;
 };
 
-TRANTOR_EXPORT TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
-                                                 SSLPolicyPtr policy,
-                                                 SSLContextPtr ctx);
-TRANTOR_EXPORT SSLContextPtr newSSLContext(const SSLPolicy &policy);
 #if !(defined(USE_OPENSSL) || defined(USE_BOTAN))
 inline TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
                                          SSLPolicyPtr policy,
@@ -498,6 +494,11 @@ inline SSLContextPtr newSSLContext(const SSLPolicy &policy)
 {
     throw std::runtime_error("SSL is not supported");
 }
+#else
+TRANTOR_EXPORT TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
+                                                 SSLPolicyPtr policy,
+                                                 SSLContextPtr ctx);
+TRANTOR_EXPORT SSLContextPtr newSSLContext(const SSLPolicy &policy);
 #endif
 
 }  // namespace trantor
