@@ -222,7 +222,7 @@ bool BotanTLSConnectionImpl::tls_session_established(
                 "Certificate is not valid for current time");
         }
     }
-    if (!certs.size())
+    if (!certs.empty())
         peerCertPtr_ = std::make_shared<BotanCertificate>(cert);
 
     rawConnPtr_->getLoop()->queueInLoop(
