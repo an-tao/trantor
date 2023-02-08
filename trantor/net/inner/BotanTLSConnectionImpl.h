@@ -17,7 +17,6 @@
 
 namespace trantor
 {
-
 class Credentials : public Botan::Credentials_Manager
 {
   public:
