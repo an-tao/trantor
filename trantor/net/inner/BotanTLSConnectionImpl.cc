@@ -296,7 +296,9 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
         ctx->certStore = std::make_unique<Botan::Flatfile_Certificate_Store>(
             policy.getCaPath());
     }
-    else if (!policy.getUseSystemCertStore())
+    else if (policy.getUseSystemCertStore())
+    {
         ctx->certStore = std::make_unique<Botan::System_Certificate_Store>();
+    }
     return ctx;
 }

@@ -94,6 +94,14 @@ struct SSLContext
     std::unique_ptr<Botan::Certificate_Store> certStore;
 };
 
+class TrantorPolicy : public Botan::TLS::Policy
+{
+    virtual bool require_cert_revocation_info() const override
+    {
+        return false;
+    }
+};
+
 class BotanTLSConnectionImpl
     : public TcpConnection,
       public NonCopyable,
@@ -271,7 +279,7 @@ class BotanTLSConnectionImpl
     std::string tls_server_choose_app_protocol(
         const std::vector<std::string> &client_protos) override;
 
-    Botan::TLS::Default_Policy policy_;
+    TrantorPolicy policy_;
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
     CertificatePtr peerCertPtr_;
