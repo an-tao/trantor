@@ -34,7 +34,8 @@ TcpServer::TcpServer(EventLoop *loop,
                     << " bytes]";
           buffer->retrieveAll();
       }),
-      ioLoops_({loop})
+      ioLoops_({loop}),
+      numIoLoops_(1)
 {
     acceptorPtr_->setNewConnectionCallback(
         [this](int fd, const InetAddress &peer) { newConnection(fd, peer); });
@@ -51,7 +52,11 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     LOG_TRACE << "new connection:fd=" << sockfd
               << " address=" << peer.toIpPort();
     loop_->assertInLoopThread();
-    EventLoop *ioLoop = ioLoops_[nextLoopIdx_++ % ioLoops_.size()];
+    EventLoop *ioLoop = ioLoops_[nextLoopIdx_];
+    if (++nextLoopIdx_ >= numIoLoops_)
+    {
+        nextLoopIdx_ = 0;
+    }
     std::shared_ptr<TcpConnectionImpl> newPtr;
     if (sslCtxPtr_)
     {

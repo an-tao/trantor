@@ -79,6 +79,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
         loopPoolPtr_ = std::make_shared<EventLoopThreadPool>(num);
         loopPoolPtr_->start();
         ioLoops_ = loopPoolPtr_->getLoops();
+        numIoLoops_ = ioLoops_.size();
     }
 
     /**
@@ -95,6 +96,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
         loopPoolPtr_ = pool;
         loopPoolPtr_->start();  // TODO: should not start by TcpServer
         ioLoops_ = loopPoolPtr_->getLoops();
+        numIoLoops_ = ioLoops_.size();
     }
 
     /**
@@ -110,6 +112,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
         assert(!ioLoops.empty());
         assert(!started_);
         ioLoops_ = ioLoops;
+        numIoLoops_ = ioLoops_.size();
         loopPoolPtr_.reset();
     }
 
@@ -261,6 +264,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     // Otherwise, it should contain only one element, which is `loop_`.
     std::vector<EventLoop *> ioLoops_;
     size_t nextLoopIdx_{0};
+    size_t numIoLoops_{0};
 
 #ifndef _WIN32
     class IgnoreSigPipe
