@@ -78,21 +78,18 @@ TcpClient::TcpClient(EventLoop *loop,
 TcpClient::~TcpClient()
 {
     LOG_TRACE << "TcpClient::~TcpClient[" << name_ << "] - connector ";
-    TcpConnectionPtr conn;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (connection_ == nullptr)
-            return;
-        assert(loop_ == connection_->getLoop());
-        // TODO: not 100% safe, if we are in different thread
-        auto loop = loop_;
-        loop_->runInLoop([conn = connection_, loop]() {
-            conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
-                loop->queueInLoop([connPtr]() { connPtr->connectDestroyed(); });
-            });
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (connection_ == nullptr)
+        return;
+    assert(loop_ == connection_->getLoop());
+    // TODO: not 100% safe, if we are in different thread
+    auto loop = loop_;
+    loop_->runInLoop([conn = connection_, loop]() {
+        conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
+            loop->queueInLoop([connPtr]() { connPtr->connectDestroyed(); });
         });
-        conn->forceClose();
-    }
+    });
+    connection_->forceClose();
 }
 
 void TcpClient::connect()
