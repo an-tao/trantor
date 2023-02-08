@@ -64,9 +64,6 @@ class ServerCredentials : public Botan::Credentials_Manager
         const std::string &type,
         const std::string &context) override
     {
-        // if client authentication is required, this function
-        // shall return a list of certificates of CAs we trust
-        // for tls client certificates, otherwise return an empty list
         return {};
     }
 
@@ -75,8 +72,10 @@ class ServerCredentials : public Botan::Credentials_Manager
         const std::string &type,
         const std::string &context) override
     {
-        auto key_algo = cert_->subject_public_key_algo().get_oid().to_formatted_string();
-        auto it = std::find(cert_key_types.begin(), cert_key_types.end(), key_algo);
+        auto key_algo =
+            cert_->subject_public_key_algo().get_oid().to_formatted_string();
+        auto it =
+            std::find(cert_key_types.begin(), cert_key_types.end(), key_algo);
         if (it == cert_key_types.end())
             return {};
         return {*cert_};
@@ -86,8 +85,6 @@ class ServerCredentials : public Botan::Credentials_Manager
                                         const std::string &type,
                                         const std::string &context) override
     {
-        // return the private key associated with the leaf certificate,
-        // in this case the one associated with "botan.randombit.net.crt"
         return key_;
     }
 
