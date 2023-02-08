@@ -8,7 +8,6 @@
 
 namespace trantor
 {
-
 struct SSLContext
 {
     SSLContext(
