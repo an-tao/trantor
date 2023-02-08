@@ -300,5 +300,9 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
     {
         ctx->certStore = std::make_unique<Botan::System_Certificate_Store>();
     }
+
+    if (policy.getUseOldTLS())
+        LOG_WARN << "SSLPloicy have set useOldTLS to true. BUt Botan does not "
+                    "support TLS/SSL below TLS 1.2. Ignoreing this option.";
     return ctx;
 }
