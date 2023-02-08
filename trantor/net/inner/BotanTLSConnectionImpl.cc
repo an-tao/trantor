@@ -259,7 +259,7 @@ void BotanTLSConnectionImpl::shutdown()
 void BotanTLSConnectionImpl::forceClose()
 {
     channel_->close();
-    getLoop()->queueInLoop([this]() { rawConnPtr_->forceClose(); });
+    rawConnPtr_->forceClose();
 }
 
 std::string BotanTLSConnectionImpl::applicationProtocol() const
