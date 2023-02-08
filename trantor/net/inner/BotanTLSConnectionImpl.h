@@ -17,17 +17,23 @@
 
 namespace trantor
 {
-class ClientCredentials : public Botan::Credentials_Manager
+
+class Credentials : public Botan::Credentials_Manager
 {
   public:
+    Credentials(Botan::Private_Key *key,
+                Botan::X509_Certificate *cert,
+                Botan::Certificate_Store *certStore)
+        : key_(key), cert_(cert), certStore_(certStore)
+    {
+    }
     std::vector<Botan::Certificate_Store *> trusted_certificate_authorities(
         const std::string &type,
         const std::string &context) override
     {
-        // return a list of certificates of CAs we trust for tls server
-        // certificates ownership of the pointers remains with
-        // Credentials_Manager
-        return {&certStore_};
+        if (certStore_ == nullptr)
+            return {};
+        return {certStore_};
     }
 
     std::vector<Botan::X509_Certificate> cert_chain(
@@ -35,43 +41,9 @@ class ClientCredentials : public Botan::Credentials_Manager
         const std::string &type,
         const std::string &context) override
     {
-        // when using tls client authentication (optional), return
-        // a certificate chain being sent to the tls server,
-        // else an empty list
-        return {};
-    }
+        if (cert_ == nullptr)
+            return {};
 
-    Botan::Private_Key *private_key_for(const Botan::X509_Certificate &cert,
-                                        const std::string &type,
-                                        const std::string &context) override
-    {
-        // when returning a chain in cert_chain(), return the private key
-        // associated with the leaf certificate here
-        return nullptr;
-    }
-    Botan::System_Certificate_Store certStore_;
-};
-
-class ServerCredentials : public Botan::Credentials_Manager
-{
-  public:
-    ServerCredentials(Botan::Private_Key *key, Botan::X509_Certificate *cert)
-        : key_(key), cert_(cert)
-    {
-    }
-
-    std::vector<Botan::Certificate_Store *> trusted_certificate_authorities(
-        const std::string &type,
-        const std::string &context) override
-    {
-        return {};
-    }
-
-    std::vector<Botan::X509_Certificate> cert_chain(
-        const std::vector<std::string> &cert_key_types,
-        const std::string &type,
-        const std::string &context) override
-    {
         auto key_algo =
             cert_->subject_public_key_algo().get_oid().to_formatted_string();
         auto it =
@@ -87,10 +59,9 @@ class ServerCredentials : public Botan::Credentials_Manager
     {
         return key_;
     }
-
-  private:
-    Botan::Private_Key *key_;
-    Botan::X509_Certificate *cert_;
+    Botan::Certificate_Store *certStore_ = nullptr;
+    Botan::Private_Key *key_ = nullptr;
+    Botan::X509_Certificate *cert_ = nullptr;
 };
 
 struct BotanCertificate : public Certificate
@@ -120,6 +91,7 @@ struct SSLContext
 {
     std::unique_ptr<Botan::Private_Key> key;
     std::unique_ptr<Botan::X509_Certificate> cert;
+    std::unique_ptr<Botan::Certificate_Store> certStore;
 };
 
 class BotanTLSConnectionImpl

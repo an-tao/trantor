@@ -1,6 +1,8 @@
 #include "BotanTLSConnectionImpl.h"
 #include <trantor/utils/Logger.h>
 #include <botan/tls_exceptn.h>
+#include <botan/pkix_types.h>
+#include <botan/certstor_flatfile.h>
 
 using namespace trantor;
 using namespace std::placeholders;
@@ -10,6 +12,7 @@ static Botan::System_RNG sessionManagerRng;
 // order.
 static Botan::TLS::Session_Manager_In_Memory sessionManager(sessionManagerRng);
 static thread_local Botan::System_RNG rng;
+static thread_local Botan::System_Certificate_Store certStore;
 
 BotanTLSConnectionImpl::BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
                                                SSLPolicyPtr policy,
@@ -109,7 +112,9 @@ void BotanTLSConnectionImpl::startClientEncryption()
     {
         LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
     }
-    credsPtr_ = std::make_unique<ClientCredentials>();
+    credsPtr_ = std::make_unique<Credentials>(contextPtr_->key.get(),
+                                              contextPtr_->cert.get(),
+                                              contextPtr_->certStore.get());
     channel_ = std::make_unique<Botan::TLS::Client>(
         *this,
         sessionManager,
@@ -129,8 +134,9 @@ void BotanTLSConnectionImpl::startServerEncryption()
         LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
     }
 
-    credsPtr_ = std::make_unique<ServerCredentials>(contextPtr_->key.get(),
-                                                    contextPtr_->cert.get());
+    credsPtr_ = std::make_unique<Credentials>(contextPtr_->key.get(),
+                                              contextPtr_->cert.get(),
+                                              contextPtr_->certStore.get());
     channel_ = std::make_unique<Botan::TLS::Server>(
         *this, sessionManager, *credsPtr_, policy_, rng);
 }
@@ -284,5 +290,13 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
         ctx->cert =
             std::make_unique<Botan::X509_Certificate>(policy.getCertPath());
     }
+
+    if (!policy.getCaPath().empty())
+    {
+        ctx->certStore = std::make_unique<Botan::Flatfile_Certificate_Store>(
+            policy.getCaPath());
+    }
+    else if (!policy.getUseSystemCertStore())
+        ctx->certStore = std::make_unique<Botan::System_Certificate_Store>();
     return ctx;
 }

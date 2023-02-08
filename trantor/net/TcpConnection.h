@@ -88,6 +88,11 @@ struct TRANTOR_EXPORT SSLPolicy final
         alpnProtocols_ = std::move(alpnProtocols);
         return *this;
     }
+    SSLPolicy &setUseSystemCertStore(bool useSystemCertStore)
+    {
+        useSystemCertStore_ = useSystemCertStore;
+        return *this;
+    }
 
     // Composite pattern
     SSLPolicy &setValidate(bool enable)
@@ -147,6 +152,11 @@ struct TRANTOR_EXPORT SSLPolicy final
         return alpnProtocols_;
     }
 
+    bool getUseSystemCertStore() const
+    {
+        return useSystemCertStore_;
+    }
+
   protected:
     std::vector<std::pair<std::string, std::string>> sslConfCmds_ = {};
     std::string hostname_ = "";
@@ -159,6 +169,7 @@ struct TRANTOR_EXPORT SSLPolicy final
     bool validateChain_ = true;
     bool validateDate_ = true;
     bool isServer_ = false;
+    bool useSystemCertStore_ = true;
 };
 using SSLPolicyPtr = std::shared_ptr<SSLPolicy>;
 class TimingWheel;
