@@ -75,8 +75,10 @@ class ServerCredentials : public Botan::Credentials_Manager
         const std::string &type,
         const std::string &context) override
     {
-        // return the certificate chain being sent to the tls client
-        // e.g., the certificate file "botan.randombit.net.crt"
+        auto key_algo = cert_->subject_public_key_algo().get_oid().to_formatted_string();
+        auto it = std::find(cert_key_types.begin(), cert_key_types.end(), key_algo);
+        if (it == cert_key_types.end())
+            return {};
         return {*cert_};
     }
 
