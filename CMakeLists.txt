@@ -4,7 +4,7 @@ project(trantor)
 option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_C-ARES "Build C-ARES" ON)
 option(BUILD_SHARED_LIBS "Build trantor as a shared lib" OFF)
-option(TRANTOR_PREFERED_TLS_PROVIDER "Prefered TLS provider for trantor. Valid options are 'openssl', 'boran' or ''" "")
+option(TRANTOR_PREFERED_TLS_PROVIDER "Prefered TLS provider for trantor. Valid options are 'openssl', 'botan' or ''" "")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
