@@ -111,7 +111,7 @@ class BotanTLSConnectionImpl
     BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
                            SSLPolicyPtr policy,
                            SSLContextPtr context);
-    virtual ~BotanTLSConnectionImpl(){};
+    virtual ~BotanTLSConnectionImpl() = default;
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override
     {
@@ -285,10 +285,9 @@ class BotanTLSConnectionImpl
     std::string sniName_;
     MsgBuffer recvBuffer_;
     // TODO: Rename this to avoid confusion
-    SSLPolicyPtr policyPtr_;
-    SSLContextPtr contextPtr_;
+    const SSLPolicyPtr policyPtr_;
+    const SSLContextPtr contextPtr_;
 
     bool closingTLS_ = false;
-    bool isServer_ = false;
 };
 }  // namespace trantor
