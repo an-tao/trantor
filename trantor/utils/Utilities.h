@@ -242,7 +242,7 @@ inline Hash256 sha3(const std::string &str)
 /**
  * @brief hex encode the given data
  */
-std::string toHexString(const void *data, size_t len);
+TRANTOR_EXPORT std::string toHexString(const void *data, size_t len);
 inline std::string toHexString(const Hash128 &hash)
 {
     return toHexString(hash.bytes, sizeof(hash.bytes));
