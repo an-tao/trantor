@@ -11,7 +11,6 @@ namespace trantor
 {
 namespace utils
 {
-
 Hash128 md5(const void* data, size_t len)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
