@@ -210,27 +210,29 @@ bool BotanTLSConnectionImpl::tls_session_established(
         handleSSLError(SSLError::kSSLInvalidCertificate);
         throw std::runtime_error("No certificates provided by peer");
     }
-    auto &cert = certs[0];
-    if (policyPtr_->getValidateDomain() &&
-        cert.matches_dns_name(policyPtr_->getHostname()) == false)
+    if (!certs.empty())
     {
-        handleSSLError(SSLError::kSSLInvalidCertificate);
-        throw std::runtime_error("Certificate does not match hostname");
-    }
-    if (policyPtr_->getValidateDate())
-    {
-        auto notBefore = cert.not_before();
-        auto notAfter = cert.not_after();
-        auto now = Botan::ASN1_Time(std::chrono::system_clock::now());
-        if (now < notBefore || now > notAfter)
+        auto &cert = certs[0];
+        if (policyPtr_->getValidateDomain() &&
+            cert.matches_dns_name(policyPtr_->getHostname()) == false)
         {
             handleSSLError(SSLError::kSSLInvalidCertificate);
-            throw std::runtime_error(
-                "Certificate is not valid for current time");
+            throw std::runtime_error("Certificate does not match hostname");
         }
-    }
-    if (!certs.empty())
+        if (policyPtr_->getValidateDate())
+        {
+            auto notBefore = cert.not_before();
+            auto notAfter = cert.not_after();
+            auto now = Botan::ASN1_Time(std::chrono::system_clock::now());
+            if (now < notBefore || now > notAfter)
+            {
+                handleSSLError(SSLError::kSSLInvalidCertificate);
+                throw std::runtime_error(
+                    "Certificate is not valid for current time");
+            }
+        }
         peerCertPtr_ = std::make_shared<BotanCertificate>(cert);
+    }
 
     rawConnPtr_->getLoop()->queueInLoop(
         [this]() { connectionCallback_(shared_from_this()); });
