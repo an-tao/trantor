@@ -151,23 +151,33 @@ static int serverSelectProtocol(SSL *ssl,
                                 unsigned int inlen,
                                 void *arg)
 {
-    LOG_TRACE << "============================================================ "
-                 "Selecting protocol";
     auto protocols = static_cast<std::vector<std::string> *>(arg);
     if (protocols->empty())
         return SSL_TLSEXT_ERR_NOACK;
 
-    for (int i = 0; i < inlen; i++)
+    for (auto &protocol : *protocols)
     {
-        auto protocol = std::string((const char *)in, inlen);
-        if (std::find(protocols->begin(), protocols->end(), protocol) !=
-            protocols->end())
+        const unsigned char *cur = in;
+        const unsigned char *end = in + inlen;
+        while (cur < end)
         {
-            *out = (unsigned char *)in;
-            *outlen = inlen;
-            return SSL_TLSEXT_ERR_OK;
+            unsigned int len = *cur++;
+            if (cur + len > end)
+            {
+                LOG_ERROR << "Client provided invalid protocol list in APLN";
+                return SSL_TLSEXT_ERR_NOACK;
+            }
+            std::string provided((const char *)cur, len);
+            if (provided == protocol)
+            {
+                *out = cur;
+                *outlen = len;
+                LOG_TRACE << "Selected protocol: " << provided;
+                return SSL_TLSEXT_ERR_OK;
+            }
         }
     }
+
     return SSL_TLSEXT_ERR_NOACK;
 }
 
