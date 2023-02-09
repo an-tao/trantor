@@ -245,5 +245,12 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
     return certName == hostname;
 }
 
+#define STRINGIFY(x) #x
+
+std::string tlsBackend()
+{
+    return STRINGIFY(TRANTOR_TLS_BACKEND);
+}
+
 }  // namespace utils
 }  // namespace trantor

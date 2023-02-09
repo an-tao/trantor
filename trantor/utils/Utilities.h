@@ -180,6 +180,12 @@ inline std::string fromNativePath(const std::wstring &strPath)
  */
 bool verifySslName(const std::string &certName, const std::string &hostname);
 
+/**
+ * @brief Returns the TLS backend used by trantor. Could be "None", "OpenSSL" or
+ * "Botan"
+ */
+TRANTOR_EXPORT std::string tlsBackend();
+
 }  // namespace utils
 
 }  // namespace trantor
