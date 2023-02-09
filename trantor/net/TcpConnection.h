@@ -157,6 +157,32 @@ struct TRANTOR_EXPORT SSLPolicy final
         return useSystemCertStore_;
     }
 
+    static std::shared_ptr<SSLPolicy> defaultServerPolicy(
+        const std::string &certPath,
+        const std::string &keyPath)
+    {
+        auto policy = std::make_shared<SSLPolicy>();
+        policy->setIsServer(true)
+            .setValidate(false)
+            .setUseOldTLS(false)
+            .setUseSystemCertStore(false)
+            .setCertPath(certPath)
+            .setKeyPath(keyPath);
+        return policy;
+    }
+
+    static std::shared_ptr<SSLPolicy> defaultClientPolicy(
+        const std::string &hostname = "")
+    {
+        auto policy = std::make_shared<SSLPolicy>();
+        policy->setIsServer(false)
+            .setValidate(true)
+            .setUseOldTLS(false)
+            .setUseSystemCertStore(false)
+            .setHostname(hostname);
+        return policy;
+    }
+
   protected:
     std::vector<std::pair<std::string, std::string>> sslConfCmds_ = {};
     std::string hostname_ = "";

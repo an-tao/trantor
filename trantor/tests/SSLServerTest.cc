@@ -17,14 +17,7 @@ int main()
     InetAddress addr(8888);
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
-    auto policy = std::make_shared<SSLPolicy>();
-    policy->setKeyPath("server.key")
-        .setCertPath("server.cert")
-        .setUseOldTLS(false)
-        .setConfCmds({})
-        .setCaPath("")
-        .setValidate(false)
-        .setIsServer(true);
+    auto policy = SSLPolicy::defaultServerPolicy("server.cert", "server.key");
     server.enableSSL(std::move(policy));
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
