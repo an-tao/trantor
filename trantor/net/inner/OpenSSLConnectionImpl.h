@@ -29,6 +29,10 @@ struct OpenSSLCertificate : public Certificate
     {
         assert(cert_);
     }
+    ~OpenSSLCertificate()
+    {
+        X509_free(cert_);
+    }
     virtual std::string sha1Fingerprint() const override
     {
         std::string sha1;
@@ -233,10 +237,14 @@ class OpenSSLConnectionImpl
 
     virtual std::string applicationProtocol() const override
     {
-        throw std::runtime_error("Not implemented applicationProtocol");
+        return alpnProtocol_;
     }
     void startClientEncryption();
     void startServerEncryption();
+    // static void serverSelectProtocol(SSL* ssl, const unsigned char** out,
+    //                                  unsigned char* outlen, const unsigned
+    //                                  char* in, unsigned int inlen, void*
+    //                                  arg);
 
   protected:
     bool processHandshake();
@@ -266,10 +274,7 @@ class OpenSSLConnectionImpl
         rawConnPtr_->enableKickingOff(timeout, timingWheel);
     }
 
-    void handleSSLError(SSLError err)
-    {
-        throw std::runtime_error("Not implemented handleSSLError");
-    }
+    void handleSSLError(SSLError err);
 
     CertificatePtr peerCertPtr_;
     std::string sniName_;

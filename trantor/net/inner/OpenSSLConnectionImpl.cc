@@ -1,8 +1,148 @@
 #include "OpenSSLConnectionImpl.h"
 #include "trantor/utils/Logger.h"
+#include "trantor/utils/Utilities.h"
+#include <array>
+
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
+#include <openssl/err.h>
 
 using namespace trantor;
 using namespace std::placeholders;
+
+namespace internal
+{
+#ifdef _WIN32
+// Code yanked from stackoverflow
+// https://stackoverflow.com/questions/9507184/can-openssl-on-windows-use-the-system-certificate-store
+inline bool loadWindowsSystemCert(X509_STORE *store)
+{
+    auto hStore = CertOpenSystemStoreW((HCRYPTPROV_LEGACY)NULL, L"ROOT");
+
+    if (!hStore)
+    {
+        return false;
+    }
+
+    PCCERT_CONTEXT pContext = NULL;
+    while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) !=
+           nullptr)
+    {
+        auto encoded_cert =
+            static_cast<const unsigned char *>(pContext->pbCertEncoded);
+
+        auto x509 = d2i_X509(NULL, &encoded_cert, pContext->cbCertEncoded);
+        if (x509)
+        {
+            X509_STORE_add_cert(store, x509);
+            X509_free(x509);
+        }
+    }
+
+    CertFreeCertificateContext(pContext);
+    CertCloseStore(hStore, 0);
+
+    return true;
+}
+#endif
+
+inline bool verifyCommonName(X509 *cert, const std::string &hostname)
+{
+    X509_NAME *subjectName = X509_get_subject_name(cert);
+
+    if (subjectName != nullptr)
+    {
+        std::array<char, BUFSIZ> name;
+        auto length = X509_NAME_get_text_by_NID(subjectName,
+                                                NID_commonName,
+                                                name.data(),
+                                                (int)name.size());
+        if (length == -1)
+            return false;
+
+        return utils::verifySslName(std::string(name.begin(),
+                                                name.begin() + length),
+                                    hostname);
+    }
+
+    return false;
+}
+
+inline bool verifyAltName(X509 *cert, const std::string &hostname)
+{
+    bool good = false;
+    auto altNames = static_cast<const struct stack_st_GENERAL_NAME *>(
+        X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
+
+    if (altNames)
+    {
+        int numNames = sk_GENERAL_NAME_num(altNames);
+
+        for (int i = 0; i < numNames && !good; i++)
+        {
+            auto val = sk_GENERAL_NAME_value(altNames, i);
+            if (val->type != GEN_DNS)
+            {
+                LOG_WARN << "Name using IP addresses are not supported. Open "
+                            "an issue if you need that feature";
+                continue;
+            }
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+            auto name = (const char *)ASN1_STRING_get0_data(val->d.ia5);
+#else
+            auto name = (const char *)ASN1_STRING_data(val->d.ia5);
+#endif
+            auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
+            good = utils::verifySslName(std::string(name, name + name_len),
+                                        hostname);
+        }
+    }
+
+    GENERAL_NAMES_free((STACK_OF(GENERAL_NAME) *)altNames);
+    return good;
+}
+
+static bool validatePeerCertificate(SSL *ssl,
+                                    X509 *cert,
+                                    const std::string &hostname,
+                                    bool validateChain,
+                                    bool validateDate,
+                                    bool validateDomain)
+{
+    LOG_TRACE << "Validating peer cerificate";
+
+    auto result = SSL_get_verify_result(ssl);
+    LOG_TRACE << "==================== val date: " << validateDate
+              << ", val chain: " << validateChain
+              << ", val domain: " << validateDomain;
+    if (result == X509_V_ERR_CERT_NOT_YET_VALID ||
+        result == X509_V_ERR_CERT_HAS_EXPIRED)
+    {
+        // What happens if cert is self-signed and expired?
+        if (!validateDate)
+            return true;
+        LOG_TRACE << "cert error code: " << result
+                  << ", date validation failed";
+        return false;
+    }
+
+    if (result != X509_V_OK && validateChain)
+    {
+        LOG_TRACE << "cert error code: " << result;
+        LOG_ERROR << "Peer certificate is not valid";
+        return false;
+    }
+
+    if (!validateDomain)
+        return true;
+
+    bool domainIsValid =
+        verifyCommonName(cert, hostname) || verifyAltName(cert, hostname);
+    LOG_TRACE << "domainIsValid: " << domainIsValid;
+    return domainIsValid;
+}
+
+}  // namespace internal
 
 // Force OpenSSL to initialize before main() is called
 static bool sslInitFlag = []() {
@@ -72,6 +212,8 @@ void OpenSSLConnectionImpl::startClientEncryption()
 void OpenSSLConnectionImpl::startServerEncryption()
 {
     assert(ssl_);
+
+    // TODO: support ALPN
     SSL_set_accept_state(ssl_);
 }
 
@@ -167,9 +309,38 @@ bool OpenSSLConnectionImpl::processHandshake()
                 if (alpn)
                     alpnProtocol_ = std::string((char *)alpn, alpnlen);
             }
+
             auto cert = SSL_get_peer_certificate(ssl_);
             if (cert)
                 peerCertPtr_ = std::make_shared<OpenSSLCertificate>(cert);
+
+            bool needCert = policyPtr_->getValidateChain() ||
+                            policyPtr_->getValidateDate() ||
+                            policyPtr_->getValidateDomain();
+            if (needCert && !peerCertPtr_)
+            {
+                LOG_TRACE << "SSL handshake error: no peer certificate";
+                handleSSLError(SSLError::kSSLInvalidCertificate);
+                return true;
+            }
+            if (needCert)
+            {
+                bool valid = internal::validatePeerCertificate(
+                    ssl_,
+                    cert,
+                    policyPtr_->getHostname(),
+                    policyPtr_->getValidateChain(),
+                    policyPtr_->getValidateDate(),
+                    policyPtr_->getValidateDomain());
+                if (!valid)
+                {
+                    LOG_TRACE
+                        << "SSL handshake error: invalid peer certificate";
+                    handleSSLError(SSLError::kSSLInvalidCertificate);
+                    return true;
+                }
+            }
+
             connectionCallback_(shared_from_this());
             return true;
         }
@@ -229,6 +400,12 @@ void OpenSSLConnectionImpl::sendTLSData()
         sendRawData(buf, len);
         BIO_reset(wbio_);
     }
+}
+
+void OpenSSLConnectionImpl::handleSSLError(SSLError error)
+{
+    rawConnPtr_->forceClose();
+    sslErrorCallback_(error);
 }
 
 void OpenSSLConnectionImpl::onWriteComplete(const TcpConnectionPtr &conn)
@@ -361,6 +538,15 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
                 "Private key does not match the "
                 "certificate public key");
         }
+    }
+    if (policy.getValidateChain() || policy.getValidateDate() ||
+        policy.getValidateDomain())
+    {
+#ifdef _WIN32
+        internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctxPtr_));
+#else
+        SSL_CTX_set_default_verify_paths(ctx->ctx());
+#endif
     }
     return ctx;
 }
