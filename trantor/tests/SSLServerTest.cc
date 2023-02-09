@@ -17,7 +17,7 @@ int main()
     InetAddress addr(8888);
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
-    auto policy = SSLPolicy::defaultServerPolicy("server.cert", "server.key");
+    auto policy = SSLPolicy::defaultServerPolicy("server.crt", "server.key");
     server.enableSSL(std::move(policy));
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
