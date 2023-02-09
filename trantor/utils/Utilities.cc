@@ -26,6 +26,13 @@
 #endif  // __cplusplus
 #endif  // _WIN32
 
+#if !defined(USE_OPENSSL) && !defined(USE_BOTAN)
+#include "crypto/md5.h"
+#include "crypto/sha1.h"
+#include "crypto/sha256.h"
+#include "crypto/sha3.h"
+#endif
+
 namespace trantor
 {
 namespace utils
@@ -250,6 +257,59 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
 std::string tlsBackend()
 {
     return STRINGIFY(TRANTOR_TLS_BACKEND);
+}
+#undef STRINGIFY
+
+#if !defined(USE_BOTAN) && !defined(USE_OPENSSL)
+Hash128 md5(const void *data, size_t len)
+{
+    MD5_CTX ctx;
+    trantor_md5_init(&ctx);
+    trantor_md5_update(&ctx, (const unsigned char *)data, len);
+    Hash128 hash;
+    trantor_md5_final(&ctx, (unsigned char *)&hash);
+    return hash;
+}
+
+Hash160 sha1(const void *data, size_t len)
+{
+    SHA1_CTX ctx;
+    TrantorSHA1Init(&ctx);
+    TrantorSHA1Update(&ctx, (const unsigned char *)data, len);
+    Hash160 hash;
+    TrantorSHA1Final((unsigned char *)&hash, &ctx);
+    return hash;
+}
+
+Hash256 sha256(const void *data, size_t len)
+{
+    SHA256_CTX ctx;
+    trantor_sha256_init(&ctx);
+    trantor_sha256_update(&ctx, (const unsigned char *)data, len);
+    Hash256 hash;
+    trantor_sha256_final(&ctx, (unsigned char *)&hash);
+    return hash;
+}
+
+Hash256 sha3(const void *data, size_t len)
+{
+    Hash256 hash;
+    trantor_sha3((const unsigned char *)data, len, &hash, sizeof(hash));
+    return hash;
+}
+#endif
+
+std::string toHexString(const void *data, size_t len)
+{
+    std::string str;
+    str.resize(len * 2);
+    for (size_t i = 0; i < len; i++)
+    {
+        unsigned char c = ((const unsigned char *)data)[i];
+        str[i * 2] = "0123456789ABCDEF"[c >> 4];
+        str[i * 2 + 1] = "0123456789ABCDEF"[c & 0xf];
+    }
+    return str;
 }
 
 }  // namespace utils

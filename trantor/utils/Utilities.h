@@ -186,6 +186,78 @@ bool verifySslName(const std::string &certName, const std::string &hostname);
  */
 TRANTOR_EXPORT std::string tlsBackend();
 
+struct Hash128
+{
+    unsigned char bytes[16];
+};
+
+struct Hash160
+{
+    unsigned char bytes[20];
+};
+
+struct Hash256
+{
+    unsigned char bytes[32];
+};
+
+// provide sane hash functions so users don't have to provide their own
+
+/**
+ * @brief Compute the MD5 hash of the given data
+ */
+TRANTOR_EXPORT Hash128 md5(const void *data, size_t len);
+inline Hash128 md5(const std::string &str)
+{
+    return md5(str.data(), str.size());
+}
+
+/**
+ * @brief Compute the SHA1 hash of the given data
+ */
+TRANTOR_EXPORT Hash160 sha1(const void *data, size_t len);
+inline Hash160 sha1(const std::string &str)
+{
+    return sha1(str.data(), str.size());
+}
+
+/**
+ * @brief Compute the SHA256 hash of the given data
+ */
+TRANTOR_EXPORT Hash256 sha256(const void *data, size_t len);
+inline Hash256 sha256(const std::string &str)
+{
+    return sha256(str.data(), str.size());
+}
+
+/**
+ * @brief Compute the SHA3 hash of the given data
+ */
+TRANTOR_EXPORT Hash256 sha3(const void *data, size_t len);
+inline Hash256 sha3(const std::string &str)
+{
+    return sha3(str.data(), str.size());
+}
+
+/**
+ * @brief hex encode the given data
+ */
+std::string toHexString(const void *data, size_t len);
+inline std::string toHexString(const Hash128 &hash)
+{
+    return toHexString(hash.bytes, sizeof(hash.bytes));
+}
+
+inline std::string toHexString(const Hash160 &hash)
+{
+    return toHexString(hash.bytes, sizeof(hash.bytes));
+}
+
+inline std::string toHexString(const Hash256 &hash)
+{
+    return toHexString(hash.bytes, sizeof(hash.bytes));
+}
+
 }  // namespace utils
 
 }  // namespace trantor

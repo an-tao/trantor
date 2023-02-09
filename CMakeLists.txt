@@ -145,7 +145,8 @@ if(TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "openssl" OR TRANTOR_PREFERED_TLS_PROV
 
     set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}
-      trantor/net/inner/OpenSSLConnectionImpl.cc)
+      trantor/net/inner/OpenSSLConnectionImpl.cc
+      trantor/utils/crypto/openssl.cc)
     set(private_headers
       ${private_headers}
       trantor/net/inner/OpenSSLConnectionImpl.h)
@@ -162,12 +163,28 @@ if(TRANTOR_SSL_PROVIDER STREQUAL "None"
 
     set(TRANTOR_SOURCES
         ${TRANTOR_SOURCES}
-        trantor/net/inner/BotanTLSConnectionImpl.cc)
+        trantor/net/inner/BotanTLSConnectionImpl.cc
+        trantor/utils/crypto/botan.cc)
     set(private_headers
         ${private_headers}
         trantor/net/inner/BotanTLSConnectionImpl.h)
     set(TRANTOR_SSL_PROVIDER "Botan")
   endif()
+endif()
+
+if(TRANTOR_SSL_PROVIDER STREQUAL "None")
+  set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/utils/crypto/sha3.cc
+      trantor/utils/crypto/md5.cc
+      trantor/utils/crypto/sha1.cc
+      trantor/utils/crypto/sha256.cc)
+  set(private_headers
+      ${private_headers}
+      trantor/utils/crypto/sha3.h
+      trantor/utils/crypto/md5.h
+      trantor/utils/crypto/sha1.h
+      trantor/utils/crypto/sha256.h)
 endif()
 
 message(STATUS "Trantor using SSL library: ${TRANTOR_SSL_PROVIDER}")
