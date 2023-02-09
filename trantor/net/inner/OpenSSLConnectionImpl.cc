@@ -111,10 +111,18 @@ static bool validatePeerCertificate(SSL *ssl,
 {
     LOG_TRACE << "Validating peer cerificate";
 
+    if (validateDomain)
+    {
+        bool domainIsValid =
+            verifyCommonName(cert, hostname) || verifyAltName(cert, hostname);
+        if (!domainIsValid)
+            return false;
+    }
+
+    if (validateChain == false && validateDate == false)
+        return true;
+
     auto result = SSL_get_verify_result(ssl);
-    LOG_TRACE << "==================== val date: " << validateDate
-              << ", val chain: " << validateChain
-              << ", val domain: " << validateDomain;
     if (result == X509_V_ERR_CERT_NOT_YET_VALID ||
         result == X509_V_ERR_CERT_HAS_EXPIRED)
     {
@@ -133,13 +141,7 @@ static bool validatePeerCertificate(SSL *ssl,
         return false;
     }
 
-    if (!validateDomain)
-        return true;
-
-    bool domainIsValid =
-        verifyCommonName(cert, hostname) || verifyAltName(cert, hostname);
-    LOG_TRACE << "domainIsValid: " << domainIsValid;
-    return domainIsValid;
+    return true;
 }
 
 }  // namespace internal
@@ -246,23 +248,7 @@ void OpenSSLConnectionImpl::send(const char *msg, size_t len)
     int n = SSL_write(ssl_, msg, (int)len);
     if (n <= 0)
     {
-        // int err = SSL_get_error(ssl_, n);
-        // if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
-        // {
-        //     LOG_TRACE << "SSL wants to write";
-        //     void *buf = nullptr;
-        //     int len = BIO_get_mem_data(wbio_, &buf);
-        //     if (len > 0)
-        //     {
-        //         sendRawData(buf, len);
-        //         BIO_reset(wbio_);
-        //     }
-        // }
-        // else
-        // {
-        //     LOG_TRACE << "SSL write error";
-        //     handleSSLError(SSLError::kSSLWriteError);
-        // }
+        // Hope this won't happen
     }
     else
     {
@@ -547,6 +533,24 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
 #else
         SSL_CTX_set_default_verify_paths(ctx->ctx());
 #endif
+    }
+
+    if (!policy.getCaPath().empty())
+    {
+        if (SSL_CTX_load_verify_locations(ctx->ctx(),
+                                          policy.getCaPath().data(),
+                                          nullptr) <= 0)
+        {
+            throw std::runtime_error("Failed to load CA file");
+        }
+
+        STACK_OF(X509_NAME) *cert_names =
+            SSL_load_client_CA_file(policy.getCaPath().data());
+        if (cert_names == nullptr)
+        {
+            throw std::runtime_error("Failed to load CA file");
+        }
+        SSL_CTX_set_client_CA_list(ctx->ctx(), cert_names);
     }
     return ctx;
 }
