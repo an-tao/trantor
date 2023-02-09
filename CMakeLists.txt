@@ -314,6 +314,7 @@ install(
     "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TrantorConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/TrantorConfigVersion.cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/Findc-ares.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/FindBotan.cmake"
   DESTINATION "${INSTALL_TRANTOR_CMAKE_DIR}"
   COMPONENT dev)
 
