@@ -204,7 +204,7 @@ void OpenSSLConnectionImpl::startClientEncryption()
         }
         SSL_set_alpn_protos(ssl_,
                             (const unsigned char *)(alpnList.data()),
-                            alpnList.size());
+                            (unsigned int)alpnList.size());
     }
     SSL_set_connect_state(ssl_);
 }
@@ -226,7 +226,7 @@ void OpenSSLConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
         return;
     while (buffer->readableBytes() > 0)
     {
-        int n = BIO_write(rbio_, buffer->peek(), buffer->readableBytes());
+        int n = BIO_write(rbio_, buffer->peek(), (int)buffer->readableBytes());
         if (n <= 0)
         {
             // TODO: make the status code more specific
@@ -243,7 +243,7 @@ void OpenSSLConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
 
 void OpenSSLConnectionImpl::send(const char *msg, size_t len)
 {
-    int n = SSL_write(ssl_, msg, len);
+    int n = SSL_write(ssl_, msg, (int)len);
     if (n <= 0)
     {
         // int err = SSL_get_error(ssl_, n);
@@ -366,7 +366,7 @@ bool OpenSSLConnectionImpl::processHandshake()
         recvBuffer_.ensureWritableBytes(4096);
         int n = SSL_read(ssl_,
                          recvBuffer_.beginWrite(),
-                         recvBuffer_.writableBytes());
+                         (int)recvBuffer_.writableBytes());
         if (n > 0)
         {
             recvBuffer_.hasWritten(n);
@@ -543,7 +543,7 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
         policy.getValidateDomain())
     {
 #ifdef _WIN32
-        internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctxPtr_));
+        internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctx->ctx()));
 #else
         SSL_CTX_set_default_verify_paths(ctx->ctx());
 #endif
