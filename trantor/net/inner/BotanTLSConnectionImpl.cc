@@ -67,6 +67,8 @@ void BotanTLSConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
 
         if (connected() == false)
             handleSSLError(SSLError::kSSLHandshakeError);
+        else
+            handleSSLError(SSLError::kSSLProtocolError);
     }
     buffer->retrieveAll();
 }

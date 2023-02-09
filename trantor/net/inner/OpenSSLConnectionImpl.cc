@@ -395,6 +395,15 @@ bool OpenSSLConnectionImpl::processHandshake()
             recvBuffer_.hasWritten(n);
             recvMsgCallback_(shared_from_this(), &recvBuffer_);
         }
+        else if (n <= 0)
+        {
+            int err = SSL_get_error(ssl_, n);
+            if (err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL)
+            {
+                LOG_TRACE << "Fatal SSL error. Close connection.";
+                handleSSLError(SSLError::kSSLProtocolError);
+            }
+        }
         return true;
     }
 }
