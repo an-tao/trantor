@@ -929,7 +929,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     loop_->assertInLoopThread();
     assert(filePtr->isFile());
 #ifdef __linux__
-    if (!isEncrypted_ && !filePtr->streamCallback_)
+    if (!filePtr->streamCallback_)
     {
         LOG_TRACE << "send file in loop using linux kernel sendfile()";
         auto bytesSent = sendfile(socketPtr_->fd(),

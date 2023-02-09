@@ -149,7 +149,7 @@ class TcpConnectionImpl : public TcpConnection,
 
     virtual bool isSSLConnection() const override
     {
-        return isEncrypted_;
+        return false;
     }
     virtual void connectEstablished() override;
     virtual void connectDestroyed() override;
@@ -256,7 +256,6 @@ class TcpConnectionImpl : public TcpConnection,
         Connected,
         Disconnecting
     };
-    bool isEncrypted_{false};
     EventLoop *loop_;
     std::unique_ptr<Channel> ioChannelPtr_;
     std::unique_ptr<Socket> socketPtr_;
