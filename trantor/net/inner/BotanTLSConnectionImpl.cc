@@ -28,7 +28,7 @@ BotanTLSConnectionImpl::BotanTLSConnectionImpl(TcpConnectionPtr rawConn,
     rawConnPtr_->setWriteCompleteCallback(
         std::bind(&BotanTLSConnectionImpl::onWriteComplete, this, _1));
     rawConnPtr_->setCloseCallback(
-        std::bind(&BotanTLSConnectionImpl::onDisconnection, this, _1));
+        std::bind(&BotanTLSConnectionImpl::onClosed, this, _1));
 }
 
 void BotanTLSConnectionImpl::onConnection(const TcpConnectionPtr &conn)
@@ -76,12 +76,6 @@ void BotanTLSConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
 void BotanTLSConnectionImpl::onWriteComplete(const TcpConnectionPtr &conn)
 {
     writeCompleteCallback_(shared_from_this());
-}
-
-void BotanTLSConnectionImpl::onDisconnection(const TcpConnectionPtr &conn)
-{
-    // ??
-    closeCallback_(shared_from_this());
 }
 
 void BotanTLSConnectionImpl::onClosed(const TcpConnectionPtr &conn)

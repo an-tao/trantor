@@ -207,7 +207,7 @@ OpenSSLConnectionImpl::OpenSSLConnectionImpl(TcpConnectionPtr rawConn,
     rawConnPtr_->setWriteCompleteCallback(
         std::bind(&OpenSSLConnectionImpl::onWriteComplete, this, _1));
     rawConnPtr_->setCloseCallback(
-        std::bind(&OpenSSLConnectionImpl::onDisconnection, this, _1));
+        std::bind(&OpenSSLConnectionImpl::onClosed, this, _1));
 
     rbio_ = BIO_new(BIO_s_mem());
     wbio_ = BIO_new(BIO_s_mem());
@@ -443,12 +443,6 @@ void OpenSSLConnectionImpl::handleSSLError(SSLError error)
 void OpenSSLConnectionImpl::onWriteComplete(const TcpConnectionPtr &conn)
 {
     writeCompleteCallback_(shared_from_this());
-}
-
-void OpenSSLConnectionImpl::onDisconnection(const TcpConnectionPtr &conn)
-{
-    // ??
-    closeCallback_(shared_from_this());
 }
 
 void OpenSSLConnectionImpl::onClosed(const TcpConnectionPtr &conn)

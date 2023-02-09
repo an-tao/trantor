@@ -268,7 +268,6 @@ class OpenSSLConnectionImpl
     void onRecvMessage(const TcpConnectionPtr &conn, MsgBuffer *buffer);
     void onConnection(const TcpConnectionPtr &conn);
     void onWriteComplete(const TcpConnectionPtr &conn);
-    void onDisconnection(const TcpConnectionPtr &conn);
     void onClosed(const TcpConnectionPtr &conn);
     void onHighWaterMark(const TcpConnectionPtr &conn, size_t markLen);
 
