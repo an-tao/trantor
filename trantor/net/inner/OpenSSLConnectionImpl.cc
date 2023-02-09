@@ -565,8 +565,8 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
                 "certificate public key");
         }
     }
-    if (policy.getValidateChain() || policy.getValidateDate() ||
-        policy.getValidateDomain() && policy.getUseSystemCertStore())
+    if ((policy.getValidateChain() || policy.getValidateDate() ||
+        policy.getValidateDomain()) && policy.getUseSystemCertStore())
     {
 #ifdef _WIN32
         internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctx->ctx()));
