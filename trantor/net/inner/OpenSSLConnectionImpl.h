@@ -197,10 +197,7 @@ class OpenSSLConnectionImpl
     }
 
     virtual void shutdown() override;
-    virtual void forceClose() override
-    {
-        throw std::runtime_error("Not implemented forceClose");
-    }
+    virtual void forceClose() override;
 
     virtual EventLoop *getLoop() override
     {
@@ -276,6 +273,7 @@ class OpenSSLConnectionImpl
 
     CertificatePtr peerCertPtr_;
     std::string sniName_;
+    std::string alpnProtocol_;
     MsgBuffer recvBuffer_;
     SSL *ssl_ = nullptr;
     BIO *rbio_ = nullptr;

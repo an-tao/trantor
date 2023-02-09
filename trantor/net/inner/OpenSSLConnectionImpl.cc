@@ -37,8 +37,8 @@ OpenSSLConnectionImpl::OpenSSLConnectionImpl(TcpConnectionPtr rawConn,
     assert(rbio_);
     assert(wbio_);
     SSL_set_bio(ssl_, rbio_, wbio_);
-    // if(!policyPtr_->getHostname().empty())
-    //     SSL_set_tlsext_host_name(ssl_, policyPtr_->getHostname().c_str());
+    if (!policyPtr_->getHostname().empty())
+        SSL_set_tlsext_host_name(ssl_, policyPtr_->getHostname().c_str());
 }
 
 OpenSSLConnectionImpl::~OpenSSLConnectionImpl()
@@ -50,6 +50,22 @@ OpenSSLConnectionImpl::~OpenSSLConnectionImpl()
 void OpenSSLConnectionImpl::startClientEncryption()
 {
     assert(ssl_);
+
+    const auto &protocols = policyPtr_->getAlpnProtocols();
+    if (!protocols.empty())
+    {
+        std::string alpnList;
+        alpnList.reserve(24);  // some reasonable size
+        for (const auto &proto : policyPtr_->getAlpnProtocols())
+        {
+            char ch = static_cast<char>(proto.size());
+            alpnList.push_back(ch);
+            alpnList.append(proto);
+        }
+        SSL_set_alpn_protos(ssl_,
+                            (const unsigned char *)(alpnList.data()),
+                            alpnList.size());
+    }
     SSL_set_connect_state(ssl_);
 }
 
@@ -122,6 +138,11 @@ void OpenSSLConnectionImpl::shutdown()
     rawConnPtr_->shutdown();
 }
 
+void OpenSSLConnectionImpl::forceClose()
+{
+    rawConnPtr_->forceClose();
+}
+
 bool OpenSSLConnectionImpl::processHandshake()
 {
     if (!SSL_is_init_finished(ssl_))
@@ -140,6 +161,11 @@ bool OpenSSLConnectionImpl::processHandshake()
             else
             {
                 sniName_ = policyPtr_->getHostname();
+                const unsigned char *alpn = nullptr;
+                unsigned int alpnlen = 0;
+                SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
+                if (alpn)
+                    alpnProtocol_ = std::string((char *)alpn, alpnlen);
             }
             auto cert = SSL_get_peer_certificate(ssl_);
             if (cert)
