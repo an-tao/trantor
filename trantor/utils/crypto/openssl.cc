@@ -2,6 +2,11 @@
 
 #include <openssl/evp.h>
 
+#if OPENSSL_VERSION_MAJOR < 3
+#include <openssl/md5.h>
+#include <openssl/sha.h>
+#endif
+
 namespace trantor
 {
 namespace utils
