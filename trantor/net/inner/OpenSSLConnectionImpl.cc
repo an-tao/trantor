@@ -2,6 +2,245 @@
 #include "trantor/utils/Logger.h"
 
 using namespace trantor;
+using namespace std::placeholders;
+
+// Force OpenSSL to initialize before main() is called
+static bool sslInitFlag = []() {
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+    ERR_load_BIO_strings();
+    ERR_load_crypto_strings();
+#endif
+    return true;
+}();
+
+OpenSSLConnectionImpl::OpenSSLConnectionImpl(TcpConnectionPtr rawConn,
+                                             SSLPolicyPtr policy,
+                                             SSLContextPtr context)
+    : rawConnPtr_(rawConn), policyPtr_(policy), contextPtr_(context)
+{
+    rawConnPtr_->setConnectionCallback(
+        std::bind(&OpenSSLConnectionImpl::onConnection, this, _1));
+    rawConnPtr_->setRecvMsgCallback(
+        std::bind(&OpenSSLConnectionImpl::onRecvMessage, this, _1, _2));
+    rawConnPtr_->setWriteCompleteCallback(
+        std::bind(&OpenSSLConnectionImpl::onWriteComplete, this, _1));
+    rawConnPtr_->setCloseCallback(
+        std::bind(&OpenSSLConnectionImpl::onDisconnection, this, _1));
+
+    rbio_ = BIO_new(BIO_s_mem());
+    wbio_ = BIO_new(BIO_s_mem());
+    ssl_ = SSL_new(contextPtr_->ctx());
+    assert(ssl_);
+    assert(rbio_);
+    assert(wbio_);
+    SSL_set_bio(ssl_, rbio_, wbio_);
+    // if(!policyPtr_->getHostname().empty())
+    //     SSL_set_tlsext_host_name(ssl_, policyPtr_->getHostname().c_str());
+}
+
+OpenSSLConnectionImpl::~OpenSSLConnectionImpl()
+{
+    if (ssl_)
+        SSL_free(ssl_);
+}
+
+void OpenSSLConnectionImpl::startClientEncryption()
+{
+    assert(ssl_);
+    SSL_set_connect_state(ssl_);
+}
+
+void OpenSSLConnectionImpl::startServerEncryption()
+{
+    assert(ssl_);
+    SSL_set_accept_state(ssl_);
+}
+
+void OpenSSLConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
+                                          MsgBuffer *buffer)
+{
+    LOG_TRACE << "Received " << buffer->readableBytes()
+              << " bytes from lower layer";
+    if (buffer->readableBytes() == 0)
+        return;
+    while (buffer->readableBytes() > 0)
+    {
+        int n = BIO_write(rbio_, buffer->peek(), buffer->readableBytes());
+        if (n <= 0)
+        {
+            // TODO: make the status code more specific
+            handleSSLError(SSLError::kSSLHandshakeError);
+            return;
+        }
+
+        buffer->retrieve(n);
+        bool need_more_data = processHandshake();
+        if (need_more_data)
+            break;
+    }
+}
+
+void OpenSSLConnectionImpl::send(const char *msg, size_t len)
+{
+    int n = SSL_write(ssl_, msg, len);
+    if (n <= 0)
+    {
+        // int err = SSL_get_error(ssl_, n);
+        // if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+        // {
+        //     LOG_TRACE << "SSL wants to write";
+        //     void *buf = nullptr;
+        //     int len = BIO_get_mem_data(wbio_, &buf);
+        //     if (len > 0)
+        //     {
+        //         sendRawData(buf, len);
+        //         BIO_reset(wbio_);
+        //     }
+        // }
+        // else
+        // {
+        //     LOG_TRACE << "SSL write error";
+        //     handleSSLError(SSLError::kSSLWriteError);
+        // }
+    }
+    else
+    {
+        sendTLSData();
+    }
+}
+
+void OpenSSLConnectionImpl::shutdown()
+{
+    if (SSL_is_init_finished(ssl_))
+    {
+        SSL_shutdown(ssl_);
+        sendTLSData();
+    }
+    rawConnPtr_->shutdown();
+}
+
+bool OpenSSLConnectionImpl::processHandshake()
+{
+    if (!SSL_is_init_finished(ssl_))
+    {
+        int ret = SSL_do_handshake(ssl_);
+        if (ret == 1)
+        {
+            LOG_TRACE << "SSL handshake finished";
+            if (policyPtr_->getIsServer())
+            {
+                const char *sniName =
+                    SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
+                if (sniName)
+                    sniName_ = sniName;
+            }
+            else
+            {
+                sniName_ = policyPtr_->getHostname();
+            }
+            auto cert = SSL_get_peer_certificate(ssl_);
+            if (cert)
+                peerCertPtr_ = std::make_shared<OpenSSLCertificate>(cert);
+            connectionCallback_(shared_from_this());
+            return true;
+        }
+        else
+        {
+            int err = SSL_get_error(ssl_, ret);
+            if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+            {
+                LOG_TRACE << "SSL handshake wants to write";
+                sendTLSData();
+                return true;
+            }
+            else
+            {
+                LOG_TRACE << "SSL handshake error";
+                handleSSLError(SSLError::kSSLHandshakeError);
+                return true;
+            }
+        }
+    }
+    else
+    {
+        recvBuffer_.ensureWritableBytes(4096);
+        int n = SSL_read(ssl_,
+                         recvBuffer_.beginWrite(),
+                         recvBuffer_.writableBytes());
+        if (n > 0)
+        {
+            recvBuffer_.hasWritten(n);
+            recvMsgCallback_(shared_from_this(), &recvBuffer_);
+        }
+        return true;
+    }
+}
+
+void OpenSSLConnectionImpl::onConnection(const TcpConnectionPtr &conn)
+{
+    if (conn->connected())
+    {
+        LOG_TRACE << "Connection established. Start SSL handshake";
+
+        if (policyPtr_->getIsServer())
+            startServerEncryption();
+        else
+            startClientEncryption();
+
+        processHandshake();
+    }
+}
+
+void OpenSSLConnectionImpl::sendTLSData()
+{
+    void *buf = nullptr;
+    int len = BIO_get_mem_data(wbio_, &buf);
+    if (len > 0)
+    {
+        sendRawData(buf, len);
+        BIO_reset(wbio_);
+    }
+}
+
+void OpenSSLConnectionImpl::onWriteComplete(const TcpConnectionPtr &conn)
+{
+    writeCompleteCallback_(shared_from_this());
+}
+
+void OpenSSLConnectionImpl::onDisconnection(const TcpConnectionPtr &conn)
+{
+    // ??
+    closeCallback_(shared_from_this());
+}
+
+void OpenSSLConnectionImpl::onClosed(const TcpConnectionPtr &conn)
+{
+    closeCallback_(shared_from_this());
+}
+
+void OpenSSLConnectionImpl::onHighWaterMark(const TcpConnectionPtr &conn,
+                                            size_t markLen)
+{
+    highWaterMarkCallback_(shared_from_this(), markLen);
+}
+
+void OpenSSLConnectionImpl::setHighWaterMarkCallback(
+    const HighWaterMarkCallback &cb,
+    size_t mark)
+{
+    highWaterMarkCallback_ = cb;
+    rawConnPtr_->setHighWaterMarkCallback(
+        std::bind(&OpenSSLConnectionImpl::onHighWaterMark, this, _1, _2), mark);
+}
+
+void OpenSSLConnectionImpl::sendRawData(const void *data, size_t len)
+{
+    LOG_TRACE << "Sending raw data: " << len << " bytes";
+    rawConnPtr_->send(data, len);
+}
 
 SSLContext::SSLContext(
     bool useOldTLS,
@@ -17,7 +256,9 @@ SSLContext::SSLContext(
 #endif
 
 #ifdef LIBRESSL_VERSION_NUMBER
-    ctxPtr_ = SSL_CTX_new(SSL_METHOD());
+    ctx_ = SSL_CTX_new(SSL_METHOD());
+    if (ctx_ == nullptr)
+        throw std::runtime_error("Failed to create SSL context");
     if (sslConfCmds.size() != 0)
         LOG_WARN << "LibreSSL does not support SSL configuration commands";
 
@@ -25,6 +266,8 @@ SSLContext::SSLContext(
         SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
 #else
     ctx_ = SSL_CTX_new(SSL_METHOD());
+    if (ctx_ == nullptr)
+        throw std::runtime_error("Failed to create SSL context");
     SSL_CONF_CTX *cctx = SSL_CONF_CTX_new();
     SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
     SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CLIENT);
@@ -64,12 +307,34 @@ TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn,
                                            SSLPolicyPtr policy,
                                            SSLContextPtr ctx)
 {
-    return nullptr;
+    return std::make_shared<OpenSSLConnectionImpl>(lowerConn, policy, ctx);
 }
 
 SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
 {
-    return std::make_shared<SSLContext>(policy.getUseOldTLS(),
-                                        policy.getValidateChain(),
-                                        policy.getConfCmds());
+    auto ctx = std::make_shared<SSLContext>(policy.getUseOldTLS(),
+                                            policy.getValidateChain(),
+                                            policy.getConfCmds());
+    if (!policy.getCertPath().empty() && !policy.getKeyPath().empty())
+    {
+        if (SSL_CTX_use_certificate_file(ctx->ctx(),
+                                         policy.getCertPath().data(),
+                                         SSL_FILETYPE_PEM) <= 0)
+        {
+            throw std::runtime_error("Failed to load certificate");
+        }
+        if (SSL_CTX_use_PrivateKey_file(ctx->ctx(),
+                                        policy.getKeyPath().data(),
+                                        SSL_FILETYPE_PEM) <= 0)
+        {
+            throw std::runtime_error("Failed to load private key");
+        }
+        if (SSL_CTX_check_private_key(ctx->ctx()) == 0)
+        {
+            throw std::runtime_error(
+                "Private key does not match the "
+                "certificate public key");
+        }
+    }
+    return ctx;
 }

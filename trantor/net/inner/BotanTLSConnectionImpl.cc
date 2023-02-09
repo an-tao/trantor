@@ -78,6 +78,7 @@ void BotanTLSConnectionImpl::onWriteComplete(const TcpConnectionPtr &conn)
 
 void BotanTLSConnectionImpl::onDisconnection(const TcpConnectionPtr &conn)
 {
+    // ??
     closeCallback_(shared_from_this());
 }
 
