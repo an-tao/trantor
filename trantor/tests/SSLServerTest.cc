@@ -17,7 +17,15 @@ int main()
     InetAddress addr(8888);
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
-    server.enableSSL("server.cert", "server.key");
+    auto policy = std::make_shared<SSLPolicy>();
+    policy->setKeyPath("server.key")
+        .setCertPath("server.cert")
+        .setUseOldTLS(false)
+        .setConfCmds({})
+        .setCaPath("")
+        .setValidate(false)
+        .setIsServer(true);
+    server.enableSSL(std::move(policy));
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             // LOG_DEBUG<<"recv callback!";

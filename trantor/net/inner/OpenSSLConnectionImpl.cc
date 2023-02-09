@@ -144,6 +144,33 @@ static bool validatePeerCertificate(SSL *ssl,
     return true;
 }
 
+static int serverSelectProtocol(SSL *ssl,
+                                const unsigned char **out,
+                                unsigned char *outlen,
+                                const unsigned char *in,
+                                unsigned int inlen,
+                                void *arg)
+{
+    LOG_TRACE << "============================================================ "
+                 "Selecting protocol";
+    auto protocols = static_cast<std::vector<std::string> *>(arg);
+    if (protocols->empty())
+        return SSL_TLSEXT_ERR_NOACK;
+
+    for (int i = 0; i < inlen; i++)
+    {
+        auto protocol = std::string((const char *)in, inlen);
+        if (std::find(protocols->begin(), protocols->end(), protocol) !=
+            protocols->end())
+        {
+            *out = (unsigned char *)in;
+            *outlen = inlen;
+            return SSL_TLSEXT_ERR_OK;
+        }
+    }
+    return SSL_TLSEXT_ERR_NOACK;
+}
+
 }  // namespace internal
 
 // Force OpenSSL to initialize before main() is called
@@ -552,6 +579,13 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
         }
         SSL_CTX_set_client_CA_list(ctx->ctx(), cert_names);
         SSL_CTX_set_verify(ctx->ctx(), SSL_VERIFY_PEER, nullptr);
+    }
+
+    if (!policy.getAlpnProtocols().empty() && policy.getIsServer())
+    {
+        SSL_CTX_set_alpn_select_cb(ctx->ctx(),
+                                   internal::serverSelectProtocol,
+                                   (void *)&policy.getAlpnProtocols());
     }
     return ctx;
 }

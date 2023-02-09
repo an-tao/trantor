@@ -241,10 +241,6 @@ class OpenSSLConnectionImpl
     }
     void startClientEncryption();
     void startServerEncryption();
-    // static void serverSelectProtocol(SSL* ssl, const unsigned char** out,
-    //                                  unsigned char* outlen, const unsigned
-    //                                  char* in, unsigned int inlen, void*
-    //                                  arg);
 
   protected:
     bool processHandshake();

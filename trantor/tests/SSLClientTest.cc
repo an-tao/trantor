@@ -14,7 +14,7 @@ int main()
 #if USE_IPV6
     InetAddress serverAddr("::1", 8888, true);
 #else
-    InetAddress serverAddr("127.0.0.1", 443);
+    InetAddress serverAddr("127.0.0.1", 8888);
 #endif
     std::shared_ptr<trantor::TcpClient> client[10];
     std::atomic_int connCount;
