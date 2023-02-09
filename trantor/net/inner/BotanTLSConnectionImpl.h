@@ -145,13 +145,28 @@ class BotanTLSConnectionImpl
                           size_t offset = 0,
                           size_t length = 0) override
     {
-        throw std::runtime_error("Not implemented");
+        // barebone implementation
+        std::ifstream ifs(fileName, std::ios::binary);
+        if (!ifs.is_open())
+        {
+            throw std::runtime_error("Cannot open file");
+        }
+        ifs.seekg(offset);
+        if (length == 0)
+        {
+            ifs.seekg(0, std::ios::end);
+            length = ifs.tellg();
+        }
+        ifs.seekg(offset);
+        std::vector<char> buffer(length);
+        ifs.read(buffer.data(), length);
+        send(buffer.data(), length);
     }
     virtual void sendFile(const wchar_t *fileName,
                           size_t offset = 0,
                           size_t length = 0) override
     {
-        throw std::runtime_error("Not implemented");
+        throw std::runtime_error("Not implemented sendFile(wstring)");
     }
     virtual void sendStream(
         std::function<std::size_t(char *, std::size_t)> callback) override
