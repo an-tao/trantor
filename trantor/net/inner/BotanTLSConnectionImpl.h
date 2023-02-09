@@ -12,6 +12,8 @@
 #include <botan/data_src.h>
 #include <botan/pkcs8.h>
 
+#include <fstream>
+
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/Logger.h>
 
