@@ -551,9 +551,7 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
             throw std::runtime_error("Failed to load CA file");
         }
         SSL_CTX_set_client_CA_list(ctx->ctx(), cert_names);
-        SSL_CTX_set_verify(ctx->ctx(),
-                           SSL_VERIFY_PEER,
-                           nullptr);
+        SSL_CTX_set_verify(ctx->ctx(), SSL_VERIFY_PEER, nullptr);
     }
     return ctx;
 }
