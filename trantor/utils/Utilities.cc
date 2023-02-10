@@ -253,11 +253,13 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
 }
 
 #define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
 std::string tlsBackend()
 {
-    return STRINGIFY(TRANTOR_TLS_BACKEND);
+    return TOSTRING(TRANTOR_TLS_PROVIDER);
 }
+#undef TOSTRING
 #undef STRINGIFY
 
 #if !defined(USE_BOTAN) && !defined(USE_OPENSSL)

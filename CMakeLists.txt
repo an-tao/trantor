@@ -135,13 +135,13 @@ if(PREFERED_TLS_IDX EQUAL -1 AND NOT TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "")
                       "Valid TLS providers are: ${VALID_TLS_PROVIDERS}")
 endif()
 
-set(TRANTOR_SSL_PROVIDER "None")
+set(TRANTOR_TLS_PROVIDER "None")
 if(TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "openssl" OR TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "")
   find_package(OpenSSL)
   if(OpenSSL_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
-    set(TRANTOR_SSL_PROVIDER "OpenSSL")
+    set(TRANTOR_TLS_PROVIDER "OpenSSL")
 
     set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}
@@ -153,7 +153,7 @@ if(TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "openssl" OR TRANTOR_PREFERED_TLS_PROV
   endif()
 endif()
 
-if(TRANTOR_SSL_PROVIDER STREQUAL "None"
+if(TRANTOR_TLS_PROVIDER STREQUAL "None"
   AND (TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "botan" OR TRANTOR_PREFERED_TLS_PROVIDER STREQUAL ""))
   find_package(Botan)
   if(Botan_FOUND)
@@ -168,11 +168,11 @@ if(TRANTOR_SSL_PROVIDER STREQUAL "None"
     set(private_headers
         ${private_headers}
         trantor/net/inner/BotanTLSConnectionImpl.h)
-    set(TRANTOR_SSL_PROVIDER "Botan")
+    set(TRANTOR_TLS_PROVIDER "Botan")
   endif()
 endif()
 
-if(TRANTOR_SSL_PROVIDER STREQUAL "None")
+if(TRANTOR_TLS_PROVIDER STREQUAL "None")
   set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}
       trantor/utils/crypto/sha3.cc
@@ -187,8 +187,8 @@ if(TRANTOR_SSL_PROVIDER STREQUAL "None")
       trantor/utils/crypto/sha256.h)
 endif()
 
-message(STATUS "Trantor using SSL library: ${TRANTOR_SSL_PROVIDER}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE TRANTOR_SSL_PROVIDER=${TRANTOR_SSL_PROVIDER})
+message(STATUS "Trantor using SSL library: ${TRANTOR_TLS_PROVIDER}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE TRANTOR_TLS_PROVIDER=${TRANTOR_TLS_PROVIDER})
 
 set(HAVE_C-ARES NO)
 if (BUILD_C-ARES)
