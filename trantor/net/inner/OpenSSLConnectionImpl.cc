@@ -382,7 +382,8 @@ bool OpenSSLConnectionImpl::processHandshake()
                 }
             }
 
-            connectionCallback_(shared_from_this());
+            if (connectionCallback_)
+                connectionCallback_(shared_from_this());
             return true;
         }
         else
@@ -411,7 +412,9 @@ bool OpenSSLConnectionImpl::processHandshake()
         if (n > 0)
         {
             recvBuffer_.hasWritten(n);
-            recvMsgCallback_(shared_from_this(), &recvBuffer_);
+            LOG_TRACE << "Received " << n << " bytes from SSL";
+            if (recvMsgCallback_)
+                recvMsgCallback_(shared_from_this(), &recvBuffer_);
         }
         else if (n <= 0)
         {
@@ -431,7 +434,6 @@ void OpenSSLConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     if (conn->connected())
     {
         LOG_TRACE << "Connection established. Start SSL handshake";
-
         if (policyPtr_->getIsServer())
             startServerEncryption();
         else
@@ -441,7 +443,8 @@ void OpenSSLConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     }
     else
     {
-        connectionCallback_(shared_from_this());
+        if (connectionCallback_)
+            connectionCallback_(shared_from_this());
     }
 }
 
@@ -459,23 +462,27 @@ void OpenSSLConnectionImpl::sendTLSData()
 void OpenSSLConnectionImpl::handleSSLError(SSLError error)
 {
     rawConnPtr_->forceClose();
-    sslErrorCallback_(error);
+    if (sslErrorCallback_)
+        sslErrorCallback_(error);
 }
 
 void OpenSSLConnectionImpl::onWriteComplete(const TcpConnectionPtr &conn)
 {
-    writeCompleteCallback_(shared_from_this());
+    if (writeCompleteCallback_)
+        writeCompleteCallback_(shared_from_this());
 }
 
 void OpenSSLConnectionImpl::onClosed(const TcpConnectionPtr &conn)
 {
-    closeCallback_(shared_from_this());
+    if (closeCallback_)
+        closeCallback_(shared_from_this());
 }
 
 void OpenSSLConnectionImpl::onHighWaterMark(const TcpConnectionPtr &conn,
                                             size_t markLen)
 {
-    highWaterMarkCallback_(shared_from_this(), markLen);
+    if (highWaterMarkCallback_)
+        highWaterMarkCallback_(shared_from_this(), markLen);
 }
 
 void OpenSSLConnectionImpl::setHighWaterMarkCallback(
@@ -572,7 +579,8 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
                                          policy.getCertPath().data(),
                                          SSL_FILETYPE_PEM) <= 0)
         {
-            throw std::runtime_error("Failed to load certificate");
+            throw std::runtime_error("Failed to load certificate " +
+                                     policy.getCertPath());
         }
         if (SSL_CTX_use_PrivateKey_file(ctx->ctx(),
                                         policy.getKeyPath().data(),
