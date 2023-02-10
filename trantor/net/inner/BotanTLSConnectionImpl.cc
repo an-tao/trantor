@@ -118,7 +118,8 @@ void BotanTLSConnectionImpl::startClientEncryption()
         *credsPtr_,
         policy_,
         rng,
-        Botan::TLS::Server_Information(policyPtr_->getHostname()),
+        Botan::TLS::Server_Information(policyPtr_->getHostname(),
+                                       rawConnPtr_->peerAddr().toPort()),
         policyPtr_->getUseOldTLS() ? Botan::TLS::Protocol_Version::TLS_V10
                                    : Botan::TLS::Protocol_Version::TLS_V12,
         policyPtr_->getAlpnProtocols());
