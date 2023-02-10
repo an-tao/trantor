@@ -421,6 +421,10 @@ void OpenSSLConnectionImpl::onConnection(const TcpConnectionPtr &conn)
 
         processHandshake();
     }
+    else
+    {
+        connectionCallback_(shared_from_this());
+    }
 }
 
 void OpenSSLConnectionImpl::sendTLSData()
