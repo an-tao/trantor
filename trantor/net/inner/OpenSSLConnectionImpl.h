@@ -7,6 +7,9 @@
 #include <openssl/bio.h>
 
 #include <fstream>
+#include <mutex>
+#include <list>
+#include <unordered_map>
 
 namespace trantor
 {
@@ -107,6 +110,101 @@ struct OpenSSLCertificate : public Certificate
         return pem;
     }
     X509 *cert_ = nullptr;
+};
+
+class SessionManager
+{
+    struct SessionData
+    {
+        SSL_SESSION *session = nullptr;
+        std::string key;
+        TimerId timerId = 0;
+        EventLoop *loop = nullptr;
+    };
+
+  public:
+    ~SessionManager()
+    {
+        for (auto &session : sessions_)
+        {
+            SSL_SESSION_free(session.session);
+        }
+    }
+
+    void store(const std::string &hostname,
+               InetAddress peerAddr,
+               SSL_SESSION *session,
+               EventLoop *loop)
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            auto key = toKey(hostname, peerAddr);
+            auto it = sessionMap_.find(key);
+            if (it != sessionMap_.end())
+            {
+                SSL_SESSION_free(it->second->session);
+                it->second->loop->invalidateTimer(it->second->timerId);
+                sessions_.erase(it->second);
+                sessionMap_.erase(it);
+            }
+
+            SSL_SESSION_up_ref(session);
+            TimerId tid = loop->runAfter(sessionTimeout_, [this, key]() {
+                std::lock_guard<std::mutex> lock(mutex_);
+                auto it = sessionMap_.find(key);
+                if (it != sessionMap_.end())
+                {
+                    SSL_SESSION_free(it->second->session);
+                    sessions_.erase(it->second);
+                    sessionMap_.erase(it);
+                }
+            });
+            sessions_.push_front(SessionData{session, key, tid, loop});
+            sessionMap_[key] = sessions_.begin();
+        }
+        removeExcessSession();
+    }
+
+    SSL_SESSION *get(const std::string &hostname, InetAddress peerAddr)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto key = toKey(hostname, peerAddr);
+        auto it = sessionMap_.find(key);
+        if (it != sessionMap_.end())
+        {
+            return it->second->session;
+        }
+        return nullptr;
+    }
+
+    void removeExcessSession()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (sessions_.size() < maxSessions_ + mexExtendSize_)
+            return;
+        if (sessions_.size() > maxSessions_)
+        {
+            auto it = sessions_.end();
+            it--;
+            SSL_SESSION_free(it->session);
+            it->loop->invalidateTimer(it->timerId);
+            sessionMap_.erase(it->key);
+            sessions_.erase(it);
+        }
+    }
+
+    std::string toKey(const std::string &hostname, InetAddress peerAddr)
+    {
+        return hostname + peerAddr.toIpPort();
+    }
+
+    std::mutex mutex_;
+    int maxSessions_ = 150;
+    int mexExtendSize_ = 20;
+    int sessionTimeout_ = 3600;
+    std::list<SessionData> sessions_;
+    std::unordered_map<std::string, std::list<SessionData>::iterator>
+        sessionMap_;
 };
 
 class OpenSSLConnectionImpl

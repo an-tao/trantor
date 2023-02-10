@@ -10,6 +10,8 @@
 using namespace trantor;
 using namespace std::placeholders;
 
+SessionManager sessionManager;
+
 namespace internal
 {
 #ifdef _WIN32
@@ -245,6 +247,13 @@ void OpenSSLConnectionImpl::startClientEncryption()
                             (const unsigned char *)(alpnList.data()),
                             (unsigned int)alpnList.size());
     }
+
+    SSL_SESSION *cachedSession =
+        sessionManager.get(policyPtr_->getHostname(), rawConnPtr_->peerAddr());
+    if (cachedSession)
+    {
+        SSL_set_session(ssl_, cachedSession);
+    }
     SSL_set_connect_state(ssl_);
 }
 
@@ -331,6 +340,15 @@ bool OpenSSLConnectionImpl::processHandshake()
                 SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
                 if (alpn)
                     alpnProtocol_ = std::string((char *)alpn, alpnlen);
+
+                SSL_SESSION *session = SSL_get0_session(ssl_);
+                assert(session);
+                bool reused = SSL_session_reused(ssl_) == 1;
+                if (reused == 0)
+                    sessionManager.store(sniName_,
+                                         rawConnPtr_->peerAddr(),
+                                         session,
+                                         getLoop());
             }
 
             auto cert = SSL_get_peer_certificate(ssl_);
