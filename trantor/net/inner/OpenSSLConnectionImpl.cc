@@ -350,7 +350,7 @@ bool OpenSSLConnectionImpl::processHandshake()
 
             SSL_SESSION *session = SSL_get0_session(ssl_);
             assert(session);
-            if(SSL_SESSION_is_resumable)
+            if(SSL_SESSION_is_resumable(session))
             {
                 bool reused = SSL_session_reused(ssl_) == 1;
                 if (reused == 0)
