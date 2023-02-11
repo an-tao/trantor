@@ -350,12 +350,15 @@ bool OpenSSLConnectionImpl::processHandshake()
 
             SSL_SESSION *session = SSL_get0_session(ssl_);
             assert(session);
-            bool reused = SSL_session_reused(ssl_) == 1;
-            if (reused == 0)
-                sessionManager.store(sniName_,
-                                     rawConnPtr_->peerAddr(),
-                                     session,
-                                     getLoop());
+            if(SSL_SESSION_is_resumable)
+            {
+                bool reused = SSL_session_reused(ssl_) == 1;
+                if (reused == 0)
+                    sessionManager.store(sniName_,
+                                        rawConnPtr_->peerAddr(),
+                                        session,
+                                        getLoop());
+            }
         }
 
         auto cert = SSL_get_peer_certificate(ssl_);
