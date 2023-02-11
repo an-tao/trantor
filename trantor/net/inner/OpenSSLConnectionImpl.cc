@@ -521,7 +521,7 @@ SSLContext::SSLContext(
         LOG_WARN << "LibreSSL does not support SSL configuration commands";
 
     if (!useOldTLS)
-        SSL_CTX_set_min_proto_version(ctxPtr_, TLS1_2_VERSION);
+        SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
 #else
     ctx_ = SSL_CTX_new(SSL_METHOD());
     if (ctx_ == nullptr)

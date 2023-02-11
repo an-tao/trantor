@@ -7,6 +7,12 @@
 #include <openssl/sha.h>
 #endif
 
+// Hack: LibreSSL does not support SHA3. We use our own implementation.
+#if defined(LIBRESSL_VERSION_NUMBER)
+#include "sha3.h"
+#include "sha3.cc"
+#endif
+
 namespace trantor
 {
 namespace utils
@@ -79,7 +85,11 @@ Hash256 sha256(const void* data, size_t len)
 
 Hash256 sha3(const void* data, size_t len)
 {
-#if OPENSSL_VERSION_MAJOR >= 3
+#if defined(LIBRESSL_VERSION_NUMBER)
+    Hash256 hash;
+    trantor_sha3((const unsigned char*)data, len, &hash, sizeof(hash));
+    return hash;
+#elif OPENSSL_VERSION_MAJOR >= 3
     Hash256 hash;
     auto sha3 = EVP_MD_fetch(nullptr, "SHA3-256", nullptr);
     auto ctx = EVP_MD_CTX_new();
