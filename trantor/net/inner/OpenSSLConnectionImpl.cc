@@ -385,6 +385,20 @@ bool OpenSSLConnectionImpl::processHandshake()
 
             if (connectionCallback_)
                 connectionCallback_(shared_from_this());
+            // TLS1.3 can send application data right after change cipher spec.
+            // We need to check if there is any data to process.
+            recvBuffer_.ensureWritableBytes(4096);
+            int n = SSL_read(ssl_,
+                             recvBuffer_.beginWrite(),
+                             (int)recvBuffer_.writableBytes());
+            if (n > 0)
+            {
+                recvBuffer_.hasWritten(n);
+                LOG_TRACE << "Received " << n << " bytes from SSL";
+                if (recvMsgCallback_)
+                    recvMsgCallback_(shared_from_this(), &recvBuffer_);
+            }
+
             return true;
         }
         else
