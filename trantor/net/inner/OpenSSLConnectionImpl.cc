@@ -325,6 +325,7 @@ bool OpenSSLConnectionImpl::processHandshake()
         if (ret == 1)
         {
             LOG_TRACE << "SSL handshake finished";
+            sendTLSData();  // Needed to send ChangeCipherSpec
             if (policyPtr_->getIsServer())
             {
                 const char *sniName =
