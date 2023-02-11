@@ -283,9 +283,17 @@ void OpenSSLConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
         }
 
         buffer->retrieve(n);
-        bool need_more_data = processHandshake();
-        if (need_more_data)
-            break;
+
+        if (!SSL_is_init_finished(ssl_))
+        {
+            bool handshakeDone = processHandshake();
+            if (handshakeDone)
+                processApplicationData();
+        }
+        else
+        {
+            processApplicationData();
+        }
     }
 }
 
@@ -319,128 +327,114 @@ void OpenSSLConnectionImpl::forceClose()
 
 bool OpenSSLConnectionImpl::processHandshake()
 {
-    if (!SSL_is_init_finished(ssl_))
+    int ret = SSL_do_handshake(ssl_);
+    if (ret == 1)
     {
-        int ret = SSL_do_handshake(ssl_);
-        if (ret == 1)
+        LOG_TRACE << "SSL handshake finished";
+        sendTLSData();  // Needed to send ChangeCipherSpec
+        if (policyPtr_->getIsServer())
         {
-            LOG_TRACE << "SSL handshake finished";
-            sendTLSData();  // Needed to send ChangeCipherSpec
-            if (policyPtr_->getIsServer())
-            {
-                const char *sniName =
-                    SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
-                if (sniName)
-                    sniName_ = sniName;
-            }
-            else
-            {
-                sniName_ = policyPtr_->getHostname();
-                const unsigned char *alpn = nullptr;
-                unsigned int alpnlen = 0;
-                SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
-                if (alpn)
-                    alpnProtocol_ = std::string((char *)alpn, alpnlen);
-
-                SSL_SESSION *session = SSL_get0_session(ssl_);
-                assert(session);
-                bool reused = SSL_session_reused(ssl_) == 1;
-                if (reused == 0)
-                    sessionManager.store(sniName_,
-                                         rawConnPtr_->peerAddr(),
-                                         session,
-                                         getLoop());
-            }
-
-            auto cert = SSL_get_peer_certificate(ssl_);
-            if (cert)
-                peerCertPtr_ = std::make_shared<OpenSSLCertificate>(cert);
-
-            bool needCert = policyPtr_->getValidateChain() ||
-                            policyPtr_->getValidateDate() ||
-                            policyPtr_->getValidateDomain();
-            if (needCert && !peerCertPtr_)
-            {
-                LOG_TRACE << "SSL handshake error: no peer certificate";
-                handleSSLError(SSLError::kSSLInvalidCertificate);
-                return true;
-            }
-            if (needCert)
-            {
-                bool valid = internal::validatePeerCertificate(
-                    ssl_,
-                    cert,
-                    policyPtr_->getHostname(),
-                    policyPtr_->getValidateChain(),
-                    policyPtr_->getValidateDate(),
-                    policyPtr_->getValidateDomain());
-                if (!valid)
-                {
-                    LOG_TRACE
-                        << "SSL handshake error: invalid peer certificate";
-                    handleSSLError(SSLError::kSSLInvalidCertificate);
-                    return true;
-                }
-            }
-
-            if (connectionCallback_)
-                connectionCallback_(shared_from_this());
-            // TLS1.3 can send application data right after change cipher spec.
-            // We need to check if there is any data to process.
-            recvBuffer_.ensureWritableBytes(4096);
-            int n = SSL_read(ssl_,
-                             recvBuffer_.beginWrite(),
-                             (int)recvBuffer_.writableBytes());
-            if (n > 0)
-            {
-                recvBuffer_.hasWritten(n);
-                LOG_TRACE << "Received " << n << " bytes from SSL";
-                if (recvMsgCallback_)
-                    recvMsgCallback_(shared_from_this(), &recvBuffer_);
-            }
-
-            return true;
+            const char *sniName =
+                SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
+            if (sniName)
+                sniName_ = sniName;
         }
         else
         {
-            int err = SSL_get_error(ssl_, ret);
-            if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+            sniName_ = policyPtr_->getHostname();
+            const unsigned char *alpn = nullptr;
+            unsigned int alpnlen = 0;
+            SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
+            if (alpn)
+                alpnProtocol_ = std::string((char *)alpn, alpnlen);
+
+            SSL_SESSION *session = SSL_get0_session(ssl_);
+            assert(session);
+            bool reused = SSL_session_reused(ssl_) == 1;
+            if (reused == 0)
+                sessionManager.store(sniName_,
+                                     rawConnPtr_->peerAddr(),
+                                     session,
+                                     getLoop());
+        }
+
+        auto cert = SSL_get_peer_certificate(ssl_);
+        if (cert)
+            peerCertPtr_ = std::make_shared<OpenSSLCertificate>(cert);
+
+        bool needCert = policyPtr_->getValidateChain() ||
+                        policyPtr_->getValidateDate() ||
+                        policyPtr_->getValidateDomain();
+        if (needCert && !peerCertPtr_)
+        {
+            LOG_TRACE << "SSL handshake error: no peer certificate";
+            handleSSLError(SSLError::kSSLInvalidCertificate);
+            return false;
+        }
+        if (needCert)
+        {
+            bool valid = internal::validatePeerCertificate(
+                ssl_,
+                cert,
+                policyPtr_->getHostname(),
+                policyPtr_->getValidateChain(),
+                policyPtr_->getValidateDate(),
+                policyPtr_->getValidateDomain());
+            if (!valid)
             {
-                LOG_TRACE << "SSL handshake wants to write";
-                sendTLSData();
-                return true;
-            }
-            else
-            {
-                LOG_TRACE << "SSL handshake error";
-                handleSSLError(SSLError::kSSLHandshakeError);
-                return true;
+                LOG_TRACE << "SSL handshake error: invalid peer certificate";
+                handleSSLError(SSLError::kSSLInvalidCertificate);
+                return false;
             }
         }
+
+        if (connectionCallback_)
+            connectionCallback_(shared_from_this());
+        return true;
     }
     else
     {
-        recvBuffer_.ensureWritableBytes(4096);
-        int n = SSL_read(ssl_,
-                         recvBuffer_.beginWrite(),
-                         (int)recvBuffer_.writableBytes());
-        if (n > 0)
+        int err = SSL_get_error(ssl_, ret);
+        if (err == SSL_ERROR_WANT_READ)
         {
-            recvBuffer_.hasWritten(n);
-            LOG_TRACE << "Received " << n << " bytes from SSL";
-            if (recvMsgCallback_)
-                recvMsgCallback_(shared_from_this(), &recvBuffer_);
+            LOG_TRACE << "SSL handshake wants to read";
+            sendTLSData();
         }
-        else if (n <= 0)
+        else if (err == SSL_ERROR_WANT_WRITE)
         {
-            int err = SSL_get_error(ssl_, n);
-            if (err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL)
-            {
-                LOG_TRACE << "Fatal SSL error. Close connection.";
-                handleSSLError(SSLError::kSSLProtocolError);
-            }
+            LOG_TRACE << "SSL handshake wants to write";
+            sendTLSData();
         }
-        return true;
+        else
+        {
+            LOG_TRACE << "SSL handshake error";
+            handleSSLError(SSLError::kSSLHandshakeError);
+        }
+    }
+    return false;
+}
+
+void OpenSSLConnectionImpl::processApplicationData()
+{
+    recvBuffer_.ensureWritableBytes(4096);
+    int n = SSL_read(ssl_,
+                     recvBuffer_.beginWrite(),
+                     (int)recvBuffer_.writableBytes());
+    if (n > 0)
+    {
+        recvBuffer_.hasWritten(n);
+        LOG_TRACE << "Received " << n << " bytes from SSL";
+        if (recvMsgCallback_)
+            recvMsgCallback_(shared_from_this(), &recvBuffer_);
+    }
+    else if (n <= 0)
+    {
+        int err = SSL_get_error(ssl_, n);
+        if (err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL)
+        {
+            LOG_TRACE << "Fatal SSL error. Close connection.";
+            handleSSLError(SSLError::kSSLProtocolError);
+        }
     }
 }
 

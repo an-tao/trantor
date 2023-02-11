@@ -359,6 +359,7 @@ class OpenSSLConnectionImpl
 
   protected:
     bool processHandshake();
+    void processApplicationData();
     void sendTLSData();
 
     TcpConnectionPtr rawConnPtr_;
