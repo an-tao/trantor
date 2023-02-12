@@ -169,12 +169,12 @@ static int serverSelectProtocol(SSL *ssl,
                 LOG_ERROR << "Client provided invalid protocol list in APLN";
                 return SSL_TLSEXT_ERR_NOACK;
             }
-            std::string provided((const char *)cur, len);
-            if (provided == protocol)
+            if (protocol.size() == len &&
+                memcmp(cur, protocol.data(), len) == 0)
             {
                 *out = cur;
                 *outlen = len;
-                LOG_TRACE << "Selected protocol: " << provided;
+                LOG_TRACE << "Selected protocol: " << protocol;
                 return SSL_TLSEXT_ERR_OK;
             }
         }
@@ -338,7 +338,7 @@ bool OpenSSLConnectionImpl::processHandshake()
                 SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
             if (sniName)
                 sniName_ = sniName;
-            
+
             const unsigned char *alpn = nullptr;
             unsigned int alpnlen = 0;
             SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
@@ -356,14 +356,14 @@ bool OpenSSLConnectionImpl::processHandshake()
 
             SSL_SESSION *session = SSL_get0_session(ssl_);
             assert(session);
-            if(SSL_SESSION_is_resumable(session))
+            if (SSL_SESSION_is_resumable(session))
             {
                 bool reused = SSL_session_reused(ssl_) == 1;
                 if (reused == 0)
                     sessionManager.store(sniName_,
-                                        rawConnPtr_->peerAddr(),
-                                        session,
-                                        getLoop());
+                                         rawConnPtr_->peerAddr(),
+                                         session,
+                                         getLoop());
             }
         }
 
@@ -376,7 +376,8 @@ bool OpenSSLConnectionImpl::processHandshake()
                         policyPtr_->getValidateDomain();
         if (needCert && !peerCertPtr_)
         {
-            LOG_TRACE << "SSL handshake error: no peer certificate. Cannot perform validation";
+            LOG_TRACE << "SSL handshake error: no peer certificate. Cannot "
+                         "perform validation";
             handleSSLError(SSLError::kSSLInvalidCertificate);
             return false;
         }
@@ -650,7 +651,7 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
                                    (void *)&policy.getAlpnProtocols());
     }
 
-    if(!policy.getIsServer())
+    if (!policy.getIsServer())
     {
         // We have our own session cache, so disable OpenSSL's
         SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);
