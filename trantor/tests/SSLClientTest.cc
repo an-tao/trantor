@@ -14,10 +14,9 @@ int main()
 #if USE_IPV6
     InetAddress serverAddr("::1", 8888, true);
 #else
-    InetAddress serverAddr("140.117.13.241", 443);
+    InetAddress serverAddr("127.0.0.1", 8888);
 #endif
     std::shared_ptr<trantor::TcpClient> client[10];
-    std::shared_ptr<trantor::TcpClient> client2;
     std::atomic_int connCount;
     connCount = 1;
     for (int i = 0; i < connCount; ++i)
@@ -29,22 +28,11 @@ int main()
         policy->setValidate(false).setUseOldTLS(false);
         client[i]->enableSSL(std::move(policy));
         client[i]->setConnectionCallback(
-            [i, &loop, &connCount, &client2, &serverAddr](const TcpConnectionPtr &conn) {
+            [i, &loop, &connCount](const TcpConnectionPtr &conn) {
                 if (conn->connected())
                 {
                     LOG_DEBUG << i << " connected!";
-                    char tmp[20];
-                    sprintf(tmp, "%d client!!", i);
-                    conn->send(tmp);
-
-
-                    client2 =  std::make_shared<trantor::TcpClient>(&loop,
-                                                         serverAddr,
-                                                         "tcpclienttest2");
-                    auto policy = SSLPolicy::defaultClientPolicy();
-                    policy->setValidate(false).setUseOldTLS(false);
-                    client2->enableSSL(policy);
-                    client2->connect();
+                    conn->send(std::to_string(i) + " client!!");
                 }
                 else
                 {

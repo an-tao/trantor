@@ -338,6 +338,12 @@ bool OpenSSLConnectionImpl::processHandshake()
                 SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
             if (sniName)
                 sniName_ = sniName;
+            
+            const unsigned char *alpn = nullptr;
+            unsigned int alpnlen = 0;
+            SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
+            if (alpn)
+                alpnProtocol_ = std::string((char *)alpn, alpnlen);
         }
         else
         {
@@ -370,7 +376,7 @@ bool OpenSSLConnectionImpl::processHandshake()
                         policyPtr_->getValidateDomain();
         if (needCert && !peerCertPtr_)
         {
-            LOG_TRACE << "SSL handshake error: no peer certificate";
+            LOG_TRACE << "SSL handshake error: no peer certificate. Cannot perform validation";
             handleSSLError(SSLError::kSSLInvalidCertificate);
             return false;
         }
@@ -642,6 +648,12 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
         SSL_CTX_set_alpn_select_cb(ctx->ctx(),
                                    internal::serverSelectProtocol,
                                    (void *)&policy.getAlpnProtocols());
+    }
+
+    if(!policy.getIsServer())
+    {
+        // We have our own session cache, so disable OpenSSL's
+        SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);
     }
     return ctx;
 }
