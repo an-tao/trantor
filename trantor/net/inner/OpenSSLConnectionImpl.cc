@@ -426,9 +426,11 @@ bool OpenSSLConnectionImpl::processHandshake()
 
 void OpenSSLConnectionImpl::processApplicationData()
 {
-    // TODO: Optimize this
-    recvBuffer_.ensureWritableBytes(4096);
     int n;
+    int pending = SSL_pending(ssl_);
+    if (pending > 0)
+        recvBuffer_.ensureWritableBytes(pending);
+    
     do
     {
         n = SSL_read(ssl_,
