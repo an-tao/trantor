@@ -83,9 +83,8 @@ TcpClient::~TcpClient()
         return;
     assert(loop_ == connection_->getLoop());
     // TODO: not 100% safe, if we are in different thread
-    auto loop = loop_;
-    loop_->runInLoop([conn = connection_, loop]() {
-        conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
+    loop_->runInLoop([conn = connection_, loop = loop_]() {
+        conn->setCloseCallback([loop, conn](const TcpConnectionPtr &connPtr) {
             loop->queueInLoop([connPtr]() { connPtr->connectDestroyed(); });
         });
     });
