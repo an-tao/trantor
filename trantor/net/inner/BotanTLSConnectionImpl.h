@@ -93,6 +93,7 @@ struct SSLContext
     std::unique_ptr<Botan::Private_Key> key;
     std::unique_ptr<Botan::X509_Certificate> cert;
     std::unique_ptr<Botan::Certificate_Store> certStore;
+    bool isServer = false;
 };
 
 class TrantorPolicy : public Botan::TLS::Policy

@@ -37,7 +37,7 @@ void BotanTLSConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     {
         LOG_TRACE
             << "Low level connection established. Starting TLS handshake.";
-        if (policyPtr_->getIsServer())
+        if (contextPtr_->isServer())
             startServerEncryption();
         else
             startClientEncryption();
@@ -157,7 +157,7 @@ void BotanTLSConnectionImpl::tls_record_received(uint64_t /*seq*/,
 std::string BotanTLSConnectionImpl::tls_server_choose_app_protocol(
     const std::vector<std::string> &client_protos)
 {
-    assert(policyPtr_->getIsServer());
+    assert(contextPtr_->isServer);
     const auto &serverProtos = policyPtr_->getAlpnProtocols();
     if (serverProtos.empty() || client_protos.empty())
         return "";
@@ -276,9 +276,10 @@ TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn,
                                                     std::move(ctx));
 }
 
-SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
+SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool server)
 {
     auto ctx = std::make_shared<SSLContext>();
+    ctx->isServer = server;
     if (!policy.getKeyPath().empty())
     {
         Botan::DataSource_Stream in(policy.getKeyPath());

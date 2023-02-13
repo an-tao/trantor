@@ -332,7 +332,7 @@ bool OpenSSLConnectionImpl::processHandshake()
     {
         LOG_TRACE << "SSL handshake finished";
         sendTLSData();  // Needed to send ChangeCipherSpec
-        if (policyPtr_->getIsServer())
+        if (contextPtr_->isServer)
         {
             const char *sniName =
                 SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
@@ -430,7 +430,7 @@ void OpenSSLConnectionImpl::processApplicationData()
     int pending = SSL_pending(ssl_);
     if (pending > 0)
         recvBuffer_.ensureWritableBytes(pending);
-    
+
     do
     {
         n = SSL_read(ssl_,
@@ -460,7 +460,7 @@ void OpenSSLConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     if (conn->connected())
     {
         LOG_TRACE << "Connection established. Start SSL handshake";
-        if (policyPtr_->getIsServer())
+        if (contextPtr_->isServer)
             startServerEncryption();
         else
             startClientEncryption();
@@ -529,7 +529,9 @@ void OpenSSLConnectionImpl::sendRawData(const void *data, size_t len)
 SSLContext::SSLContext(
     bool useOldTLS,
     bool enableValidation,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
+    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+    bool server)
+    : isServer(server)
 {
     // Ungodly amount of preprocessor macros to support older versions of
     // OpenSSL and LibreSSL
@@ -594,11 +596,12 @@ TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn,
     return std::make_shared<OpenSSLConnectionImpl>(lowerConn, policy, ctx);
 }
 
-SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
+SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
 {
     auto ctx = std::make_shared<SSLContext>(policy.getUseOldTLS(),
                                             policy.getValidateChain(),
-                                            policy.getConfCmds());
+                                            policy.getConfCmds(),
+                                            isServer);
     if (!policy.getCertPath().empty() && !policy.getKeyPath().empty())
     {
         if (SSL_CTX_use_certificate_file(ctx->ctx(),
@@ -651,14 +654,14 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
         SSL_CTX_set_verify(ctx->ctx(), SSL_VERIFY_PEER, nullptr);
     }
 
-    if (!policy.getAlpnProtocols().empty() && policy.getIsServer())
+    if (!policy.getAlpnProtocols().empty() && isServer)
     {
         SSL_CTX_set_alpn_select_cb(ctx->ctx(),
                                    internal::serverSelectProtocol,
                                    (void *)&policy.getAlpnProtocols());
     }
 
-    if (!policy.getIsServer())
+    if (!isServer)
     {
         // We have our own session cache, so disable OpenSSL's
         SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);

@@ -78,11 +78,6 @@ struct TRANTOR_EXPORT SSLPolicy final
         alpnProtocols_ = alpnProtocols;
         return *this;
     }
-    SSLPolicy &setIsServer(bool isServer)
-    {
-        isServer_ = isServer;
-        return *this;
-    }
     SSLPolicy &setAlpnProtocols(std::vector<std::string> &&alpnProtocols)
     {
         alpnProtocols_ = std::move(alpnProtocols);
@@ -143,10 +138,6 @@ struct TRANTOR_EXPORT SSLPolicy final
     {
         return alpnProtocols_;
     }
-    bool getIsServer() const
-    {
-        return isServer_;
-    }
     const std::vector<std::string> &getAlpnProtocols()
     {
         return alpnProtocols_;
@@ -162,8 +153,7 @@ struct TRANTOR_EXPORT SSLPolicy final
         const std::string &keyPath)
     {
         auto policy = std::make_shared<SSLPolicy>();
-        policy->setIsServer(true)
-            .setValidate(false)
+        policy->setValidate(false)
             .setUseOldTLS(false)
             .setUseSystemCertStore(false)
             .setCertPath(certPath)
@@ -175,8 +165,7 @@ struct TRANTOR_EXPORT SSLPolicy final
         const std::string &hostname = "")
     {
         auto policy = std::make_shared<SSLPolicy>();
-        policy->setIsServer(false)
-            .setValidate(true)
+        policy->setValidate(true)
             .setUseOldTLS(false)
             .setUseSystemCertStore(false)
             .setHostname(hostname);
@@ -194,7 +183,6 @@ struct TRANTOR_EXPORT SSLPolicy final
     bool validateDomain_ = true;
     bool validateChain_ = true;
     bool validateDate_ = true;
-    bool isServer_ = false;
     bool useSystemCertStore_ = true;
 };
 using SSLPolicyPtr = std::shared_ptr<SSLPolicy>;
@@ -523,6 +511,7 @@ class TRANTOR_EXPORT TcpConnection
 TRANTOR_EXPORT TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
                                                  SSLPolicyPtr policy,
                                                  SSLContextPtr ctx);
-TRANTOR_EXPORT SSLContextPtr newSSLContext(const SSLPolicy &policy);
+TRANTOR_EXPORT SSLContextPtr newSSLContext(const SSLPolicy &policy,
+                                           bool server);
 
 }  // namespace trantor

@@ -18,7 +18,8 @@ struct SSLContext
     SSLContext(
         bool useOldTLS,
         bool enableValidation,
-        const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
+        bool server);
     ~SSLContext();
     SSL_CTX *ctx_ = nullptr;
 
@@ -26,6 +27,8 @@ struct SSLContext
     {
         return ctx_;
     }
+
+    bool isServer = false;
 };
 
 struct OpenSSLCertificate : public Certificate

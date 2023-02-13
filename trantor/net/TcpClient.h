@@ -219,7 +219,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     void enableSSL(SSLPolicyPtr policy)
     {
         sslPolicyPtr_ = std::move(policy);
-        sslContextPtr_ = newSSLContext(*sslPolicyPtr_);
+        sslContextPtr_ = newSSLContext(*sslPolicyPtr_, false);
     }
 
   private:
