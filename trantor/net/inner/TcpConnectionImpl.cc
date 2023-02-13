@@ -1184,10 +1184,15 @@ TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr rawConn,
                                            SSLPolicyPtr policy,
                                            SSLContextPtr ctx)
 {
+    (void)rawConn;
+    (void)policy;
+    (void)ctx;
     throw std::runtime_error("SSL is not supported");
 }
-SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy)
+SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
 {
+    (void)policy;
+    (void)isServer;
     throw std::runtime_error("SSL is not supported");
 }
 #endif
