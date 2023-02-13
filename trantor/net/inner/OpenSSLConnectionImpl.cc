@@ -426,28 +426,33 @@ bool OpenSSLConnectionImpl::processHandshake()
 
 void OpenSSLConnectionImpl::processApplicationData()
 {
+    int n;
     int pending = SSL_pending(ssl_);
     if (pending > 0)
         recvBuffer_.ensureWritableBytes(pending);
-    int n = SSL_read(ssl_,
+    
+    do
+    {
+        n = SSL_read(ssl_,
                      recvBuffer_.beginWrite(),
                      (int)recvBuffer_.writableBytes());
-    if (n > 0)
-    {
-        recvBuffer_.hasWritten(n);
-        LOG_TRACE << "Received " << n << " bytes from SSL";
-        if (recvMsgCallback_)
-            recvMsgCallback_(shared_from_this(), &recvBuffer_);
-    }
-    else if (n <= 0)
-    {
-        int err = SSL_get_error(ssl_, n);
-        if (err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL)
+        if (n > 0)
         {
-            LOG_TRACE << "Fatal SSL error. Close connection.";
-            handleSSLError(SSLError::kSSLProtocolError);
+            recvBuffer_.hasWritten(n);
+            LOG_TRACE << "Received " << n << " bytes from SSL";
+            if (recvMsgCallback_)
+                recvMsgCallback_(shared_from_this(), &recvBuffer_);
         }
-    }
+        else if (n <= 0)
+        {
+            int err = SSL_get_error(ssl_, n);
+            if (err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL)
+            {
+                LOG_TRACE << "Fatal SSL error. Close connection.";
+                handleSSLError(SSLError::kSSLProtocolError);
+            }
+        }
+    } while (n > 0);
 }
 
 void OpenSSLConnectionImpl::onConnection(const TcpConnectionPtr &conn)
