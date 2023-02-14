@@ -33,6 +33,8 @@
 #include "crypto/sha3.h"
 #endif
 
+#include <cassert>
+
 namespace trantor
 {
 namespace utils
@@ -248,6 +250,7 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
         return true;
     }
 
+    assert(false && "This line should not be reached in verifySslName");
     // should not reach
     return certName == hostname;
 }

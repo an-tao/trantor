@@ -260,8 +260,6 @@ void OpenSSLConnectionImpl::startClientEncryption()
 void OpenSSLConnectionImpl::startServerEncryption()
 {
     assert(ssl_);
-
-    // TODO: support ALPN
     SSL_set_accept_state(ssl_);
 }
 
@@ -331,7 +329,6 @@ bool OpenSSLConnectionImpl::processHandshake()
     if (ret == 1)
     {
         LOG_TRACE << "SSL handshake finished";
-        sendTLSData();  // Needed to send ChangeCipherSpec
         if (contextPtr_->isServer)
         {
             const char *sniName =
@@ -400,6 +397,7 @@ bool OpenSSLConnectionImpl::processHandshake()
 
         if (connectionCallback_)
             connectionCallback_(shared_from_this());
+        sendTLSData();  // Needed to send ChangeCipherSpec
         return true;
     }
     else
@@ -488,6 +486,7 @@ void OpenSSLConnectionImpl::sendTLSData()
 void OpenSSLConnectionImpl::handleSSLError(SSLError error)
 {
     rawConnPtr_->forceClose();
+    sendTLSData();
     if (sslErrorCallback_)
         sslErrorCallback_(error);
 }
@@ -648,7 +647,7 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
             SSL_load_client_CA_file(policy.getCaPath().data());
         if (cert_names == nullptr)
         {
-            throw std::runtime_error("Failed to load CA file");
+            throw std::runtime_error("Not CA names found in file");
         }
         SSL_CTX_set_client_CA_list(ctx->ctx(), cert_names);
         SSL_CTX_set_verify(ctx->ctx(), SSL_VERIFY_PEER, nullptr);

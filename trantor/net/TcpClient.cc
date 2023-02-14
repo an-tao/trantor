@@ -18,6 +18,8 @@
 
 #include <functional>
 #include <algorithm>
+#include <atomic>
+#include <memory>
 
 #include "Socket.h"
 
@@ -82,11 +84,13 @@ TcpClient::~TcpClient()
     if (connection_ == nullptr)
         return;
     assert(loop_ == connection_->getLoop());
-    // TODO: not 100% safe, if we are in different thread
-    loop_->runInLoop([conn = connection_, loop = loop_]() {
-        conn->setCloseCallback([loop, conn](const TcpConnectionPtr &connPtr) {
-            loop->queueInLoop([connPtr]() { connPtr->connectDestroyed(); });
-        });
+    auto conn =
+        std::atomic_load_explicit(&connection_, std::memory_order_relaxed);
+    loop_->runInLoop([conn = std::move(conn), loop = loop_]() {
+        conn->setCloseCallback(
+            [loop, conn = std::move(conn)](const TcpConnectionPtr &connPtr) {
+                loop->queueInLoop([connPtr]() { connPtr->connectDestroyed(); });
+            });
     });
     connection_->forceClose();
 }
