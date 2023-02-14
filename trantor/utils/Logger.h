@@ -141,6 +141,22 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         return logLevel_();
     }
 
+    /**
+     * @brief Check whether it shows local time or UTC time.
+     */
+    static bool displayLocalTime()
+    {
+        return displayLocalTime_();
+    }
+
+    /**
+     * @brief Set whether it shows local time or UTC time. the default is UTC.
+     */
+    static void setDisplayLocalTime(bool showLocalTime)
+    {
+        displayLocalTime_() = showLocalTime;
+    }
+
   protected:
     static void defaultOutputFunction(const char *msg, const uint64_t len)
     {
@@ -151,6 +167,12 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         fflush(stdout);
     }
     void formatTime();
+    static bool &displayLocalTime_()
+    {
+        static bool showLocalTime = false;
+        return showLocalTime;
+    }
+
     static LogLevel &logLevel_()
     {
 #ifdef RELEASE
