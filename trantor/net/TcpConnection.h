@@ -88,6 +88,11 @@ struct TRANTOR_EXPORT SSLPolicy final
         useSystemCertStore_ = useSystemCertStore;
         return *this;
     }
+    SSLPolicy &setOneShotConnctionCallback(std::function<void()> &&cb)
+    {
+        oneShotConnctionCallback_ = std::move(cb);
+        return *this;
+    }
 
     // Composite pattern
     SSLPolicy &setValidate(bool enable)
@@ -147,6 +152,10 @@ struct TRANTOR_EXPORT SSLPolicy final
     {
         return useSystemCertStore_;
     }
+    const std::function<void()> &getOneShotConnctionCallback() const
+    {
+        return oneShotConnctionCallback_;
+    }
 
     static std::shared_ptr<SSLPolicy> defaultServerPolicy(
         const std::string &certPath,
@@ -173,6 +182,7 @@ struct TRANTOR_EXPORT SSLPolicy final
     }
 
   protected:
+    std::function<void()> oneShotConnctionCallback_ = nullptr;
     std::vector<std::pair<std::string, std::string>> sslConfCmds_ = {};
     std::string hostname_ = "";
     std::string certPath_ = "";

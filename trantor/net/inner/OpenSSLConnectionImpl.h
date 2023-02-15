@@ -408,6 +408,7 @@ class OpenSSLConnectionImpl
     // TODO: Rename this to avoid confusion
     const SSLPolicyPtr policyPtr_;
     const SSLContextPtr contextPtr_;
+    bool oneshotCalled_ = false;
 
     bool closingTLS_ = false;
 };

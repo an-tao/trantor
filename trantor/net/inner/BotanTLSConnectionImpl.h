@@ -321,5 +321,6 @@ class BotanTLSConnectionImpl
     const SSLContextPtr contextPtr_;
 
     bool closingTLS_ = false;
+    bool oneshotCalled_ = false;
 };
 }  // namespace trantor

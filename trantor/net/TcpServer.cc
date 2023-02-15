@@ -295,11 +295,14 @@ void TcpServer::ServerTlsInitiator::startEncryption(
     }
     assert(pol != nullptr);
 
+    if (!pol->getOneShotConnctionCallback())
+        pol->setOneShotConnctionCallback([]() {});
     server_->sslContextPtr_ = newSSLContext(*pol, true);
     auto recvCallback = rawConn->recvMsgCallback_;
     auto connCallback = rawConn->connectionCallback_;
     auto closeCallback = rawConn->closeCallback_;
     auto highWaterMarkCallback = rawConn->highWaterMarkCallback_;
+    auto sslErrorCallback = rawConn->sslErrorCallback_;
     auto tlsConn = newTLSConnection(rawConn, policy, server_->sslContextPtr_);
     if (recvCallback)
         tlsConn->setRecvMsgCallback(std::move(recvCallback));
@@ -307,6 +310,8 @@ void TcpServer::ServerTlsInitiator::startEncryption(
         tlsConn->setConnectionCallback(std::move(connCallback));
     if (closeCallback)
         tlsConn->setCloseCallback(std::move(closeCallback));
+    if (sslErrorCallback)
+        tlsConn->setSSLErrorCallback(std::move(sslErrorCallback));
     if (highWaterMarkCallback)
         tlsConn->highWaterMarkCallback_ = std::move(highWaterMarkCallback);
 

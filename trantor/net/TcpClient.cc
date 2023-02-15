@@ -254,14 +254,19 @@ void TcpClient::startEncryptionInLoop(const TcpConnectionPtr &conn,
     auto writeCompleteCallback = conn->writeCompleteCallback_;
     auto closeCallback = conn->closeCallback_;
     auto highWaterMarkCallback = conn->highWaterMarkCallback_;
+    auto sslErrorCallback = conn->sslErrorCallback_;
     auto sslConn = newTLSConnection(conn, policy, sslContextPtr);
 
+    if (!policy->getOneShotConnctionCallback())
+        policy->setOneShotConnctionCallback([]() {});
     if (recvCallback)
         sslConn->setRecvMsgCallback(std::move(recvCallback));
     if (writeCompleteCallback)
         sslConn->setWriteCompleteCallback(std::move(writeCompleteCallback));
     if (closeCallback)
         sslConn->setCloseCallback(std::move(closeCallback));
+    if (sslErrorCallback)
+        sslConn->setSSLErrorCallback(std::move(sslErrorCallback)
     if (highWaterMarkCallback)
         sslConn->highWaterMarkCallback_ = std::move(highWaterMarkCallback);
 

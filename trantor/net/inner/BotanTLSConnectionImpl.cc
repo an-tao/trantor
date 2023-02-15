@@ -235,7 +235,12 @@ bool BotanTLSConnectionImpl::tls_session_established(
     }
 
     rawConnPtr_->getLoop()->queueInLoop([this]() {
-        if (connectionCallback_)
+        if (policyPtr_->getOneShotConnctionCallback() && !oneshotCalled_)
+        {
+            oneshotCalled_ = true;
+            policyPtr_->getOneShotConnctionCallback()();
+        }
+        else if (connectionCallback_)
             connectionCallback_(shared_from_this());
     });
     // Do we want to cache all sessions?

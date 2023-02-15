@@ -395,7 +395,12 @@ bool OpenSSLConnectionImpl::processHandshake()
             }
         }
 
-        if (connectionCallback_)
+        if (policyPtr_->getOneShotConnctionCallback() && !oneshotCalled_)
+        {
+            oneshotCalled_ = true;
+            policyPtr_->getOneShotConnctionCallback()();
+        }
+        else if (connectionCallback_)
             connectionCallback_(shared_from_this());
         sendTLSData();  // Needed to send ChangeCipherSpec
         return true;
