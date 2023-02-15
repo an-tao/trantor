@@ -6,7 +6,6 @@
 
 namespace trantor
 {
-
 struct TlsInitiator
 {
     virtual ~TlsInitiator() = default;
