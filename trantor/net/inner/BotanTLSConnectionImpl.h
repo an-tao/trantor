@@ -248,15 +248,7 @@ class BotanTLSConnectionImpl
         return sniName_;
     }
 
-    virtual void startServerEncryption(SSLPolicyPtr) override
-    {
-        throw std::runtime_error("Cannot encrypt an encrypted connection");
-    }
-
-    virtual void startClientEncryption(SSLPolicyPtr) override
-    {
-        throw std::runtime_error("Cannot encrypt an encrypted connection");
-    }
+    virtual void startEncryption(SSLPolicyPtr) override;
 
     virtual std::string applicationProtocol() const override;
     void startClientEncryption();

@@ -442,16 +442,12 @@ class TRANTOR_EXPORT TcpConnection
     virtual std::string sniName() const = 0;
 
     /**
-     * @brief Start TLS as a server.
+     * @brief Start TLS. If the connection is specified as a server, the
+     * connection will be upgraded to a TLS server connection. If the connection
+     * is specified as a client, the connection will be upgraded to a TLS client
      * @note This method is only available for non-SSL connections.
      */
-    virtual void startServerEncryption(SSLPolicyPtr policy) = 0;
-
-    /**
-     * @brief Start TLS as a client.
-     * @note This method is only available for non-SSL connections.
-     */
-    virtual void startClientEncryption(SSLPolicyPtr policy) = 0;
+    virtual void startEncryption(SSLPolicyPtr policy) = 0;
     /**
      * @brief Start TLS as a client.
      * @note This method is only available for non-SSL connections.
@@ -469,7 +465,7 @@ class TRANTOR_EXPORT TcpConnection
             .setValidate(validateCert)
             .setHostname(hostname)
             .setConfCmds(sslConfCmds);
-        startClientEncryption(std::move(policy));
+        startEncryption(std::move(policy));
     }
 
     void setValidationPolicy(SSLPolicy &&policy)

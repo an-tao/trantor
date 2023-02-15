@@ -177,8 +177,7 @@ class TcpConnectionImpl : public TcpConnection,
         return "";
     }
 
-    virtual void startServerEncryption(SSLPolicyPtr policy) override;
-    virtual void startClientEncryption(SSLPolicyPtr policy) override;
+    virtual void startEncryption(SSLPolicyPtr policy) override;
 
     virtual void startHandshake(MsgBuffer &existingData) override;
 

@@ -358,12 +358,7 @@ class OpenSSLConnectionImpl
         return alpnProtocol_;
     }
 
-    virtual void startServerEncryption(SSLPolicyPtr) override
-    {
-        throw std::runtime_error("Cannot encrypt an encrypted connection");
-    }
-
-    virtual void startClientEncryption(SSLPolicyPtr) override
+    virtual void startEncryption(SSLPolicyPtr) override
     {
         throw std::runtime_error("Cannot encrypt an encrypted connection");
     }

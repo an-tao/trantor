@@ -1199,18 +1199,7 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
 }
 #endif
 
-void TcpConnectionImpl::startServerEncryption(SSLPolicyPtr policy)
-{
-    auto lockPtr = initiator_.lock();
-    if (!lockPtr)
-    {
-        LOG_ERROR << "Cannot start TLS when client/server is destructed";
-        return;
-    }
-    lockPtr->startEncryption(shared_from_this(), policy);
-}
-
-void TcpConnectionImpl::startClientEncryption(SSLPolicyPtr policy)
+void TcpConnectionImpl::startEncryption(SSLPolicyPtr policy)
 {
     auto lockPtr = initiator_.lock();
     if (!lockPtr)
