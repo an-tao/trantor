@@ -266,7 +266,7 @@ void TcpClient::startEncryptionInLoop(const TcpConnectionPtr &conn,
     if (closeCallback)
         sslConn->setCloseCallback(std::move(closeCallback));
     if (sslErrorCallback)
-        sslConn->setSSLErrorCallback(std::move(sslErrorCallback)
+        sslConn->setSSLErrorCallback(std::move(sslErrorCallback);
     if (highWaterMarkCallback)
         sslConn->highWaterMarkCallback_ = std::move(highWaterMarkCallback);
 
