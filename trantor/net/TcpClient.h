@@ -20,6 +20,8 @@
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
+#include <trantor/net/TlsInitiator.h>
+#include <trantor/utils/Logger.h>
 #include <trantor/exports.h>
 #include <functional>
 #include <thread>
@@ -34,6 +36,7 @@ using ConnectorPtr = std::shared_ptr<Connector>;
  *
  */
 class TRANTOR_EXPORT TcpClient : NonCopyable,
+                                 public TlsInitiator,
                                  public std::enable_shared_from_this<TcpClient>
 {
   public:
@@ -222,7 +225,20 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
         sslContextPtr_ = newSSLContext(*sslPolicyPtr_, false);
     }
 
+    // internal API
+    /**
+     * @brief Start SSL encryption if the connection is not encrypted.
+     *
+     * @param conn The connection to be encrypted, must be managed by the
+     * client class.
+     * @param policy The SSL policy.
+     */
+    void startEncryption(const TcpConnectionPtr &conn,
+                         SSLPolicyPtr policy) override;
+
   private:
+    void startEncryptionInLoop(const TcpConnectionPtr &conn,
+                               SSLPolicyPtr policy);
     /// Not thread safe, but in loop
     void newConnection(int sockfd);
     /// Not thread safe, but in loop

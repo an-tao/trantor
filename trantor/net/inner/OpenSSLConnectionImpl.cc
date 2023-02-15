@@ -228,7 +228,7 @@ OpenSSLConnectionImpl::~OpenSSLConnectionImpl()
         SSL_free(ssl_);
 }
 
-void OpenSSLConnectionImpl::startClientEncryption()
+void OpenSSLConnectionImpl::startClientSideEncryption()
 {
     assert(ssl_);
 
@@ -257,7 +257,7 @@ void OpenSSLConnectionImpl::startClientEncryption()
     SSL_set_connect_state(ssl_);
 }
 
-void OpenSSLConnectionImpl::startServerEncryption()
+void OpenSSLConnectionImpl::startServerSideEncryption()
 {
     assert(ssl_);
     SSL_set_accept_state(ssl_);
@@ -458,12 +458,7 @@ void OpenSSLConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     if (conn->connected())
     {
         LOG_TRACE << "Connection established. Start SSL handshake";
-        if (contextPtr_->isServer)
-            startServerEncryption();
-        else
-            startClientEncryption();
-
-        processHandshake();
+        startHandshake(*conn->getRecvBuffer());
     }
     else
     {
@@ -666,4 +661,16 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
         SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);
     }
     return ctx;
+}
+
+void OpenSSLConnectionImpl::startHandshake(MsgBuffer &buf)
+{
+    if (contextPtr_->isServer)
+        startServerSideEncryption();
+    else
+        startClientSideEncryption();
+
+    processHandshake();
+    if (buf.readableBytes() > 0)
+        onRecvMessage(rawConnPtr_, &buf);
 }

@@ -37,15 +37,14 @@ void BotanTLSConnectionImpl::onConnection(const TcpConnectionPtr &conn)
     {
         LOG_TRACE
             << "Low level connection established. Starting TLS handshake.";
-        if (contextPtr_->isServer())
-            startServerEncryption();
-        else
-            startClientEncryption();
+        MsgBuffer buffer;
+        startHandshake(buffer);
     }
     else
     {
         LOG_TRACE << "Low level connection closed.";
-        connectionCallback_(shared_from_this());
+        if (connectionCallback_)
+            connectionCallback_(shared_from_this());
     }
 }
 
@@ -75,18 +74,21 @@ void BotanTLSConnectionImpl::onRecvMessage(const TcpConnectionPtr &conn,
 
 void BotanTLSConnectionImpl::onWriteComplete(const TcpConnectionPtr &conn)
 {
-    writeCompleteCallback_(shared_from_this());
+    if (writeCompleteCallback_)
+        writeCompleteCallback_(shared_from_this());
 }
 
 void BotanTLSConnectionImpl::onClosed(const TcpConnectionPtr &conn)
 {
-    closeCallback_(shared_from_this());
+    if (closeCallback_)
+        closeCallback_(shared_from_this());
 }
 
 void BotanTLSConnectionImpl::onHighWaterMark(const TcpConnectionPtr &conn,
                                              size_t bytesToSent)
 {
-    highWaterMarkCallback_(shared_from_this(), bytesToSent);
+    if (highWaterMarkCallback_)
+        highWaterMarkCallback_(shared_from_this(), bytesToSent);
 }
 
 void BotanTLSConnectionImpl::setHighWaterMarkCallback(
@@ -151,7 +153,8 @@ void BotanTLSConnectionImpl::tls_record_received(uint64_t /*seq*/,
 {
     LOG_TRACE << "tls_record_received: received " << size << " bytes";
     recvBuffer_.append((const char *)data, size);
-    recvMsgCallback_(shared_from_this(), &recvBuffer_);
+    if (recvMsgCallback_)
+        recvMsgCallback_(shared_from_this(), &recvBuffer_);
 }
 
 std::string BotanTLSConnectionImpl::tls_server_choose_app_protocol(
@@ -231,8 +234,10 @@ bool BotanTLSConnectionImpl::tls_session_established(
         peerCertPtr_ = std::make_shared<BotanCertificate>(cert);
     }
 
-    rawConnPtr_->getLoop()->queueInLoop(
-        [this]() { connectionCallback_(shared_from_this()); });
+    rawConnPtr_->getLoop()->queueInLoop([this]() {
+        if (connectionCallback_)
+            connectionCallback_(shared_from_this());
+    });
     // Do we want to cache all sessions?
     return true;
 }

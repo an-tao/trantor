@@ -15,6 +15,7 @@
 #pragma once
 
 #include <trantor/net/TcpConnection.h>
+#include <trantor/net/TlsInitiator.h>
 #include <trantor/utils/TimingWheel.h>
 #include <list>
 #include <mutex>
@@ -67,7 +68,8 @@ class TcpConnectionImpl : public TcpConnection,
     TcpConnectionImpl(EventLoop *loop,
                       int socketfd,
                       const InetAddress &localAddr,
-                      const InetAddress &peerAddr);
+                      const InetAddress &peerAddr,
+                      std::weak_ptr<TlsInitiator> initiator);
     virtual ~TcpConnectionImpl();
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override;
@@ -174,6 +176,11 @@ class TcpConnectionImpl : public TcpConnection,
     {
         return "";
     }
+
+    virtual void startServerEncryption(SSLPolicyPtr policy) override;
+    virtual void startClientEncryption(SSLPolicyPtr policy) override;
+
+    virtual void startHandshake(MsgBuffer &existingData) override;
 
     void enableKickingOff(
         size_t timeout,
@@ -287,6 +294,7 @@ class TcpConnectionImpl : public TcpConnection,
     size_t bytesReceived_{0};
 
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
+    std::weak_ptr<TlsInitiator> initiator_;
 };
 
 using TcpConnectionImplPtr = std::shared_ptr<TcpConnectionImpl>;

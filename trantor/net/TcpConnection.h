@@ -441,6 +441,37 @@ class TRANTOR_EXPORT TcpConnection
      */
     virtual std::string sniName() const = 0;
 
+    /**
+     * @brief Start TLS as a server.
+     * @note This method is only available for non-SSL connections.
+     */
+    virtual void startServerEncryption(SSLPolicyPtr policy) = 0;
+
+    /**
+     * @brief Start TLS as a client.
+     * @note This method is only available for non-SSL connections.
+     */
+    virtual void startClientEncryption(SSLPolicyPtr policy) = 0;
+    /**
+     * @brief Start TLS as a client.
+     * @note This method is only available for non-SSL connections.
+     */
+    [[deprecated("Use startClientEncryption(SSLPolicyPtr) instead")]] void
+    startClientEncryption(std::function<void()> &&callback,
+                          bool useOldTLS = false,
+                          bool validateCert = true,
+                          const std::string &hostname = "",
+                          const std::vector<std::pair<std::string, std::string>>
+                              &sslConfCmds = {})
+    {
+        auto policy = SSLPolicy::defaultClientPolicy();
+        policy->setUseOldTLS(useOldTLS)
+            .setValidate(validateCert)
+            .setHostname(hostname)
+            .setConfCmds(sslConfCmds);
+        startClientEncryption(std::move(policy));
+    }
+
     void setValidationPolicy(SSLPolicy &&policy)
     {
         sslPolicy_ = std::move(policy);
@@ -493,6 +524,7 @@ class TRANTOR_EXPORT TcpConnection
     virtual void enableKickingOff(
         size_t timeout,
         const std::shared_ptr<TimingWheel> &timingWheel) = 0;
+    virtual void startHandshake(MsgBuffer &existingData) = 0;
 
   protected:
     // callbacks

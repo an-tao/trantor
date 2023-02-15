@@ -46,12 +46,14 @@ using namespace trantor;
 TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
                                      const InetAddress &localAddr,
-                                     const InetAddress &peerAddr)
+                                     const InetAddress &peerAddr,
+                                     std::weak_ptr<TlsInitiator> initiator)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
       socketPtr_(new Socket(socketfd)),
       localAddr_(localAddr),
-      peerAddr_(peerAddr)
+      peerAddr_(peerAddr),
+      initiator_(initiator)
 {
     LOG_TRACE << "new connection:" << peerAddr.toIpPort() << "->"
               << localAddr.toIpPort();
@@ -1196,3 +1198,30 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
     throw std::runtime_error("SSL is not supported");
 }
 #endif
+
+void TcpConnectionImpl::startServerEncryption(SSLPolicyPtr policy)
+{
+    auto lockPtr = initiator_.lock();
+    if (!lockPtr)
+    {
+        LOG_ERROR << "Cannot start TLS when client/server is destructed";
+        return;
+    }
+    lockPtr->startEncryption(shared_from_this(), policy);
+}
+
+void TcpConnectionImpl::startClientEncryption(SSLPolicyPtr policy)
+{
+    auto lockPtr = initiator_.lock();
+    if (!lockPtr)
+    {
+        LOG_ERROR << "Cannot start TLS when client/server is destructed";
+        return;
+    }
+    lockPtr->startEncryption(shared_from_this(), policy);
+}
+
+void TcpConnectionImpl::startHandshake(MsgBuffer &)
+{
+    throw std::runtime_error("SSL is not supported in TcpConnectionImpl");
+}

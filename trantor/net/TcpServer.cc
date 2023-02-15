@@ -42,6 +42,8 @@ TcpServer::TcpServer(EventLoop *loop,
 TcpServer::~TcpServer()
 {
     // loop_->assertInLoopThread();
+    if (tlsInitiatorPtr_)
+        tlsInitiatorPtr_->serverDistructed = true;
     LOG_TRACE << "TcpServer::~TcpServer [" << serverName_ << "] destructing";
 }
 
@@ -64,6 +66,8 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     }
     if (ioLoop == NULL)
         ioLoop = loop_;
+    if (tlsInitiatorPtr_ == nullptr)
+        tlsInitiatorPtr_ = std::make_shared<ServerTlsInitiator>(this);
     TcpConnectionPtr newPtr;
     if (policyPtr_)
     {
@@ -72,21 +76,25 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
                                       ioLoop,
                                       sockfd,
                                       InetAddress(Socket::getLocalAddr(sockfd)),
-                                      peer),
+                                      peer,
+                                      tlsInitiatorPtr_),
                                   policyPtr_,
                                   sslContextPtr_);
     }
     else
     {
         newPtr = std::make_shared<TcpConnectionImpl>(
-            ioLoop, sockfd, InetAddress(Socket::getLocalAddr(sockfd)), peer);
+            ioLoop,
+            sockfd,
+            InetAddress(Socket::getLocalAddr(sockfd)),
+            peer,
+            tlsInitiatorPtr_);
     }
 
     if (idleTimeout_ > 0)
     {
         assert(timingWheelMap_[ioLoop]);
-        // TODO: enable this
-        // newPtr->enableKickingOff(idleTimeout_, timingWheelMap_[ioLoop]);
+        newPtr->enableKickingOff(idleTimeout_, timingWheelMap_[ioLoop]);
     }
     newPtr->setRecvMsgCallback(recvMessageCallback_);
 
@@ -244,4 +252,51 @@ void TcpServer::enableSSL(
         .setCaPath(caPath)
         .setValidate(caPath.empty() ? false : true);
     sslContextPtr_ = newSSLContext(*policyPtr_, true);
+}
+
+void TcpServer::ServerTlsInitiator::startEncryption(
+    const TcpConnectionPtr &conn,
+    SSLPolicyPtr policy)
+{
+    if (serverDistructed)
+    {
+        LOG_WARN << "TcpServer have destructed. Cannot start TLS on "
+                    "connections managed by that server.";
+        return;
+    }
+
+    if (conn->isSSLConnection())
+    {
+        LOG_WARN
+            << "Connection already started TLS. Cannot start TLS on it again.";
+        return;
+    }
+
+    auto it = server_->connSet_.find(conn);
+    if (it == server_->connSet_.end())
+    {
+        LOG_WARN
+            << "Connection not managed by this server. Cannot start TLS on it.";
+        return;
+    }
+
+    auto rawConn = *it;
+    server_->connSet_.erase(it);
+
+    SSLPolicy *pol = nullptr;
+    if (policy)
+        pol = policy.get();
+    else if (server_->policyPtr_)
+        pol = server_->policyPtr_.get();
+    else
+    {
+        LOG_FATAL << "No SSLPolicy found. (Likely caused by API misuse.)";
+        return;
+    }
+    assert(pol != nullptr);
+
+    server_->sslContextPtr_ = newSSLContext(*pol, true);
+    auto tlsConn = newTLSConnection(rawConn, policy, server_->sslContextPtr_);
+    server_->connSet_.insert(tlsConn);
+    tlsConn->startHandshake(*rawConn->getRecvBuffer());
 }
