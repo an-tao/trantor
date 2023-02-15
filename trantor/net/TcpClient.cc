@@ -250,7 +250,20 @@ void TcpClient::startEncryptionInLoop(const TcpConnectionPtr &conn,
                                       SSLPolicyPtr policy)
 {
     auto sslContextPtr = newSSLContext(*policy, false);
+    auto recvCallback = conn->recvMsgCallback_;
+    auto writeCompleteCallback = conn->writeCompleteCallback_;
+    auto closeCallback = conn->closeCallback_;
+    auto highWaterMarkCallback = conn->highWaterMarkCallback_;
     auto sslConn = newTLSConnection(conn, policy, sslContextPtr);
+
+    if (recvCallback)
+        sslConn->setRecvMsgCallback(std::move(recvCallback));
+    if (writeCompleteCallback)
+        sslConn->setWriteCompleteCallback(std::move(writeCompleteCallback));
+    if (closeCallback)
+        sslConn->setCloseCallback(std::move(closeCallback));
+    if (highWaterMarkCallback)
+        sslConn->highWaterMarkCallback_ = std::move(highWaterMarkCallback);
 
     std::lock_guard<std::mutex> lock(mutex_);
     connection_ = sslConn;

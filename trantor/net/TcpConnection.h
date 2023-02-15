@@ -452,7 +452,7 @@ class TRANTOR_EXPORT TcpConnection
      * @brief Start TLS as a client.
      * @note This method is only available for non-SSL connections.
      */
-    [[deprecated("Use startClientEncryption(SSLPolicyPtr) instead")]] void
+    [[deprecated("Use startEncryption(SSLPolicyPtr) instead")]] void
     startClientEncryption(std::function<void()> &&callback,
                           bool useOldTLS = false,
                           bool validateCert = true,
