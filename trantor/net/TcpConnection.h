@@ -88,7 +88,8 @@ struct TRANTOR_EXPORT SSLPolicy final
         useSystemCertStore_ = useSystemCertStore;
         return *this;
     }
-    SSLPolicy &setOneShotConnctionCallback(std::function<void()> &&cb)
+    SSLPolicy &setOneShotConnctionCallback(
+        std::function<void(const TcpConnectionPtr &)> &&cb)
     {
         oneShotConnctionCallback_ = std::move(cb);
         return *this;
@@ -152,7 +153,8 @@ struct TRANTOR_EXPORT SSLPolicy final
     {
         return useSystemCertStore_;
     }
-    const std::function<void()> &getOneShotConnctionCallback() const
+    const std::function<void(const TcpConnectionPtr &)>
+        &getOneShotConnctionCallback() const
     {
         return oneShotConnctionCallback_;
     }
@@ -182,7 +184,8 @@ struct TRANTOR_EXPORT SSLPolicy final
     }
 
   protected:
-    std::function<void()> oneShotConnctionCallback_ = nullptr;
+    std::function<void(const TcpConnectionPtr &)> oneShotConnctionCallback_ =
+        nullptr;
     std::vector<std::pair<std::string, std::string>> sslConfCmds_ = {};
     std::string hostname_ = "";
     std::string certPath_ = "";
@@ -463,18 +466,20 @@ class TRANTOR_EXPORT TcpConnection
      * @note This method is only available for non-SSL connections.
      */
     [[deprecated("Use startEncryption(SSLPolicyPtr) instead")]] void
-    startClientEncryption(std::function<void()> &&callback,
-                          bool useOldTLS = false,
-                          bool validateCert = true,
-                          const std::string &hostname = "",
-                          const std::vector<std::pair<std::string, std::string>>
-                              &sslConfCmds = {})
+    startClientEncryption(
+        std::function<void(const TcpConnectionPtr &)> &&callback,
+        bool useOldTLS = false,
+        bool validateCert = true,
+        const std::string &hostname = "",
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
+            {})
     {
         auto policy = SSLPolicy::defaultClientPolicy();
         policy->setUseOldTLS(useOldTLS)
             .setValidate(validateCert)
             .setHostname(hostname)
-            .setConfCmds(sslConfCmds);
+            .setConfCmds(sslConfCmds)
+            .setOneShotConnctionCallback(std::move(callback));
         startEncryption(std::move(policy));
     }
 

@@ -258,7 +258,7 @@ void TcpClient::startEncryptionInLoop(const TcpConnectionPtr &conn,
     auto sslConn = newTLSConnection(conn, policy, sslContextPtr);
 
     if (!policy->getOneShotConnctionCallback())
-        policy->setOneShotConnctionCallback([]() {});
+        policy->setOneShotConnctionCallback([](const TcpConnectionPtr &) {});
     if (recvCallback)
         sslConn->setRecvMsgCallback(std::move(recvCallback));
     if (writeCompleteCallback)

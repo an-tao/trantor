@@ -398,7 +398,7 @@ bool OpenSSLConnectionImpl::processHandshake()
         if (policyPtr_->getOneShotConnctionCallback() && !oneshotCalled_)
         {
             oneshotCalled_ = true;
-            policyPtr_->getOneShotConnctionCallback()();
+            policyPtr_->getOneShotConnctionCallback()(shared_from_this());
         }
         else if (connectionCallback_)
             connectionCallback_(shared_from_this());

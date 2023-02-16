@@ -46,9 +46,9 @@ int main()
                 {
                     buf->retrieveAll();
                     conn->startClientEncryption(
-                        [conn]() {
+                        [](const TcpConnectionPtr &encryptedConn) {
                             LOG_INFO << "SSL established";
-                            conn->send("Hello");
+                            encryptedConn->send("Hello");
                         },
                         false,
                         false);

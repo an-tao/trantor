@@ -296,7 +296,7 @@ void TcpServer::ServerTlsInitiator::startEncryption(
     assert(pol != nullptr);
 
     if (!pol->getOneShotConnctionCallback())
-        pol->setOneShotConnctionCallback([]() {});
+        pol->setOneShotConnctionCallback([](const TcpConnectionPtr &) {});
     server_->sslContextPtr_ = newSSLContext(*pol, true);
     auto recvCallback = rawConn->recvMsgCallback_;
     auto connCallback = rawConn->connectionCallback_;
