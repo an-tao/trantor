@@ -88,24 +88,51 @@ void Logger::formatTime()
     if (now != lastSecond_)
     {
         lastSecond_ = now;
+        if (displayLocalTime_())
+        {
 #ifndef _MSC_VER
-        strncpy(lastTimeString_,
+            strncpy(lastTimeString_,
+                    date_.toFormattedStringLocal(false).c_str(),
+                    sizeof(lastTimeString_) - 1);
+#else
+            strncpy_s<sizeof lastTimeString_>(
+                lastTimeString_,
+                date_.toFormattedStringLocal(false).c_str(),
+                sizeof(lastTimeString_) - 1);
+#endif
+        }
+        else
+        {
+#ifndef _MSC_VER
+            strncpy(lastTimeString_,
+                    date_.toFormattedString(false).c_str(),
+                    sizeof(lastTimeString_) - 1);
+#else
+            strncpy_s<sizeof lastTimeString_>(
+                lastTimeString_,
                 date_.toFormattedString(false).c_str(),
                 sizeof(lastTimeString_) - 1);
-#else
-        strncpy_s<sizeof lastTimeString_>(
-            lastTimeString_,
-            date_.toFormattedString(false).c_str(),
-            sizeof(lastTimeString_) - 1);
 #endif
+        }
     }
     logStream_ << T(lastTimeString_, 17);
     char tmp[32];
-    snprintf(tmp,
-             sizeof(tmp),
-             ".%06llu UTC ",
-             static_cast<long long unsigned int>(microSec));
-    logStream_ << T(tmp, 12);
+    if (displayLocalTime_())
+    {
+        snprintf(tmp,
+                 sizeof(tmp),
+                 ".%06llu ",
+                 static_cast<long long unsigned int>(microSec));
+        logStream_ << T(tmp, 8);
+    }
+    else
+    {
+        snprintf(tmp,
+                 sizeof(tmp),
+                 ".%06llu UTC ",
+                 static_cast<long long unsigned int>(microSec));
+        logStream_ << T(tmp, 12);
+    }
 #ifdef __linux__
     if (threadId_ == 0)
         threadId_ = static_cast<pid_t>(::syscall(SYS_gettid));
