@@ -37,7 +37,7 @@ jobs:
         working-directory: ./build
         run: |
           conan profile detect
-          conan install .. -s compiler="msvc" -s compiler.version=193 -sbuild_type=Debug --build=missing -g cmake_paths
+          conan install .. -s compiler="msvc" -s compiler.version=193 -sbuild_type=Debug --build=missing
 
       - name: Create Build Environment & Configure Cmake
         shell: bash
