@@ -4,7 +4,7 @@ openssl/1.1.1t
 #c-ares/1.17.1
 
 [generators]
-cmake_paths
+CMakeToolchain
 
 [options]
 
