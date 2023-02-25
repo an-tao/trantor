@@ -6,6 +6,9 @@ openssl/1.1.1t
 [generators]
 CMakeToolchain
 
+[cmake_policy]
+CMP0091=NEW
+
 [options]
 
 [imports]
