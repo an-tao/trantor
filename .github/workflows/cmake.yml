@@ -36,6 +36,7 @@ jobs:
         shell: pwsh
         working-directory: ./build
         run: |
+          conan profile detect default
           conan install .. -s compiler="Visual Studio" -s compiler.version=16 -sbuild_type=Debug -g cmake_paths
 
       - name: Create Build Environment & Configure Cmake
