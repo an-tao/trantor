@@ -1244,10 +1244,10 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
     throw std::runtime_error("SSL is not supported");
 }
 
-TLSProviderPtr trantor::newTLSProvider(EventLoop *loop,
-                                       TcpConnection *conn,
-                                       SSLPolicyPtr policy,
-                                       SSLContextPtr sslContext)
+std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
+                                                     TcpConnection *conn,
+                                                     SSLPolicyPtr policy,
+                                                     SSLContextPtr sslContext)
 {
     (void)loop;
     (void)conn;
