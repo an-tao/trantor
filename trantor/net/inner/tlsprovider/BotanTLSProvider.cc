@@ -214,7 +214,7 @@ struct BotanTLSProvider : public TLSProvider,
     {
         recvBuffer_.append((const char *)data, size);
         if (messageCallback_)
-            messageCallback_(conn_, recvBuffer_);
+            messageCallback_(conn_, &recvBuffer_);
     }
 
     void tls_alert(Botan::TLS::Alert alert) override
@@ -291,7 +291,6 @@ struct BotanTLSProvider : public TLSProvider,
     const SSLContextPtr contextPtr_;
     bool oneshotCalled_ = false;
     bool tlsConnected_ = false;
-    MsgBuffer recvBuffer_;
 };
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
@@ -321,12 +320,12 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool server)
             std::make_unique<Botan::X509_Certificate>(policy.getCertPath());
     }
 
-    if (!policy.getCaPath().empty())
+    if (policy.getValidateChain() && !policy.getCaPath().empty())
     {
         ctx->certStore = std::make_unique<Botan::Flatfile_Certificate_Store>(
             policy.getCaPath());
     }
-    else if (policy.getUseSystemCertStore())
+    else if (policy.getValidateChain() && policy.getUseSystemCertStore())
     {
         ctx->certStore = std::make_unique<Botan::System_Certificate_Store>();
     }

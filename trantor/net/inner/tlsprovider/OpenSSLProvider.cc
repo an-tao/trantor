@@ -560,7 +560,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     virtual void sendData(const char *data, size_t len)
     {
         int n = SSL_write(ssl_, data, (int)len);
-        if (n <= 0)
+        if (n <= 0 && len != 0)
         {
             handleSSLError(SSLError::kSSLProtocolError);
             return;
@@ -723,6 +723,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     void handleSSLError(SSLError error)
     {
+        abort();
         sendTLSData();
         if (errorCallback_)
             errorCallback_(conn_, error);

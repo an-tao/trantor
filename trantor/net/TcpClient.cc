@@ -217,7 +217,7 @@ void TcpClient::enableSSL(
                        [](unsigned char c) { return tolower(c); });
     }
 
-    sslPolicyPtr_ = std::make_shared<SSLPolicy>();
+    sslPolicyPtr_ = SSLPolicy::defaultClientPolicy();
     sslPolicyPtr_->setValidate(validateCert)
         .setUseOldTLS(useOldTLS)
         .setConfCmds(sslConfCmds)

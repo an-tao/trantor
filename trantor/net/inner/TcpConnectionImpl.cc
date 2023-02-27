@@ -1227,7 +1227,8 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
     if (tlsProviderPtr_)
     {
         // TODO: handle different record size
-        length = std::min(length, size_t{16383});  // lowest TLS record size
+        constexpr size_t tls_record_size = 16383;
+        length = length < tls_record_size ? length : tls_record_size;
         tlsProviderPtr_->sendData((const char *)buffer, length);
         return length;
     }
