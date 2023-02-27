@@ -4,7 +4,6 @@
 
 namespace trantor
 {
-
 struct Certificate
 {
     virtual ~Certificate() = default;
