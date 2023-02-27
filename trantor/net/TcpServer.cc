@@ -72,14 +72,14 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     if (policyPtr_)
     {
         assert(sslContextPtr_);
-        newPtr = newTLSConnection(std::make_shared<TcpConnectionImpl>(
-                                      ioLoop,
-                                      sockfd,
-                                      InetAddress(Socket::getLocalAddr(sockfd)),
-                                      peer,
-                                      tlsInitiatorPtr_),
-                                  policyPtr_,
-                                  sslContextPtr_);
+        newPtr = std::make_shared<TcpConnectionImpl>(
+            ioLoop,
+            sockfd,
+            InetAddress(Socket::getLocalAddr(sockfd)),
+            peer,
+            tlsInitiatorPtr_,
+            policyPtr_,
+            sslContextPtr_);
     }
     else
     {

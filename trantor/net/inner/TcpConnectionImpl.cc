@@ -77,7 +77,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
             [](TcpConnection *self, const MsgBuffer &buffer) {
                 LOG_TRACE << "Write " << buffer.readableBytes();
                 ((TcpConnectionImpl *)self)
-                    ->writeInLoop(buffer.peek(), buffer.readableBytes());
+                    ->writeRaw(buffer.peek(), buffer.readableBytes());
             });
         tlsProviderPtr_->setErrorCallback(
             [](TcpConnection *self, SSLError err) {
@@ -338,7 +338,7 @@ void TcpConnectionImpl::connectEstablished()
         thisPtr->status_ = ConnStatus::Connected;
 
         if (thisPtr->tlsProviderPtr_)
-            thisPtr->tlsProviderPtr_->startEncryption(false);
+            thisPtr->tlsProviderPtr_->startEncryption();
         else if (thisPtr->connectionCallback_)
             thisPtr->connectionCallback_(thisPtr);
     });
@@ -970,7 +970,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     loop_->assertInLoopThread();
     assert(filePtr->isFile());
 #ifdef __linux__
-    if (!filePtr->streamCallback_)
+    if (!filePtr->streamCallback_ && tlsProviderPtr_)
     {
         LOG_TRACE << "send file in loop using linux kernel sendfile()";
         auto bytesSent = sendfile(socketPtr_->fd(),
@@ -1202,9 +1202,9 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     }
 }
 #ifndef _WIN32
-ssize_t TcpConnectionImpl::writeInLoop(const void *buffer, size_t length)
+ssize_t TcpConnectionImpl::writeRaw(const void *buffer, size_t length)
 #else
-ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
+ssize_t TcpConnectionImpl::writeRaw(const char *buffer, size_t length)
 #endif
 {
     // TODO: Abstract this away to support io_uring (and IOCP?)
@@ -1218,6 +1218,23 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
     if (nWritten > 0)
         bytesSent_ += nWritten;
     return nWritten;
+}
+
+#ifndef _WIN32
+ssize_t TcpConnectionImpl::writeInLoop(const void *buffer, size_t length)
+#else
+ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
+#endif
+{
+    if (tlsProviderPtr_)
+    {
+        // TODO: handle different record size
+        length = std::min(length, size_t{16383});  // lowest TLS record size
+        tlsProviderPtr_->sendData((const char *)buffer, length);
+        return length;
+    }
+    else
+        return writeRaw(buffer, length);
 }
 
 #if !(defined(USE_OPENSSL) || defined(USE_BOTAN))

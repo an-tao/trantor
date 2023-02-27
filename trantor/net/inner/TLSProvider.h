@@ -31,9 +31,9 @@ struct TLSProvider
     /**
      * @brief Encrypt and send data via TLS
      */
-    virtual void sendData(const MsgBuffer& buffer) = 0;
+    virtual void sendData(const char* ptr, size_t size) = 0;
 
-    virtual void startEncryption(bool isServer) = 0;
+    virtual void startEncryption() = 0;
 
     /**
      * @brief Set a function to be called when the TLSProvider wants to send

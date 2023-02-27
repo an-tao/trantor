@@ -281,9 +281,11 @@ class TcpConnectionImpl : public TcpConnection,
     void sendFileInLoop(const BufferNodePtr &file);
 #ifndef _WIN32
     void sendInLoop(const void *buffer, size_t length);
+    ssize_t writeRaw(const void *buffer, size_t length);
     ssize_t writeInLoop(const void *buffer, size_t length);
 #else
     void sendInLoop(const char *buffer, size_t length);
+    ssize_t writeRaw(const char *buffer, size_t length);
     ssize_t writeInLoop(const char *buffer, size_t length);
 #endif
     size_t highWaterMarkLen_;

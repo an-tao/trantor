@@ -134,19 +134,33 @@ struct BotanTLSProvider : public TLSProvider,
 
     virtual void recvData(MsgBuffer *buffer) override
     {
-        LOG_WARN << "Got data: " << buffer->readableBytes() << " bytes";
-        channel_->received_data((const uint8_t *)buffer->peek(),
-                                buffer->readableBytes());
+        LOG_TRACE << "Low level connection received " << buffer->readableBytes()
+                  << " bytes.";
+        try
+        {
+            assert(channel_ != nullptr);
+            channel_->received_data((const uint8_t *)buffer->peek(),
+                                    buffer->readableBytes());
+        }
+        catch (const Botan::TLS::TLS_Exception &e)
+        {
+            LOG_ERROR << "Unexpected TLS Exception: " << e.what();
+            conn_->shutdown();
+
+            if (tlsConnected_ == false)
+                handleSSLError(SSLError::kSSLHandshakeError);
+            else
+                handleSSLError(SSLError::kSSLProtocolError);
+        }
         buffer->retrieveAll();
     }
 
-    virtual void sendData(const MsgBuffer &buffer) override
+    virtual void sendData(const char *ptr, size_t size) override
     {
-        LOG_WARN << "Send " << buffer.readableBytes() << " bytes";
-        channel_->send((const uint8_t *)buffer.peek(), buffer.readableBytes());
+        channel_->send((const uint8_t *)ptr, size);
     }
 
-    virtual void startEncryption(bool isServer) override
+    virtual void startEncryption() override
     {
         LOG_DEBUG << "certStore " << contextPtr_->certStore.get();
         credsPtr_ = std::make_unique<Credentials>(contextPtr_->key.get(),
@@ -154,7 +168,7 @@ struct BotanTLSProvider : public TLSProvider,
                                                   contextPtr_->certStore.get());
         if (policyPtr_->getConfCmds().empty() == false)
             LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
-        if (isServer)
+        if (contextPtr_->isServer)
         {
             channel_ = std::make_unique<Botan::TLS::Server>(
                 *this, sessionManager, *credsPtr_, validationPolicy_, rng);
@@ -253,6 +267,7 @@ struct BotanTLSProvider : public TLSProvider,
             peerCertPtr_ = std::make_shared<BotanCertificate>(cert);
         }
 
+        tlsConnected_ = true;
         loop_->queueInLoop([this]() {
             if (policyPtr_->getOneShotConnctionCallback() && !oneshotCalled_)
             {
@@ -276,6 +291,7 @@ struct BotanTLSProvider : public TLSProvider,
     const SSLPolicyPtr policyPtr_;
     const SSLContextPtr contextPtr_;
     bool oneshotCalled_ = false;
+    bool tlsConnected_ = false;
 };
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
