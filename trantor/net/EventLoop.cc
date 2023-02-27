@@ -207,43 +207,44 @@ void EventLoop::loop()
     quit_.store(false, std::memory_order_release);
 
     std::exception_ptr loopException;
-    // try
-    // {  // Scope where the loop flag is set
+    try
+    {  // Scope where the loop flag is set
 
-    auto loopFlagCleaner = makeScopeExit(
-        [this]() { looping_.store(false, std::memory_order_release); });
-    while (!quit_.load(std::memory_order_acquire))
-    {
-        activeChannels_.clear();
-#ifdef __linux__
-        poller_->poll(kPollTimeMs, &activeChannels_);
-#else
-        poller_->poll(static_cast<int>(timerQueue_->getTimeout()),
-                      &activeChannels_);
-        timerQueue_->processTimers();
-#endif
-        // TODO sort channel by priority
-        // std::cout<<"after ->poll()"<<std::endl;
-        eventHandling_ = true;
-        for (auto it = activeChannels_.begin(); it != activeChannels_.end();
-             ++it)
+        auto loopFlagCleaner = makeScopeExit(
+            [this]() { looping_.store(false, std::memory_order_release); });
+        while (!quit_.load(std::memory_order_acquire))
         {
-            currentActiveChannel_ = *it;
-            currentActiveChannel_->handleEvent();
+            activeChannels_.clear();
+#ifdef __linux__
+            poller_->poll(kPollTimeMs, &activeChannels_);
+#else
+            poller_->poll(static_cast<int>(timerQueue_->getTimeout()),
+                          &activeChannels_);
+            timerQueue_->processTimers();
+#endif
+            // TODO sort channel by priority
+            // std::cout<<"after ->poll()"<<std::endl;
+            eventHandling_ = true;
+            for (auto it = activeChannels_.begin(); it != activeChannels_.end();
+                 ++it)
+            {
+                currentActiveChannel_ = *it;
+                currentActiveChannel_->handleEvent();
+            }
+            currentActiveChannel_ = nullptr;
+            eventHandling_ = false;
+            // std::cout << "looping" << endl;
+            doRunInLoopFuncs();
         }
-        currentActiveChannel_ = nullptr;
-        eventHandling_ = false;
-        // std::cout << "looping" << endl;
-        doRunInLoopFuncs();
+        // loopFlagCleaner clears the loop flag here
     }
-    // loopFlagCleaner clears the loop flag here
-    // }
-    // catch (std::exception &e)
-    // {
-    //     LOG_WARN << "Exception thrown from event loop, rethrowing after "
-    //                 "running functions on quit";
-    //     loopException = std::current_exception();
-    // }
+    catch (std::exception &e)
+    {
+        LOG_WARN << "Exception thrown from event loop, rethrowing after "
+                    "running functions on quit: "
+                 << e.what();
+        loopException = std::current_exception();
+    }
 
     // Run the quit functions even if exceptions were thrown
     // TODO: if more exceptions are thrown in the quit functions, some are left
