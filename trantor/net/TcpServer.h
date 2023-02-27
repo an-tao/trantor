@@ -17,7 +17,6 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/Logger.h>
 #include <trantor/net/EventLoopThreadPool.h>
-#include <trantor/net/TlsInitiator.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/TimingWheel.h>
@@ -36,19 +35,6 @@ class Acceptor;
 class TRANTOR_EXPORT TcpServer : NonCopyable
 {
   public:
-    struct ServerTlsInitiator : public TlsInitiator
-    {
-        ServerTlsInitiator(TcpServer *server) : server_(server)
-        {
-        }
-
-        void startEncryption(const TcpConnectionPtr &conn,
-                             SSLPolicyPtr policy) override;
-
-        bool serverDistructed = false;
-        TcpServer *server_;
-    };
-    friend struct ServerTlsInitiator;
     /**
      * @brief Construct a new TCP server instance.
      *
@@ -268,7 +254,6 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     bool started_{false};
     SSLPolicyPtr policyPtr_{nullptr};
     SSLContextPtr sslContextPtr_{nullptr};
-    std::shared_ptr<ServerTlsInitiator> tlsInitiatorPtr_;
 };
 
 }  // namespace trantor

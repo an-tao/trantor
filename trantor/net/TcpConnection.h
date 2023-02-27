@@ -452,7 +452,7 @@ class TRANTOR_EXPORT TcpConnection
      * is specified as a client, the connection will be upgraded to a TLS client
      * @note This method is only available for non-SSL connections.
      */
-    virtual void startEncryption(SSLPolicyPtr policy) = 0;
+    virtual void startEncryption(SSLPolicyPtr policy, bool isServer) = 0;
     /**
      * @brief Start TLS as a client.
      * @note This method is only available for non-SSL connections.
@@ -472,7 +472,7 @@ class TRANTOR_EXPORT TcpConnection
             .setHostname(hostname)
             .setConfCmds(sslConfCmds)
             .setOneShotConnctionCallback(std::move(callback));
-        startEncryption(std::move(policy));
+        startEncryption(std::move(policy), false);
     }
 
     void setValidationPolicy(SSLPolicy &&policy)
@@ -527,7 +527,6 @@ class TRANTOR_EXPORT TcpConnection
     virtual void enableKickingOff(
         size_t timeout,
         const std::shared_ptr<TimingWheel> &timingWheel) = 0;
-    virtual void startHandshake(MsgBuffer &existingData) = 0;
 
   protected:
     // callbacks

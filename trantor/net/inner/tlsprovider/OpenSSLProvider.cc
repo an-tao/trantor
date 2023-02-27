@@ -214,13 +214,13 @@ struct SSLContext
     {
         // Ungodly amount of preprocessor macros to support older versions of
         // OpenSSL and LibreSSL
-    #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
-    #define SSL_METHOD TLS_method
-    #else
-    #define SSL_METHOD SSLv23_method
-    #endif
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+#define SSL_METHOD TLS_method
+#else
+#define SSL_METHOD SSLv23_method
+#endif
 
-    #ifdef LIBRESSL_VERSION_NUMBER
+#ifdef LIBRESSL_VERSION_NUMBER
         ctx_ = SSL_CTX_new(SSL_METHOD());
         if (ctx_ == nullptr)
             throw std::runtime_error("Failed to create SSL context");
@@ -229,7 +229,7 @@ struct SSLContext
 
         if (!useOldTLS)
             SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
-    #else
+#else
         ctx_ = SSL_CTX_new(SSL_METHOD());
         if (ctx_ == nullptr)
             throw std::runtime_error("Failed to create SSL context");
@@ -245,13 +245,13 @@ struct SSLContext
         SSL_CONF_CTX_free(cctx);
         if (useOldTLS == false)
         {
-    #if OPENSSL_VERSION_NUMBER >= 0x10101000L
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
             SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
-    #else
-            const auto opt = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_SSLv2 |
-                            SSL_OP_NO_SSLv3;
+#else
+            const auto opt = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 |
+                             SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
             SSL_CTX_set_options(ctx_, opt);
-    #endif
+#endif
         }
         else
         {
@@ -259,7 +259,7 @@ struct SSLContext
                         "obsolete, insecure standards and should only be "
                         "used for legacy purpose.";
         }
-    #endif
+#endif
     }
     ~SSLContext()
     {

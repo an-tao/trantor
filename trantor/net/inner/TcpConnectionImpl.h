@@ -15,7 +15,6 @@
 #pragma once
 
 #include <trantor/net/TcpConnection.h>
-#include <trantor/net/TlsInitiator.h>
 #include <trantor/utils/TimingWheel.h>
 #include <trantor/net/inner/TLSProvider.h>
 #include <list>
@@ -70,7 +69,6 @@ class TcpConnectionImpl : public TcpConnection,
                       int socketfd,
                       const InetAddress &localAddr,
                       const InetAddress &peerAddr,
-                      std::weak_ptr<TlsInitiator> initiator,
                       SSLPolicyPtr policy = nullptr,
                       SSLContextPtr ctx = nullptr);
     virtual ~TcpConnectionImpl();
@@ -180,9 +178,7 @@ class TcpConnectionImpl : public TcpConnection,
         return "";
     }
 
-    virtual void startEncryption(SSLPolicyPtr policy) override;
-
-    virtual void startHandshake(MsgBuffer &existingData) override;
+    virtual void startEncryption(SSLPolicyPtr policy, bool isServer) override;
 
     void enableKickingOff(
         size_t timeout,
@@ -299,7 +295,6 @@ class TcpConnectionImpl : public TcpConnection,
 
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
     std::unique_ptr<TLSProvider> tlsProviderPtr_;
-    std::weak_ptr<TlsInitiator> initiator_;
 };
 
 using TcpConnectionImplPtr = std::shared_ptr<TcpConnectionImpl>;

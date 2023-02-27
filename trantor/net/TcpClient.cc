@@ -133,23 +133,18 @@ void TcpClient::newConnection(int sockfd)
     // TODO use make_shared if necessary
     TcpConnectionPtr conn;
     LOG_TRACE << "SSL enabled: " << (sslPolicyPtr_ ? "true" : "false");
-    std::weak_ptr<TlsInitiator> weakInitiator =
-        std::shared_ptr<TlsInitiator>(shared_from_this());
     if (sslPolicyPtr_)
     {
         assert(sslContextPtr_);
-        conn = std::make_shared<TcpConnectionImpl>(loop_,
-                                                   sockfd,
-                                                   localAddr,
-                                                   peerAddr,
-                                                   weakInitiator,
-                                                   sslPolicyPtr_,
-                                                   sslContextPtr_);
+        conn = std::make_shared<TcpConnectionImpl>(
+            loop_, sockfd, localAddr, peerAddr, sslPolicyPtr_, sslContextPtr_);
     }
     else
     {
-        conn = std::make_shared<TcpConnectionImpl>(
-            loop_, sockfd, localAddr, peerAddr, weakInitiator);
+        conn = std::make_shared<TcpConnectionImpl>(loop_,
+                                                   sockfd,
+                                                   localAddr,
+                                                   peerAddr);
     }
     conn->setConnectionCallback(connectionCallback_);
     conn->setRecvMsgCallback(messageCallback_);
@@ -232,46 +227,4 @@ void TcpClient::enableSSL(
         .setValidate(validateCert)
         .setCaPath(caPath);
     sslContextPtr_ = newSSLContext(*sslPolicyPtr_, false);
-}
-
-void TcpClient::startEncryption(const TcpConnectionPtr &conn,
-                                SSLPolicyPtr policy)
-{
-    if (conn->isSSLConnection())
-    {
-        LOG_WARN << "The connection is already encrypted";
-        return;
-    }
-    loop_->runInLoop(
-        [this, conn, policy]() { startEncryptionInLoop(conn, policy); });
-}
-
-void TcpClient::startEncryptionInLoop(const TcpConnectionPtr &conn,
-                                      SSLPolicyPtr policy)
-{
-    abort();
-    // auto sslContextPtr = newSSLContext(*policy, false);
-    // auto recvCallback = conn->recvMsgCallback_;
-    // auto writeCompleteCallback = conn->writeCompleteCallback_;
-    // auto closeCallback = conn->closeCallback_;
-    // auto highWaterMarkCallback = conn->highWaterMarkCallback_;
-    // auto sslErrorCallback = conn->sslErrorCallback_;
-    // auto sslConn = newTLSConnection(conn, policy, sslContextPtr);
-
-    // if (!policy->getOneShotConnctionCallback())
-    //     policy->setOneShotConnctionCallback([](const TcpConnectionPtr &) {});
-    // if (recvCallback)
-    //     sslConn->setRecvMsgCallback(std::move(recvCallback));
-    // if (writeCompleteCallback)
-    //     sslConn->setWriteCompleteCallback(std::move(writeCompleteCallback));
-    // if (closeCallback)
-    //     sslConn->setCloseCallback(std::move(closeCallback));
-    // if (sslErrorCallback)
-    //     sslConn->setSSLErrorCallback(std::move(sslErrorCallback));
-    // if (highWaterMarkCallback)
-    //     sslConn->highWaterMarkCallback_ = std::move(highWaterMarkCallback);
-
-    // std::lock_guard<std::mutex> lock(mutex_);
-    // connection_ = sslConn;
-    // sslConn->startHandshake(*conn->getRecvBuffer());
 }

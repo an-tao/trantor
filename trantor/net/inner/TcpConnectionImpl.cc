@@ -47,15 +47,13 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
                                      const InetAddress &localAddr,
                                      const InetAddress &peerAddr,
-                                     std::weak_ptr<TlsInitiator> initiator,
                                      SSLPolicyPtr policy,
                                      SSLContextPtr ctx)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
       socketPtr_(new Socket(socketfd)),
       localAddr_(localAddr),
-      peerAddr_(peerAddr),
-      initiator_(initiator)
+      peerAddr_(peerAddr)
 {
     LOG_TRACE << "new connection:" << peerAddr.toIpPort() << "->"
               << localAddr.toIpPort();
@@ -1246,18 +1244,30 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
 }
 #endif
 
-void TcpConnectionImpl::startEncryption(SSLPolicyPtr policy)
+void TcpConnectionImpl::startEncryption(SSLPolicyPtr policy, bool isServer)
 {
-    auto lockPtr = initiator_.lock();
-    if (!lockPtr)
-    {
-        LOG_ERROR << "Cannot start TLS when client/server is destructed";
-        return;
-    }
-    lockPtr->startEncryption(shared_from_this(), policy);
-}
-
-void TcpConnectionImpl::startHandshake(MsgBuffer &)
-{
-    throw std::runtime_error("SSL is not supported in TcpConnectionImpl");
+    auto sslContextPtr = newSSLContext(*policy, isServer);
+    tlsProviderPtr_ = newTLSProvider(getLoop(), this, policy, sslContextPtr);
+    tlsProviderPtr_->setWriteCallback(
+        [](TcpConnection *self, const MsgBuffer &buffer) {
+            LOG_TRACE << "Write " << buffer.readableBytes();
+            ((TcpConnectionImpl *)self)
+                ->writeRaw(buffer.peek(), buffer.readableBytes());
+        });
+    tlsProviderPtr_->setErrorCallback([](TcpConnection *self, SSLError err) {
+        if (self->sslErrorCallback_)
+            self->sslErrorCallback_(err);
+    });
+    tlsProviderPtr_->setHandshakeCallback([](TcpConnection *self) {
+        if (self->connectionCallback_)
+            self->connectionCallback_(
+                ((TcpConnectionImpl *)self)->shared_from_this());
+    });
+    tlsProviderPtr_->setMessageCallback(
+        [](TcpConnection *self, MsgBuffer *buffer) {
+            if (self->recvMsgCallback_)
+                self->recvMsgCallback_(
+                    ((TcpConnectionImpl *)self)->shared_from_this(), buffer);
+        });
+    tlsProviderPtr_->startEncryption();
 }
