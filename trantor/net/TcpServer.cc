@@ -258,63 +258,64 @@ void TcpServer::ServerTlsInitiator::startEncryption(
     const TcpConnectionPtr &conn,
     SSLPolicyPtr policy)
 {
-    if (serverDistructed)
-    {
-        LOG_WARN << "TcpServer have destructed. Cannot start TLS on "
-                    "connections managed by that server.";
-        return;
-    }
+    abort();
+    // if (serverDistructed)
+    // {
+    //     LOG_WARN << "TcpServer have destructed. Cannot start TLS on "
+    //                 "connections managed by that server.";
+    //     return;
+    // }
 
-    if (conn->isSSLConnection())
-    {
-        LOG_WARN
-            << "Connection already started TLS. Cannot start TLS on it again.";
-        return;
-    }
+    // if (conn->isSSLConnection())
+    // {
+    //     LOG_WARN
+    //         << "Connection already started TLS. Cannot start TLS on it again.";
+    //     return;
+    // }
 
-    auto it = server_->connSet_.find(conn);
-    if (it == server_->connSet_.end())
-    {
-        LOG_WARN
-            << "Connection not managed by this server. Cannot start TLS on it.";
-        return;
-    }
+    // auto it = server_->connSet_.find(conn);
+    // if (it == server_->connSet_.end())
+    // {
+    //     LOG_WARN
+    //         << "Connection not managed by this server. Cannot start TLS on it.";
+    //     return;
+    // }
 
-    auto rawConn = *it;
-    server_->connSet_.erase(it);
+    // auto rawConn = *it;
+    // server_->connSet_.erase(it);
 
-    SSLPolicy *pol = nullptr;
-    if (policy)
-        pol = policy.get();
-    else if (server_->policyPtr_)
-        pol = server_->policyPtr_.get();
-    else
-    {
-        LOG_FATAL << "No SSLPolicy found. (Likely caused by API misuse.)";
-        return;
-    }
-    assert(pol != nullptr);
+    // SSLPolicy *pol = nullptr;
+    // if (policy)
+    //     pol = policy.get();
+    // else if (server_->policyPtr_)
+    //     pol = server_->policyPtr_.get();
+    // else
+    // {
+    //     LOG_FATAL << "No SSLPolicy found. (Likely caused by API misuse.)";
+    //     return;
+    // }
+    // assert(pol != nullptr);
 
-    if (!pol->getOneShotConnctionCallback())
-        pol->setOneShotConnctionCallback([](const TcpConnectionPtr &) {});
-    server_->sslContextPtr_ = newSSLContext(*pol, true);
-    auto recvCallback = rawConn->recvMsgCallback_;
-    auto connCallback = rawConn->connectionCallback_;
-    auto closeCallback = rawConn->closeCallback_;
-    auto highWaterMarkCallback = rawConn->highWaterMarkCallback_;
-    auto sslErrorCallback = rawConn->sslErrorCallback_;
-    auto tlsConn = newTLSConnection(rawConn, policy, server_->sslContextPtr_);
-    if (recvCallback)
-        tlsConn->setRecvMsgCallback(std::move(recvCallback));
-    if (connCallback)
-        tlsConn->setConnectionCallback(std::move(connCallback));
-    if (closeCallback)
-        tlsConn->setCloseCallback(std::move(closeCallback));
-    if (sslErrorCallback)
-        tlsConn->setSSLErrorCallback(std::move(sslErrorCallback));
-    if (highWaterMarkCallback)
-        tlsConn->highWaterMarkCallback_ = std::move(highWaterMarkCallback);
+    // if (!pol->getOneShotConnctionCallback())
+    //     pol->setOneShotConnctionCallback([](const TcpConnectionPtr &) {});
+    // server_->sslContextPtr_ = newSSLContext(*pol, true);
+    // auto recvCallback = rawConn->recvMsgCallback_;
+    // auto connCallback = rawConn->connectionCallback_;
+    // auto closeCallback = rawConn->closeCallback_;
+    // auto highWaterMarkCallback = rawConn->highWaterMarkCallback_;
+    // auto sslErrorCallback = rawConn->sslErrorCallback_;
+    // auto tlsConn = newTLSConnection(rawConn, policy, server_->sslContextPtr_);
+    // if (recvCallback)
+    //     tlsConn->setRecvMsgCallback(std::move(recvCallback));
+    // if (connCallback)
+    //     tlsConn->setConnectionCallback(std::move(connCallback));
+    // if (closeCallback)
+    //     tlsConn->setCloseCallback(std::move(closeCallback));
+    // if (sslErrorCallback)
+    //     tlsConn->setSSLErrorCallback(std::move(sslErrorCallback));
+    // if (highWaterMarkCallback)
+    //     tlsConn->highWaterMarkCallback_ = std::move(highWaterMarkCallback);
 
-    server_->connSet_.insert(tlsConn);
-    tlsConn->startHandshake(*rawConn->getRecvBuffer());
+    // server_->connSet_.insert(tlsConn);
+    // tlsConn->startHandshake(*rawConn->getRecvBuffer());
 }

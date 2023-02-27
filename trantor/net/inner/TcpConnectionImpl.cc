@@ -1238,15 +1238,6 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 }
 
 #if !(defined(USE_OPENSSL) || defined(USE_BOTAN))
-TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr rawConn,
-                                           SSLPolicyPtr policy,
-                                           SSLContextPtr ctx)
-{
-    (void)rawConn;
-    (void)policy;
-    (void)ctx;
-    throw std::runtime_error("SSL is not supported");
-}
 SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
 {
     (void)policy;

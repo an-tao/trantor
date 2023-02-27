@@ -145,12 +145,8 @@ if(TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "openssl" OR TRANTOR_PREFERED_TLS_PROV
 
     set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}
-      trantor/net/inner/OpenSSLConnectionImpl.cc
       trantor/net/inner/tlsprovider/OpenSSLProvider.cc
       trantor/utils/crypto/openssl.cc)
-    set(private_headers
-      ${private_headers}
-      trantor/net/inner/OpenSSLConnectionImpl.h)
   endif()
 endif()
 
@@ -161,16 +157,12 @@ if(TRANTOR_TLS_PROVIDER STREQUAL "None"
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOTAN)
     target_link_libraries(${PROJECT_NAME} PRIVATE Botan::Botan)
+    set(TRANTOR_TLS_PROVIDER "Botan")
 
     set(TRANTOR_SOURCES
         ${TRANTOR_SOURCES}
-        trantor/net/inner/BotanTLSConnectionImpl.cc
         trantor/net/inner/tlsprovider/BotanTLSProvider.cc
         trantor/utils/crypto/botan.cc)
-    set(private_headers
-        ${private_headers}
-        trantor/net/inner/BotanTLSConnectionImpl.h)
-    set(TRANTOR_TLS_PROVIDER "Botan")
   endif()
 endif()
 

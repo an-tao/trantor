@@ -542,10 +542,6 @@ class TRANTOR_EXPORT TcpConnection
   private:
     std::shared_ptr<void> contextPtr_;
 };
-
-TRANTOR_EXPORT TcpConnectionPtr newTLSConnection(TcpConnectionPtr rawConn,
-                                                 SSLPolicyPtr policy,
-                                                 SSLContextPtr ctx);
 TRANTOR_EXPORT SSLContextPtr newSSLContext(const SSLPolicy &policy,
                                            bool server);
 
