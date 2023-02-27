@@ -285,35 +285,3 @@ TcpConnectionPtr trantor::newTLSConnection(TcpConnectionPtr lowerConn,
                                                     std::move(policy),
                                                     std::move(ctx));
 }
-
-SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool server)
-{
-    auto ctx = std::make_shared<SSLContext>();
-    ctx->isServer = server;
-    if (!policy.getKeyPath().empty())
-    {
-        Botan::DataSource_Stream in(policy.getKeyPath());
-        ctx->key = Botan::PKCS8::load_key(in);
-    }
-
-    if (!policy.getCertPath().empty())
-    {
-        ctx->cert =
-            std::make_unique<Botan::X509_Certificate>(policy.getCertPath());
-    }
-
-    if (!policy.getCaPath().empty())
-    {
-        ctx->certStore = std::make_unique<Botan::Flatfile_Certificate_Store>(
-            policy.getCaPath());
-    }
-    else if (policy.getUseSystemCertStore())
-    {
-        ctx->certStore = std::make_unique<Botan::System_Certificate_Store>();
-    }
-
-    if (policy.getUseOldTLS())
-        LOG_WARN << "SSLPloicy have set useOldTLS to true. BUt Botan does not "
-                    "support TLS/SSL below TLS 1.2. Ignoreing this option.";
-    return ctx;
-}

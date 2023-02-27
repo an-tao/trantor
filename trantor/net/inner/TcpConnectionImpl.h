@@ -154,7 +154,7 @@ class TcpConnectionImpl : public TcpConnection,
 
     virtual bool isSSLConnection() const override
     {
-        return false;
+        return tlsProviderPtr_ != nullptr;
     }
     virtual void connectEstablished() override;
     virtual void connectDestroyed() override;
