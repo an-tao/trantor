@@ -212,10 +212,9 @@ struct BotanTLSProvider : public TLSProvider,
                              const uint8_t data[],
                              size_t size) override
     {
-        MsgBuffer buf;
-        buf.append((const char *)data, size);
+        recvBuffer_.append((const char *)data, size);
         if (messageCallback_)
-            messageCallback_(conn_, &buf);
+            messageCallback_(conn_, recvBuffer_);
     }
 
     void tls_alert(Botan::TLS::Alert alert) override
@@ -292,6 +291,7 @@ struct BotanTLSProvider : public TLSProvider,
     const SSLContextPtr contextPtr_;
     bool oneshotCalled_ = false;
     bool tlsConnected_ = false;
+    MsgBuffer recvBuffer_;
 };
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,

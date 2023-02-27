@@ -146,6 +146,7 @@ if(TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "openssl" OR TRANTOR_PREFERED_TLS_PROV
     set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}
       trantor/net/inner/OpenSSLConnectionImpl.cc
+      trantor/net/inner/tlsprovider/OpenSSLProvider.cc
       trantor/utils/crypto/openssl.cc)
     set(private_headers
       ${private_headers}
