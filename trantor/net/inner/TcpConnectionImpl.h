@@ -17,6 +17,7 @@
 #include <trantor/net/TcpConnection.h>
 #include <trantor/net/TlsInitiator.h>
 #include <trantor/utils/TimingWheel.h>
+#include <trantor/net/inner/TLSProvider.h>
 #include <list>
 #include <mutex>
 #ifndef _WIN32
@@ -69,7 +70,9 @@ class TcpConnectionImpl : public TcpConnection,
                       int socketfd,
                       const InetAddress &localAddr,
                       const InetAddress &peerAddr,
-                      std::weak_ptr<TlsInitiator> initiator);
+                      std::weak_ptr<TlsInitiator> initiator,
+                      SSLPolicyPtr policy = nullptr,
+                      SSLContextPtr ctx = nullptr);
     virtual ~TcpConnectionImpl();
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override;
@@ -293,6 +296,7 @@ class TcpConnectionImpl : public TcpConnection,
     size_t bytesReceived_{0};
 
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
+    std::unique_ptr<TLSProvider> tlsProviderPtr_;
     std::weak_ptr<TlsInitiator> initiator_;
 };
 

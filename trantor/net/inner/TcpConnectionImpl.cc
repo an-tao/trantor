@@ -47,7 +47,9 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
                                      const InetAddress &localAddr,
                                      const InetAddress &peerAddr,
-                                     std::weak_ptr<TlsInitiator> initiator)
+                                     std::weak_ptr<TlsInitiator> initiator,
+                                     SSLPolicyPtr policy,
+                                     SSLContextPtr ctx)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
       socketPtr_(new Socket(socketfd)),
@@ -67,6 +69,36 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
         std::bind(&TcpConnectionImpl::handleError, this));
     socketPtr_->setKeepAlive(true);
     name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
+
+    if (policy != nullptr)
+    {
+        tlsProviderPtr_ = newTLSProvider(getLoop(), this, policy, ctx);
+        tlsProviderPtr_->setWriteCallback(
+            [](TcpConnection *self, const MsgBuffer &buffer) {
+                LOG_TRACE << "Write " << buffer.readableBytes();
+                ((TcpConnectionImpl *)self)
+                    ->writeInLoop(buffer.peek(), buffer.readableBytes());
+            });
+        tlsProviderPtr_->setErrorCallback(
+            [](TcpConnection *self, SSLError err) {
+                if (self->sslErrorCallback_)
+                    self->sslErrorCallback_(err);
+            });
+        tlsProviderPtr_->setHandshakeCallback([](TcpConnection *self) {
+            if (self->connectionCallback_)
+                self->connectionCallback_(
+                    ((TcpConnectionImpl *)self)->shared_from_this());
+        });
+        tlsProviderPtr_->setMessageCallback([](TcpConnection *self,
+                                               MsgBuffer *buffer) {
+            if (self->recvMsgCallback_)
+                self->recvMsgCallback_(
+                    ((TcpConnectionImpl *)self)->shared_from_this(), buffer);
+        });
+        // This is triggered when peer sends a close alert
+        tlsProviderPtr_->setCloseCallback(
+            [](TcpConnection *self) { self->shutdown(); });
+    }
 }
 TcpConnectionImpl::~TcpConnectionImpl()
 {
@@ -121,7 +153,11 @@ void TcpConnectionImpl::readCallback()
     if (n > 0)
     {
         bytesReceived_ += n;
-        if (recvMsgCallback_)
+        if (tlsProviderPtr_)
+        {
+            tlsProviderPtr_->recvData(&readBuffer_);
+        }
+        else if (recvMsgCallback_)
         {
             recvMsgCallback_(shared_from_this(), &readBuffer_);
         }
@@ -300,7 +336,10 @@ void TcpConnectionImpl::connectEstablished()
         thisPtr->ioChannelPtr_->tie(thisPtr);
         thisPtr->ioChannelPtr_->enableReading();
         thisPtr->status_ = ConnStatus::Connected;
-        if (thisPtr->connectionCallback_)
+
+        if (thisPtr->tlsProviderPtr_)
+            thisPtr->tlsProviderPtr_->startEncryption(false);
+        else if (thisPtr->connectionCallback_)
             thisPtr->connectionCallback_(thisPtr);
     });
 }

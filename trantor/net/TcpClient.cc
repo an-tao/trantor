@@ -10,6 +10,7 @@
 // Taken from muduo and modified by an tao
 
 #include <trantor/net/TcpClient.h>
+#include <trantor/net/inner/TLSProvider.h>
 
 #include <trantor/utils/Logger.h>
 #include "Connector.h"
@@ -137,14 +138,13 @@ void TcpClient::newConnection(int sockfd)
     if (sslPolicyPtr_)
     {
         assert(sslContextPtr_);
-        conn =
-            newTLSConnection(std::make_shared<TcpConnectionImpl>(loop_,
-                                                                 sockfd,
-                                                                 localAddr,
-                                                                 peerAddr,
-                                                                 weakInitiator),
-                             sslPolicyPtr_,
-                             sslContextPtr_);
+        conn = std::make_shared<TcpConnectionImpl>(loop_,
+                                                   sockfd,
+                                                   localAddr,
+                                                   peerAddr,
+                                                   weakInitiator,
+                                                   sslPolicyPtr_,
+                                                   sslContextPtr_);
     }
     else
     {

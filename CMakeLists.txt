@@ -164,6 +164,7 @@ if(TRANTOR_TLS_PROVIDER STREQUAL "None"
     set(TRANTOR_SOURCES
         ${TRANTOR_SOURCES}
         trantor/net/inner/BotanTLSConnectionImpl.cc
+        trantor/net/inner/tlsprovider/BotanTLSProvider.cc
         trantor/utils/crypto/botan.cc)
     set(private_headers
         ${private_headers}

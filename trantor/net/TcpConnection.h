@@ -19,6 +19,7 @@
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/MsgBuffer.h>
 #include <trantor/net/callbacks.h>
+#include <trantor/net/Certificate.h>
 #include <memory>
 #include <functional>
 #include <string>
@@ -178,7 +179,7 @@ struct TRANTOR_EXPORT SSLPolicy final
         auto policy = std::make_shared<SSLPolicy>();
         policy->setValidate(true)
             .setUseOldTLS(false)
-            .setUseSystemCertStore(false)
+            .setUseSystemCertStore(true)
             .setHostname(hostname);
         return policy;
     }
@@ -201,18 +202,8 @@ struct TRANTOR_EXPORT SSLPolicy final
 using SSLPolicyPtr = std::shared_ptr<SSLPolicy>;
 class TimingWheel;
 
-struct Certificate
-{
-    virtual ~Certificate() = default;
-    virtual std::string sha1Fingerprint() const = 0;
-    virtual std::string sha256Fingerprint() const = 0;
-    virtual std::string pem() const = 0;
-};
-
 struct SSLContext;
 using SSLContextPtr = std::shared_ptr<SSLContext>;
-
-using CertificatePtr = std::shared_ptr<Certificate>;
 
 /**
  * @brief This class represents a TCP connection.
@@ -222,6 +213,7 @@ class TRANTOR_EXPORT TcpConnection
 {
   public:
     friend class TcpServer;
+    friend class TcpConnectionImpl;
     friend class TcpClient;
 
     TcpConnection() = default;
