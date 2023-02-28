@@ -166,6 +166,8 @@ class TcpConnectionImpl : public TcpConnection,
 
     virtual std::string applicationProtocol() const override
     {
+        if (tlsProviderPtr_)
+            return tlsProviderPtr_->applicationProtocol();
         return "";
     }
 
@@ -178,6 +180,8 @@ class TcpConnectionImpl : public TcpConnection,
 
     virtual std::string sniName() const override
     {
+        if (tlsProviderPtr_)
+            return tlsProviderPtr_->sniName();
         return "";
     }
 

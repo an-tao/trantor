@@ -4,8 +4,6 @@
 #include <trantor/net/callbacks.h>
 #include <trantor/utils/Logger.h>
 
-#include <fstream>
-
 #include <botan/tls_server.h>
 #include <botan/tls_client.h>
 #include <botan/tls_callbacks.h>
@@ -186,6 +184,7 @@ struct BotanTLSProvider : public TLSProvider,
                     ? Botan::TLS::Protocol_Version::TLS_V10
                     : Botan::TLS::Protocol_Version::TLS_V12,
                 policyPtr_->getAlpnProtocols());
+            setSniName(policyPtr_->getHostname());
         }
     }
 
