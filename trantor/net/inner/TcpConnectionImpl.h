@@ -299,6 +299,12 @@ class TcpConnectionImpl : public TcpConnection,
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
     std::unique_ptr<TLSProvider> tlsProviderPtr_;
     std::function<void(const TcpConnectionPtr &)> upgradeCallback_;
+
+    static void onSslError(TcpConnection *self, SSLError err);
+    static void onHandshakeFinished(TcpConnection *self);
+    static void onSslMessage(TcpConnection *self, MsgBuffer *buffer);
+    static void onSslWrite(TcpConnection *self, const MsgBuffer &buffer);
+    static void onSslCloseAlert(TcpConnection *self);
 };
 
 using TcpConnectionImplPtr = std::shared_ptr<TcpConnectionImpl>;

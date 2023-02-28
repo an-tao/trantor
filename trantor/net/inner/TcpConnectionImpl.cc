@@ -71,37 +71,12 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     if (policy != nullptr)
     {
         tlsProviderPtr_ = newTLSProvider(getLoop(), this, policy, ctx);
-        tlsProviderPtr_->setWriteCallback(
-            [](TcpConnection *self, const MsgBuffer &buffer) {
-                LOG_TRACE << "Write " << buffer.readableBytes();
-                ssize_t offset = 0;
-                while (buffer.readableBytes() != offset)
-                {
-                    auto n = ((TcpConnectionImpl *)self)
-                                 ->writeRaw(buffer.peek() + offset,
-                                            buffer.readableBytes());
-                    offset += n;
-                }
-            });
-        tlsProviderPtr_->setErrorCallback(
-            [](TcpConnection *self, SSLError err) {
-                if (self->sslErrorCallback_)
-                    self->sslErrorCallback_(err);
-            });
-        tlsProviderPtr_->setHandshakeCallback([](TcpConnection *self) {
-            if (self->connectionCallback_)
-                self->connectionCallback_(
-                    ((TcpConnectionImpl *)self)->shared_from_this());
-        });
-        tlsProviderPtr_->setMessageCallback([](TcpConnection *self,
-                                               MsgBuffer *buffer) {
-            if (self->recvMsgCallback_)
-                self->recvMsgCallback_(
-                    ((TcpConnectionImpl *)self)->shared_from_this(), buffer);
-        });
+        tlsProviderPtr_->setWriteCallback(onSslWrite);
+        tlsProviderPtr_->setErrorCallback(onSslError);
+        tlsProviderPtr_->setHandshakeCallback(onHandshakeFinished);
+        tlsProviderPtr_->setMessageCallback(onSslMessage);
         // This is triggered when peer sends a close alert
-        tlsProviderPtr_->setCloseCallback(
-            [](TcpConnection *self) { self->shutdown(); });
+        tlsProviderPtr_->setCloseCallback(onSslCloseAlert);
     }
 }
 TcpConnectionImpl::~TcpConnectionImpl()
@@ -1272,40 +1247,52 @@ void TcpConnectionImpl::startEncryption(
     }
     auto sslContextPtr = newSSLContext(*policy, isServer);
     tlsProviderPtr_ = newTLSProvider(getLoop(), this, policy, sslContextPtr);
-    tlsProviderPtr_->setWriteCallback([](TcpConnection *self,
-                                         const MsgBuffer &buffer) {
-        LOG_TRACE << "Write " << buffer.readableBytes();
-        ssize_t offset = 0;
-        while (buffer.readableBytes() != offset)
-        {
-            auto n =
-                ((TcpConnectionImpl *)self)
-                    ->writeRaw(buffer.peek() + offset, buffer.readableBytes());
-            offset += n;
-        }
-    });
-    tlsProviderPtr_->setErrorCallback([](TcpConnection *self, SSLError err) {
-        if (self->sslErrorCallback_)
-            self->sslErrorCallback_(err);
-    });
-    tlsProviderPtr_->setHandshakeCallback([](TcpConnection *self) {
-        auto connPtr = ((TcpConnectionImpl *)self)->shared_from_this();
-        if (connPtr->upgradeCallback_)
-        {
-            connPtr->upgradeCallback_(
-                ((TcpConnectionImpl *)self)->shared_from_this());
-            connPtr->upgradeCallback_ = nullptr;
-        }
-        else if (self->connectionCallback_)
-            self->connectionCallback_(
-                ((TcpConnectionImpl *)self)->shared_from_this());
-    });
-    tlsProviderPtr_->setMessageCallback(
-        [](TcpConnection *self, MsgBuffer *buffer) {
-            if (self->recvMsgCallback_)
-                self->recvMsgCallback_(
-                    ((TcpConnectionImpl *)self)->shared_from_this(), buffer);
-        });
+    tlsProviderPtr_->setWriteCallback(onSslWrite);
+    tlsProviderPtr_->setErrorCallback(onSslError);
+    tlsProviderPtr_->setHandshakeCallback(onHandshakeFinished);
+    tlsProviderPtr_->setMessageCallback(onSslMessage);
+    // This is triggered when peer sends a close alert
+    tlsProviderPtr_->setCloseCallback(onSslCloseAlert);
     tlsProviderPtr_->startEncryption();
     upgradeCallback_ = std::move(upgradeCallback);
+}
+
+void TcpConnectionImpl::onSslError(TcpConnection *self, SSLError err)
+{
+    if (self->sslErrorCallback_)
+        self->sslErrorCallback_(err);
+}
+void TcpConnectionImpl::onHandshakeFinished(TcpConnection *self)
+{
+    auto connPtr = ((TcpConnectionImpl *)self)->shared_from_this();
+    if (connPtr->upgradeCallback_)
+    {
+        connPtr->upgradeCallback_(
+            ((TcpConnectionImpl *)self)->shared_from_this());
+        connPtr->upgradeCallback_ = nullptr;
+    }
+    else if (self->connectionCallback_)
+        self->connectionCallback_(
+            ((TcpConnectionImpl *)self)->shared_from_this());
+}
+void TcpConnectionImpl::onSslMessage(TcpConnection *self, MsgBuffer *buffer)
+{
+    if (self->recvMsgCallback_)
+        self->recvMsgCallback_(((TcpConnectionImpl *)self)->shared_from_this(),
+                               buffer);
+}
+void TcpConnectionImpl::onSslWrite(TcpConnection *self, const MsgBuffer &buffer)
+{
+    LOG_TRACE << "Write " << buffer.readableBytes();
+    ssize_t offset = 0;
+    while (buffer.readableBytes() != offset)
+    {
+        auto n = ((TcpConnectionImpl *)self)
+                     ->writeRaw(buffer.peek() + offset, buffer.readableBytes());
+        offset += n;
+    }
+}
+void TcpConnectionImpl::onSslCloseAlert(TcpConnection *self)
+{
+    self->shutdown();
 }
