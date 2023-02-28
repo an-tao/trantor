@@ -159,6 +159,8 @@ class TcpConnectionImpl : public TcpConnection,
 
     virtual MsgBuffer *getRecvBuffer() override
     {
+        if (tlsProviderPtr_)
+            return &tlsProviderPtr_->getRecvBuffer();
         return &readBuffer_;
     }
 
@@ -169,7 +171,8 @@ class TcpConnectionImpl : public TcpConnection,
 
     virtual CertificatePtr peerCertificate() const override
     {
-        // TcpConnectionImpl does not support SSL
+        if (tlsProviderPtr_)
+            return tlsProviderPtr_->peerCertificate();
         return nullptr;
     }
 
@@ -303,7 +306,7 @@ class TcpConnectionImpl : public TcpConnection,
     static void onSslError(TcpConnection *self, SSLError err);
     static void onHandshakeFinished(TcpConnection *self);
     static void onSslMessage(TcpConnection *self, MsgBuffer *buffer);
-    static void onSslWrite(TcpConnection *self, const MsgBuffer &buffer);
+    static void onSslWrite(TcpConnection *self, const void *data, size_t len);
     static void onSslCloseAlert(TcpConnection *self);
 };
 

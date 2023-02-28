@@ -70,7 +70,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 
     if (policy != nullptr)
     {
-        tlsProviderPtr_ = newTLSProvider(getLoop(), this, policy, ctx);
+        tlsProviderPtr_ = newTLSProvider(this, policy, ctx);
         tlsProviderPtr_->setWriteCallback(onSslWrite);
         tlsProviderPtr_->setErrorCallback(onSslError);
         tlsProviderPtr_->setHandshakeCallback(onHandshakeFinished);
@@ -1222,12 +1222,10 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
     throw std::runtime_error("SSL is not supported");
 }
 
-std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
-                                                     TcpConnection *conn,
+std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
                                                      TLSPolicyPtr policy,
                                                      SSLContextPtr sslContext)
 {
-    (void)loop;
     (void)conn;
     (void)policy;
     (void)sslContext;
@@ -1246,7 +1244,7 @@ void TcpConnectionImpl::startEncryption(
         return;
     }
     auto sslContextPtr = newSSLContext(*policy, isServer);
-    tlsProviderPtr_ = newTLSProvider(getLoop(), this, policy, sslContextPtr);
+    tlsProviderPtr_ = newTLSProvider(this, policy, sslContextPtr);
     tlsProviderPtr_->setWriteCallback(onSslWrite);
     tlsProviderPtr_->setErrorCallback(onSslError);
     tlsProviderPtr_->setHandshakeCallback(onHandshakeFinished);
@@ -1281,14 +1279,15 @@ void TcpConnectionImpl::onSslMessage(TcpConnection *self, MsgBuffer *buffer)
         self->recvMsgCallback_(((TcpConnectionImpl *)self)->shared_from_this(),
                                buffer);
 }
-void TcpConnectionImpl::onSslWrite(TcpConnection *self, const MsgBuffer &buffer)
+void TcpConnectionImpl::onSslWrite(TcpConnection *self,
+                                   const void *data,
+                                   size_t len)
 {
-    LOG_TRACE << "Write " << buffer.readableBytes();
     ssize_t offset = 0;
-    while (buffer.readableBytes() != offset)
+    while (len != offset)
     {
         auto n = ((TcpConnectionImpl *)self)
-                     ->writeRaw(buffer.peek() + offset, buffer.readableBytes());
+                     ->writeRaw((const char *)data + offset, len - offset);
         offset += n;
     }
 }

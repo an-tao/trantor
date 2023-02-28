@@ -124,11 +124,10 @@ struct BotanTLSProvider : public TLSProvider,
                           public Botan::TLS::Callbacks
 {
   public:
-    BotanTLSProvider(EventLoop *loop,
-                     TcpConnection *conn,
+    BotanTLSProvider(TcpConnection *conn,
                      TLSPolicyPtr policy,
                      SSLContextPtr ctx)
-        : TLSProvider(loop, conn, policy), policyPtr_(policy), contextPtr_(ctx)
+        : TLSProvider(conn, std::move(policy), std::move(ctx))
     {
     }
 
@@ -203,10 +202,7 @@ struct BotanTLSProvider : public TLSProvider,
 
     void tls_emit_data(const uint8_t data[], size_t size) override
     {
-        MsgBuffer buf;
-        buf.append((const char *)data, size);
-        assert(writeCallback_);
-        writeCallback_(conn_, buf);
+        writeCallback_(conn_, (const void *)data, size);
     }
 
     void tls_record_received(uint64_t seq_no,
@@ -264,11 +260,12 @@ struct BotanTLSProvider : public TLSProvider,
                         "Certificate is not valid for current time");
                 }
             }
-            peerCertPtr_ = std::make_shared<BotanCertificate>(cert);
+            setPeerCertificate(std::make_shared<BotanCertificate>(cert));
         }
 
         tlsConnected_ = true;
         loop_->queueInLoop([this]() {
+            setApplicationProtocol(channel_->application_protocol());
             if (handshakeCallback_)
                 handshakeCallback_(conn_);
         });
@@ -284,7 +281,7 @@ struct BotanTLSProvider : public TLSProvider,
         const std::string &hostname,
         const Botan::TLS::Policy &policy)
     {
-        sniName_ = hostname;
+        setSniName(hostname);
         if (policyPtr_->getValidateChain())
             Botan::TLS::Callbacks::tls_verify_cert_chain(
                 certs, ocsp, trusted_roots, usage, hostname, policy);
@@ -293,21 +290,14 @@ struct BotanTLSProvider : public TLSProvider,
     TrantorPolicy validationPolicy_;
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
-    CertificatePtr peerCertPtr_;
-    std::string sniName_;
-    MsgBuffer recvBuffer_;
-    const TLSPolicyPtr policyPtr_;
-    const SSLContextPtr contextPtr_;
     bool tlsConnected_ = false;
 };
 
-std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
-                                                     TcpConnection *conn,
+std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
                                                      TLSPolicyPtr policy,
                                                      SSLContextPtr ctx)
 {
-    return std::make_unique<BotanTLSProvider>(loop,
-                                              conn,
+    return std::make_unique<BotanTLSProvider>(conn,
                                               std::move(policy),
                                               std::move(ctx));
 }

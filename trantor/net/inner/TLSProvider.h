@@ -11,12 +11,17 @@ namespace trantor
 {
 struct TLSProvider
 {
-    TLSProvider(EventLoop* loop, TcpConnection* conn, TLSPolicyPtr policy)
-        : conn_(conn), policy_(std::move(policy)), loop_(loop)
+    TLSProvider(TcpConnection* conn, TLSPolicyPtr policy, SSLContextPtr ctx)
+        : conn_(conn),
+          policyPtr_(std::move(policy)),
+          loop_(conn_->getLoop()),
+          contextPtr_(std::move(ctx))
     {
     }
     virtual ~TLSProvider() = default;
-    using WtriteCallback = void (*)(TcpConnection*, const MsgBuffer& buffer);
+    using WriteCallback = void (*)(TcpConnection*,
+                                   const void* data,
+                                   size_t len);
     using ErrorCallback = void (*)(TcpConnection*, SSLError err);
     using HandshakeCallback = void (*)(TcpConnection*);
     using MessageCallback = void (*)(TcpConnection*, MsgBuffer* buffer);
@@ -43,7 +48,7 @@ struct TLSProvider
      * send data after caller is destroyed. std::function used due to
      * performance reasons.
      */
-    void setWriteCallback(WtriteCallback cb)
+    void setWriteCallback(WriteCallback cb)
     {
         writeCallback_ = cb;
     }
@@ -67,19 +72,58 @@ struct TLSProvider
         closeCallback_ = cb;
     }
 
+    MsgBuffer& getRecvBuffer()
+    {
+        return recvBuffer_;
+    }
+
+    const CertificatePtr& peerCertificate() const
+    {
+        return peerCertificate_;
+    }
+
+    const std::string& applicationProtocol() const
+    {
+        return applicationProtocol_;
+    }
+
+    const std::string& sniName() const
+    {
+        return sniName_;
+    }
+
   protected:
-    WtriteCallback writeCallback_ = nullptr;
+    void setPeerCertificate(CertificatePtr cert)
+    {
+        peerCertificate_ = std::move(cert);
+    }
+
+    void setApplicationProtocol(std::string protocol)
+    {
+        applicationProtocol_ = std::move(protocol);
+    }
+
+    void setSniName(std::string name)
+    {
+        sniName_ = std::move(name);
+    }
+
+    WriteCallback writeCallback_ = nullptr;
     ErrorCallback errorCallback_ = nullptr;
     HandshakeCallback handshakeCallback_ = nullptr;
     MessageCallback messageCallback_ = nullptr;
     CloseCallback closeCallback_ = nullptr;
     TcpConnection* conn_ = nullptr;
-    TLSPolicyPtr policy_;
+    const TLSPolicyPtr policyPtr_;
+    const SSLContextPtr contextPtr_;
+    MsgBuffer recvBuffer_;
     EventLoop* loop_ = nullptr;
+    CertificatePtr peerCertificate_;
+    std::string applicationProtocol_;
+    std::string sniName_;
 };
 
-std::unique_ptr<TLSProvider> newTLSProvider(EventLoop* loop,
-                                            TcpConnection* conn,
+std::unique_ptr<TLSProvider> newTLSProvider(TcpConnection* conn,
                                             TLSPolicyPtr policy,
                                             SSLContextPtr ctx);
 }  // namespace trantor

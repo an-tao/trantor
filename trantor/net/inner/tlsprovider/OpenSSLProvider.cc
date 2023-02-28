@@ -461,11 +461,8 @@ static SessionManager sessionManager;
 
 struct OpenSSLProvider : public TLSProvider, public NonCopyable
 {
-    OpenSSLProvider(EventLoop *loop,
-                    TcpConnection *conn,
-                    TLSPolicyPtr policy,
-                    SSLContextPtr ctx)
-        : TLSProvider(loop, conn, policy), policyPtr_(policy), contextPtr_(ctx)
+    OpenSSLProvider(TcpConnection *conn, TLSPolicyPtr policy, SSLContextPtr ctx)
+        : TLSProvider(loop, conn, std::move(policy), std::move(ctx))
     {
         rbio_ = BIO_new(BIO_s_mem());
         wbio_ = BIO_new(BIO_s_mem());
@@ -579,22 +576,22 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 const char *sniName =
                     SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
                 if (sniName)
-                    sniName_ = sniName;
+                    setSniName(sniName);
 
                 const unsigned char *alpn = nullptr;
                 unsigned int alpnlen = 0;
                 SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
                 if (alpn)
-                    alpnProtocol_ = std::string((char *)alpn, alpnlen);
+                    setApplicationProtocol(std::string((char *)alpn, alpnlen));
             }
             else
             {
-                sniName_ = policyPtr_->getHostname();
+                setSniName(policyPtr_->getHostname());
                 const unsigned char *alpn = nullptr;
                 unsigned int alpnlen = 0;
                 SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
                 if (alpn)
-                    alpnProtocol_ = std::string((char *)alpn, alpnlen);
+                    setApplicationProtocol(std::string((char *)alpn, alpnlen));
 
                 SSL_SESSION *session = SSL_get0_session(ssl_);
                 assert(session);
@@ -610,12 +607,12 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
             auto cert = SSL_get_peer_certificate(ssl_);
             if (cert)
-                peerCertPtr_ = std::make_shared<OpenSSLCertificate>(cert);
+                setPeerCertificate(std::make_shared<OpenSSLCertificate>(cert));
 
             bool needCert = policyPtr_->getValidateChain() ||
                             policyPtr_->getValidateDate() ||
                             policyPtr_->getValidateDomain();
-            if (needCert && !peerCertPtr_)
+            if (needCert && !peerCertificate())
             {
                 LOG_TRACE << "SSL handshake error: no peer certificate. Cannot "
                              "perform validation";
@@ -702,10 +699,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         int len = BIO_get_mem_data(wbio_, &data);
         if (len > 0)
         {
-            // TODO: Optimize this
-            MsgBuffer buf;
-            buf.append((char *)data, len);
-            writeCallback_(conn_, buf);
+            writeCallback_(conn_, data, len);
             BIO_reset(wbio_);
         }
     }
@@ -720,21 +714,13 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     SSL *ssl_;
     BIO *rbio_;
     BIO *wbio_;
-    const TLSPolicyPtr policyPtr_;
-    const SSLContextPtr contextPtr_;
-    MsgBuffer recvBuffer_;
-    std::string sniName_;
-    std::string alpnProtocol_;
-    CertificatePtr peerCertPtr_;
 };
 
-std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
-                                                     TcpConnection *conn,
+std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
                                                      TLSPolicyPtr policy,
                                                      SSLContextPtr ctx)
 {
-    return std::make_unique<OpenSSLProvider>(loop,
-                                             conn,
+    return std::make_unique<OpenSSLProvider>(conn,
                                              std::move(policy),
                                              std::move(ctx));
 }
