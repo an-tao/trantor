@@ -74,8 +74,14 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
         tlsProviderPtr_->setWriteCallback(
             [](TcpConnection *self, const MsgBuffer &buffer) {
                 LOG_TRACE << "Write " << buffer.readableBytes();
-                ((TcpConnectionImpl *)self)
-                    ->writeRaw(buffer.peek(), buffer.readableBytes());
+                ssize_t offset = 0;
+                while (buffer.readableBytes() != offset)
+                {
+                    auto n = ((TcpConnectionImpl *)self)
+                                 ->writeRaw(buffer.peek() + offset,
+                                            buffer.readableBytes());
+                    offset += n;
+                }
             });
         tlsProviderPtr_->setErrorCallback(
             [](TcpConnection *self, SSLError err) {
@@ -968,7 +974,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     loop_->assertInLoopThread();
     assert(filePtr->isFile());
 #ifdef __linux__
-    if (!filePtr->streamCallback_ && tlsProviderPtr_)
+    if (!filePtr->streamCallback_ && !tlsProviderPtr_)
     {
         LOG_TRACE << "send file in loop using linux kernel sendfile()";
         auto bytesSent = sendfile(socketPtr_->fd(),
@@ -1226,9 +1232,6 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 {
     if (tlsProviderPtr_)
     {
-        // TODO: handle different record size
-        constexpr size_t tls_record_size = 16383;
-        length = length < tls_record_size ? length : tls_record_size;
         tlsProviderPtr_->sendData((const char *)buffer, length);
         return length;
     }
@@ -1261,12 +1264,18 @@ void TcpConnectionImpl::startEncryption(SSLPolicyPtr policy, bool isServer)
 {
     auto sslContextPtr = newSSLContext(*policy, isServer);
     tlsProviderPtr_ = newTLSProvider(getLoop(), this, policy, sslContextPtr);
-    tlsProviderPtr_->setWriteCallback(
-        [](TcpConnection *self, const MsgBuffer &buffer) {
-            LOG_TRACE << "Write " << buffer.readableBytes();
-            ((TcpConnectionImpl *)self)
-                ->writeRaw(buffer.peek(), buffer.readableBytes());
-        });
+    tlsProviderPtr_->setWriteCallback([](TcpConnection *self,
+                                         const MsgBuffer &buffer) {
+        LOG_TRACE << "Write " << buffer.readableBytes();
+        ssize_t offset = 0;
+        while (buffer.readableBytes() != offset)
+        {
+            auto n =
+                ((TcpConnectionImpl *)self)
+                    ->writeRaw(buffer.peek() + offset, buffer.readableBytes());
+            offset += n;
+        }
+    });
     tlsProviderPtr_->setErrorCallback([](TcpConnection *self, SSLError err) {
         if (self->sslErrorCallback_)
             self->sslErrorCallback_(err);
