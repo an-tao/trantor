@@ -281,6 +281,20 @@ struct BotanTLSProvider : public TLSProvider,
         return true;
     }
 
+    void tls_verify_cert_chain(
+        const std::vector<Botan::X509_Certificate> &certs,
+        const std::vector<std::shared_ptr<const Botan::OCSP::Response>> &ocsp,
+        const std::vector<Botan::Certificate_Store *> &trusted_roots,
+        Botan::Usage_Type usage,
+        const std::string &hostname,
+        const Botan::TLS::Policy &policy)
+    {
+        sniName_ = hostname;
+        if (policyPtr_->getValidateChain())
+            Botan::TLS::Callbacks::tls_verify_cert_chain(
+                certs, ocsp, trusted_roots, usage, hostname, policy);
+    }
+
     TrantorPolicy validationPolicy_;
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;

@@ -707,7 +707,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     void sendTLSData()
     {
-        void* data = nullptr;
+        void *data = nullptr;
         int len = BIO_get_mem_data(wbio_, &data);
         if (len > 0)
         {
