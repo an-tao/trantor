@@ -597,6 +597,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 assert(session);
                 if (SSL_SESSION_is_resumable(session))
                 {
+                    auto reused = SSL_session_reused(ssl_);
                     if (reused == 0)
                         sessionManager.store(sniName_,
                                              conn_->peerAddr(),
