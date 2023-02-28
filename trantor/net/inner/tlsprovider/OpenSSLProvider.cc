@@ -600,13 +600,11 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 assert(session);
                 if (SSL_SESSION_is_resumable(session))
                 {
-                    // TODO: store session
-                    // bool reused = SSL_session_reused(ssl_) == 1;
-                    // if (reused == 0)
-                    //     sessionManager.store(sniName_,
-                    //                         rawConnPtr_->peerAddr(),
-                    //                         session,
-                    //                         loop_);
+                    if (reused == 0)
+                        sessionManager.store(sniName_,
+                                             conn_->peerAddr(),
+                                             session,
+                                             loop_);
                 }
             }
 

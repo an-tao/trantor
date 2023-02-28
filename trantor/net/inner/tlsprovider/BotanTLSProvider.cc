@@ -181,7 +181,8 @@ struct BotanTLSProvider : public TLSProvider,
                 *credsPtr_,
                 validationPolicy_,
                 rng,
-                Botan::TLS::Server_Information(policyPtr_->getHostname()),
+                Botan::TLS::Server_Information(policyPtr_->getHostname(),
+                                               conn_->peerAddr().toPort()),
                 policyPtr_->getUseOldTLS()
                     ? Botan::TLS::Protocol_Version::TLS_V10
                     : Botan::TLS::Protocol_Version::TLS_V12,
