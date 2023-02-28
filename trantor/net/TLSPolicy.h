@@ -9,72 +9,72 @@
 
 namespace trantor
 {
-struct TRANTOR_EXPORT SSLPolicy final
+struct TRANTOR_EXPORT TLSPolicy final
 {
-    SSLPolicy &setConfCmds(
+    TLSPolicy &setConfCmds(
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
     {
         sslConfCmds_ = sslConfCmds;
         return *this;
     }
-    SSLPolicy &setHostname(const std::string &hostname)
+    TLSPolicy &setHostname(const std::string &hostname)
     {
         hostname_ = hostname;
         return *this;
     }
-    SSLPolicy &setCertPath(const std::string &certPath)
+    TLSPolicy &setCertPath(const std::string &certPath)
     {
         certPath_ = certPath;
         return *this;
     }
-    SSLPolicy &setKeyPath(const std::string &keyPath)
+    TLSPolicy &setKeyPath(const std::string &keyPath)
     {
         keyPath_ = keyPath;
         return *this;
     }
-    SSLPolicy &setCaPath(const std::string &caPath)
+    TLSPolicy &setCaPath(const std::string &caPath)
     {
         caPath_ = caPath;
         return *this;
     }
-    SSLPolicy &setUseOldTLS(bool useOldTLS)
+    TLSPolicy &setUseOldTLS(bool useOldTLS)
     {
         useOldTLS_ = useOldTLS;
         return *this;
     }
-    SSLPolicy &setValidateDomain(bool validateDomain)
+    TLSPolicy &setValidateDomain(bool validateDomain)
     {
         validateDomain_ = validateDomain;
         return *this;
     }
-    SSLPolicy &setValidateChain(bool validateChain)
+    TLSPolicy &setValidateChain(bool validateChain)
     {
         validateChain_ = validateChain;
         return *this;
     }
-    SSLPolicy &setValidateDate(bool validateDate)
+    TLSPolicy &setValidateDate(bool validateDate)
     {
         validateDate_ = validateDate;
         return *this;
     }
-    SSLPolicy &setAlpnProtocols(const std::vector<std::string> &alpnProtocols)
+    TLSPolicy &setAlpnProtocols(const std::vector<std::string> &alpnProtocols)
     {
         alpnProtocols_ = alpnProtocols;
         return *this;
     }
-    SSLPolicy &setAlpnProtocols(std::vector<std::string> &&alpnProtocols)
+    TLSPolicy &setAlpnProtocols(std::vector<std::string> &&alpnProtocols)
     {
         alpnProtocols_ = std::move(alpnProtocols);
         return *this;
     }
-    SSLPolicy &setUseSystemCertStore(bool useSystemCertStore)
+    TLSPolicy &setUseSystemCertStore(bool useSystemCertStore)
     {
         useSystemCertStore_ = useSystemCertStore;
         return *this;
     }
 
     // Composite pattern
-    SSLPolicy &setValidate(bool enable)
+    TLSPolicy &setValidate(bool enable)
     {
         validateDomain_ = enable;
         validateChain_ = enable;
@@ -132,11 +132,11 @@ struct TRANTOR_EXPORT SSLPolicy final
         return useSystemCertStore_;
     }
 
-    static std::shared_ptr<SSLPolicy> defaultServerPolicy(
+    static std::shared_ptr<TLSPolicy> defaultServerPolicy(
         const std::string &certPath,
         const std::string &keyPath)
     {
-        auto policy = std::make_shared<SSLPolicy>();
+        auto policy = std::make_shared<TLSPolicy>();
         policy->setValidate(false)
             .setUseOldTLS(false)
             .setUseSystemCertStore(false)
@@ -145,10 +145,10 @@ struct TRANTOR_EXPORT SSLPolicy final
         return policy;
     }
 
-    static std::shared_ptr<SSLPolicy> defaultClientPolicy(
+    static std::shared_ptr<TLSPolicy> defaultClientPolicy(
         const std::string &hostname = "")
     {
-        auto policy = std::make_shared<SSLPolicy>();
+        auto policy = std::make_shared<TLSPolicy>();
         policy->setValidate(true)
             .setUseOldTLS(false)
             .setUseSystemCertStore(true)
@@ -169,5 +169,5 @@ struct TRANTOR_EXPORT SSLPolicy final
     bool validateDate_ = true;
     bool useSystemCertStore_ = true;
 };
-using SSLPolicyPtr = std::shared_ptr<SSLPolicy>;
+using TLSPolicyPtr = std::shared_ptr<TLSPolicy>;
 }

@@ -47,7 +47,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
                                      const InetAddress &localAddr,
                                      const InetAddress &peerAddr,
-                                     SSLPolicyPtr policy,
+                                     TLSPolicyPtr policy,
                                      SSLContextPtr ctx)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
@@ -1215,7 +1215,7 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 }
 
 #if !(defined(USE_OPENSSL) || defined(USE_BOTAN))
-SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
+SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 {
     (void)policy;
     (void)isServer;
@@ -1224,7 +1224,7 @@ SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
                                                      TcpConnection *conn,
-                                                     SSLPolicyPtr policy,
+                                                     TLSPolicyPtr policy,
                                                      SSLContextPtr sslContext)
 {
     (void)loop;
@@ -1236,7 +1236,7 @@ std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
 #endif
 
 void TcpConnectionImpl::startEncryption(
-    SSLPolicyPtr policy,
+    TLSPolicyPtr policy,
     bool isServer,
     std::function<void(const TcpConnectionPtr &)> upgradeCallback)
 {

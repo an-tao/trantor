@@ -463,7 +463,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 {
     OpenSSLProvider(EventLoop *loop,
                     TcpConnection *conn,
-                    SSLPolicyPtr policy,
+                    TLSPolicyPtr policy,
                     SSLContextPtr ctx)
         : TLSProvider(loop, conn, policy), policyPtr_(policy), contextPtr_(ctx)
     {
@@ -720,7 +720,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     SSL *ssl_;
     BIO *rbio_;
     BIO *wbio_;
-    const SSLPolicyPtr policyPtr_;
+    const TLSPolicyPtr policyPtr_;
     const SSLContextPtr contextPtr_;
     MsgBuffer recvBuffer_;
     std::string sniName_;
@@ -730,7 +730,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
                                                      TcpConnection *conn,
-                                                     SSLPolicyPtr policy,
+                                                     TLSPolicyPtr policy,
                                                      SSLContextPtr ctx)
 {
     return std::make_unique<OpenSSLProvider>(loop,
@@ -739,7 +739,7 @@ std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
                                              std::move(ctx));
 }
 
-SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool isServer)
+SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 {
     auto ctx = std::make_shared<SSLContext>(policy.getUseOldTLS(),
                                             policy.getValidateChain(),

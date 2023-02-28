@@ -69,7 +69,7 @@ class TcpConnectionImpl : public TcpConnection,
                       int socketfd,
                       const InetAddress &localAddr,
                       const InetAddress &peerAddr,
-                      SSLPolicyPtr policy = nullptr,
+                      TLSPolicyPtr policy = nullptr,
                       SSLContextPtr ctx = nullptr);
     virtual ~TcpConnectionImpl();
     virtual void send(const char *msg, size_t len) override;
@@ -178,7 +178,7 @@ class TcpConnectionImpl : public TcpConnection,
         return "";
     }
 
-    virtual void startEncryption(SSLPolicyPtr policy,
+    virtual void startEncryption(TLSPolicyPtr policy,
                                  bool isServer,
                                  std::function<void(const TcpConnectionPtr &)>
                                      upgradeCallback = nullptr) override;

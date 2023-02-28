@@ -11,7 +11,7 @@ namespace trantor
 {
 struct TLSProvider
 {
-    TLSProvider(EventLoop* loop, TcpConnection* conn, SSLPolicyPtr policy)
+    TLSProvider(EventLoop* loop, TcpConnection* conn, TLSPolicyPtr policy)
         : conn_(conn), policy_(std::move(policy)), loop_(loop)
     {
     }
@@ -74,12 +74,12 @@ struct TLSProvider
     MessageCallback messageCallback_ = nullptr;
     CloseCallback closeCallback_ = nullptr;
     TcpConnection* conn_ = nullptr;
-    SSLPolicyPtr policy_;
+    TLSPolicyPtr policy_;
     EventLoop* loop_ = nullptr;
 };
 
 std::unique_ptr<TLSProvider> newTLSProvider(EventLoop* loop,
                                             TcpConnection* conn,
-                                            SSLPolicyPtr policy,
+                                            TLSPolicyPtr policy,
                                             SSLContextPtr ctx);
 }  // namespace trantor

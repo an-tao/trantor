@@ -279,7 +279,7 @@ class TRANTOR_EXPORT TcpConnection
      * is specified as a client, the connection will be upgraded to a TLS client
      * @note This method is only available for non-SSL connections.
      */
-    virtual void startEncryption(SSLPolicyPtr policy,
+    virtual void startEncryption(TLSPolicyPtr policy,
                                  bool isServer,
                                  std::function<void(const TcpConnectionPtr &)>
                                      upgradeCallback = nullptr) = 0;
@@ -287,7 +287,7 @@ class TRANTOR_EXPORT TcpConnection
      * @brief Start TLS as a client.
      * @note This method is only available for non-SSL connections.
      */
-    [[deprecated("Use startEncryption(SSLPolicyPtr) instead")]] void
+    [[deprecated("Use startEncryption(TLSPolicyPtr) instead")]] void
     startClientEncryption(
         std::function<void(const TcpConnectionPtr &)> &&callback,
         bool useOldTLS = false,
@@ -296,7 +296,7 @@ class TRANTOR_EXPORT TcpConnection
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
             {})
     {
-        auto policy = SSLPolicy::defaultClientPolicy();
+        auto policy = TLSPolicy::defaultClientPolicy();
         policy->setUseOldTLS(useOldTLS)
             .setValidate(validateCert)
             .setHostname(hostname)
@@ -304,9 +304,9 @@ class TRANTOR_EXPORT TcpConnection
         startEncryption(std::move(policy), false, std::move(callback));
     }
 
-    void setValidationPolicy(SSLPolicy &&policy)
+    void setValidationPolicy(TLSPolicy &&policy)
     {
-        sslPolicy_ = std::move(policy);
+        tlsPolicy_ = std::move(policy);
     }
 
     void setRecvMsgCallback(const RecvMessageCallback &cb)
@@ -365,12 +365,12 @@ class TRANTOR_EXPORT TcpConnection
     WriteCompleteCallback writeCompleteCallback_;
     HighWaterMarkCallback highWaterMarkCallback_;
     SSLErrorCallback sslErrorCallback_;
-    SSLPolicy sslPolicy_;
+    TLSPolicy tlsPolicy_;
 
   private:
     std::shared_ptr<void> contextPtr_;
 };
-TRANTOR_EXPORT SSLContextPtr newSSLContext(const SSLPolicy &policy,
+TRANTOR_EXPORT SSLContextPtr newSSLContext(const TLSPolicy &policy,
                                            bool server);
 
 }  // namespace trantor

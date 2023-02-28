@@ -126,7 +126,7 @@ struct BotanTLSProvider : public TLSProvider,
   public:
     BotanTLSProvider(EventLoop *loop,
                      TcpConnection *conn,
-                     SSLPolicyPtr policy,
+                     TLSPolicyPtr policy,
                      SSLContextPtr ctx)
         : TLSProvider(loop, conn, policy), policyPtr_(policy), contextPtr_(ctx)
     {
@@ -296,14 +296,14 @@ struct BotanTLSProvider : public TLSProvider,
     CertificatePtr peerCertPtr_;
     std::string sniName_;
     MsgBuffer recvBuffer_;
-    const SSLPolicyPtr policyPtr_;
+    const TLSPolicyPtr policyPtr_;
     const SSLContextPtr contextPtr_;
     bool tlsConnected_ = false;
 };
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
                                                      TcpConnection *conn,
-                                                     SSLPolicyPtr policy,
+                                                     TLSPolicyPtr policy,
                                                      SSLContextPtr ctx)
 {
     return std::make_unique<BotanTLSProvider>(loop,
@@ -312,7 +312,7 @@ std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
                                               std::move(ctx));
 }
 
-SSLContextPtr trantor::newSSLContext(const SSLPolicy &policy, bool server)
+SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
 {
     auto ctx = std::make_shared<SSLContext>();
     ctx->isServer = server;

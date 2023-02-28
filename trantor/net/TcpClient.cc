@@ -132,12 +132,12 @@ void TcpClient::newConnection(int sockfd)
     // TODO poll with zero timeout to double confirm the new connection
     // TODO use make_shared if necessary
     TcpConnectionPtr conn;
-    LOG_TRACE << "SSL enabled: " << (sslPolicyPtr_ ? "true" : "false");
-    if (sslPolicyPtr_)
+    LOG_TRACE << "SSL enabled: " << (tlsPolicyPtr_ ? "true" : "false");
+    if (tlsPolicyPtr_)
     {
         assert(sslContextPtr_);
         conn = std::make_shared<TcpConnectionImpl>(
-            loop_, sockfd, localAddr, peerAddr, sslPolicyPtr_, sslContextPtr_);
+            loop_, sockfd, localAddr, peerAddr, tlsPolicyPtr_, sslContextPtr_);
     }
     else
     {
@@ -217,8 +217,8 @@ void TcpClient::enableSSL(
                        [](unsigned char c) { return tolower(c); });
     }
 
-    sslPolicyPtr_ = SSLPolicy::defaultClientPolicy();
-    sslPolicyPtr_->setValidate(validateCert)
+    tlsPolicyPtr_ = TLSPolicy::defaultClientPolicy();
+    tlsPolicyPtr_->setValidate(validateCert)
         .setUseOldTLS(useOldTLS)
         .setConfCmds(sslConfCmds)
         .setCertPath(certPath)
@@ -226,5 +226,5 @@ void TcpClient::enableSSL(
         .setHostname(hostname)
         .setValidate(validateCert)
         .setCaPath(caPath);
-    sslContextPtr_ = newSSLContext(*sslPolicyPtr_, false);
+    sslContextPtr_ = newSSLContext(*tlsPolicyPtr_, false);
 }
