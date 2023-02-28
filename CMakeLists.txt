@@ -257,7 +257,8 @@ set(public_net_headers
     trantor/net/TcpServer.h
     trantor/net/callbacks.h
     trantor/net/Resolver.h
-    trantor/net/Channel.h)
+    trantor/net/Channel.h
+    trantor/net/Certificate.h)
 
 set(public_utils_headers
     trantor/utils/AsyncFileLogger.h

@@ -178,7 +178,10 @@ class TcpConnectionImpl : public TcpConnection,
         return "";
     }
 
-    virtual void startEncryption(SSLPolicyPtr policy, bool isServer) override;
+    virtual void startEncryption(SSLPolicyPtr policy,
+                                 bool isServer,
+                                 std::function<void(const TcpConnectionPtr &)>
+                                     upgradeCallback = nullptr) override;
 
     void enableKickingOff(
         size_t timeout,
@@ -295,6 +298,7 @@ class TcpConnectionImpl : public TcpConnection,
 
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
     std::unique_ptr<TLSProvider> tlsProviderPtr_;
+    std::function<void(const TcpConnectionPtr &)> upgradeCallback_;
 };
 
 using TcpConnectionImplPtr = std::shared_ptr<TcpConnectionImpl>;

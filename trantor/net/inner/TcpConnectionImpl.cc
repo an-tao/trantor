@@ -1260,8 +1260,16 @@ std::unique_ptr<TLSProvider> trantor::newTLSProvider(EventLoop *loop,
 }
 #endif
 
-void TcpConnectionImpl::startEncryption(SSLPolicyPtr policy, bool isServer)
+void TcpConnectionImpl::startEncryption(
+    SSLPolicyPtr policy,
+    bool isServer,
+    std::function<void(const TcpConnectionPtr &)> upgradeCallback)
 {
+    if (tlsProviderPtr_ || upgradeCallback_)
+    {
+        LOG_ERROR << "TLS is already started";
+        return;
+    }
     auto sslContextPtr = newSSLContext(*policy, isServer);
     tlsProviderPtr_ = newTLSProvider(getLoop(), this, policy, sslContextPtr);
     tlsProviderPtr_->setWriteCallback([](TcpConnection *self,
@@ -1281,7 +1289,14 @@ void TcpConnectionImpl::startEncryption(SSLPolicyPtr policy, bool isServer)
             self->sslErrorCallback_(err);
     });
     tlsProviderPtr_->setHandshakeCallback([](TcpConnection *self) {
-        if (self->connectionCallback_)
+        auto connPtr = ((TcpConnectionImpl *)self)->shared_from_this();
+        if (connPtr->upgradeCallback_)
+        {
+            connPtr->upgradeCallback_(
+                ((TcpConnectionImpl *)self)->shared_from_this());
+            connPtr->upgradeCallback_ = nullptr;
+        }
+        else if (self->connectionCallback_)
             self->connectionCallback_(
                 ((TcpConnectionImpl *)self)->shared_from_this());
     });
@@ -1292,4 +1307,5 @@ void TcpConnectionImpl::startEncryption(SSLPolicyPtr policy, bool isServer)
                     ((TcpConnectionImpl *)self)->shared_from_this(), buffer);
         });
     tlsProviderPtr_->startEncryption();
+    upgradeCallback_ = std::move(upgradeCallback);
 }

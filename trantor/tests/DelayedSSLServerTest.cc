@@ -33,7 +33,7 @@ int main()
             connPtr->send("hello");
             auto policy =
                 SSLPolicy::defaultServerPolicy("server.crt", "server.key");
-            connPtr->startEncryption(policy, false);
+            connPtr->startEncryption(policy, true);
         }
         else if (connPtr->disconnected())
         {
