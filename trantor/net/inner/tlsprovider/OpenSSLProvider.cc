@@ -707,17 +707,15 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     void sendTLSData()
     {
-        MsgBuffer buf;
-        int n = BIO_pending(wbio_);
-        if (n > 0)
+        void* data = nullptr;
+        int len = BIO_get_mem_data(wbio_, &data);
+        if (len > 0)
         {
-            buf.ensureWritableBytes(n);
-            n = BIO_read(wbio_, buf.beginWrite(), n);
-            if (n > 0)
-            {
-                buf.hasWritten(n);
-                writeCallback_(conn_, buf);
-            }
+            // TODO: Optimize this
+            MsgBuffer buf;
+            buf.append((char *)data, len);
+            writeCallback_(conn_, &buf);
+            BIO_reset(wbio_);
         }
     }
 
