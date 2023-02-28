@@ -698,7 +698,6 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 int err = SSL_get_error(ssl_, n);
                 if (err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL)
                 {
-                    LOG_TRACE << "Fatal SSL error. Close connection.";
                     handleSSLError(SSLError::kSSLProtocolError);
                 }
             }
@@ -707,7 +706,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     void sendTLSData()
     {
-        void* data = nullptr;
+        void *data = nullptr;
         int len = BIO_get_mem_data(wbio_, &data);
         if (len > 0)
         {
@@ -721,7 +720,6 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     void handleSSLError(SSLError error)
     {
-        abort();
         sendTLSData();
         if (errorCallback_)
             errorCallback_(conn_, error);
