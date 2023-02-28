@@ -269,13 +269,7 @@ struct BotanTLSProvider : public TLSProvider,
 
         tlsConnected_ = true;
         loop_->queueInLoop([this]() {
-            if (policyPtr_->getOneShotConnctionCallback() && !oneshotCalled_)
-            {
-                oneshotCalled_ = true;
-                abort();
-                // policyPtr_->getOneShotConnctionCallback()(shared_from_this());
-            }
-            else if (handshakeCallback_)
+            if (handshakeCallback_)
                 handshakeCallback_(conn_);
         });
         // Do we want to cache all sessions?
@@ -304,7 +298,6 @@ struct BotanTLSProvider : public TLSProvider,
     MsgBuffer recvBuffer_;
     const SSLPolicyPtr policyPtr_;
     const SSLContextPtr contextPtr_;
-    bool oneshotCalled_ = false;
     bool tlsConnected_ = false;
 };
 

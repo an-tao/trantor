@@ -639,13 +639,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     return false;
                 }
             }
-
-            // if (policyPtr_->getOneShotConnctionCallback() && !oneshotCalled_)
-            // {
-            //     oneshotCalled_ = true;
-            //     policyPtr_->getOneShotConnctionCallback()(shared_from_this());
-            // }
-            /*else */ if (handshakeCallback_)
+            if (handshakeCallback_)
                 handshakeCallback_(conn_);
             sendTLSData();  // Needed to send ChangeCipherSpec
             return true;

@@ -258,7 +258,8 @@ set(public_net_headers
     trantor/net/callbacks.h
     trantor/net/Resolver.h
     trantor/net/Channel.h
-    trantor/net/Certificate.h)
+    trantor/net/Certificate.h
+    trantor/net/TLSPolicy.h)
 
 set(public_utils_headers
     trantor/utils/AsyncFileLogger.h
