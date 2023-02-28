@@ -462,7 +462,7 @@ static SessionManager sessionManager;
 struct OpenSSLProvider : public TLSProvider, public NonCopyable
 {
     OpenSSLProvider(TcpConnection *conn, TLSPolicyPtr policy, SSLContextPtr ctx)
-        : TLSProvider(loop, conn, std::move(policy), std::move(ctx))
+        : TLSProvider(conn, std::move(policy), std::move(ctx))
     {
         rbio_ = BIO_new(BIO_s_mem());
         wbio_ = BIO_new(BIO_s_mem());
