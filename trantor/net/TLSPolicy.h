@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-
 namespace trantor
 {
 struct TRANTOR_EXPORT TLSPolicy final
@@ -170,4 +169,4 @@ struct TRANTOR_EXPORT TLSPolicy final
     bool useSystemCertStore_ = true;
 };
 using TLSPolicyPtr = std::shared_ptr<TLSPolicy>;
-}
+}  // namespace trantor
