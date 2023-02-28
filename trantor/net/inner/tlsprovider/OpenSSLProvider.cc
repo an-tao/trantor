@@ -714,7 +714,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             // TODO: Optimize this
             MsgBuffer buf;
             buf.append((char *)data, len);
-            writeCallback_(conn_, &buf);
+            writeCallback_(conn_, buf);
             BIO_reset(wbio_);
         }
     }
