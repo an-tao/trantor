@@ -1283,11 +1283,19 @@ void TcpConnectionImpl::onSslWrite(TcpConnection *self,
                                    const void *data,
                                    size_t len)
 {
+    // no point in writing if the connection is closed
+    if (self->connected() == false)
+        return;
+
     ssize_t offset = 0;
+    auto connPtr = (TcpConnectionImpl *)self;
     while (len != offset)
     {
-        auto n = ((TcpConnectionImpl *)self)
-                     ->writeRaw((const char *)data + offset, len - offset);
+        auto n = connPtr->writeRaw((const char *)data + offset, len - offset);
+
+        // TODO: handle fail to write
+        if (n <= 0)
+            break;
         offset += n;
     }
 }
