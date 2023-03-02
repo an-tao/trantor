@@ -554,15 +554,18 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         }
     }
 
-    virtual void sendData(const char *data, size_t len)
+    virtual ssize_t sendData(const char *data, size_t len)
     {
         int n = SSL_write(ssl_, data, (int)len);
         if (n <= 0 && len != 0)
         {
             handleSSLError(SSLError::kSSLProtocolError);
-            return;
+            return -1;
         }
-        sendTLSData();
+        int num = sendTLSData();
+        if (num == -1)
+            return -1;
+        return len;
     }
 
     bool processHandshake()
@@ -694,15 +697,22 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         } while (n > 0);
     }
 
-    void sendTLSData()
+    ssize_t sendTLSData()
     {
         void *data = nullptr;
         int len = BIO_get_mem_data(wbio_, &data);
-        if (len > 0)
-        {
-            writeCallback_(conn_, data, len);
-            BIO_reset(wbio_);
-        }
+        if (len < 0 || data == nullptr)
+            return -1;
+        if (len == 0)
+            return 0;
+        int n = writeCallback_(conn_, data, len);
+
+        int offset = n;
+        if (n == -1)
+            offset = 0;
+        appendToWriteBuffer((char *)data + offset, len - offset);
+        BIO_reset(wbio_);
+        return len;
     }
 
     void handleSSLError(SSLError error)
