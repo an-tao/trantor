@@ -19,9 +19,10 @@ struct TLSProvider
     {
     }
     virtual ~TLSProvider() = default;
-    using WriteCallback = void (*)(TcpConnection*,
-                                   const void* data,
-                                   size_t len);
+    virtual bool sendBufferedData() = 0;
+    using WriteCallback = ssize_t (*)(TcpConnection*,
+                                      const void* data,
+                                      size_t len);
     using ErrorCallback = void (*)(TcpConnection*, SSLError err);
     using HandshakeCallback = void (*)(TcpConnection*);
     using MessageCallback = void (*)(TcpConnection*, MsgBuffer* buffer);
@@ -36,7 +37,7 @@ struct TLSProvider
     /**
      * @brief Encrypt and send data via TLS
      */
-    virtual void sendData(const char* ptr, size_t size) = 0;
+    virtual ssize_t sendData(const char* ptr, size_t size) = 0;
 
     virtual void startEncryption() = 0;
 

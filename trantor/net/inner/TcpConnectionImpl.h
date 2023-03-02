@@ -310,7 +310,9 @@ class TcpConnectionImpl : public TcpConnection,
     static void onSslError(TcpConnection *self, SSLError err);
     static void onHandshakeFinished(TcpConnection *self);
     static void onSslMessage(TcpConnection *self, MsgBuffer *buffer);
-    static void onSslWrite(TcpConnection *self, const void *data, size_t len);
+    static ssize_t onSslWrite(TcpConnection *self,
+                              const void *data,
+                              size_t len);
     static void onSslCloseAlert(TcpConnection *self);
 };
 

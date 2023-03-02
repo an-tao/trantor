@@ -18,6 +18,7 @@
 #include <trantor/utils/Utilities.h>
 #ifdef __linux__
 #include <sys/sendfile.h>
+#include <poll.h>
 #endif
 #include <sys/types.h>
 #ifndef _WIN32
@@ -165,6 +166,15 @@ void TcpConnectionImpl::writeCallback()
     extendLife();
     if (ioChannelPtr_->isWriting())
     {
+        if (tlsProviderPtr_)
+        {
+            bool sentAll = tlsProviderPtr_->sendBufferedData();
+            if (!sentAll)
+            {
+                ioChannelPtr_->enableWriting();
+                return;
+            }
+        }
         assert(!writeBufferList_.empty());
         auto writeBuffer_ = writeBufferList_.front();
         if (!writeBuffer_->isFile())
@@ -1206,10 +1216,7 @@ ssize_t TcpConnectionImpl::writeInLoop(const char *buffer, size_t length)
 #endif
 {
     if (tlsProviderPtr_)
-    {
-        tlsProviderPtr_->sendData((const char *)buffer, length);
-        return length;
-    }
+        return tlsProviderPtr_->sendData((const char *)buffer, length);
     else
         return writeRaw(buffer, length);
 }
@@ -1279,25 +1286,12 @@ void TcpConnectionImpl::onSslMessage(TcpConnection *self, MsgBuffer *buffer)
         self->recvMsgCallback_(((TcpConnectionImpl *)self)->shared_from_this(),
                                buffer);
 }
-void TcpConnectionImpl::onSslWrite(TcpConnection *self,
-                                   const void *data,
-                                   size_t len)
+ssize_t TcpConnectionImpl::onSslWrite(TcpConnection *self,
+                                      const void *data,
+                                      size_t len)
 {
-    // no point in writing if the connection is closed
-    if (self->connected() == false)
-        return;
-
-    ssize_t offset = 0;
     auto connPtr = (TcpConnectionImpl *)self;
-    while (len != offset)
-    {
-        auto n = connPtr->writeRaw((const char *)data + offset, len - offset);
-
-        // TODO: handle fail to write
-        if (n <= 0)
-            break;
-        offset += n;
-    }
+    return connPtr->writeRaw((const char *)data, len);
 }
 void TcpConnectionImpl::onSslCloseAlert(TcpConnection *self)
 {

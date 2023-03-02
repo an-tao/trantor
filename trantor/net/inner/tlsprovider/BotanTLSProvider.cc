@@ -152,9 +152,43 @@ struct BotanTLSProvider : public TLSProvider,
         buffer->retrieveAll();
     }
 
-    virtual void sendData(const char *ptr, size_t size) override
+    virtual bool sendBufferedData() override
+    {
+        if (writeBuffer_.readableBytes() == 0)
+            return true;
+
+        auto n = writeCallback_(conn_,
+                                writeBuffer_.peek(),
+                                writeBuffer_.readableBytes());
+        if (n == -1)
+        {
+            LOG_ERROR << "WTF! Failed to send buffered data. Error: "
+                      << strerror(errno);
+            return false;
+        }
+        else if (n != writeBuffer_.readableBytes())
+        {
+            writeBuffer_.retrieve(n);
+            return false;
+        }
+
+        writeBuffer_.retrieveAll();
+        return true;
+    }
+
+    virtual ssize_t sendData(const char *ptr, size_t size) override
     {
         channel_->send((const uint8_t *)ptr, size);
+
+        // HACK: Botan doesn't provide a way to know how much raw data has been
+        // written to the underlying transport. So we have to assume that all
+        // data has been written. And cache the unwritten data in writeBuffer_.
+        // Then "fake" the consumed size in sendData() to make the caller think
+        // that all data has been written. Then return -1 if the underlying
+        // socket is not writable at all (i.e. write is all or nothing)
+        if (lastWriteSize_ == -1)
+            return -1;
+        return size;
     }
 
     virtual void startEncryption() override
@@ -201,7 +235,16 @@ struct BotanTLSProvider : public TLSProvider,
 
     void tls_emit_data(const uint8_t data[], size_t size) override
     {
-        writeCallback_(conn_, (const void *)data, size);
+        auto n = writeCallback_(conn_, data, size);
+        lastWriteSize_ = n;
+
+        // store the unsent data and send it later
+        if (n == size)
+            return;
+        if (n == -1)
+            n = 0;
+        writeBuffer_.ensureWritableBytes(size - n);
+        writeBuffer_.append((const char *)data + n, size - n);
     }
 
     void tls_record_received(uint64_t seq_no,
@@ -290,6 +333,8 @@ struct BotanTLSProvider : public TLSProvider,
     std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
     bool tlsConnected_ = false;
+    ssize_t lastWriteSize_ = 0;
+    MsgBuffer writeBuffer_;
 };
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
