@@ -2,6 +2,7 @@
 
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/MsgBuffer.h>
+#include <trantor/utils/Logger.h>
 #include <trantor/net/callbacks.h>
 #include <trantor/net/TcpConnection.h>
 
@@ -19,7 +20,6 @@ struct TLSProvider
     {
     }
     virtual ~TLSProvider() = default;
-    virtual bool sendBufferedData() = 0;
     using WriteCallback = ssize_t (*)(TcpConnection*,
                                       const void* data,
                                       size_t len);
@@ -40,6 +40,41 @@ struct TLSProvider
     virtual ssize_t sendData(const char* ptr, size_t size) = 0;
 
     virtual void startEncryption() = 0;
+
+    bool sendBufferedData()
+    {
+        if (writeBuffer_.readableBytes() == 0)
+            return true;
+
+        auto n = writeCallback_(conn_,
+                                writeBuffer_.peek(),
+                                writeBuffer_.readableBytes());
+        if (n == -1)
+        {
+            LOG_ERROR << "WTF! Failed to send buffered data. Error: "
+                      << strerror(errno);
+            return false;
+        }
+        else if (n != writeBuffer_.readableBytes())
+        {
+            writeBuffer_.retrieve(n);
+            return false;
+        }
+
+        writeBuffer_.retrieveAll();
+        return true;
+    }
+
+    MsgBuffer& getBufferedData()
+    {
+        return writeBuffer_;
+    }
+
+    void appendToWriteBuffer(const char* ptr, size_t size)
+    {
+        writeBuffer_.ensureWritableBytes(size);
+        writeBuffer_.append(ptr, size);
+    }
 
     /**
      * @brief Set a function to be called when the TLSProvider wants to send
@@ -122,6 +157,7 @@ struct TLSProvider
     CertificatePtr peerCertificate_;
     std::string applicationProtocol_;
     std::string sniName_;
+    MsgBuffer writeBuffer_;
 };
 
 std::unique_ptr<TLSProvider> newTLSProvider(TcpConnection* conn,

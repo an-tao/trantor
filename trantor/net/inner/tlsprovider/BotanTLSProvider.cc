@@ -152,30 +152,6 @@ struct BotanTLSProvider : public TLSProvider,
         buffer->retrieveAll();
     }
 
-    virtual bool sendBufferedData() override
-    {
-        if (writeBuffer_.readableBytes() == 0)
-            return true;
-
-        auto n = writeCallback_(conn_,
-                                writeBuffer_.peek(),
-                                writeBuffer_.readableBytes());
-        if (n == -1)
-        {
-            LOG_ERROR << "WTF! Failed to send buffered data. Error: "
-                      << strerror(errno);
-            return false;
-        }
-        else if (n != writeBuffer_.readableBytes())
-        {
-            writeBuffer_.retrieve(n);
-            return false;
-        }
-
-        writeBuffer_.retrieveAll();
-        return true;
-    }
-
     virtual ssize_t sendData(const char *ptr, size_t size) override
     {
         channel_->send((const uint8_t *)ptr, size);
@@ -243,8 +219,7 @@ struct BotanTLSProvider : public TLSProvider,
             return;
         if (n == -1)
             n = 0;
-        writeBuffer_.ensureWritableBytes(size - n);
-        writeBuffer_.append((const char *)data + n, size - n);
+        appendToWriteBuffer((const char *)data + n, size - n);
     }
 
     void tls_record_received(uint64_t seq_no,
@@ -334,7 +309,6 @@ struct BotanTLSProvider : public TLSProvider,
     std::unique_ptr<Botan::TLS::Channel> channel_;
     bool tlsConnected_ = false;
     ssize_t lastWriteSize_ = 0;
-    MsgBuffer writeBuffer_;
 };
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
