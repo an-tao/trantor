@@ -507,7 +507,9 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                                     (unsigned int)alpnList.size());
             }
 
-            SSL_SESSION *cachedSession = sessionManager.get(policyPtr_->getHostname(), conn_->peerAddr());
+            SSL_SESSION *cachedSession =
+                sessionManager.get(policyPtr_->getHostname(),
+                                   conn_->peerAddr());
             if (cachedSession)
             {
                 SSL_set_session(ssl_, cachedSession);

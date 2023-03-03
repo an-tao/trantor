@@ -762,7 +762,7 @@ void TcpConnectionImpl::sendFile(const char *fileName,
     assert(fileName);
 #ifdef _WIN32
     sendFile(utils::toNativePath(fileName).c_str(), offset, length);
-#else   // _WIN32
+#else  // _WIN32
     int fd = open(fileName, O_RDONLY);
 
     if (fd < 0)
@@ -798,7 +798,7 @@ void TcpConnectionImpl::sendFile(const wchar_t *fileName,
     FILE *fp;
 #ifndef _MSC_VER
     fp = _wfopen(fileName, L"rb");
-#else   // _MSC_VER
+#else  // _MSC_VER
     if (_wfopen_s(&fp, fileName, L"rb") != 0)
         fp = nullptr;
 #endif  // _MSC_VER
