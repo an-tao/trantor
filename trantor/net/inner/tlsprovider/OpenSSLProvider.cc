@@ -507,9 +507,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                                     (unsigned int)alpnList.size());
             }
 
-            SSL_SESSION *cachedSession = NULL;
-            // sessionManager.get(policyPtr_->getHostname(),
-            // rawConnPtr_->peerAddr());
+            SSL_SESSION *cachedSession = sessionManager.get(policyPtr_->getHostname(), conn_->peerAddr());
             if (cachedSession)
             {
                 SSL_set_session(ssl_, cachedSession);
@@ -518,8 +516,6 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         }
 
         processHandshake();
-        // if (buf.readableBytes() > 0)
-        //     onRecvMessage(rawConnPtr_, &buf);
     }
 
     virtual void recvData(MsgBuffer *buffer)
@@ -556,6 +552,11 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     virtual ssize_t sendData(const char *data, size_t len)
     {
+        if (getBufferedData().readableBytes() != 0)
+        {
+            errno = EAGAIN;
+            return -1;
+        }
         int n = SSL_write(ssl_, data, (int)len);
         if (n <= 0 && len != 0)
         {

@@ -154,6 +154,12 @@ struct BotanTLSProvider : public TLSProvider,
 
     virtual ssize_t sendData(const char *ptr, size_t size) override
     {
+        if (getBufferedData().readableBytes() != 0)
+        {
+            errno = EAGAIN;
+            return -1;
+        }
+
         channel_->send((const uint8_t *)ptr, size);
 
         // HACK: Botan doesn't provide a way to know how much raw data has been
