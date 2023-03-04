@@ -613,15 +613,6 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
 
             auto cert = SSL_get_peer_certificate(ssl_);
-            if (policyPtr_->getCaPath() != "" && cert == nullptr)
-            {
-                LOG_TRACE << "Requested peer to provide a certificate by the "
-                             "provied CA"
-                             ", but none was provided";
-                SSL_shutdown(ssl_);
-                handleSSLError(SSLError::kSSLInvalidCertificate);
-                return false;
-            }
             if (cert)
                 setPeerCertificate(std::make_shared<OpenSSLCertificate>(cert));
 
@@ -632,6 +623,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             {
                 LOG_TRACE << "SSL handshake error: no peer certificate. Cannot "
                              "perform validation";
+                SSL_shutdown(ssl_);
                 handleSSLError(SSLError::kSSLInvalidCertificate);
                 return false;
             }
@@ -648,6 +640,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 {
                     LOG_TRACE
                         << "SSL handshake error: invalid peer certificate";
+                    SSL_shutdown(ssl_);
                     handleSSLError(SSLError::kSSLInvalidCertificate);
                     return false;
                 }
@@ -672,7 +665,14 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
             else
             {
-                LOG_TRACE << "SSL handshake error";
+                static bool processed = false;
+                if (!processed)
+                    processed = true;
+                else
+                    return false;
+                LOG_TRACE << "SSL handshake error: "
+                          << ERR_error_string(ERR_get_error(), NULL);
+                conn_->shutdown();
                 handleSSLError(SSLError::kSSLHandshakeError);
             }
         }
@@ -737,6 +737,12 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     void handleSSLError(SSLError error)
     {
         sendTLSData();
+
+        static bool first = true;
+        if (first)
+            first = false;
+        else
+            return;
         if (errorCallback_)
             errorCallback_(conn_, error);
     }
@@ -796,21 +802,39 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 
     if (!policy.getCaPath().empty())
     {
-        if (SSL_CTX_load_verify_locations(ctx->ctx(),
-                                          policy.getCaPath().data(),
-                                          nullptr) <= 0)
+        if (isServer)
         {
-            throw std::runtime_error("Failed to load CA certificate");
-        }
+            if (SSL_CTX_load_verify_locations(ctx->ctx(),
+                                              policy.getCaPath().data(),
+                                              nullptr) <= 0)
+            {
+                throw std::runtime_error("Failed to load CA certificate");
+            }
 
-        STACK_OF(X509_NAME) *cert_names =
-            SSL_load_client_CA_file(policy.getCaPath().data());
-        if (cert_names == nullptr)
-        {
-            throw std::runtime_error("Not CA names found in file");
+            STACK_OF(X509_NAME) *cert_names =
+                SSL_load_client_CA_file(policy.getCaPath().data());
+            if (cert_names == nullptr)
+            {
+                throw std::runtime_error("Not CA names found in file");
+            }
+            SSL_CTX_set_client_CA_list(ctx->ctx(), cert_names);
+            SSL_CTX_set_verify(ctx->ctx(),
+                               SSL_VERIFY_PEER |
+                                   SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                               nullptr);
+            LOG_TRACE << "Finished loading custom CA";
         }
-        SSL_CTX_set_client_CA_list(ctx->ctx(), cert_names);
-        SSL_CTX_set_verify(ctx->ctx(), SSL_VERIFY_PEER, nullptr);
+        else
+        {
+            auto *store = X509_STORE_new();
+            if (!X509_STORE_load_locations(store,
+                                           policy.getCaPath().data(),
+                                           nullptr))
+            {
+                throw std::runtime_error("Failed to load CA certificate");
+            }
+            SSL_CTX_set_cert_store(ctx->ctx(), store);
+        }
     }
 
     if (!policy.getAlpnProtocols().empty() && isServer)

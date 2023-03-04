@@ -106,6 +106,7 @@ struct SSLContext
     std::unique_ptr<Botan::X509_Certificate> cert;
     std::unique_ptr<Botan::Certificate_Store> certStore;
     bool isServer = false;
+    bool requireClientCert = false;
 };
 }  // namespace trantor
 
@@ -115,6 +116,14 @@ class TrantorPolicy : public Botan::TLS::Policy
     {
         return false;
     }
+
+    virtual bool require_client_certificate_authentication() const override
+    {
+        return requireClientCert_;
+    }
+
+  public:
+    bool requireClientCert_ = false;
 };
 
 struct BotanTLSProvider : public TLSProvider,
@@ -183,11 +192,16 @@ struct BotanTLSProvider : public TLSProvider,
             LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
         if (contextPtr_->isServer)
         {
+            // TODO: Need a more scalable way to manage session validation rules
+            validationPolicy_.requireClientCert_ =
+                contextPtr_->requireClientCert;
             channel_ = std::make_unique<Botan::TLS::Server>(
                 *this, sessionManager, *credsPtr_, validationPolicy_, rng);
         }
         else
         {
+            validationPolicy_.requireClientCert_ =
+                contextPtr_->requireClientCert;
             channel_ = std::make_unique<Botan::TLS::Client>(
                 *this,
                 sessionManager,
@@ -346,10 +360,12 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
             std::make_unique<Botan::X509_Certificate>(policy.getCertPath());
     }
 
-    if (policy.getValidateChain() && !policy.getCaPath().empty())
+    if (!policy.getCaPath().empty())
     {
         ctx->certStore = std::make_unique<Botan::Flatfile_Certificate_Store>(
             policy.getCaPath());
+        if (!server)
+            ctx->requireClientCert = true;
     }
     else if (policy.getValidateChain() && policy.getUseSystemCertStore())
     {
