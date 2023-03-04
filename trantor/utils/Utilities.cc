@@ -17,6 +17,9 @@
 #include <Windows.h>
 #include <algorithm>
 #else  // _WIN32
+#include <unistd.h>
+#include <chrono>
+#include <string.h>
 #if __cplusplus < 201103L || __cplusplus >= 201703L
 #include <stdlib.h>
 #include <locale.h>
@@ -25,6 +28,14 @@
 #include <codecvt>
 #endif  // __cplusplus
 #endif  // _WIN32
+
+#if defined(USE_OPENSSL)
+#include <openssl/rand.h>
+#elif defined(USE_BOTAN)
+#include <botan/auto_rng.h>
+#else
+#include <fstream>
+#endif
 
 #if !defined(USE_OPENSSL) && !defined(USE_BOTAN)
 #include "crypto/md5.h"
@@ -315,6 +326,103 @@ std::string toHexString(const void *data, size_t len)
         str[i * 2 + 1] = "0123456789ABCDEF"[c & 0xf];
     }
     return str;
+}
+
+/**
+ * @brief Generates `size` random bytes from the systems random source and
+ * stores them into `ptr`.
+ */
+static bool systemRandomBytes(void *ptr, size_t size)
+{
+#if defined(__BSD__) || defined(__APPLE__)
+    arc4random_buf(ptr, size);
+    return true;
+#elif defined(__linux__) && \
+    ((defined(__GLIBC__) && \
+      (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 25))))
+    return getentropy(ptr, size) != -1;
+#elif defined(_WIN32)  // Windows
+    return RtlGenRandom(ptr, (ULONG)size);
+#elif defined(__unix__) || defined(__HAIKU__)
+    // fallback to /dev/urandom for other/old UNIX
+    thread_local std::unique_ptr<FILE, std::function<void(FILE *)> > fptr(
+        fopen("/dev/urandom", "rb"), [](FILE *ptr) {
+            if (ptr != nullptr)
+                fclose(ptr);
+        });
+    if (fptr == nullptr)
+    {
+        LOG_FATAL << "Failed to open /dev/urandom for randomness";
+        abort();
+    }
+    if (fread(ptr, 1, size, fptr.get()) != 0)
+        return true;
+#endif
+    return false;
+}
+
+struct RngState
+{
+    Hash160 seed;
+    int64_t milli;
+    int32_t garbage;
+    int counter;
+};
+
+bool secureRandomBytes(void *data, size_t len)
+{
+#if defined(USE_OPENSSL)
+    return RAND_bytes((unsigned char *)data, len) == 1;
+#elif defined(USE_BOTAN)
+    thread_local Botan::AutoSeeded_RNG rng;
+    rng.randomize((unsigned char *)data, len);
+    return true;
+#else
+    // CSPRNG proposed by Dan Kaminsky in his DEFCON 22 talk. This makes us use
+    // up LESS system entropy With some modifications to make it suitable for
+    // trantor's codebase. (RIP Dan Kaminsky. That talk was epic.)
+    // https://youtu.be/xneBjc8z0DE?t=2250
+    namespace chrono = std::chrono;
+    static_assert(sizeof(RngState) < 512);  // Less then SHA1 block size
+
+    thread_local int useCount = 0;
+    thread_local RngState state;
+    // reseed every once in a while
+    if (useCount == 0)
+    {
+        if (!systemRandomBytes(&state.seed, sizeof(state.seed)))
+            return false;
+    }
+    useCount = (useCount + 1) % 1024;
+
+    auto now = chrono::steady_clock::now();
+    // the proposed algorithm uses the time in nanoseconds, but C++ does not
+    // guarantee that so we use milliseconds instead. We use additional entropy
+    // from the stack address to compensate for the loss of entropy. (since
+    // querying CPU performance counters is a bit out of scope for trantor)
+    state.milli = chrono::time_point_cast<chrono::milliseconds>(now)
+                      .time_since_epoch()
+                      .count();
+    // this lives on the stack, so each call _may_ be different. High bits
+    // in a 64-bit address not as random anyways.
+    state.garbage = reinterpret_cast<int32_t>(&now);
+
+    for (size_t i = 0; i < len / sizeof(Hash160); i++)
+    {
+        auto hash = sha1(&state, sizeof(state));
+        memcpy((char *)data + i * sizeof(hash), &hash, sizeof(hash));
+        state.counter++;
+    }
+    if (len % sizeof(Hash160) != 0)
+    {
+        auto hash = sha1(&state, sizeof(state));
+        memcpy((char *)data + len - len % sizeof(hash),
+               &hash,
+               len % sizeof(hash));
+        state.counter++;
+    }
+    return true;
+#endif
 }
 
 }  // namespace utils

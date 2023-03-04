@@ -258,6 +258,14 @@ inline std::string toHexString(const Hash256 &hash)
     return toHexString(hash.bytes, sizeof(hash.bytes));
 }
 
+/**
+ * @brief Generates cryptographically secure random bytes
+ * @param ptr Pointer to the buffer to fill
+ * @param size Size of the buffer
+ * @return true if successful, false otherwise
+ */
+bool secureRandomBytes(void *ptr, size_t size);
+
 }  // namespace utils
 
 }  // namespace trantor
