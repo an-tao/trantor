@@ -241,6 +241,7 @@ struct BotanTLSProvider : public TLSProvider,
     {
         if (alert.type() == Botan::TLS::Alert::CLOSE_NOTIFY)
         {
+            LOG_WARN << "TLS close notify received";
             if (closeCallback_)
                 closeCallback_(conn_);
         }
@@ -260,7 +261,8 @@ struct BotanTLSProvider : public TLSProvider,
         if (needCerts && session.peer_certs().empty())
         {
             handleSSLError(SSLError::kSSLInvalidCertificate);
-            throw std::runtime_error("No certificates provided by peer");
+            throw Botan::TLS::TLS_Exception(Botan::TLS::Alert::NO_CERTIFICATE,
+                                            "No certificate received");
         }
         if (!certs.empty())
         {
@@ -269,7 +271,9 @@ struct BotanTLSProvider : public TLSProvider,
                 cert.matches_dns_name(policyPtr_->getHostname()) == false)
             {
                 handleSSLError(SSLError::kSSLInvalidCertificate);
-                throw std::runtime_error("Certificate does not match hostname");
+                throw Botan::TLS::TLS_Exception(
+                    Botan::TLS::Alert::BAD_CERTIFICATE,
+                    "Certificate does not match hostname");
             }
             if (policyPtr_->getValidateDate())
             {
