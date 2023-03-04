@@ -613,6 +613,15 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
 
             auto cert = SSL_get_peer_certificate(ssl_);
+            if (policyPtr_->getCaPath() != "" && cert == nullptr)
+            {
+                LOG_TRACE << "Requested peer to provide a certificate by the "
+                             "provied CA"
+                             ", but none was provided";
+                SSL_shutdown(ssl_);
+                handleSSLError(SSLError::kSSLInvalidCertificate);
+                return false;
+            }
             if (cert)
                 setPeerCertificate(std::make_shared<OpenSSLCertificate>(cert));
 
@@ -682,6 +691,13 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             n = SSL_read(ssl_,
                          recvBuffer_.beginWrite(),
                          (int)recvBuffer_.writableBytes());
+            int shutdownState = SSL_get_shutdown(ssl_);
+            if (n == 0 && (shutdownState & SSL_RECEIVED_SHUTDOWN))
+            {
+                LOG_TRACE << "SSL connection closed by peer";
+                conn_->shutdown();
+                return;
+            }
             if (n > 0)
             {
                 recvBuffer_.hasWritten(n);
@@ -784,7 +800,7 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
                                           policy.getCaPath().data(),
                                           nullptr) <= 0)
         {
-            throw std::runtime_error("Failed to load CA file");
+            throw std::runtime_error("Failed to load CA certificate");
         }
 
         STACK_OF(X509_NAME) *cert_names =
