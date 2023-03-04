@@ -264,7 +264,7 @@ inline std::string toHexString(const Hash256 &hash)
  * @param size Size of the buffer
  * @return true if successful, false otherwise
  */
-bool secureRandomBytes(void *ptr, size_t size);
+TRANTOR_EXPORT bool secureRandomBytes(void *ptr, size_t size);
 
 }  // namespace utils
 
