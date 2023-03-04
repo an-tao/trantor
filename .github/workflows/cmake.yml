@@ -120,10 +120,19 @@ jobs:
       # We'll use this as our working directory for all subsequent commands
       shell: bash
       working-directory: ${{env.GITHUB_WORKSPACE}}
+      if: matrix.buildname != 'ubuntu-22.04/gcc - Botan'
       run: |
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on
+
+      shell: bash
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      if: matrix.buildname == 'ubuntu-22.04/gcc - Botan'
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on -DTRANTOR_PREFERED_TLS_PROVIDER="botan"
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
