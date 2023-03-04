@@ -381,7 +381,7 @@ bool secureRandomBytes(void *data, size_t len)
     // trantor's codebase. (RIP Dan Kaminsky. That talk was epic.)
     // https://youtu.be/xneBjc8z0DE?t=2250
     namespace chrono = std::chrono;
-    static_assert(sizeof(RngState) < 512,
+    static_assert(sizeof(RngState) < 64,
                   "RngState must be less then SHA1 block size");
 
     thread_local int useCount = 0;
@@ -404,22 +404,14 @@ bool secureRandomBytes(void *data, size_t len)
                       .count();
     // this lives on the stack, so each call _may_ be different. This code
     // works on both 32-bit and 64-bit systems. As well as big-endian and
-    // little-endian systems. Need special handling for 128 when that becomes
-    // a reality.
-    struct Pack
-    {
-        union
-        {
-            void *ptr;
-            int32_t a;
-            int32_t b;
-        };
-    } pack;
-    static_assert(sizeof(Pack) == sizeof(void *),
-                  "Pack must be the same size as a pointer");
-    memset(&pack, 0, sizeof(pack));
-    pack.ptr = &now;
-    state.garbage = pack.a ^ pack.b;
+    // little-endian systems.
+    void *stack_ptr = &now;
+    uint32_t *stack_ptr32 = (uint32_t *)&stack_ptr;
+    uint32_t garbage = *stack_ptr32;
+    static_assert(sizeof(void *) >= sizeof(uint32_t), "pointer size too small");
+    for (size_t i = 1; i < sizeof(void *) / sizeof(uint32_t); i++)
+        garbage ^= stack_ptr32[i];
+    state.garbage = garbage;
 
     // generate the random data as described in the talk
     for (size_t i = 0; i < len / sizeof(Hash160); i++)
