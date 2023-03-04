@@ -225,7 +225,6 @@ void TcpClient::enableSSL(
         .setCertPath(certPath)
         .setKeyPath(keyPath)
         .setHostname(hostname)
-        .setValidate(validateCert)
         .setCaPath(caPath);
     sslContextPtr_ = newSSLContext(*tlsPolicyPtr_, false);
 }
