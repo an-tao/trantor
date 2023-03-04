@@ -87,10 +87,11 @@ TcpClient::~TcpClient()
     assert(loop_ == connection_->getLoop());
     auto conn =
         std::atomic_load_explicit(&connection_, std::memory_order_relaxed);
-    loop_->runInLoop([conn = std::move(conn), loop = loop_]() {
+    loop_->runInLoop([conn = std::move(conn)]() {
         conn->setCloseCallback(
-            [loop, conn = std::move(conn)](const TcpConnectionPtr &connPtr) {
-                loop->queueInLoop([connPtr]() { connPtr->connectDestroyed(); });
+            [conn = std::move(conn)](const TcpConnectionPtr &connPtr) mutable {
+                connPtr->connectDestroyed();
+                conn.reset();
             });
     });
     connection_->forceClose();
