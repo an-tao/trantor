@@ -19,7 +19,6 @@
 #include <algorithm>
 #else  // _WIN32
 #include <unistd.h>
-#include <chrono>
 #include <string.h>
 #if __cplusplus < 201103L || __cplusplus >= 201703L
 #include <stdlib.h>
@@ -40,6 +39,16 @@
 #include "crypto/sha256.h"
 #include "crypto/sha3.h"
 #include <fstream>
+#include <chrono>
+#include <random>
+#endif
+
+#if defined(__x86_64__) || defined(__i386__)
+#ifdef _MSC_VER
+#include <intrin.h>
+#else
+#include <x86intrin.h>
+#endif
 #endif
 
 #include <cassert>
@@ -361,10 +370,10 @@ static bool systemRandomBytes(void *ptr, size_t size)
 
 struct RngState
 {
-    Hash160 seed;
-    int64_t milli;
-    int32_t garbage;
-    int counter;
+    Hash160 secret;
+    Hash160 prev;
+    int64_t time;
+    uint64_t counter;
 };
 
 bool secureRandomBytes(void *data, size_t len)
@@ -376,9 +385,10 @@ bool secureRandomBytes(void *data, size_t len)
     rng.randomize((unsigned char *)data, len);
     return true;
 #else
-    // CSPRNG proposed by Dan Kaminsky in his DEFCON 22 talk. This makes us use
-    // up LESS system entropy With some modifications to make it suitable for
-    // trantor's codebase. (RIP Dan Kaminsky. That talk was epic.)
+    // If no TLS backend is used, we use a CSPRNG of our own. This makes us use
+    // up LESS system entropy. CSPRNG proposed by Dan Kaminsky in his DEFCON 22
+    // talk.  With some modifications to make it suitable for trantor's
+    // codebase. (RIP Dan Kaminsky. That talk was epic.)
     // https://youtu.be/xneBjc8z0DE?t=2250
     namespace chrono = std::chrono;
     static_assert(sizeof(RngState) < 64,
@@ -386,39 +396,72 @@ bool secureRandomBytes(void *data, size_t len)
 
     thread_local int useCount = 0;
     thread_local RngState state;
-    // reseed every once in a while
+    static const int64_t shiftAmount = []() {
+        int64_t shift = 0;
+        if (!systemRandomBytes(&shift, sizeof(shift)))
+        {
+            // fallback to a random device. Not guaranteed to be secure
+            // but it's better than nothing.
+            shift = std::random_device{}();
+        }
+        return shift;
+    }();
+    // Update secret every 1024 calls to this function
     if (useCount == 0)
     {
-        if (!systemRandomBytes(&state.seed, sizeof(state.seed)))
+        if (!systemRandomBytes(&state.secret, sizeof(state.secret)))
             return false;
     }
     useCount = (useCount + 1) % 1024;
 
+    // use the cycle counter register to get a bit more entropy.
+    // Quote from the talk: "You can at least get a timestamp. And it turns out
+    // you just needs bits that are different. .... If you integrate time. It
+    // tuns out impericaly It's a pain in the butt to get two things to happen
+    // at the exactly the same CPU nanosecond. It's not that it can't. IT'S THAT
+    // IT WON'T. AND THAT'S A GOOD THING."
+#if defined(__x86_64__) || defined(__i386__)
+    int now;
+    state.time = __rdtsc();
+#elif defined(__aarch64__)
+    int now;
+    auto rdtsc = []() {
+        uint64_t val;
+        asm volatile("mrs %0, cntvct_el0" : "=r"(val));
+        return val;
+    };
+    state.time = rdtsc();
+#else
     auto now = chrono::steady_clock::now();
-    // the proposed algorithm uses the time in nanoseconds, but C++ does not
-    // guarantee that so we use milliseconds instead. We use additional entropy
-    // from the stack address to compensate for the loss of entropy. (since
-    // querying CPU performance counters is a bit out of scope for trantor)
-    state.milli = chrono::time_point_cast<chrono::milliseconds>(now)
-                      .time_since_epoch()
-                      .count();
-    // this lives on the stack, so each call _may_ be different. This code
-    // works on both 32-bit and 64-bit systems. As well as big-endian and
-    // little-endian systems.
+    // the proposed algorithm uses the time in nanoseconds, but we don't have a
+    // way to read it (yet) not C++ provided a standard way to do it. Falling
+    // back to milliseconds. This along with additional entropy is hopefully
+    // good enough.
+    state.time = chrono::time_point_cast<chrono::milliseconds>(now)
+                     .time_since_epoch()
+                     .count();
+    // `now` lives on the stack, so address in each call _may_ be different.
+    // This code works on both 32-bit and 64-bit systems. As well as big-endian
+    // and little-endian systems.
     void *stack_ptr = &now;
     uint32_t *stack_ptr32 = (uint32_t *)&stack_ptr;
     uint32_t garbage = *stack_ptr32;
     static_assert(sizeof(void *) >= sizeof(uint32_t), "pointer size too small");
     for (size_t i = 1; i < sizeof(void *) / sizeof(uint32_t); i++)
         garbage ^= stack_ptr32[i];
-    state.garbage = garbage;
+    state.time ^= garbage;
+#endif
+    state.time += shiftAmount;
 
-    // generate the random data as described in the talk
+    // generate the random data as described in the talk. We use SHA1 becasuse
+    // it's fast and still secure (there's collision attacks, but that's not
+    // relevant here). Will be good to upgrade to BLAKE2b in the future.
     for (size_t i = 0; i < len / sizeof(Hash160); i++)
     {
         auto hash = sha1(&state, sizeof(state));
         memcpy((char *)data + i * sizeof(hash), &hash, sizeof(hash));
         state.counter++;
+        state.prev = hash;
     }
     if (len % sizeof(Hash160) != 0)
     {
@@ -427,6 +470,7 @@ bool secureRandomBytes(void *data, size_t len)
                &hash,
                len % sizeof(hash));
         state.counter++;
+        state.prev = hash;
     }
     return true;
 #endif
