@@ -126,6 +126,7 @@ jobs:
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on
 
+    - name: Create Build Environment & Configure Cmake (Botan)
       shell: bash
       working-directory: ${{env.GITHUB_WORKSPACE}}
       if: matrix.buildname == 'ubuntu-22.04/gcc - Botan'
