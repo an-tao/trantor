@@ -15,6 +15,7 @@
 #include "Utilities.h"
 #ifdef _WIN32
 #include <Windows.h>
+#include <ntsecapi.h>
 #include <algorithm>
 #else  // _WIN32
 #include <unistd.h>
