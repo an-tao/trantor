@@ -34,14 +34,11 @@
 #elif defined(USE_BOTAN)
 #include <botan/auto_rng.h>
 #else
-#include <fstream>
-#endif
-
-#if !defined(USE_OPENSSL) && !defined(USE_BOTAN)
 #include "crypto/md5.h"
 #include "crypto/sha1.h"
 #include "crypto/sha256.h"
 #include "crypto/sha3.h"
+#include <fstream>
 #endif
 
 #include <cassert>

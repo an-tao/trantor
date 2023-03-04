@@ -154,7 +154,6 @@ if(TRANTOR_TLS_PROVIDER STREQUAL "None"
   AND (TRANTOR_PREFERED_TLS_PROVIDER STREQUAL "botan" OR TRANTOR_PREFERED_TLS_PROVIDER STREQUAL ""))
   find_package(Botan)
   if(Botan_FOUND)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOTAN)
     target_link_libraries(${PROJECT_NAME} PRIVATE Botan::Botan)
     set(TRANTOR_TLS_PROVIDER "Botan")
