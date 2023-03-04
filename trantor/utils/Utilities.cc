@@ -401,10 +401,26 @@ bool secureRandomBytes(void *data, size_t len)
     state.milli = chrono::time_point_cast<chrono::milliseconds>(now)
                       .time_since_epoch()
                       .count();
-    // this lives on the stack, so each call _may_ be different. High bits
-    // in a 64-bit address not as random anyways.
-    state.garbage = reinterpret_cast<int32_t>(&now);
+    // this lives on the stack, so each call _may_ be different. This code
+    // works on both 32-bit and 64-bit systems. As well as big-endian and
+    // little-endian systems. Need special handling for 128 when that becomes
+    // a reality.
+    struct Pack
+    {
+        union
+        {
+            void *ptr;
+            int32_t a;
+            int32_t b;
+        };
+    } pack;
+    static_assert(sizeof(Pack) == sizeof(void *),
+                  "Pack must be the same size as a pointer");
+    memset(&pack, 0, sizeof(pack));
+    pack.ptr = &now;
+    state.garbage = pack.a ^ pack.b;
 
+    // generate the random data as described in the talk
     for (size_t i = 0; i < len / sizeof(Hash160); i++)
     {
         auto hash = sha1(&state, sizeof(state));
