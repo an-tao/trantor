@@ -380,7 +380,8 @@ bool secureRandomBytes(void *data, size_t len)
     // trantor's codebase. (RIP Dan Kaminsky. That talk was epic.)
     // https://youtu.be/xneBjc8z0DE?t=2250
     namespace chrono = std::chrono;
-    static_assert(sizeof(RngState) < 512);  // Less then SHA1 block size
+    static_assert(sizeof(RngState) < 512,
+                  "RngState must be less then SHA1 block size");
 
     thread_local int useCount = 0;
     thread_local RngState state;
