@@ -384,10 +384,10 @@ bool secureRandomBytes(void *data, size_t len)
 {
 #if defined(USE_OPENSSL)
     // OpenSSL's RAND_bytes() uses int as the length parameter
-    for(size_t i = 0; i < len; i += INT_MAX)
+    for (size_t i = 0; i < len; i += INT_MAX)
     {
         int fillSize = (int)(std::min)(len - i, (size_t)INT_MAX);
-        if(!RAND_bytes((unsigned char *)data + i, fillSize))
+        if (!RAND_bytes((unsigned char *)data + i, fillSize))
             return false;
     }
     return true;
