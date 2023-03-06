@@ -69,10 +69,16 @@ TcpClient::TcpClient(EventLoop *loop,
     (void)validateCert_;
     connector_->setNewConnectionCallback(
         std::bind(&TcpClient::newConnection, this, _1));
-    connector_->setErrorCallback([this]() {
-        if (connectionErrorCallback_)
+    // WORKAROUND: somehow we got use-after-free error
+    auto guard = std::shared_ptr<TcpClient>(this, [](TcpClient *) {});
+    auto weakPtr = std::weak_ptr<TcpClient>(shared_from_this());
+    connector_->setErrorCallback([weakPtr]() {
+        auto ptr = weakPtr.lock();
+        if(!ptr)
+            return;
+        if (ptr->connectionErrorCallback_)
         {
-            connectionErrorCallback_();
+            ptr->connectionErrorCallback_();
         }
     });
     LOG_TRACE << "TcpClient::TcpClient[" << name_ << "] - connector ";
