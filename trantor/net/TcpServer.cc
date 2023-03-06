@@ -217,10 +217,8 @@ void TcpServer::enableSSL(
     const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
     const std::string &caPath)
 {
-    policyPtr_ = TLSPolicy::defaultServerPolicy();
-    policyPtr_->setKeyPath(keyPath)
-        .setCertPath(certPath)
-        .setUseOldTLS(useOldTLS)
+    policyPtr_ = TLSPolicy::defaultServerPolicy(certPath, keyPath);
+    policyPtr_->setUseOldTLS(useOldTLS)
         .setConfCmds(sslConfCmds)
         .setCaPath(caPath)
         .setValidate(caPath.empty() ? false : true);
