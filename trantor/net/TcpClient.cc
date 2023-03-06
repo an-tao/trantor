@@ -74,7 +74,7 @@ TcpClient::TcpClient(EventLoop *loop,
     auto weakPtr = std::weak_ptr<TcpClient>(shared_from_this());
     connector_->setErrorCallback([weakPtr]() {
         auto ptr = weakPtr.lock();
-        if(!ptr)
+        if (!ptr)
             return;
         if (ptr->connectionErrorCallback_)
         {
