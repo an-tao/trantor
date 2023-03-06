@@ -681,16 +681,21 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     void processApplicationData()
     {
-        int n;
-        int pending = SSL_pending(ssl_);
-        if (pending > 0)
-            recvBuffer_.ensureWritableBytes(pending);
-
-        do
+        constexpr size_t maxSingleRead = 128 * 1024;
+        constexpr size_t maxWritibleBytes = std::numeric_limits<int>::max();
+        auto inBio = SSL_get_rbio(ssl_);
+        while (true)
         {
-            n = SSL_read(ssl_,
-                         recvBuffer_.beginWrite(),
-                         (int)recvBuffer_.writableBytes());
+            auto pending = BIO_pending(inBio);
+            if (pending <= 0)
+                break;
+            // horrible syntax, because MSVC
+            recvBuffer_.ensureWritableBytes(
+                (std::min)(maxSingleRead, (size_t)pending));
+            // clamp to int, because that's what SSL_read accepts
+            const size_t wrtibleSize =
+                (std::min)(maxWritibleBytes, recvBuffer_.writableBytes());
+            int n = SSL_read(ssl_, recvBuffer_.beginWrite(), (int)wrtibleSize);
             int shutdownState = SSL_get_shutdown(ssl_);
             if (n == 0 && (shutdownState & SSL_RECEIVED_SHUTDOWN))
             {
@@ -712,8 +717,9 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 {
                     handleSSLError(SSLError::kSSLProtocolError);
                 }
+                return;
             }
-        } while (n > 0);
+        }
     }
 
     ssize_t sendTLSData()
