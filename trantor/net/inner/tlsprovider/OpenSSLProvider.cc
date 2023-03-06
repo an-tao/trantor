@@ -170,6 +170,7 @@ static int serverSelectProtocol(SSL *ssl,
                                 unsigned int inlen,
                                 void *arg)
 {
+    (void)ssl;
     auto protocols = static_cast<std::vector<std::string> *>(arg);
     if (protocols->empty())
         return SSL_TLSEXT_ERR_NOACK;
@@ -208,7 +209,6 @@ struct SSLContext
 {
     SSLContext(
         bool useOldTLS,
-        bool enableValidation,
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
         bool server)
         : isServer(server)
@@ -429,9 +429,11 @@ class SessionManager
     void removeExcessSession()
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (sessions_.size() < maxSessions_ + mexExtendSize_)
+        assert(maxSessions_ > 0);
+        assert(mexExtendSize_ > 0);
+        if (sessions_.size() < size_t(maxSessions_ + mexExtendSize_))
             return;
-        if (sessions_.size() > maxSessions_)
+        if (sessions_.size() > size_t(maxSessions_))
         {
             auto it = sessions_.end();
             it--;
@@ -777,7 +779,6 @@ std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
 SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 {
     auto ctx = std::make_shared<SSLContext>(policy.getUseOldTLS(),
-                                            policy.getValidateChain(),
                                             policy.getConfCmds(),
                                             isServer);
     if (!policy.getCertPath().empty() && !policy.getKeyPath().empty())

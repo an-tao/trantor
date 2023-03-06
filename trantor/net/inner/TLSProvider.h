@@ -15,8 +15,8 @@ struct TLSProvider
     TLSProvider(TcpConnection* conn, TLSPolicyPtr policy, SSLContextPtr ctx)
         : conn_(conn),
           policyPtr_(std::move(policy)),
-          loop_(conn_->getLoop()),
-          contextPtr_(std::move(ctx))
+          contextPtr_(std::move(ctx)),
+          loop_(conn_->getLoop())
     {
     }
     virtual ~TLSProvider() = default;
@@ -55,7 +55,7 @@ struct TLSProvider
                       << strerror(errno);
             return false;
         }
-        else if (n != writeBuffer_.readableBytes())
+        else if ((size_t)n != writeBuffer_.readableBytes())
         {
             writeBuffer_.retrieve(n);
             return false;

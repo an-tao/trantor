@@ -335,9 +335,12 @@ std::string toHexString(const void *data, size_t len)
     return str;
 }
 
+#if !defined(USE_BOTAN) && !defined(USE_OPENSSL)
 /**
  * @brief Generates `size` random bytes from the systems random source and
  * stores them into `ptr`.
+ * @note We only use this we no TLS backend is available. Thus we can't piggy
+ * back on the TLS backend's random source.
  */
 static bool systemRandomBytes(void *ptr, size_t size)
 {
@@ -367,6 +370,7 @@ static bool systemRandomBytes(void *ptr, size_t size)
 #endif
     return false;
 }
+#endif
 
 struct RngState
 {

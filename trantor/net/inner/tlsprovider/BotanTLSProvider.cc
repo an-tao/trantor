@@ -35,13 +35,15 @@ class Credentials : public Botan::Credentials_Manager
     Credentials(Botan::Private_Key *key,
                 Botan::X509_Certificate *cert,
                 Botan::Certificate_Store *certStore)
-        : key_(key), cert_(cert), certStore_(certStore)
+        : certStore_(certStore), cert_(cert), key_(key)
     {
     }
     std::vector<Botan::Certificate_Store *> trusted_certificate_authorities(
         const std::string &type,
         const std::string &context) override
     {
+        (void)type;
+        (void)context;
         if (certStore_ == nullptr)
             return {};
         return {certStore_};
@@ -52,6 +54,8 @@ class Credentials : public Botan::Credentials_Manager
         const std::string &type,
         const std::string &context) override
     {
+        (void)type;
+        (void)context;
         if (cert_ == nullptr)
             return {};
 
@@ -68,11 +72,14 @@ class Credentials : public Botan::Credentials_Manager
                                         const std::string &type,
                                         const std::string &context) override
     {
+        (void)cert;
+        (void)type;
+        (void)context;
         return key_;
     }
     Botan::Certificate_Store *certStore_ = nullptr;
-    Botan::Private_Key *key_ = nullptr;
     Botan::X509_Certificate *cert_ = nullptr;
+    Botan::Private_Key *key_ = nullptr;
 };
 
 struct BotanCertificate : public Certificate
@@ -227,9 +234,7 @@ struct BotanTLSProvider : public TLSProvider,
     {
         if (!errorCallback_)
             return;
-        loop_->queueInLoop([this]() {
-            errorCallback_(conn_, SSLError::kSSLInvalidCertificate);
-        });
+        loop_->queueInLoop([this, err]() { errorCallback_(conn_, err); });
     }
 
     virtual ~BotanTLSProvider() override = default;
@@ -240,7 +245,7 @@ struct BotanTLSProvider : public TLSProvider,
         lastWriteSize_ = n;
 
         // store the unsent data and send it later
-        if (n == size)
+        if (n == ssize_t(size))
             return;
         if (n == -1)
             n = 0;
@@ -251,6 +256,7 @@ struct BotanTLSProvider : public TLSProvider,
                              const uint8_t data[],
                              size_t size) override
     {
+        (void)seq_no;
         recvBuffer_.append((const char *)data, size);
         if (messageCallback_)
             messageCallback_(conn_, &recvBuffer_);
