@@ -559,6 +559,12 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             errno = EAGAIN;
             return -1;
         }
+        // Limit the size of the data we send in one go to avoid holding massive
+        // buffers in memory.
+        constexpr size_t maxSend = 64 * 1024;
+        if (len > maxSend)
+            len = maxSend;
+
         int n = SSL_write(ssl_, data, (int)len);
         if (n <= 0 && len != 0)
         {
