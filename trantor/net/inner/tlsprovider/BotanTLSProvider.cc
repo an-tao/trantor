@@ -172,8 +172,8 @@ struct BotanTLSProvider : public TLSProvider,
         // Limit the size of the data we send in one go to avoid holding massive
         // buffers in memory.
         constexpr size_t maxSend = 64 * 1024;
-        if (len > maxSend)
-            len = maxSend;
+        if (size > maxSend)
+            size = maxSend;
         channel_->send((const uint8_t *)ptr, size);
 
         // HACK: Botan doesn't provide a way to know how much raw data has been
