@@ -29,7 +29,7 @@
 namespace trantor
 {
 class Connector;
-using ConnectorPtr = std::shared_ptr<Connector>;
+using ConnectorPtr = std::unique_ptr<Connector>;
 /**
  * @brief This class represents a TCP client.
  *
