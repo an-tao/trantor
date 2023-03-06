@@ -383,7 +383,14 @@ struct RngState
 bool secureRandomBytes(void *data, size_t len)
 {
 #if defined(USE_OPENSSL)
-    return RAND_bytes((unsigned char *)data, len) == 1;
+    // OpenSSL's RAND_bytes() uses int as the length parameter
+    for(size_t i = 0; i < len; i += INT_MAX)
+    {
+        int fillSize = (int)(std::min)(len - i, (size_t)INT_MAX);
+        if(!RAND_bytes((unsigned char *)data + i, fillSize))
+            return false;
+    }
+    return true;
 #elif defined(USE_BOTAN)
     thread_local Botan::AutoSeeded_RNG rng;
     rng.randomize((unsigned char *)data, len);

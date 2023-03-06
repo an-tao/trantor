@@ -574,7 +574,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             handleSSLError(SSLError::kSSLProtocolError);
             return -1;
         }
-        int num = sendTLSData();
+        auto num = sendTLSData();
         if (num == -1)
             return -1;
         return len;
