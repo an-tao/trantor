@@ -431,9 +431,10 @@ bool secureRandomBytes(void *data, size_t len)
     // tuns out impericaly It's a pain in the butt to get two things to happen
     // at the exactly the same CPU nanosecond. It's not that it can't. IT'S THAT
     // IT WON'T. AND THAT'S A GOOD THING."
-#if defined(__x86_64__) || defined(__i386__)
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || \
+    defined(_M_IX86)
     state.time = __rdtsc();
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(_M_ARM64)
     auto rdtsc = []() {
         uint64_t val;
         asm volatile("mrs %0, cntvct_el0" : "=r"(val));
