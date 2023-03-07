@@ -10,52 +10,81 @@ namespace trantor
 {
 struct TRANTOR_EXPORT TLSPolicy final
 {
+    /**
+     * @brief set the ssl configuration commands. The commands will be passed
+     * to the ssl library. The commands are in the form of {{key, value}}.
+     * for example, {"SSL_OP_NO_SSLv2", "1"}. Not all TLS providers support
+     * this feature AND the meaning of the commands may vary between TLS
+     * providers.
+     *
+     * As of 2023-03 Only OpenSSL supports this feature. LibreSSL does not
+     * nor Botan.
+     */
     TLSPolicy &setConfCmds(
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds)
     {
         sslConfCmds_ = sslConfCmds;
         return *this;
     }
+    /**
+     * @brief set the hostname to be used for SNI and certificate validation.
+     */
     TLSPolicy &setHostname(const std::string &hostname)
     {
         hostname_ = hostname;
         return *this;
     }
+
+    /**
+     * @brief set the path to the certificate file. The file must be in PEM
+     * format.
+     */
     TLSPolicy &setCertPath(const std::string &certPath)
     {
         certPath_ = certPath;
         return *this;
     }
+
+    /**
+     * @brief set the path to the private key file. The file must be in PEM
+     * format.
+     */
     TLSPolicy &setKeyPath(const std::string &keyPath)
     {
         keyPath_ = keyPath;
         return *this;
     }
+
+    /**
+     * @brief set the path to the CA file or directory. The file must be in
+     * PEM format.
+     */
     TLSPolicy &setCaPath(const std::string &caPath)
     {
         caPath_ = caPath;
         return *this;
     }
+
+    /**
+     * @brief enables the use of the old TLS protocol (old meaning < TLS 1.2).
+     * TLS providres may not support old protocols even if this option is set
+     */
     TLSPolicy &setUseOldTLS(bool useOldTLS)
     {
         useOldTLS_ = useOldTLS;
         return *this;
     }
-    TLSPolicy &setValidateDomain(bool validateDomain)
-    {
-        validateDomain_ = validateDomain;
-        return *this;
-    }
-    TLSPolicy &setValidateChain(bool validateChain)
-    {
-        validateChain_ = validateChain;
-        return *this;
-    }
-    TLSPolicy &setValidateDate(bool validateDate)
-    {
-        validateDate_ = validateDate;
-        return *this;
-    }
+
+    /**
+     * @brief set the list of protocols to be used for ALPN.
+     *
+     * @note for servers, it selects matching protocol against the client's
+     * list. And the first matching protocol supplide in the parameter will be
+     * selected. If no matching protocol is found, the connection will be
+     * closed.
+     *
+     * @note for clients, it sends the list of protocols to the server.
+     */
     TLSPolicy &setAlpnProtocols(const std::vector<std::string> &alpnProtocols)
     {
         alpnProtocols_ = alpnProtocols;
@@ -66,21 +95,40 @@ struct TRANTOR_EXPORT TLSPolicy final
         alpnProtocols_ = std::move(alpnProtocols);
         return *this;
     }
+
+    /**
+     * @brief Weather to use the system's certificate store.
+     *
+     * @note setting both not to use the system's certificate store and to
+     * supply a CA path WILL LEAD TO NO CERTIFICATE VALIDATION AT ALL.
+     */
     TLSPolicy &setUseSystemCertStore(bool useSystemCertStore)
     {
         useSystemCertStore_ = useSystemCertStore;
         return *this;
     }
 
-    // Composite pattern
+    /**
+     * @brief Enable certificate validation.
+     */
     TLSPolicy &setValidate(bool enable)
     {
-        validateDomain_ = enable;
-        validateChain_ = enable;
-        validateDate_ = enable;
+        validate_ = enable;
         return *this;
     }
 
+    /**
+     * @brief Allow broken chain (self-signed certificate, root CA not in
+     * allowed list, etc..) but still validate the domain name and date. This
+     * option has no effect if validate is false.
+     */
+    TLSPolicy &setAllowBrokenChain(bool allow)
+    {
+        allowBrokenChain_ = allow;
+        return *this;
+    }
+
+    // The getters
     const std::vector<std::pair<std::string, std::string>> &getConfCmds() const
     {
         return sslConfCmds_;
@@ -105,17 +153,13 @@ struct TRANTOR_EXPORT TLSPolicy final
     {
         return useOldTLS_;
     }
-    bool getValidateDomain() const
+    bool getValidate() const
     {
-        return validateDomain_;
+        return validate_;
     }
-    bool getValidateChain() const
+    bool getAllowBrokenChain() const
     {
-        return validateChain_;
-    }
-    bool getValidateDate() const
-    {
-        return validateDate_;
+        return allowBrokenChain_;
     }
     const std::vector<std::string> &getAlpnProtocols() const
     {
@@ -163,9 +207,8 @@ struct TRANTOR_EXPORT TLSPolicy final
     std::string caPath_ = "";
     std::vector<std::string> alpnProtocols_ = {};
     bool useOldTLS_ = false;  // turn into specific version
-    bool validateDomain_ = true;
-    bool validateChain_ = true;
-    bool validateDate_ = true;
+    bool validate_ = true;
+    bool allowBrokenChain_ = false;
     bool useSystemCertStore_ = true;
 };
 using TLSPolicyPtr = std::shared_ptr<TLSPolicy>;

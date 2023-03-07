@@ -161,7 +161,12 @@ struct BotanTLSProvider : public TLSProvider,
             conn_->shutdown();
 
             if (tlsConnected_ == false)
-                handleSSLError(SSLError::kSSLHandshakeError);
+            {
+                if (e.type() == Botan::TLS::Alert::BAD_CERTIFICATE)
+                    handleSSLError(SSLError::kSSLInvalidCertificate);
+                else
+                    handleSSLError(SSLError::kSSLHandshakeError);
+            }
             else
                 handleSSLError(SSLError::kSSLProtocolError);
         }
@@ -279,42 +284,8 @@ struct BotanTLSProvider : public TLSProvider,
 
     bool tls_session_established(const Botan::TLS::Session &session)
     {
+        (void)session;
         LOG_TRACE << "tls_session_established";
-        bool needCerts =
-            policyPtr_->getValidateDate() || policyPtr_->getValidateDomain();
-        const auto &certs = session.peer_certs();
-        if (needCerts && session.peer_certs().empty())
-        {
-            handleSSLError(SSLError::kSSLInvalidCertificate);
-            throw Botan::TLS::TLS_Exception(Botan::TLS::Alert::NO_CERTIFICATE,
-                                            "No certificate received");
-        }
-        if (!certs.empty())
-        {
-            auto &cert = certs[0];
-            if (policyPtr_->getValidateDomain() &&
-                cert.matches_dns_name(policyPtr_->getHostname()) == false)
-            {
-                handleSSLError(SSLError::kSSLInvalidCertificate);
-                throw Botan::TLS::TLS_Exception(
-                    Botan::TLS::Alert::BAD_CERTIFICATE,
-                    "Certificate does not match hostname");
-            }
-            if (policyPtr_->getValidateDate())
-            {
-                auto notBefore = cert.not_before();
-                auto notAfter = cert.not_after();
-                auto now = Botan::ASN1_Time(std::chrono::system_clock::now());
-                if (now < notBefore || now > notAfter)
-                {
-                    handleSSLError(SSLError::kSSLInvalidCertificate);
-                    throw std::runtime_error(
-                        "Certificate is not valid for current time");
-                }
-            }
-            setPeerCertificate(std::make_shared<BotanCertificate>(cert));
-        }
-
         tlsConnected_ = true;
         loop_->queueInLoop([this]() {
             setApplicationProtocol(channel_->application_protocol());
@@ -334,9 +305,37 @@ struct BotanTLSProvider : public TLSProvider,
         const Botan::TLS::Policy &policy)
     {
         setSniName(hostname);
-        if (policyPtr_->getValidateChain())
+        if (policyPtr_->getValidate() && !policyPtr_->getAllowBrokenChain())
             Botan::TLS::Callbacks::tls_verify_cert_chain(
                 certs, ocsp, trusted_roots, usage, hostname, policy);
+        else if (policyPtr_->getValidate())
+        {
+            // Botan always cehcks the chain, so we have to do it manually if we
+            // wish to allow self-signed certificates
+            if (certs.size() == 0)
+                throw Botan::TLS::TLS_Exception(
+                    Botan::TLS::Alert::BAD_CERTIFICATE,
+                    "No certificate provided");
+            auto &cert = certs[0];
+            if (contextPtr_->isServer && !cert.matches_dns_name(hostname))
+                throw Botan::TLS::TLS_Exception(
+                    Botan::TLS::Alert::BAD_CERTIFICATE,
+                    "Certificate does not match hostname");
+            // TODO: Check extended key usage
+            if (!cert.allowed_usage(usage))
+                throw Botan::TLS::TLS_Exception(
+                    Botan::TLS::Alert::BAD_CERTIFICATE,
+                    "Certificate does not match usage");
+            const auto &notBefore = cert.not_before();
+            const auto &notAfter = cert.not_after();
+            const auto now = Botan::ASN1_Time(std::chrono::system_clock::now());
+            if (now < notBefore || now > notAfter)
+            {
+                handleSSLError(SSLError::kSSLInvalidCertificate);
+                throw std::runtime_error(
+                    "Certificate is not valid for current time");
+            }
+        }
     }
 
     TrantorPolicy validationPolicy_;
@@ -378,7 +377,7 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
         if (server)
             ctx->requireClientCert = true;
     }
-    else if (policy.getValidateChain() && policy.getUseSystemCertStore())
+    else if (!policy.getAllowBrokenChain() && policy.getUseSystemCertStore())
     {
         ctx->certStore = std::make_unique<Botan::System_Certificate_Store>();
     }
