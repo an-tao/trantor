@@ -25,7 +25,7 @@ static Botan::System_RNG sessionManagerRng;
 // order.
 static Botan::TLS::Session_Manager_In_Memory sessionManager(sessionManagerRng);
 static thread_local Botan::System_RNG rng;
-static thread_local Botan::System_Certificate_Store certStore;
+static Botan::System_Certificate_Store certStore;
 
 using namespace trantor;
 
@@ -375,7 +375,7 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
     {
         ctx->certStore = std::make_unique<Botan::Flatfile_Certificate_Store>(
             policy.getCaPath());
-        if (!server)
+        if (server)
             ctx->requireClientCert = true;
     }
     else if (policy.getValidateChain() && policy.getUseSystemCertStore())
