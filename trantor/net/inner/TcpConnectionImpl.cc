@@ -482,6 +482,14 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
                 shared_from_this(),
                 writeBufferList_.back()->msgBuffer_->readableBytes());
         }
+        if (highWaterMarkCallback_ && tlsProviderPtr_ &&
+            tlsProviderPtr_->getBufferedData().readableBytes() >
+                highWaterMarkLen_)
+        {
+            highWaterMarkCallback_(
+                shared_from_this(),
+                tlsProviderPtr_->getBufferedData().readableBytes());
+        }
     }
 }
 // The order of data sending should be same as the order of calls of send()
