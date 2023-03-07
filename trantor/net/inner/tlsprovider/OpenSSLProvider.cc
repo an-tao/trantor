@@ -124,13 +124,14 @@ inline bool verifyAltName(X509 *cert, const std::string &hostname)
 static bool validatePeerCertificate(SSL *ssl,
                                     X509 *cert,
                                     const std::string &hostname,
-                                    bool validateChain,
-                                    bool validateDate,
-                                    bool validateDomain)
+                                    bool allowBrokenChain,
+                                    bool isServer)
 {
+    assert(ssl != nullptr);
+    assert(cert != nullptr);
     LOG_TRACE << "Validating peer cerificate";
 
-    if (validateDomain)
+    if (isServer)
     {
         bool domainIsValid =
             verifyCommonName(cert, hostname) || verifyAltName(cert, hostname);
@@ -138,22 +139,17 @@ static bool validatePeerCertificate(SSL *ssl,
             return false;
     }
 
-    if (validateChain == false && validateDate == false)
-        return true;
-
     auto result = SSL_get_verify_result(ssl);
     if (result == X509_V_ERR_CERT_NOT_YET_VALID ||
         result == X509_V_ERR_CERT_HAS_EXPIRED)
     {
         // What happens if cert is self-signed and expired?
-        if (!validateDate)
-            return true;
         LOG_TRACE << "cert error code: " << result
                   << ", date validation failed";
         return false;
     }
 
-    if (result != X509_V_OK && validateChain)
+    if (result != X509_V_OK && !allowBrokenChain)
     {
         LOG_TRACE << "cert error code: " << result;
         LOG_ERROR << "Peer certificate is not valid";
@@ -602,11 +598,18 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             else
             {
                 setSniName(policyPtr_->getHostname());
-                const unsigned char *alpn = nullptr;
-                unsigned int alpnlen = 0;
-                SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
-                if (alpn)
+                if (policyPtr_->getAlpnProtocols().size() > 0)
+                {
+                    const unsigned char *alpn = nullptr;
+                    unsigned int alpnlen = 0;
+                    SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
+                    if (!alpn)
+                    {
+                        handleSSLError(SSLError::kSSLHandshakeError);
+                        return false;
+                    }
                     setApplicationProtocol(std::string((char *)alpn, alpnlen));
+                }
 
                 SSL_SESSION *session = SSL_get0_session(ssl_);
                 assert(session);
@@ -622,38 +625,40 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
 
             auto cert = SSL_get_peer_certificate(ssl_);
+            bool needCert = policyPtr_->getValidate();
             if (cert)
                 setPeerCertificate(std::make_shared<OpenSSLCertificate>(cert));
 
-            bool needCert = policyPtr_->getValidateChain() ||
-                            policyPtr_->getValidateDate() ||
-                            policyPtr_->getValidateDomain();
-            if (needCert && !peerCertificate())
-            {
-                LOG_TRACE << "SSL handshake error: no peer certificate. Cannot "
-                             "perform validation";
-                SSL_shutdown(ssl_);
-                handleSSLError(SSLError::kSSLInvalidCertificate);
-                return false;
-            }
             if (needCert)
             {
-                bool valid = internal::validatePeerCertificate(
-                    ssl_,
-                    cert,
-                    policyPtr_->getHostname(),
-                    policyPtr_->getValidateChain(),
-                    policyPtr_->getValidateDate(),
-                    policyPtr_->getValidateDomain());
-                if (!valid)
+                if (cert)
+                {
+                    bool valid = internal::validatePeerCertificate(
+                        ssl_,
+                        cert,
+                        policyPtr_->getHostname(),
+                        policyPtr_->getAllowBrokenChain(),
+                        contextPtr_->isServer);
+                    if (!valid)
+                    {
+                        LOG_TRACE
+                            << "SSL handshake error: invalid peer certificate";
+                        SSL_shutdown(ssl_);
+                        handleSSLError(SSLError::kSSLInvalidCertificate);
+                        return false;
+                    }
+                }
+                else
                 {
                     LOG_TRACE
-                        << "SSL handshake error: invalid peer certificate";
+                        << "SSL handshake error: no peer certificate. Cannot "
+                           "perform validation";
                     SSL_shutdown(ssl_);
                     handleSSLError(SSLError::kSSLInvalidCertificate);
                     return false;
                 }
             }
+
             if (handshakeCallback_)
                 handshakeCallback_(conn_);
             sendTLSData();  // Needed to send ChangeCipherSpec
@@ -803,9 +808,7 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
                 "certificate public key");
         }
     }
-    if ((policy.getValidateChain() || policy.getValidateDate() ||
-         policy.getValidateDomain()) &&
-        policy.getUseSystemCertStore())
+    if (policy.getValidate() && policy.getUseSystemCertStore())
     {
 #ifdef _WIN32
         internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctx->ctx()));

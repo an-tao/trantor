@@ -14,7 +14,7 @@ int main()
 #if USE_IPV6
     InetAddress serverAddr("::1", 8888, true);
 #else
-    InetAddress serverAddr("127.0.0.1", 1965);
+    InetAddress serverAddr("127.0.0.1", 8888);
 #endif
     std::shared_ptr<trantor::TcpClient> client[10];
     std::atomic_int connCount;
@@ -25,17 +25,14 @@ int main()
                                                          serverAddr,
                                                          "tcpclienttest");
         auto policy = TLSPolicy::defaultClientPolicy();
-        policy->setValidate(true)
-            .setAllowBrokenChain(true)
-            .setUseOldTLS(false)
-            .setHostname("gemini.clehaxze.tw");
+        policy->setValidate(false);
         client[i]->enableSSL(std::move(policy));
         client[i]->setConnectionCallback(
             [i, &loop, &connCount](const TcpConnectionPtr &conn) {
                 if (conn->connected())
                 {
                     LOG_DEBUG << i << " connected!";
-                    conn->send("gemini://gemini.clehaxze.tw/\r\n");
+                    conn->send(std::to_string(i) + " client!!");
                 }
                 else
                 {
