@@ -25,7 +25,7 @@ int main()
                                                          serverAddr,
                                                          "tcpclienttest");
         auto policy = TLSPolicy::defaultClientPolicy();
-        policy->setValidate(false);
+        policy->setValidate(true).setAllowBrokenChain(true);
         client[i]->enableSSL(std::move(policy));
         client[i]->setConnectionCallback(
             [i, &loop, &connCount](const TcpConnectionPtr &conn) {

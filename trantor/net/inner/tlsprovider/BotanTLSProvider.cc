@@ -16,6 +16,7 @@
 #include <botan/tls_exceptn.h>
 #include <botan/pkix_types.h>
 #include <botan/certstor_flatfile.h>
+#include <botan/x509path.h>
 
 using namespace trantor;
 using namespace std::placeholders;
@@ -201,7 +202,6 @@ struct BotanTLSProvider : public TLSProvider,
 
     virtual void startEncryption() override
     {
-        LOG_DEBUG << "certStore " << contextPtr_->certStore.get();
         credsPtr_ = std::make_unique<Credentials>(contextPtr_->key.get(),
                                                   contextPtr_->cert.get(),
                                                   contextPtr_->certStore.get());
@@ -310,31 +310,35 @@ struct BotanTLSProvider : public TLSProvider,
                 certs, ocsp, trusted_roots, usage, hostname, policy);
         else if (policyPtr_->getValidate())
         {
-            // Botan always cehcks the chain, so we have to do it manually if we
-            // wish to allow self-signed certificates
             if (certs.size() == 0)
                 throw Botan::TLS::TLS_Exception(
-                    Botan::TLS::Alert::BAD_CERTIFICATE,
-                    "No certificate provided");
-            auto &cert = certs[0];
-            if (contextPtr_->isServer && !cert.matches_dns_name(hostname))
+                    Botan::TLS::Alert::NO_CERTIFICATE,
+                    "Certificate validation failed: no certificate");
+            // handle self-signed certificate
+            std::vector<std::shared_ptr<const Botan::X509_Certificate>>
+                selfSigned = {
+                    std::make_shared<Botan::X509_Certificate>(certs[0])};
+
+            Botan::Path_Validation_Restrictions restrictions(
+                false,  // require revocation
+                validationPolicy_.minimum_signature_strength());
+
+            auto now = std::chrono::system_clock::now();
+            const auto status =
+                Botan::PKIX::check_chain(selfSigned,
+                                         now,
+                                         hostname,
+                                         usage,
+                                         restrictions.minimum_key_strength(),
+                                         restrictions.trusted_hashes());
+
+            const auto result = Botan::PKIX::overall_status(status);
+
+            if (result != Botan::Certificate_Status_Code::OK)
                 throw Botan::TLS::TLS_Exception(
                     Botan::TLS::Alert::BAD_CERTIFICATE,
-                    "Certificate does not match hostname");
-            // TODO: Check extended key usage
-            if (!cert.allowed_usage(usage))
-                throw Botan::TLS::TLS_Exception(
-                    Botan::TLS::Alert::BAD_CERTIFICATE,
-                    "Certificate does not match usage");
-            const auto &notBefore = cert.not_before();
-            const auto &notAfter = cert.not_after();
-            const auto now = Botan::ASN1_Time(std::chrono::system_clock::now());
-            if (now < notBefore || now > notAfter)
-            {
-                handleSSLError(SSLError::kSSLInvalidCertificate);
-                throw std::runtime_error(
-                    "Certificate is not valid for current time");
-            }
+                    std::string("Certificate validation failed: ") +
+                        Botan::to_string(result));
         }
     }
 
