@@ -219,6 +219,10 @@ struct BotanTLSProvider : public TLSProvider,
         {
             validationPolicy_.requireClientCert_ =
                 contextPtr_->requireClientCert;
+            // technically Botan2 does support TLS 1.0 and 1.1, but Botan3 does
+            // not. So we just disable them to keep compatibility.
+            if (policyPtr_->getUseOldTLS())
+                LOG_WARN << "Old TLS not supported by Botan (only >= TLS 1.2)";
             channel_ = std::make_unique<Botan::TLS::Client>(
                 *this,
                 sessionManager,
@@ -227,9 +231,7 @@ struct BotanTLSProvider : public TLSProvider,
                 rng,
                 Botan::TLS::Server_Information(policyPtr_->getHostname(),
                                                conn_->peerAddr().toPort()),
-                policyPtr_->getUseOldTLS()
-                    ? Botan::TLS::Protocol_Version::TLS_V10
-                    : Botan::TLS::Protocol_Version::TLS_V12,
+                Botan::TLS::Protocol_Version::TLS_V12,
                 policyPtr_->getAlpnProtocols());
             setSniName(policyPtr_->getHostname());
         }
