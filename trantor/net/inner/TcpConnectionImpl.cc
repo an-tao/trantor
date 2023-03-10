@@ -1272,6 +1272,7 @@ void TcpConnectionImpl::startEncryption(
 
 void TcpConnectionImpl::onSslError(TcpConnection *self, SSLError err)
 {
+    self->forceClose();
     if (self->sslErrorCallback_)
         self->sslErrorCallback_(err);
 }
@@ -1280,13 +1281,11 @@ void TcpConnectionImpl::onHandshakeFinished(TcpConnection *self)
     auto connPtr = ((TcpConnectionImpl *)self)->shared_from_this();
     if (connPtr->upgradeCallback_)
     {
-        connPtr->upgradeCallback_(
-            ((TcpConnectionImpl *)self)->shared_from_this());
+        connPtr->upgradeCallback_(connPtr);
         connPtr->upgradeCallback_ = nullptr;
     }
     else if (self->connectionCallback_)
-        self->connectionCallback_(
-            ((TcpConnectionImpl *)self)->shared_from_this());
+        self->connectionCallback_(connPtr);
 }
 void TcpConnectionImpl::onSslMessage(TcpConnection *self, MsgBuffer *buffer)
 {
