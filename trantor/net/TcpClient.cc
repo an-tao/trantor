@@ -89,7 +89,10 @@ TcpClient::~TcpClient()
     LOG_TRACE << "TcpClient::~TcpClient[" << name_ << "] - connector ";
     std::lock_guard<std::mutex> lock(mutex_);
     if (connection_ == nullptr)
+    {
+        connector_->stop();
         return;
+    }
     assert(loop_ == connection_->getLoop());
     auto conn =
         std::atomic_load_explicit(&connection_, std::memory_order_relaxed);
