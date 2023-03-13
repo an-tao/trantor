@@ -45,7 +45,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         kNumberOfLogLevels
     };
 
-#ifdef TRNANTOR_LOG_COMPACT  // only <time><ThreadID><Level>
+#ifdef LOG_COMPACT_TRACE  // only <time><ThreadID><Level>
     Logger(const char *file, int line);
     Logger(const char *file, int line, LogLevel level);
     Logger(const char *file, int line, bool isSysErr);
@@ -95,7 +95,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     Logger(SourceFile file, int line, LogLevel level);
     Logger(SourceFile file, int line, bool isSysErr);
     Logger(SourceFile file, int line, LogLevel level, const char *func);
-#endif  // TRNANTOR_LOG_COMPACT
+#endif  // LOG_COMPACT_TRACE
     ~Logger();
     Logger &setIndex(int index)
     {
@@ -233,7 +233,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     friend class RawLogger;
     LogStream logStream_;
     Date date_{Date::now()};
-#ifndef TRNANTOR_LOG_COMPACT
+#ifndef LOG_COMPACT_TRACE
     SourceFile sourceFile_;
     int fileLine_;
 #endif

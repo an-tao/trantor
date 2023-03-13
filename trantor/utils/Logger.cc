@@ -62,7 +62,7 @@ inline LogStream &operator<<(LogStream &s, T v)
     return s;
 }
 
-#ifndef TRNANTOR_LOG_COMPACT
+#ifndef LOG_COMPACT_TRACE
 inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
 {
     s.append(v.data_, v.size_);
@@ -177,7 +177,7 @@ static const char *logLevelStr[Logger::LogLevel::kNumberOfLogLevels] = {
     " FATAL ",
 };
 
-#ifdef TRNANTOR_LOG_COMPACT
+#ifdef LOG_COMPACT_TRACE
 Logger::Logger(const char *file, int line) : level_(kInfo)
 {
     formatTime();
@@ -232,7 +232,7 @@ Logger::Logger(SourceFile file, int line, bool)
         logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
     }
 }
-#endif  // TRNANTOR_LOG_COMPACT
+#endif  // LOG_COMPACT_TRACE
 
 RawLogger::~RawLogger()
 {
@@ -253,7 +253,7 @@ RawLogger::~RawLogger()
 }
 Logger::~Logger()
 {
-#ifndef TRNANTOR_LOG_COMPACT
+#ifndef LOG_COMPACT_TRACE
     logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
 #endif
     if (index_ < 0)
