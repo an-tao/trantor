@@ -45,50 +45,57 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         kNumberOfLogLevels
     };
 
-    /**
-     * @brief Calculate of basename of source files in compile time.
-     *
-     */
-    class SourceFile
-    {
-      public:
-        template <int N>
-        inline SourceFile(const char (&arr)[N]) : data_(arr), size_(N - 1)
-        {
-            // std::cout<<data_<<std::endl;
-#ifndef _MSC_VER
-            const char *slash = strrchr(data_, '/');  // builtin function
+#ifdef TRNANTOR_LOG_COMPACT // only <time><ThreadID><Level>
+	Logger(const char* file, int line);
+	Logger(const char* file, int line, LogLevel level);
+	Logger(const char* file, int line, bool isSysErr);
+	Logger(const char* file, int line, LogLevel level, const char *func);
 #else
-            const char *slash = strrchr(data_, '\\');
-#endif
-            if (slash)
-            {
-                data_ = slash + 1;
-                size_ -= static_cast<int>(data_ - arr);
-            }
-        }
-
-        explicit SourceFile(const char *filename) : data_(filename)
-        {
+	/**
+ * @brief Calculate of basename of source files in compile time.
+ *
+ */
+	class SourceFile
+	{
+	public:
+		template <int N>
+		inline SourceFile(const char(&arr)[N]) : data_(arr), size_(N - 1)
+		{
+			// std::cout<<data_<<std::endl;
 #ifndef _MSC_VER
-            const char *slash = strrchr(filename, '/');
+			const char *slash = strrchr(data_, '/');  // builtin function
 #else
-            const char *slash = strrchr(filename, '\\');
+			const char *slash = strrchr(data_, '\\');
 #endif
-            if (slash)
-            {
-                data_ = slash + 1;
-            }
-            size_ = static_cast<int>(strlen(data_));
-        }
+			if (slash)
+			{
+				data_ = slash + 1;
+				size_ -= static_cast<int>(data_ - arr);
+			}
+		}
 
-        const char *data_;
-        int size_;
-    };
-    Logger(SourceFile file, int line);
-    Logger(SourceFile file, int line, LogLevel level);
-    Logger(SourceFile file, int line, bool isSysErr);
-    Logger(SourceFile file, int line, LogLevel level, const char *func);
+		explicit SourceFile(const char *filename) : data_(filename)
+		{
+#ifndef _MSC_VER
+			const char *slash = strrchr(filename, '/');
+#else
+			const char *slash = strrchr(filename, '\\');
+#endif
+			if (slash)
+			{
+				data_ = slash + 1;
+			}
+			size_ = static_cast<int>(strlen(data_));
+		}
+
+		const char *data_;
+		int size_;
+	};
+	Logger(SourceFile file, int line);
+	Logger(SourceFile file, int line, LogLevel level);
+	Logger(SourceFile file, int line, bool isSysErr);
+	Logger(SourceFile file, int line, LogLevel level, const char *func);
+#endif //TRNANTOR_LOG_COMPACT
     ~Logger();
     Logger &setIndex(int index)
     {
@@ -226,8 +233,10 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     friend class RawLogger;
     LogStream logStream_;
     Date date_{Date::now()};
+#ifndef TRNANTOR_LOG_COMPACT
     SourceFile sourceFile_;
     int fileLine_;
+#endif
     LogLevel level_;
     int index_{-1};
 };
