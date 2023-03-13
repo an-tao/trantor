@@ -178,64 +178,61 @@ static const char *logLevelStr[Logger::LogLevel::kNumberOfLogLevels] = {
 };
 
 #ifdef TRNANTOR_LOG_COMPACT
-Logger::Logger(const char* file, int line)
-	: level_(kInfo)
+Logger::Logger(const char *file, int line) : level_(kInfo)
 {
-	formatTime();
-	logStream_ << T(logLevelStr[level_], 7);
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
 }
-Logger::Logger(const char* file, int line, LogLevel level)
-	: level_(level)
+Logger::Logger(const char *file, int line, LogLevel level) : level_(level)
 {
-	formatTime();
-	logStream_ << T(logLevelStr[level_], 7);
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
 }
-Logger::Logger(const char* file, int line, LogLevel level, const char *func)
-	: level_(level)
+Logger::Logger(const char *file, int line, LogLevel level, const char *func)
+    : level_(level)
 {
-	formatTime();
-	logStream_ << T(logLevelStr[level_], 7);
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
 }
-Logger::Logger(const char* file, int line, bool)
-	: level_(kFatal)
+Logger::Logger(const char *file, int line, bool) : level_(kFatal)
 {
-	formatTime();
-	logStream_ << T(logLevelStr[level_], 7);
-	if (errno != 0)
-	{
-		logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
-	}
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+    if (errno != 0)
+    {
+        logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
+    }
 }
 #else
 Logger::Logger(SourceFile file, int line)
-	: sourceFile_(file), fileLine_(line), level_(kInfo)
+    : sourceFile_(file), fileLine_(line), level_(kInfo)
 {
-	formatTime();
-	logStream_ << T(logLevelStr[level_], 7);
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
 }
 Logger::Logger(SourceFile file, int line, LogLevel level)
-	: sourceFile_(file), fileLine_(line), level_(level)
+    : sourceFile_(file), fileLine_(line), level_(level)
 {
-	formatTime();
-	logStream_ << T(logLevelStr[level_], 7);
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
 }
 Logger::Logger(SourceFile file, int line, LogLevel level, const char *func)
-	: sourceFile_(file), fileLine_(line), level_(level)
+    : sourceFile_(file), fileLine_(line), level_(level)
 {
-	formatTime();
-	logStream_ << T(logLevelStr[level_], 7) << "[" << func << "] ";
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7) << "[" << func << "] ";
 }
 Logger::Logger(SourceFile file, int line, bool)
-	: sourceFile_(file), fileLine_(line), level_(kFatal)
+    : sourceFile_(file), fileLine_(line), level_(kFatal)
 {
-	formatTime();
-	logStream_ << T(logLevelStr[level_], 7);
-	if (errno != 0)
-	{
-		logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
-	}
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+    if (errno != 0)
+    {
+        logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
+    }
 }
-#endif //TRNANTOR_LOG_COMPACT
+#endif  // TRNANTOR_LOG_COMPACT
 
 RawLogger::~RawLogger()
 {
@@ -257,7 +254,7 @@ RawLogger::~RawLogger()
 Logger::~Logger()
 {
 #ifndef TRNANTOR_LOG_COMPACT
-	logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
+    logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
 #endif
     if (index_ < 0)
     {
