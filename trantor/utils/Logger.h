@@ -95,7 +95,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     Logger(SourceFile file, int line, bool isSysErr);
     Logger(SourceFile file, int line, LogLevel level, const char *func);
 
-	// LOG_COMPACT_TRACE only <time><ThreadID><Level>
+    // LOG_COMPACT_TRACE only <time><ThreadID><Level>
     Logger();
     Logger(LogLevel level);
     Logger(bool isSysErr);
@@ -317,39 +317,27 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
     trantor::Logger(__FILE__, __LINE__, true).setIndex(index).stream()
 
 // LOG_COMPACT_... begin block
-#define LOG_COMPACT_DEBUG                                                          \
-    TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kDebug)    \
-    trantor::Logger(trantor::Logger::kDebug) \
-        .stream()
-#define LOG_COMPACT_DEBUG_TO(index)                                                \
-    TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kDebug)    \
-    trantor::Logger(trantor::Logger::kDebug) \
-        .setIndex(index)                                                   \
-        .stream()
-#define LOG_COMPACT_INFO                                                       \
+#define LOG_COMPACT_DEBUG                                               \
+    TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kDebug) \
+    trantor::Logger(trantor::Logger::kDebug).stream()
+#define LOG_COMPACT_DEBUG_TO(index)                                     \
+    TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kDebug) \
+    trantor::Logger(trantor::Logger::kDebug).setIndex(index).stream()
+#define LOG_COMPACT_INFO                                               \
     TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
     trantor::Logger().stream()
-#define LOG_COMPACT_INFO_TO(index)                                             \
+#define LOG_COMPACT_INFO_TO(index)                                     \
     TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
     trantor::Logger().setIndex(index).stream()
-#define LOG_COMPACT_WARN \
-    trantor::Logger(trantor::Logger::kWarn).stream()
-#define LOG_COMPACT_WARN_TO(index)                                      \
-    trantor::Logger(trantor::Logger::kWarn) \
-        .setIndex(index)                                        \
-        .stream()
-#define LOG_COMPACT_ERROR \
-    trantor::Logger(trantor::Logger::kError).stream()
-#define LOG_COMPACT_ERROR_TO(index)                                      \
-    trantor::Logger(trantor::Logger::kError) \
-        .setIndex(index)                                         \
-        .stream()
-#define LOG_COMPACT_FATAL \
-    trantor::Logger(trantor::Logger::kFatal).stream()
-#define LOG_COMPACT_FATAL_TO(index)                                      \
-    trantor::Logger(trantor::Logger::kFatal) \
-        .setIndex(index)                                         \
-        .stream()
+#define LOG_COMPACT_WARN trantor::Logger(trantor::Logger::kWarn).stream()
+#define LOG_COMPACT_WARN_TO(index) \
+    trantor::Logger(trantor::Logger::kWarn).setIndex(index).stream()
+#define LOG_COMPACT_ERROR trantor::Logger(trantor::Logger::kError).stream()
+#define LOG_COMPACT_ERROR_TO(index) \
+    trantor::Logger(trantor::Logger::kError).setIndex(index).stream()
+#define LOG_COMPACT_FATAL trantor::Logger(trantor::Logger::kFatal).stream()
+#define LOG_COMPACT_FATAL_TO(index) \
+    trantor::Logger(trantor::Logger::kFatal).setIndex(index).stream()
 #define LOG_COMPACT_SYSERR trantor::Logger(true).stream()
 #define LOG_COMPACT_SYSERR_TO(index) \
     trantor::Logger(true).setIndex(index).stream()

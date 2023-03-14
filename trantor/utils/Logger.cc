@@ -245,9 +245,10 @@ RawLogger::~RawLogger()
 }
 Logger::~Logger()
 {
-    if(sourceFile_.data_)
+    if (sourceFile_.data_)
         logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
-
+    else
+        logStream_ << '\n';
     if (index_ < 0)
     {
         auto &oFunc = Logger::outputFunc_();
@@ -266,8 +267,6 @@ Logger::~Logger()
         if (level_ >= kError)
             Logger::flushFunc_(index_)();
     }
-
-    // logStream_.resetBuffer();
 }
 LogStream &Logger::stream()
 {
