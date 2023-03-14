@@ -45,12 +45,6 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         kNumberOfLogLevels
     };
 
-#ifdef LOG_COMPACT_TRACE  // only <time><ThreadID><Level>
-    Logger(const char *file, int line);
-    Logger(const char *file, int line, LogLevel level);
-    Logger(const char *file, int line, bool isSysErr);
-    Logger(const char *file, int line, LogLevel level, const char *func);
-#else
     /**
      * @brief Calculate of basename of source files in compile time.
      *
@@ -74,8 +68,13 @@ class TRANTOR_EXPORT Logger : public NonCopyable
             }
         }
 
-        explicit SourceFile(const char *filename) : data_(filename)
+        explicit SourceFile(const char *filename = nullptr) : data_(filename)
         {
+            if (!filename)
+            {
+                size_ = 0;
+                return;
+            }
 #ifndef _MSC_VER
             const char *slash = strrchr(filename, '/');
 #else
@@ -95,7 +94,13 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     Logger(SourceFile file, int line, LogLevel level);
     Logger(SourceFile file, int line, bool isSysErr);
     Logger(SourceFile file, int line, LogLevel level, const char *func);
-#endif  // LOG_COMPACT_TRACE
+
+	// LOG_COMPACT_TRACE only <time><ThreadID><Level>
+    Logger();
+    Logger(LogLevel level);
+    Logger(bool isSysErr);
+    Logger(LogLevel level, const char *func);
+
     ~Logger();
     Logger &setIndex(int index)
     {
@@ -233,10 +238,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     friend class RawLogger;
     LogStream logStream_;
     Date date_{Date::now()};
-#ifndef LOG_COMPACT_TRACE
     SourceFile sourceFile_;
     int fileLine_;
-#endif
     LogLevel level_;
     int index_{-1};
 };
@@ -312,6 +315,45 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
 #define LOG_SYSERR trantor::Logger(__FILE__, __LINE__, true).stream()
 #define LOG_SYSERR_TO(index) \
     trantor::Logger(__FILE__, __LINE__, true).setIndex(index).stream()
+
+// LOG_COMPACT_... begin block
+#define LOG_COMPACT_DEBUG                                                          \
+    TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kDebug)    \
+    trantor::Logger(trantor::Logger::kDebug) \
+        .stream()
+#define LOG_COMPACT_DEBUG_TO(index)                                                \
+    TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kDebug)    \
+    trantor::Logger(trantor::Logger::kDebug) \
+        .setIndex(index)                                                   \
+        .stream()
+#define LOG_COMPACT_INFO                                                       \
+    TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
+    trantor::Logger().stream()
+#define LOG_COMPACT_INFO_TO(index)                                             \
+    TRANTOR_IF_(trantor::Logger::logLevel() <= trantor::Logger::kInfo) \
+    trantor::Logger().setIndex(index).stream()
+#define LOG_COMPACT_WARN \
+    trantor::Logger(trantor::Logger::kWarn).stream()
+#define LOG_COMPACT_WARN_TO(index)                                      \
+    trantor::Logger(trantor::Logger::kWarn) \
+        .setIndex(index)                                        \
+        .stream()
+#define LOG_COMPACT_ERROR \
+    trantor::Logger(trantor::Logger::kError).stream()
+#define LOG_COMPACT_ERROR_TO(index)                                      \
+    trantor::Logger(trantor::Logger::kError) \
+        .setIndex(index)                                         \
+        .stream()
+#define LOG_COMPACT_FATAL \
+    trantor::Logger(trantor::Logger::kFatal).stream()
+#define LOG_COMPACT_FATAL_TO(index)                                      \
+    trantor::Logger(trantor::Logger::kFatal) \
+        .setIndex(index)                                         \
+        .stream()
+#define LOG_COMPACT_SYSERR trantor::Logger(true).stream()
+#define LOG_COMPACT_SYSERR_TO(index) \
+    trantor::Logger(true).setIndex(index).stream()
+// LOG_COMPACT_... end block
 
 #define LOG_RAW trantor::RawLogger().stream()
 #define LOG_RAW_TO(index) trantor::RawLogger().setIndex(index).stream()

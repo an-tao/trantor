@@ -62,13 +62,12 @@ inline LogStream &operator<<(LogStream &s, T v)
     return s;
 }
 
-#ifndef LOG_COMPACT_TRACE
 inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
 {
     s.append(v.data_, v.size_);
     return s;
 }
-#endif
+
 }  // namespace trantor
 using namespace trantor;
 
@@ -177,33 +176,6 @@ static const char *logLevelStr[Logger::LogLevel::kNumberOfLogLevels] = {
     " FATAL ",
 };
 
-#ifdef LOG_COMPACT_TRACE
-Logger::Logger(const char *file, int line) : level_(kInfo)
-{
-    formatTime();
-    logStream_ << T(logLevelStr[level_], 7);
-}
-Logger::Logger(const char *file, int line, LogLevel level) : level_(level)
-{
-    formatTime();
-    logStream_ << T(logLevelStr[level_], 7);
-}
-Logger::Logger(const char *file, int line, LogLevel level, const char *func)
-    : level_(level)
-{
-    formatTime();
-    logStream_ << T(logLevelStr[level_], 7);
-}
-Logger::Logger(const char *file, int line, bool) : level_(kFatal)
-{
-    formatTime();
-    logStream_ << T(logLevelStr[level_], 7);
-    if (errno != 0)
-    {
-        logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
-    }
-}
-#else
 Logger::Logger(SourceFile file, int line)
     : sourceFile_(file), fileLine_(line), level_(kInfo)
 {
@@ -232,7 +204,33 @@ Logger::Logger(SourceFile file, int line, bool)
         logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
     }
 }
-#endif  // LOG_COMPACT_TRACE
+
+// LOG_COMPACT_TRACE
+Logger::Logger() : level_(kInfo)
+{
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+}
+Logger::Logger(LogLevel level) : level_(level)
+{
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+}
+Logger::Logger(LogLevel level, const char *func)
+    : level_(level)
+{
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+}
+Logger::Logger(bool) : level_(kFatal)
+{
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+    if (errno != 0)
+    {
+        logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
+    }
+}
 
 RawLogger::~RawLogger()
 {
@@ -253,9 +251,9 @@ RawLogger::~RawLogger()
 }
 Logger::~Logger()
 {
-#ifndef LOG_COMPACT_TRACE
-    logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
-#endif
+    if(sourceFile_.data_)
+        logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
+
     if (index_ < 0)
     {
         auto &oFunc = Logger::outputFunc_();
