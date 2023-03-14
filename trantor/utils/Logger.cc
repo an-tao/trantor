@@ -216,12 +216,6 @@ Logger::Logger(LogLevel level) : level_(level)
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
 }
-Logger::Logger(LogLevel level, const char *func)
-    : level_(level)
-{
-    formatTime();
-    logStream_ << T(logLevelStr[level_], 7);
-}
 Logger::Logger(bool) : level_(kFatal)
 {
     formatTime();
