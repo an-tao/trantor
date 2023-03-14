@@ -205,7 +205,7 @@ Logger::Logger(SourceFile file, int line, bool)
     }
 }
 
-// LOG_COMPACT_TRACE
+// LOG_COMPACT
 Logger::Logger() : level_(kInfo)
 {
     formatTime();

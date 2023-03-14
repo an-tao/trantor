@@ -95,11 +95,10 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     Logger(SourceFile file, int line, bool isSysErr);
     Logger(SourceFile file, int line, LogLevel level, const char *func);
 
-    // LOG_COMPACT_TRACE only <time><ThreadID><Level>
+    // LOG_COMPACT only <time><ThreadID><Level>
     Logger();
     Logger(LogLevel level);
     Logger(bool isSysErr);
-    Logger(LogLevel level, const char *func);
 
     ~Logger();
     Logger &setIndex(int index)
