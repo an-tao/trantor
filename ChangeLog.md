@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.11] - 2023-03-17
+
+### API Changes list
+
+- Add a method to the Logger class to enable local time displaying.
+
+- TRNANTOR_LOG_COMPACT - compact logs without source code details.
+
+### Changed
+
+- Refactor TcpServer I/O loop logic.
+
+### Fixed
+
+- Fix a conan issue.
+
 ## [1.5.10] - 2023-01-23
 
 ### API Changes list
@@ -504,7 +520,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.10...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.11...HEAD
+
+[1.5.11]: https://github.com/an-tao/trantor/compare/v1.5.10...v1.5.11
 
 [1.5.10]: https://github.com/an-tao/trantor/compare/v1.5.9...v1.5.10
 
