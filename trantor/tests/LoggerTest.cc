@@ -4,6 +4,7 @@
 int main()
 {
     int i;
+    LOG_COMPACT_DEBUG << "Hello, world!";
     LOG_DEBUG << (float)3.14;
     LOG_DEBUG << (const char)'8';
     LOG_DEBUG << &i;

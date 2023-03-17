@@ -67,6 +67,7 @@ inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
     s.append(v.data_, v.size_);
     return s;
 }
+
 }  // namespace trantor
 using namespace trantor;
 
@@ -174,6 +175,7 @@ static const char *logLevelStr[Logger::LogLevel::kNumberOfLogLevels] = {
     " ERROR ",
     " FATAL ",
 };
+
 Logger::Logger(SourceFile file, int line)
     : sourceFile_(file), fileLine_(line), level_(kInfo)
 {
@@ -202,6 +204,28 @@ Logger::Logger(SourceFile file, int line, bool)
         logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
     }
 }
+
+// LOG_COMPACT
+Logger::Logger() : level_(kInfo)
+{
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+}
+Logger::Logger(LogLevel level) : level_(level)
+{
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+}
+Logger::Logger(bool) : level_(kFatal)
+{
+    formatTime();
+    logStream_ << T(logLevelStr[level_], 7);
+    if (errno != 0)
+    {
+        logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
+    }
+}
+
 RawLogger::~RawLogger()
 {
     if (index_ < 0)
@@ -221,7 +245,10 @@ RawLogger::~RawLogger()
 }
 Logger::~Logger()
 {
-    logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
+    if (sourceFile_.data_)
+        logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
+    else
+        logStream_ << '\n';
     if (index_ < 0)
     {
         auto &oFunc = Logger::outputFunc_();
@@ -240,8 +267,6 @@ Logger::~Logger()
         if (level_ >= kError)
             Logger::flushFunc_(index_)();
     }
-
-    // logStream_.resetBuffer();
 }
 LogStream &Logger::stream()
 {
