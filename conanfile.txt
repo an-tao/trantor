@@ -1,5 +1,5 @@
 [requires]
-gtest/1.13.0
+gtest/1.10.0
 openssl/1.1.1t
 #c-ares/1.17.1
 
