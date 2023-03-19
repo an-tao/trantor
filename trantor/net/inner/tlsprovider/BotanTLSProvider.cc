@@ -171,9 +171,18 @@ struct BotanTLSProvider : public TLSProvider,
             else
                 handleSSLError(SSLError::kSSLProtocolError);
         }
-        catch (std::exception &e)
+        catch (const Botan::Exception &e)
         {
-            LOG_ERROR << "Unexpected Exception: " << e.what();
+            LOG_ERROR << "Unexpected Botan Exception: " << e.what();
+            conn_->shutdown();
+            if (tlsConnected_ == false)
+                handleSSLError(SSLError::kSSLHandshakeError);
+            else
+                handleSSLError(SSLError::kSSLProtocolError);
+        }
+        catch (const std::exception &e)
+        {
+            LOG_ERROR << "Unexpected Generic Exception: " << e.what();
             conn_->shutdown();
             if (tlsConnected_ == false)
                 handleSSLError(SSLError::kSSLHandshakeError);
