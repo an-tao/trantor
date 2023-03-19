@@ -112,7 +112,7 @@ struct SSLContext
 {
     std::unique_ptr<Botan::Private_Key> key;
     std::unique_ptr<Botan::X509_Certificate> cert;
-    std::unique_ptr<Botan::Certificate_Store> certStore;
+    std::shared_ptr<Botan::Certificate_Store> certStore;
     bool isServer = false;
     bool requireClientCert = false;
 };
@@ -399,15 +399,16 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
         if (!policy.getCaPath().empty())
         {
             ctx->certStore =
-                std::make_unique<Botan::Flatfile_Certificate_Store>(
+                std::make_shared<Botan::Flatfile_Certificate_Store>(
                     policy.getCaPath());
             if (server)
                 ctx->requireClientCert = true;
         }
         else if (policy.getUseSystemCertStore())
         {
-            ctx->certStore =
-                std::make_unique<Botan::System_Certificate_Store>();
+            static auto systemCertStore =
+                std::make_shared<Botan::System_Certificate_Store>();
+            ctx->certStore = systemCertStore;
         }
     }
 
