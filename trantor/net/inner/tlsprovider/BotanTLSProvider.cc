@@ -394,16 +394,21 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
             std::make_unique<Botan::X509_Certificate>(policy.getCertPath());
     }
 
-    if (!policy.getCaPath().empty())
+    if (policy.getValidate() && policy.getAllowBrokenChain())
     {
-        ctx->certStore = std::make_unique<Botan::Flatfile_Certificate_Store>(
-            policy.getCaPath());
-        if (server)
-            ctx->requireClientCert = true;
-    }
-    else if (!policy.getAllowBrokenChain() && policy.getUseSystemCertStore())
-    {
-        ctx->certStore = std::make_unique<Botan::System_Certificate_Store>();
+        if (!policy.getCaPath().empty())
+        {
+            ctx->certStore =
+                std::make_unique<Botan::Flatfile_Certificate_Store>(
+                    policy.getCaPath());
+            if (server)
+                ctx->requireClientCert = true;
+        }
+        else if (policy.getUseSystemCertStore())
+        {
+            ctx->certStore =
+                std::make_unique<Botan::System_Certificate_Store>();
+        }
     }
 
     if (policy.getUseOldTLS())
