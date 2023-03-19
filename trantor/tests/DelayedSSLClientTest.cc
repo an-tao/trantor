@@ -48,7 +48,7 @@ int main()
                 auto policy = TLSPolicy::defaultClientPolicy();
                 policy->setValidate(false);
                 conn->startEncryption(
-                    policy, true, [](const TcpConnectionPtr &encryptedConn) {
+                    policy, false, [](const TcpConnectionPtr &encryptedConn) {
                         LOG_INFO << "SSL established";
                         encryptedConn->send("Hello");
                     });
