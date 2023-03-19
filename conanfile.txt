@@ -1,6 +1,6 @@
 [requires]
-gtest/1.10.0
-openssl/1.1.1t
+gtest/1.13.0
+openssl/3.0.8
 #c-ares/1.17.1
 
 [generators]
