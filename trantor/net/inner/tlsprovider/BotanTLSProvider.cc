@@ -291,7 +291,7 @@ struct BotanTLSProvider : public TLSProvider,
     {
         if (alert.type() == Botan::TLS::Alert::CLOSE_NOTIFY)
         {
-            LOG_WARN << "TLS close notify received";
+            LOG_TRACE << "TLS close notify received";
             if (closeCallback_)
                 closeCallback_(conn_);
         }
