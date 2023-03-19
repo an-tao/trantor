@@ -4,7 +4,7 @@ project(trantor)
 option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_C-ARES "Build C-ARES" ON)
 option(BUILD_SHARED_LIBS "Build trantor as a shared lib" OFF)
-option(TRANTOR_PREFERRED_TLS_PROVIDER "Prefered TLS provider for trantor. Valid options are 'openssl', 'botan' or ''" "")
+option(TRANTOR_USE_TLS "TLS provider for trantor. Valid options are 'openssl', 'botan' or '' (let the build scripr decide)" "")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
@@ -124,19 +124,19 @@ if(WIN32)
       trantor/utils/WindowsSupport.h)
 endif(WIN32)
 
-# Somehow the default value of TRANTOR_PREFERRED_TLS_PROVIDER is OFF
-if(TRANTOR_PREFERRED_TLS_PROVIDER STREQUAL OFF)
-  set(TRANTOR_PREFERRED_TLS_PROVIDER "")
+# Somehow the default value of TRANTOR_USE_TLS is OFF
+if(TRANTOR_USE_TLS STREQUAL OFF)
+  set(TRANTOR_USE_TLS "")
 endif()
 set(VALID_TLS_PROVIDERS "openssl" "botan" "none")
-list(FIND VALID_TLS_PROVIDERS "${TRANTOR_PREFERRED_TLS_PROVIDER}" PREFERED_TLS_IDX)
-if(PREFERED_TLS_IDX EQUAL -1 AND NOT TRANTOR_PREFERRED_TLS_PROVIDER STREQUAL "")
-  message(FATAL_ERROR "Invalid TLS provider: ${TRANTOR_PREFERRED_TLS_PROVIDER}\n"
+list(FIND VALID_TLS_PROVIDERS "${TRANTOR_USE_TLS}" PREFERED_TLS_IDX)
+if(PREFERED_TLS_IDX EQUAL -1 AND NOT TRANTOR_USE_TLS STREQUAL "")
+  message(FATAL_ERROR "Invalid TLS provider: ${TRANTOR_USE_TLS}\n"
                       "Valid TLS providers are: ${VALID_TLS_PROVIDERS}")
 endif()
 
 set(TRANTOR_TLS_PROVIDER "None")
-if(TRANTOR_PREFERRED_TLS_PROVIDER STREQUAL "openssl" OR TRANTOR_PREFERRED_TLS_PROVIDER STREQUAL "")
+if(TRANTOR_USE_TLS STREQUAL "openssl" OR TRANTOR_USE_TLS STREQUAL "")
   find_package(OpenSSL)
   if(OpenSSL_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
@@ -151,7 +151,7 @@ if(TRANTOR_PREFERRED_TLS_PROVIDER STREQUAL "openssl" OR TRANTOR_PREFERRED_TLS_PR
 endif()
 
 if(TRANTOR_TLS_PROVIDER STREQUAL "None"
-  AND (TRANTOR_PREFERRED_TLS_PROVIDER STREQUAL "botan" OR TRANTOR_PREFERRED_TLS_PROVIDER STREQUAL ""))
+  AND (TRANTOR_USE_TLS STREQUAL "botan" OR TRANTOR_USE_TLS STREQUAL ""))
   find_package(Botan)
   if(Botan_FOUND)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOTAN)

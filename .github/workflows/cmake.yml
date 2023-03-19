@@ -133,7 +133,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on -DTRANTOR_PREFERRED_TLS_PROVIDER="botan"
+        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on -DTRANTOR_USE_TLS="botan"
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
