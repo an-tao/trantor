@@ -45,13 +45,13 @@ int main()
                 if (msg == "hello")
                 {
                     buf->retrieveAll();
-                    conn->startClientEncryption(
-                        [](const TcpConnectionPtr &encryptedConn) {
+                    auto policy = TLSPolicy::defaultClientPolicy();
+                    policy->setValidate(false);
+                    conn->startEncryption(
+                        policy, [](const TcpConnectionPtr &encryptedConn) {
                             LOG_INFO << "SSL established";
                             encryptedConn->send("Hello");
-                        },
-                        false,
-                        false);
+                        });
                 }
                 if (conn->isSSLConnection())
                 {
