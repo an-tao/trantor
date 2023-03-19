@@ -96,13 +96,11 @@ TcpClient::~TcpClient()
     assert(loop_ == connection_->getLoop());
     auto conn =
         std::atomic_load_explicit(&connection_, std::memory_order_relaxed);
-    loop_->runInLoop([conn=std::move(conn)]() {
-        conn->setCloseCallback(
-            [](const TcpConnectionPtr &connPtr) mutable {
-                connPtr->getLoop()->queueInLoop([connPtr] {
-                    connPtr->connectDestroyed();
-                });
-            });
+    loop_->runInLoop([conn = std::move(conn)]() {
+        conn->setCloseCallback([](const TcpConnectionPtr &connPtr) mutable {
+            connPtr->getLoop()->queueInLoop(
+                [connPtr] { connPtr->connectDestroyed(); });
+        });
     });
     connection_->forceClose();
 }
@@ -181,13 +179,11 @@ void TcpClient::newConnection(int sockfd)
         std::lock_guard<std::mutex> lock(mutex_);
         connection_ = conn;
     }
-    conn->setSSLErrorCallback([this](SSLError err) {
-        if (sslErrorCallback_)
-        {
-            sslErrorCallback_(err);
-        }
+    conn->setSSLErrorCallback([weakSelf = std::move(weakSelf)](SSLError err) {
+        auto self = weakSelf.lock();
+        if (self && self->sslErrorCallback_)
+            self->sslErrorCallback_(err);
     });
-
     conn->connectEstablished();
 }
 
