@@ -37,27 +37,27 @@ int main()
                         loop.quit();
                 }
             });
-        client[i]->setMessageCallback(
-            [](const TcpConnectionPtr &conn, MsgBuffer *buf) {
-                auto msg = std::string(buf->peek(), buf->readableBytes());
+        client[i]->setMessageCallback([](const TcpConnectionPtr &conn,
+                                         MsgBuffer *buf) {
+            auto msg = std::string(buf->peek(), buf->readableBytes());
 
-                LOG_INFO << msg;
-                if (msg == "hello")
-                {
-                    buf->retrieveAll();
-                    auto policy = TLSPolicy::defaultClientPolicy();
-                    policy->setValidate(false);
-                    conn->startEncryption(
-                        policy, [](const TcpConnectionPtr &encryptedConn) {
-                            LOG_INFO << "SSL established";
-                            encryptedConn->send("Hello");
-                        });
-                }
-                if (conn->isSSLConnection())
-                {
-                    buf->retrieveAll();
-                }
-            });
+            LOG_INFO << msg;
+            if (msg == "hello")
+            {
+                buf->retrieveAll();
+                auto policy = TLSPolicy::defaultClientPolicy();
+                policy->setValidate(false);
+                conn->startEncryption(
+                    policy, true, [](const TcpConnectionPtr &encryptedConn) {
+                        LOG_INFO << "SSL established";
+                        encryptedConn->send("Hello");
+                    });
+            }
+            if (conn->isSSLConnection())
+            {
+                buf->retrieveAll();
+            }
+        });
         client[i]->connect();
     }
     loop.loop();
