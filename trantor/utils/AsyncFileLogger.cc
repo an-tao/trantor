@@ -120,12 +120,12 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
     if (!loggerFilePtr_)
     {
         loggerFilePtr_ = std::unique_ptr<LoggerFile>(
-            new LoggerFile(filePath_, fileBaseName_, fileExtName_));
+            new LoggerFile(filePath_, fileBaseName_, fileExtName_, bRenameOnLimitOnly_));
     }
     loggerFilePtr_->writeLog(buf);
     if (loggerFilePtr_->getLength() > sizeLimit_)
     {
-        loggerFilePtr_.reset();
+        loggerFilePtr_->nextFileName();
     }
 }
 
@@ -177,13 +177,24 @@ void AsyncFileLogger::startLogging()
 
 AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
                                         const std::string &fileBaseName,
-                                        const std::string &fileExtName)
+                                        const std::string &fileExtName,
+                                        bool bRenameOnLimitOnly)
     : creationDate_(Date::date()),
       filePath_(filePath),
       fileBaseName_(fileBaseName),
-      fileExtName_(fileExtName)
+      fileExtName_(fileExtName),
+      bRenameOnLimitOnly_(bRenameOnLimitOnly)
 {
-    fileFullName_ = filePath + fileBaseName + fileExtName;
+    open();
+}
+
+/**
+ * Open file for append logs
+ * Always write to file with base name.
+ */
+void AsyncFileLogger::LoggerFile::open()
+{
+    fileFullName_ = filePath_ + fileBaseName_ + fileExtName_;
 #ifndef _MSC_VER
     fp_ = fopen(fileFullName_.c_str(), "a");
 #else
@@ -222,16 +233,25 @@ uint64_t AsyncFileLogger::LoggerFile::getLength()
     return 0;
 }
 
-AsyncFileLogger::LoggerFile::~LoggerFile()
+/**
+ * Force store the current file (with the base name)
+ * with the newly generated name by adding time point.
+ * 
+ * @param bOnDestroy - true for keeping log file opened and continuing logging,
+ *                     false for destroy file object
+ */
+void AsyncFileLogger::LoggerFile::nextFileName(bool bOnDestroy)
 {
     if (fp_)
     {
         fclose(fp_);
+        fp_ = nullptr;
+
         char seq[12];
         snprintf(seq,
-                 sizeof(seq),
-                 ".%06llu",
-                 static_cast<long long unsigned int>(fileSeq_ % 1000000));
+            sizeof(seq),
+            ".%06llu",
+            static_cast<long long unsigned int>(fileSeq_ % 1000000));
         ++fileSeq_;
         std::string newName =
             filePath_ + fileBaseName_ + "." +
@@ -241,11 +261,21 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
         rename(fileFullName_.c_str(), newName.c_str());
 #else
         // Convert UTF-8 file to UCS-2
-        auto wFullName{utils::toNativePath(fileFullName_)};
-        auto wNewName{utils::toNativePath(newName)};
+        auto wFullName{ utils::toNativePath(fileFullName_) };
+        auto wNewName{ utils::toNativePath(newName) };
         _wrename(wFullName.c_str(), wNewName.c_str());
 #endif
+        if(!bOnDestroy)
+            open(); // continue logging with base name until next renaming will be required
     }
+}
+
+AsyncFileLogger::LoggerFile::~LoggerFile()
+{
+    if(!bRenameOnLimitOnly_) // rename on each destroy
+        nextFileName(true);
+    if (fp_)
+        fclose(fp_);
 }
 
 void AsyncFileLogger::swapBuffer()
