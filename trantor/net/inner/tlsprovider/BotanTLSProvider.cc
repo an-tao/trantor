@@ -218,6 +218,12 @@ struct BotanTLSProvider : public TLSProvider,
         return size;
     }
 
+    virtual void close() override
+    {
+        if (channel_ && channel_->is_active())
+            channel_->close();
+    }
+
     virtual void startEncryption() override
     {
         credsPtr_ = std::make_unique<Credentials>(contextPtr_->key.get(),

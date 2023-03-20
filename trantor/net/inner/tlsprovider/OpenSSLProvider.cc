@@ -551,6 +551,14 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         }
     }
 
+    virtual void close() override
+    {
+        if (!SSL_is_init_finished(ssl_))
+            return;
+        SSL_shutdown(ssl_);
+        sendTLSData();
+    }
+
     virtual ssize_t sendData(const char *data, size_t len)
     {
         if (getBufferedData().readableBytes() != 0)

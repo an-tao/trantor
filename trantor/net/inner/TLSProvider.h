@@ -39,6 +39,11 @@ struct TLSProvider
      */
     virtual ssize_t sendData(const char* ptr, size_t size) = 0;
 
+    /**
+     * @brief Close the TLS connection
+     */
+    virtual void close() = 0;
+
     virtual void startEncryption() = 0;
 
     bool sendBufferedData()

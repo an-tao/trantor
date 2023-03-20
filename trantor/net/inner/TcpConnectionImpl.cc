@@ -82,6 +82,9 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 }
 TcpConnectionImpl::~TcpConnectionImpl()
 {
+    // send a close alert to peer if we are still connected
+    if (tlsProviderPtr_ && status_ == ConnStatus::Connected)
+        tlsProviderPtr_->close();
 }
 
 void TcpConnectionImpl::readCallback()
@@ -390,6 +393,8 @@ void TcpConnectionImpl::shutdown()
     loop_->runInLoop([thisPtr]() {
         if (thisPtr->status_ == ConnStatus::Connected)
         {
+            if (thisPtr->tlsProviderPtr_)
+                thisPtr->tlsProviderPtr_->close();
             thisPtr->status_ = ConnStatus::Disconnecting;
             if (!thisPtr->ioChannelPtr_->isWriting())
             {
