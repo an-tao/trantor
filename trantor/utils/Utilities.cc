@@ -382,8 +382,8 @@ static bool systemRandomBytes(void *ptr, size_t size)
 
 struct RngState
 {
-    Hash160 secret;
-    Hash160 prev;
+    Hash256 secret;
+    Hash256 prev;
     int64_t time;
     uint64_t counter;
 };
@@ -410,8 +410,8 @@ bool secureRandomBytes(void *data, size_t len)
     // codebase. (RIP Dan Kaminsky. That talk was epic.)
     // https://youtu.be/xneBjc8z0DE?t=2250
     namespace chrono = std::chrono;
-    static_assert(sizeof(RngState) < 64,
-                  "RngState must be less then SHA1 block size");
+    static_assert(sizeof(RngState) < 128,
+                  "RngState must be less then BLAKE2b's chunk size");
 
     thread_local int useCount = 0;
     thread_local RngState state;
@@ -474,14 +474,14 @@ bool secureRandomBytes(void *data, size_t len)
     // generate the random data as described in the talk. We use SHA1 becasuse
     // it's fast and still secure (there's collision attacks, but that's not
     // relevant here). Will be good to upgrade to BLAKE2b in the future.
-    for (size_t i = 0; i < len / sizeof(Hash160); i++)
+    for (size_t i = 0; i < len / sizeof(Hash256); i++)
     {
-        auto hash = sha1(&state, sizeof(state));
+        auto hash = blake2b(&state, sizeof(state));
         memcpy((char *)data + i * sizeof(hash), &hash, sizeof(hash));
         state.counter++;
         state.prev = hash;
     }
-    if (len % sizeof(Hash160) != 0)
+    if (len % sizeof(Hash256) != 0)
     {
         auto hash = sha1(&state, sizeof(state));
         memcpy((char *)data + len - len % sizeof(hash),
