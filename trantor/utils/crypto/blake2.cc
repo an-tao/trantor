@@ -118,20 +118,6 @@ static void store64(uint8_t* dst, uint64_t w)
 #endif
 }
 
-static void store32(uint8_t* dst, uint32_t w)
-{
-#if defined(NATIVE_LITTLE_ENDIAN)
-    memcpy(dst, &w, sizeof w);
-#else
-    uint8_t* p = dst;
-
-    p[0] = (uint8_t)(w >> 0);
-    p[1] = (uint8_t)(w >> 8);
-    p[2] = (uint8_t)(w >> 16);
-    p[3] = (uint8_t)(w >> 24);
-#endif
-}
-
 /**
  * Increments the blake2b state counter
  *
@@ -255,7 +241,8 @@ void trantor_blake2b_update(blake2b_state* state, const unsigned char* input_buf
  */
 void trantor_blake2b_init(blake2b_state* state, size_t outlen, const void* key, size_t keylen)
 {
-    blake2b_param P = {0};
+    blake2b_param P;
+    memset(&P, 0, sizeof(P));
     const uint8_t* p;
     size_t i;
     uint64_t dest;
@@ -267,13 +254,6 @@ void trantor_blake2b_init(blake2b_state* state, size_t outlen, const void* key, 
     }
     P.fanout = 1;
     P.depth = 1;
-    /*store32(&P.leaf_length, 0);
-    store64(&P.node_offset, 0);
-    P.node_depth = 0;
-    P.inner_length = 0;
-    memset(P.reserved, 0, sizeof(P.reserved));
-    memset(P.salt, 0, sizeof(P.salt));
-    memset(P.personal, 0, sizeof(P.personal));*/
 
     dest = 0;
     p = (const uint8_t*)(&P);
@@ -307,6 +287,7 @@ void trantor_blake2b_init(blake2b_state* state, size_t outlen, const void* key, 
 
 void trantor_blake2b_final(blake2b_state* state, void* out, size_t outlen)
 {
+    (void)(outlen);
     uint8_t buffer[BLAKE2B_OUTBYTES] = {0};
     size_t i;
 
@@ -342,7 +323,8 @@ void trantor_blake2b_final(blake2b_state* state, void* out, size_t outlen)
  */
 void trantor_blake2b(void* output, size_t outlen, const void* input, size_t inlen, const void* key, size_t keylen)
 {
-    blake2b_state state = {0};
+    blake2b_state state;
+    memset(&state, 0, sizeof(state));
 
     trantor_blake2b_init(&state, outlen, key, keylen);
     trantor_blake2b_update(&state, (const uint8_t*)input, inlen);

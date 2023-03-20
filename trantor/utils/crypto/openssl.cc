@@ -15,7 +15,7 @@
 
 #if OPENSSL_VERSION_MAJOR < 3 || defined(LIBRESSL_VERSION_NUMBER)
 #include "blake2.h"
-#include "blake2.c"
+#include "blake2.cc"
 #endif
 
 namespace trantor

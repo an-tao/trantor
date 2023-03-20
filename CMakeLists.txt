@@ -171,7 +171,8 @@ if(TRANTOR_TLS_PROVIDER STREQUAL "None")
       trantor/utils/crypto/sha3.cc
       trantor/utils/crypto/md5.cc
       trantor/utils/crypto/sha1.cc
-      trantor/utils/crypto/sha256.cc)
+      trantor/utils/crypto/sha256.cc
+      trantor/utils/crypto/blake2.cc)
   set(private_headers
       ${private_headers}
       trantor/utils/crypto/sha3.h

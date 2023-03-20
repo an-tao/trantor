@@ -483,7 +483,7 @@ bool secureRandomBytes(void *data, size_t len)
     }
     if (len % sizeof(Hash256) != 0)
     {
-        auto hash = sha1(&state, sizeof(state));
+        auto hash = blake2b(&state, sizeof(state));
         memcpy((char *)data + len - len % sizeof(hash),
                &hash,
                len % sizeof(hash));
