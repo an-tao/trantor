@@ -325,7 +325,7 @@ Hash256 sha3(const void *data, size_t len)
 Hash256 blake2b(const void *data, size_t len)
 {
     Hash256 hash;
-    trantor_blake2b((const unsigned char *)data, len, &hash, sizeof(hash));
+    trantor_blake2b(&hash, sizeof(hash), data, len, NULL, 0);
     return hash;
 }
 #endif
