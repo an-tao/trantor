@@ -138,7 +138,7 @@ static void store32(uint8_t* dst, uint32_t w)
  * @param      S     blake2b_state instance
  * @param[in]  inc   the increment value
  */
-static void blake2b_increment_counter(blake2b_state* state, const uint64_t inc)
+static void trantor_blake2b_increment_counter(blake2b_state* state, const uint64_t inc)
 {
     state->t[0] += inc;
     state->t[1] += (state->t[0] < inc);
