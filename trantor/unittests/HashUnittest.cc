@@ -7,7 +7,7 @@
 using namespace trantor;
 using namespace trantor::utils;
 
-TEST(Hash, md5)
+TEST(Hash, MD5)
 {
     EXPECT_EQ(toHexString(md5("hello")), "5D41402ABC4B2A76B9719D911017C592");
     EXPECT_EQ(toHexString(md5("trantor")), "95FC641C9E629D2854B0B60F5A51E1FD");
@@ -39,6 +39,16 @@ TEST(Hash, SHA3)
     EXPECT_EQ(
         toHexString(sha3("trantor")),
         "135E1D2372F0A48525E09D47C6FFCA14077D8C5A0905410FA81C30ED9AFF696A");
+}
+
+TEST(Hash, BLAKE2b)
+{
+    EXPECT_EQ(
+        toHexString(blake2b("hello")),
+        "324DCF027DD4A30A932C441F365A25E86B173DEFA4B8E58948253471B81B72CF");
+    EXPECT_EQ(
+        toHexString(blake2b("trantor")),
+        "2D03B3D7E76C52DD7A32689ADE4406798B50BC5B09428E3F90F56182898873C8");
 }
 
 int main(int argc, char **argv)

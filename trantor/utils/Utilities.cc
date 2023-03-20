@@ -38,6 +38,7 @@
 #include "crypto/sha1.h"
 #include "crypto/sha256.h"
 #include "crypto/sha3.h"
+#include "crypto/blake2.h"
 #include <fstream>
 #include <chrono>
 #include <random>
@@ -318,6 +319,13 @@ Hash256 sha3(const void *data, size_t len)
 {
     Hash256 hash;
     trantor_sha3((const unsigned char *)data, len, &hash, sizeof(hash));
+    return hash;
+}
+
+Hash256 blake2b(const void *data, size_t len)
+{
+    Hash256 hash;
+    trantor_blake2b((const unsigned char *)data, len, &hash, sizeof(hash));
     return hash;
 }
 #endif

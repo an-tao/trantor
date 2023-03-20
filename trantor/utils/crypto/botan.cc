@@ -41,5 +41,14 @@ Hash256 sha3(const void* data, size_t len)
     return hash;
 }
 
+Hash256 blake2b(const void* data, size_t len)
+{
+    Hash256 hash;
+    auto blake2b = Botan::HashFunction::create("BLAKE2b(256)");
+    blake2b->update((const unsigned char*)data, len);
+    blake2b->final((unsigned char*)&hash);
+    return hash;
+}
+
 }  // namespace utils
 }  // namespace trantor

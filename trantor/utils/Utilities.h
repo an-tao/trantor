@@ -205,6 +205,7 @@ struct Hash256
 
 /**
  * @brief Compute the MD5 hash of the given data
+ * @note don't use MD5 for new applications. It's here only for compatibility
  */
 TRANTOR_EXPORT Hash128 md5(const void *data, size_t len);
 inline Hash128 md5(const std::string &str)
@@ -240,7 +241,22 @@ inline Hash256 sha3(const std::string &str)
 }
 
 /**
+ * @brief Compute the BLAKE2b hash of the given data
+ * @note When in doubt, use SHA3 or BLAKE2b. Both are safe and SHA3 is faster if
+ * you are using OpenSSL and it has SHA3 in hardware mode. Owtherwise BLAKE2b is
+ * faster in software.
+ */
+TRANTOR_EXPORT Hash256 blake2b(const void *data, size_t len);
+inline Hash256 blake2b(const std::string &str)
+{
+    return blake2b(str.data(), str.size());
+}
+
+/**
  * @brief hex encode the given data
+ * @note When in doubt, use SHA3 or BLAKE2b. Both are safe and SHA3 is faster if
+ * you are using OpenSSL and it has SHA3 in hardware mode. Owtherwise BLAKE2b is
+ * faster in software.
  */
 TRANTOR_EXPORT std::string toHexString(const void *data, size_t len);
 inline std::string toHexString(const Hash128 &hash)
