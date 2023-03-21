@@ -471,9 +471,8 @@ bool secureRandomBytes(void *data, size_t len)
 #endif
     state.time += shiftAmount;
 
-    // generate the random data as described in the talk. We use SHA1 becasuse
-    // it's fast and still secure (there's collision attacks, but that's not
-    // relevant here). Will be good to upgrade to BLAKE2b in the future.
+    // generate the random data as described in the talk. We use BLAKE2b since
+    // it's fast and has a good security margin.
     for (size_t i = 0; i < len / sizeof(Hash256); i++)
     {
         auto hash = blake2b(&state, sizeof(state));
