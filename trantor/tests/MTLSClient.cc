@@ -79,13 +79,12 @@ int main()
         // That key is common for client and server
         // The CA file must be the client CA, for this sample the CA is common
         // for both
-        client[i]->enableSSL(false,
-                             false,
-                             "localhost",
-                             sslcmd,
-                             "./client-crt.pem",
-                             "./server-key.pem",
-                             "./ca-crt.pem");
+        auto policy = TLSPolicy::defaultClientPolicy();
+        policy->setCertPath("./client-crt.pem")
+            .setKeyPath("./server-key.pem")
+            .setCaPath("./ca-crt.pem")
+            .setHostname("localhost");
+        client[i]->enableSSL(policy);
         client[i]->setConnectionCallback(
             [i, &loop, &connCount](const TcpConnectionPtr &conn) {
                 if (conn->connected())

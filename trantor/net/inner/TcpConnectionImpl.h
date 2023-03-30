@@ -16,6 +16,7 @@
 
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/TimingWheel.h>
+#include <trantor/net/inner/TLSProvider.h>
 #include <list>
 #include <mutex>
 #ifndef _WIN32
@@ -26,40 +27,6 @@
 
 namespace trantor
 {
-#ifdef USE_OPENSSL
-enum class SSLStatus
-{
-    Handshaking,
-    Connecting,
-    Connected,
-    DisConnecting,
-    DisConnected
-};
-class SSLContext;
-class SSLConn;
-
-std::shared_ptr<SSLContext> newSSLContext(
-    bool useOldTLS,
-    bool validateCert,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
-std::shared_ptr<SSLContext> newSSLServerContext(
-    const std::string &certPath,
-    const std::string &keyPath,
-    bool useOldTLS,
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
-    const std::string &caPath);
-std::shared_ptr<SSLContext> newSSLClientContext(
-    bool useOldTLS,
-    bool validateCert,
-    const std::string &certPath = "",
-    const std::string &keyPath = "",
-    const std::vector<std::pair<std::string, std::string>> &sslConfCmds = {},
-    const std::string &caPath = "");
-
-// void initServerSSLContext(const std::shared_ptr<SSLContext> &ctx,
-//                           const std::string &certPath,
-//                           const std::string &keyPath);
-#endif
 class Channel;
 class Socket;
 class TcpServer;
@@ -101,17 +68,9 @@ class TcpConnectionImpl : public TcpConnection,
     TcpConnectionImpl(EventLoop *loop,
                       int socketfd,
                       const InetAddress &localAddr,
-                      const InetAddress &peerAddr);
-#ifdef USE_OPENSSL
-    TcpConnectionImpl(EventLoop *loop,
-                      int socketfd,
-                      const InetAddress &localAddr,
                       const InetAddress &peerAddr,
-                      const std::shared_ptr<SSLContext> &ctxPtr,
-                      bool isServer = true,
-                      bool validateCert = true,
-                      const std::string &hostname = "");
-#endif
+                      TLSPolicyPtr policy = nullptr,
+                      SSLContextPtr ctx = nullptr);
     virtual ~TcpConnectionImpl();
     virtual void send(const char *msg, size_t len) override;
     virtual void send(const void *msg, size_t len) override;
@@ -149,10 +108,10 @@ class TcpConnectionImpl : public TcpConnection,
     }
 
     // virtual MsgBuffer* getSendBuffer() override{ return  &writeBuffer_;}
-    virtual MsgBuffer *getRecvBuffer() override
-    {
-        return &readBuffer_;
-    }
+    // virtual MsgBuffer *getRecvBuffer() override
+    // {
+    //     return &readBuffer_;
+    // }
     // set callbacks
     virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
                                           size_t markLen) override
@@ -190,30 +149,50 @@ class TcpConnectionImpl : public TcpConnection,
     {
         return bytesReceived_;
     }
-    virtual void startClientEncryption(
-        std::function<void()> callback,
-        bool useOldTLS = false,
-        bool validateCert = true,
-        std::string hostname = "",
-        const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
-            {}) override;
-    virtual void startServerEncryption(const std::shared_ptr<SSLContext> &ctx,
-                                       std::function<void()> callback) override;
+
     virtual bool isSSLConnection() const override
     {
-        return isEncrypted_;
+        return tlsProviderPtr_ != nullptr;
+    }
+    virtual void connectEstablished() override;
+    virtual void connectDestroyed() override;
+
+    virtual MsgBuffer *getRecvBuffer() override
+    {
+        if (tlsProviderPtr_)
+            return &tlsProviderPtr_->getRecvBuffer();
+        return &readBuffer_;
     }
 
-  private:
-    /// Internal use only.
+    virtual std::string applicationProtocol() const override
+    {
+        if (tlsProviderPtr_)
+            return tlsProviderPtr_->applicationProtocol();
+        return "";
+    }
 
-    std::weak_ptr<KickoffEntry> kickoffEntry_;
-    std::weak_ptr<TimingWheel> timingWheelWeakPtr_;
-    size_t idleTimeout_{0};
-    Date lastTimingWheelUpdateTime_;
+    virtual CertificatePtr peerCertificate() const override
+    {
+        if (tlsProviderPtr_)
+            return tlsProviderPtr_->peerCertificate();
+        return nullptr;
+    }
 
-    void enableKickingOff(size_t timeout,
-                          const std::shared_ptr<TimingWheel> &timingWheel)
+    virtual std::string sniName() const override
+    {
+        if (tlsProviderPtr_)
+            return tlsProviderPtr_->sniName();
+        return "";
+    }
+
+    virtual void startEncryption(TLSPolicyPtr policy,
+                                 bool isServer,
+                                 std::function<void(const TcpConnectionPtr &)>
+                                     upgradeCallback = nullptr) override;
+
+    void enableKickingOff(
+        size_t timeout,
+        const std::shared_ptr<TimingWheel> &timingWheel) override
     {
         assert(timingWheel);
         assert(timingWheel->getLoop() == loop_);
@@ -224,54 +203,20 @@ class TcpConnectionImpl : public TcpConnection,
         idleTimeout_ = timeout;
         timingWheel->insertEntry(timeout, entry);
     }
+
+  private:
+    /// Internal use only.
+
+    std::weak_ptr<KickoffEntry> kickoffEntry_;
+    std::weak_ptr<TimingWheel> timingWheelWeakPtr_;
+    size_t idleTimeout_{0};
+    Date lastTimingWheelUpdateTime_;
     void extendLife();
 #ifndef _WIN32
     void sendFile(int sfd, size_t offset = 0, size_t length = 0);
 #else
     void sendFile(FILE *fp, size_t offset = 0, size_t length = 0);
 #endif
-    void setRecvMsgCallback(const RecvMessageCallback &cb)
-    {
-        recvMsgCallback_ = cb;
-    }
-    void setRecvMsgCallback(RecvMessageCallback &&cb)
-    {
-        recvMsgCallback_ = std::move(cb);
-    }
-    void setConnectionCallback(const ConnectionCallback &cb)
-    {
-        connectionCallback_ = cb;
-    }
-    void setConnectionCallback(ConnectionCallback &&cb)
-    {
-        connectionCallback_ = std::move(cb);
-    }
-    void setWriteCompleteCallback(const WriteCompleteCallback &cb)
-    {
-        writeCompleteCallback_ = cb;
-    }
-    void setWriteCompleteCallback(WriteCompleteCallback &&cb)
-    {
-        writeCompleteCallback_ = std::move(cb);
-    }
-    void setCloseCallback(const CloseCallback &cb)
-    {
-        closeCallback_ = cb;
-    }
-    void setCloseCallback(CloseCallback &&cb)
-    {
-        closeCallback_ = std::move(cb);
-    }
-    void setSSLErrorCallback(const SSLErrorCallback &cb)
-    {
-        sslErrorCallback_ = cb;
-    }
-    void setSSLErrorCallback(SSLErrorCallback &&cb)
-    {
-        sslErrorCallback_ = std::move(cb);
-    }
-    void connectDestroyed();
-    virtual void connectEstablished();
 
   protected:
     struct BufferNode
@@ -326,7 +271,6 @@ class TcpConnectionImpl : public TcpConnection,
         Connected,
         Disconnecting
     };
-    bool isEncrypted_{false};
     EventLoop *loop_;
     std::unique_ptr<Channel> ioChannelPtr_;
     std::unique_ptr<Socket> socketPtr_;
@@ -336,13 +280,6 @@ class TcpConnectionImpl : public TcpConnection,
     void writeCallback();
     InetAddress localAddr_, peerAddr_;
     ConnStatus status_{ConnStatus::Connecting};
-    // callbacks
-    RecvMessageCallback recvMsgCallback_;
-    ConnectionCallback connectionCallback_;
-    CloseCallback closeCallback_;
-    WriteCompleteCallback writeCompleteCallback_;
-    HighWaterMarkCallback highWaterMarkCallback_;
-    SSLErrorCallback sslErrorCallback_;
     void handleClose();
     void handleError();
     // virtual void sendInLoop(const std::string &msg);
@@ -350,9 +287,11 @@ class TcpConnectionImpl : public TcpConnection,
     void sendFileInLoop(const BufferNodePtr &file);
 #ifndef _WIN32
     void sendInLoop(const void *buffer, size_t length);
+    ssize_t writeRaw(const void *buffer, size_t length);
     ssize_t writeInLoop(const void *buffer, size_t length);
 #else
     void sendInLoop(const char *buffer, size_t length);
+    ssize_t writeRaw(const char *buffer, size_t length);
     ssize_t writeInLoop(const char *buffer, size_t length);
 #endif
     size_t highWaterMarkLen_;
@@ -365,34 +304,16 @@ class TcpConnectionImpl : public TcpConnection,
     size_t bytesReceived_{0};
 
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
+    std::unique_ptr<TLSProvider> tlsProviderPtr_;
+    std::function<void(const TcpConnectionPtr &)> upgradeCallback_;
 
-#ifdef USE_OPENSSL
-  private:
-    void doHandshaking();
-    bool validatePeerCertificate();
-    std::string getOpenSSLErrorStack();
-    struct SSLEncryption
-    {
-        SSLStatus statusOfSSL_ = SSLStatus::Handshaking;
-        // OpenSSL
-        std::shared_ptr<SSLContext> sslCtxPtr_;
-        std::unique_ptr<SSLConn> sslPtr_;
-        std::unique_ptr<std::array<char, 8192>> sendBufferPtr_;
-        bool isServer_{false};
-        bool isUpgrade_{false};
-        std::function<void()> upgradeCallback_;
-        std::string hostname_;
-    };
-    std::unique_ptr<SSLEncryption> sslEncryptionPtr_;
-    void startClientEncryptionInLoop(
-        std::function<void()> &&callback,
-        bool useOldTLS,
-        bool validateCert,
-        const std::string &hostname,
-        const std::vector<std::pair<std::string, std::string>> &sslConfCmds);
-    void startServerEncryptionInLoop(const std::shared_ptr<SSLContext> &ctx,
-                                     std::function<void()> &&callback);
-#endif
+    static void onSslError(TcpConnection *self, SSLError err);
+    static void onHandshakeFinished(TcpConnection *self);
+    static void onSslMessage(TcpConnection *self, MsgBuffer *buffer);
+    static ssize_t onSslWrite(TcpConnection *self,
+                              const void *data,
+                              size_t len);
+    static void onSslCloseAlert(TcpConnection *self);
 };
 
 using TcpConnectionImplPtr = std::shared_ptr<TcpConnectionImpl>;

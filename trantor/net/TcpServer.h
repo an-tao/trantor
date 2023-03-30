@@ -29,7 +29,6 @@
 namespace trantor
 {
 class Acceptor;
-class SSLContext;
 /**
  * @brief This class represents a TCP server.
  *
@@ -231,12 +230,21 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-    void enableSSL(const std::string &certPath,
-                   const std::string &keyPath,
-                   bool useOldTLS = false,
-                   const std::vector<std::pair<std::string, std::string>>
-                       &sslConfCmds = {},
-                   const std::string &caPath = "");
+    [[deprecated("Use enableSSL(TLSPolicyPtr) instead")]] void enableSSL(
+        const std::string &certPath,
+        const std::string &keyPath,
+        bool useOldTLS = false,
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
+            {},
+        const std::string &caPath = "");
+    /**
+     * @brief Enable SSL encryption.
+     */
+    void enableSSL(TLSPolicyPtr policy)
+    {
+        policyPtr_ = std::move(policy);
+        sslContextPtr_ = newSSLContext(*policyPtr_, true);
+    }
 
   private:
     void handleCloseInLoop(const TcpConnectionPtr &connectionPtr);
@@ -280,9 +288,8 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     IgnoreSigPipe initObj;
 #endif
     bool started_{false};
-
-    // OpenSSL SSL context Object;
-    std::shared_ptr<SSLContext> sslCtxPtr_;
+    TLSPolicyPtr policyPtr_{nullptr};
+    SSLContextPtr sslContextPtr_{nullptr};
 };
 
 }  // namespace trantor

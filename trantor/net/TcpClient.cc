@@ -10,6 +10,7 @@
 // Taken from muduo and modified by an tao
 
 #include <trantor/net/TcpClient.h>
+#include <trantor/net/inner/TLSProvider.h>
 
 #include <trantor/utils/Logger.h>
 #include "Connector.h"
@@ -18,6 +19,8 @@
 
 #include <functional>
 #include <algorithm>
+#include <atomic>
+#include <memory>
 
 #include "Socket.h"
 
@@ -66,10 +69,16 @@ TcpClient::TcpClient(EventLoop *loop,
     (void)validateCert_;
     connector_->setNewConnectionCallback(
         std::bind(&TcpClient::newConnection, this, _1));
-    connector_->setErrorCallback([this]() {
-        if (connectionErrorCallback_)
+    // WORKAROUND: somehow we got use-after-free error
+    auto guard = std::shared_ptr<TcpClient>(this, [](TcpClient *) {});
+    auto weakPtr = std::weak_ptr<TcpClient>(shared_from_this());
+    connector_->setErrorCallback([weakPtr]() {
+        auto ptr = weakPtr.lock();
+        if (!ptr)
+            return;
+        if (ptr->connectionErrorCallback_)
         {
-            connectionErrorCallback_();
+            ptr->connectionErrorCallback_();
         }
     });
     LOG_TRACE << "TcpClient::TcpClient[" << name_ << "] - connector ";
@@ -78,30 +87,22 @@ TcpClient::TcpClient(EventLoop *loop,
 TcpClient::~TcpClient()
 {
     LOG_TRACE << "TcpClient::~TcpClient[" << name_ << "] - connector ";
-    TcpConnectionImplPtr conn;
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (connection_ == nullptr)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        conn = std::dynamic_pointer_cast<TcpConnectionImpl>(connection_);
-        if (conn)
-        {
-            assert(loop_ == conn->getLoop());
-            // TODO: not 100% safe, if we are in different thread
-            auto loop = loop_;
-            loop_->runInLoop([conn, loop]() {
-                conn->setCloseCallback([loop](const TcpConnectionPtr &connPtr) {
-                    loop->queueInLoop([connPtr]() {
-                        static_cast<TcpConnectionImpl *>(connPtr.get())
-                            ->connectDestroyed();
-                    });
-                });
-            });
-            conn->forceClose();
-        }
-        else
-        {
-            connector_->stop();
-        }
+        connector_->stop();
+        return;
     }
+    assert(loop_ == connection_->getLoop());
+    auto conn =
+        std::atomic_load_explicit(&connection_, std::memory_order_relaxed);
+    loop_->runInLoop([conn = std::move(conn)]() {
+        conn->setCloseCallback([](const TcpConnectionPtr &connPtr) mutable {
+            connPtr->getLoop()->queueInLoop(
+                [connPtr] { connPtr->connectDestroyed(); });
+        });
+    });
+    connection_->forceClose();
 }
 
 void TcpClient::connect()
@@ -139,22 +140,13 @@ void TcpClient::newConnection(int sockfd)
     InetAddress localAddr(Socket::getLocalAddr(sockfd));
     // TODO poll with zero timeout to double confirm the new connection
     // TODO use make_shared if necessary
-    std::shared_ptr<TcpConnectionImpl> conn;
-    if (sslCtxPtr_)
+    TcpConnectionPtr conn;
+    LOG_TRACE << "SSL enabled: " << (tlsPolicyPtr_ ? "true" : "false");
+    if (tlsPolicyPtr_)
     {
-#ifdef USE_OPENSSL
-        conn = std::make_shared<TcpConnectionImpl>(loop_,
-                                                   sockfd,
-                                                   localAddr,
-                                                   peerAddr,
-                                                   sslCtxPtr_,
-                                                   false,
-                                                   validateCert_,
-                                                   SSLHostName_);
-#else
-        LOG_FATAL << "OpenSSL is not found in your system!";
-        throw std::runtime_error("OpenSSL is not found in your system!");
-#endif
+        assert(sslContextPtr_);
+        conn = std::make_shared<TcpConnectionImpl>(
+            loop_, sockfd, localAddr, peerAddr, tlsPolicyPtr_, sslContextPtr_);
     }
     else
     {
@@ -179,9 +171,7 @@ void TcpClient::newConnection(int sockfd)
             {
                 LOG_TRACE << "TcpClient::removeConnection was skipped because "
                              "TcpClient instanced already freed";
-                c->getLoop()->queueInLoop(
-                    std::bind(&TcpConnectionImpl::connectDestroyed,
-                              std::dynamic_pointer_cast<TcpConnectionImpl>(c)));
+                c->getLoop()->queueInLoop([c] { c->connectDestroyed(); });
             }
         });
     conn->setCloseCallback(std::move(closeCb));
@@ -189,11 +179,10 @@ void TcpClient::newConnection(int sockfd)
         std::lock_guard<std::mutex> lock(mutex_);
         connection_ = conn;
     }
-    conn->setSSLErrorCallback([this](SSLError err) {
-        if (sslErrorCallback_)
-        {
-            sslErrorCallback_(err);
-        }
+    conn->setSSLErrorCallback([weakSelf = std::move(weakSelf)](SSLError err) {
+        auto self = weakSelf.lock();
+        if (self && self->sslErrorCallback_)
+            self->sslErrorCallback_(err);
     });
     conn->connectEstablished();
 }
@@ -209,9 +198,7 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
         connection_.reset();
     }
 
-    loop_->queueInLoop(
-        std::bind(&TcpConnectionImpl::connectDestroyed,
-                  std::dynamic_pointer_cast<TcpConnectionImpl>(conn)));
+    loop_->queueInLoop([conn]() { conn->connectDestroyed(); });
     if (retry_ && connect_)
     {
         LOG_TRACE << "TcpClient::connect[" << name_ << "] - Reconnecting to "
@@ -229,32 +216,21 @@ void TcpClient::enableSSL(
     const std::string &keyPath,
     const std::string &caPath)
 {
-#ifdef USE_OPENSSL
-    /* Create a new OpenSSL context */
-    sslCtxPtr_ = newSSLClientContext(
-        useOldTLS, validateCert, certPath, keyPath, sslConfCmds, caPath);
-    validateCert_ = validateCert;
     if (!hostname.empty())
     {
         std::transform(hostname.begin(),
                        hostname.end(),
                        hostname.begin(),
                        [](unsigned char c) { return tolower(c); });
-        SSLHostName_ = std::move(hostname);
     }
 
-#else
-    // When not using OpenSSL, using `void` here will
-    // work around the unused parameter warnings without overhead.
-    (void)useOldTLS;
-    (void)validateCert;
-    (void)hostname;
-    (void)sslConfCmds;
-    (void)certPath;
-    (void)keyPath;
-    (void)caPath;
-
-    LOG_FATAL << "OpenSSL is not found in your system!";
-    throw std::runtime_error("OpenSSL is not found in your system!");
-#endif
+    tlsPolicyPtr_ = TLSPolicy::defaultClientPolicy();
+    tlsPolicyPtr_->setValidate(validateCert)
+        .setUseOldTLS(useOldTLS)
+        .setConfCmds(sslConfCmds)
+        .setCertPath(certPath)
+        .setKeyPath(keyPath)
+        .setHostname(hostname)
+        .setCaPath(caPath);
+    sslContextPtr_ = newSSLContext(*tlsPolicyPtr_, false);
 }

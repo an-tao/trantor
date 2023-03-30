@@ -68,8 +68,13 @@ int main()
 
     // the CA file must be the client CA, for this sample the CA is common for
     // both
-    server.enableSSL(
-        "server-crt.pem", "server-key.pem", false, sslcmd, "ca-crt.pem");
+    auto policy =
+        TLSPolicy::defaultServerPolicy("server-crt.pem", "server-key.pem");
+    policy->setCaPath("ca-crt.pem")
+        .setValidateChain(true)
+        .setValidateDate(true)
+        .setValidateDomain(false);  // client's don't have a domain name
+    server.enableSSL(policy);
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             // LOG_DEBUG<<"recv callback!";

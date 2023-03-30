@@ -17,14 +17,15 @@ int main()
     InetAddress addr(8888);
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
-    server.enableSSL("server.pem", "server.pem");
+    auto policy = TLSPolicy::defaultServerPolicy("server.crt", "server.key");
+    server.enableSSL(std::move(policy));
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             // LOG_DEBUG<<"recv callback!";
             std::cout << std::string(buffer->peek(), buffer->readableBytes());
             connectionPtr->send(buffer->peek(), buffer->readableBytes());
             buffer->retrieveAll();
-            connectionPtr->forceClose();
+            // connectionPtr->forceClose();
         });
     server.setConnectionCallback([](const TcpConnectionPtr &connPtr) {
         if (connPtr->connected())

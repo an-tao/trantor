@@ -4,6 +4,7 @@ project(trantor)
 option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_C-ARES "Build C-ARES" ON)
 option(BUILD_SHARED_LIBS "Build trantor as a shared lib" OFF)
+option(TRANTOR_USE_TLS "TLS provider for trantor. Valid options are 'openssl', 'botan' or '' (let the build scripr decide)" "")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
@@ -123,15 +124,65 @@ if(WIN32)
       trantor/utils/WindowsSupport.h)
 endif(WIN32)
 
-find_package(OpenSSL)
-if(OpenSSL_FOUND)
-  target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-  
-  # To enable the acceptance of local issued certificates
-  # Add the flag: ALLOW_SELF_SIGNED_CERTS
-  # ONLY FOR TESTING PURPOSES
-  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+# Somehow the default value of TRANTOR_USE_TLS is OFF
+if(TRANTOR_USE_TLS STREQUAL OFF)
+  set(TRANTOR_USE_TLS "")
 endif()
+set(VALID_TLS_PROVIDERS "openssl" "botan" "none")
+list(FIND VALID_TLS_PROVIDERS "${TRANTOR_USE_TLS}" PREFERED_TLS_IDX)
+if(PREFERED_TLS_IDX EQUAL -1 AND NOT TRANTOR_USE_TLS STREQUAL "")
+  message(FATAL_ERROR "Invalid TLS provider: ${TRANTOR_USE_TLS}\n"
+                      "Valid TLS providers are: ${VALID_TLS_PROVIDERS}")
+endif()
+
+set(TRANTOR_TLS_PROVIDER "None")
+if(TRANTOR_USE_TLS STREQUAL "openssl" OR TRANTOR_USE_TLS STREQUAL "")
+  find_package(OpenSSL)
+  if(OpenSSL_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_OPENSSL)
+    set(TRANTOR_TLS_PROVIDER "OpenSSL")
+
+    set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/net/inner/tlsprovider/OpenSSLProvider.cc
+      trantor/utils/crypto/openssl.cc)
+  endif()
+endif()
+
+if(TRANTOR_TLS_PROVIDER STREQUAL "None"
+  AND (TRANTOR_USE_TLS STREQUAL "botan" OR TRANTOR_USE_TLS STREQUAL ""))
+  find_package(Botan)
+  if(Botan_FOUND)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOTAN)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Botan::Botan)
+    set(TRANTOR_TLS_PROVIDER "Botan")
+
+    set(TRANTOR_SOURCES
+        ${TRANTOR_SOURCES}
+        trantor/net/inner/tlsprovider/BotanTLSProvider.cc
+        trantor/utils/crypto/botan.cc)
+  endif()
+endif()
+
+if(TRANTOR_TLS_PROVIDER STREQUAL "None")
+  set(TRANTOR_SOURCES
+      ${TRANTOR_SOURCES}
+      trantor/utils/crypto/sha3.cc
+      trantor/utils/crypto/md5.cc
+      trantor/utils/crypto/sha1.cc
+      trantor/utils/crypto/sha256.cc
+      trantor/utils/crypto/blake2.cc)
+  set(private_headers
+      ${private_headers}
+      trantor/utils/crypto/sha3.h
+      trantor/utils/crypto/md5.h
+      trantor/utils/crypto/sha1.h
+      trantor/utils/crypto/sha256.h)
+endif()
+
+message(STATUS "Trantor using SSL library: ${TRANTOR_TLS_PROVIDER}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE TRANTOR_TLS_PROVIDER=${TRANTOR_TLS_PROVIDER})
 
 set(HAVE_C-ARES NO)
 if (BUILD_C-ARES)
@@ -206,7 +257,9 @@ set(public_net_headers
     trantor/net/TcpServer.h
     trantor/net/callbacks.h
     trantor/net/Resolver.h
-    trantor/net/Channel.h)
+    trantor/net/Channel.h
+    trantor/net/Certificate.h
+    trantor/net/TLSPolicy.h)
 
 set(public_utils_headers
     trantor/utils/AsyncFileLogger.h
@@ -274,6 +327,7 @@ install(
     "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TrantorConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/TrantorConfigVersion.cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/Findc-ares.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/FindBotan.cmake"
   DESTINATION "${INSTALL_TRANTOR_CMAKE_DIR}"
   COMPONENT dev)
 

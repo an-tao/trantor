@@ -20,6 +20,7 @@
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
+#include <trantor/utils/Logger.h>
 #include <trantor/exports.h>
 #include <functional>
 #include <thread>
@@ -29,7 +30,6 @@ namespace trantor
 {
 class Connector;
 using ConnectorPtr = std::shared_ptr<Connector>;
-class SSLContext;
 /**
  * @brief This class represents a TCP client.
  *
@@ -205,14 +205,23 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
-    void enableSSL(bool useOldTLS = false,
-                   bool validateCert = true,
-                   std::string hostname = "",
-                   const std::vector<std::pair<std::string, std::string>>
-                       &sslConfCmds = {},
-                   const std::string &certPath = "",
-                   const std::string &keyPath = "",
-                   const std::string &caPath = "");
+    [[deprecated("Use enableSSL(TLSPolicyPtr policy) instead")]] void enableSSL(
+        bool useOldTLS = false,
+        bool validateCert = true,
+        std::string hostname = "",
+        const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
+            {},
+        const std::string &certPath = "",
+        const std::string &keyPath = "",
+        const std::string &caPath = "");
+    /**
+     * @brief Enable SSL encryption.
+     */
+    void enableSSL(TLSPolicyPtr policy)
+    {
+        tlsPolicyPtr_ = std::move(policy);
+        sslContextPtr_ = newSSLContext(*tlsPolicyPtr_, false);
+    }
 
   private:
     /// Not thread safe, but in loop
@@ -233,8 +242,8 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     // always in loop thread
     mutable std::mutex mutex_;
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
-    std::shared_ptr<SSLContext> sslCtxPtr_;
-    std::string SSLHostName_;
+    TLSPolicyPtr tlsPolicyPtr_;
+    SSLContextPtr sslContextPtr_;
     bool validateCert_{false};
 
 #ifndef _WIN32

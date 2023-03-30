@@ -21,7 +21,8 @@ namespace trantor
 enum class SSLError
 {
     kSSLHandshakeError,
-    kSSLInvalidCertificate
+    kSSLInvalidCertificate,
+    kSSLProtocolError
 };
 using TimerCallback = std::function<void()>;
 

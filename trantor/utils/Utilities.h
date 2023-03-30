@@ -180,6 +180,108 @@ inline std::string fromNativePath(const std::wstring &strPath)
  */
 bool verifySslName(const std::string &certName, const std::string &hostname);
 
+/**
+ * @brief Returns the TLS backend used by trantor. Could be "None", "OpenSSL" or
+ * "Botan"
+ */
+TRANTOR_EXPORT std::string tlsBackend();
+
+struct Hash128
+{
+    unsigned char bytes[16];
+};
+
+struct Hash160
+{
+    unsigned char bytes[20];
+};
+
+struct Hash256
+{
+    unsigned char bytes[32];
+};
+
+// provide sane hash functions so users don't have to provide their own
+
+/**
+ * @brief Compute the MD5 hash of the given data
+ * @note don't use MD5 for new applications. It's here only for compatibility
+ */
+TRANTOR_EXPORT Hash128 md5(const void *data, size_t len);
+inline Hash128 md5(const std::string &str)
+{
+    return md5(str.data(), str.size());
+}
+
+/**
+ * @brief Compute the SHA1 hash of the given data
+ */
+TRANTOR_EXPORT Hash160 sha1(const void *data, size_t len);
+inline Hash160 sha1(const std::string &str)
+{
+    return sha1(str.data(), str.size());
+}
+
+/**
+ * @brief Compute the SHA256 hash of the given data
+ */
+TRANTOR_EXPORT Hash256 sha256(const void *data, size_t len);
+inline Hash256 sha256(const std::string &str)
+{
+    return sha256(str.data(), str.size());
+}
+
+/**
+ * @brief Compute the SHA3 hash of the given data
+ */
+TRANTOR_EXPORT Hash256 sha3(const void *data, size_t len);
+inline Hash256 sha3(const std::string &str)
+{
+    return sha3(str.data(), str.size());
+}
+
+/**
+ * @brief Compute the BLAKE2b hash of the given data
+ * @note When in doubt, use SHA3 or BLAKE2b. Both are safe and SHA3 is faster if
+ * you are using OpenSSL and it has SHA3 in hardware mode. Owtherwise BLAKE2b is
+ * faster in software.
+ */
+TRANTOR_EXPORT Hash256 blake2b(const void *data, size_t len);
+inline Hash256 blake2b(const std::string &str)
+{
+    return blake2b(str.data(), str.size());
+}
+
+/**
+ * @brief hex encode the given data
+ * @note When in doubt, use SHA3 or BLAKE2b. Both are safe and SHA3 is faster if
+ * you are using OpenSSL and it has SHA3 in hardware mode. Owtherwise BLAKE2b is
+ * faster in software.
+ */
+TRANTOR_EXPORT std::string toHexString(const void *data, size_t len);
+inline std::string toHexString(const Hash128 &hash)
+{
+    return toHexString(hash.bytes, sizeof(hash.bytes));
+}
+
+inline std::string toHexString(const Hash160 &hash)
+{
+    return toHexString(hash.bytes, sizeof(hash.bytes));
+}
+
+inline std::string toHexString(const Hash256 &hash)
+{
+    return toHexString(hash.bytes, sizeof(hash.bytes));
+}
+
+/**
+ * @brief Generates cryptographically secure random bytes
+ * @param ptr Pointer to the buffer to fill
+ * @param size Size of the buffer
+ * @return true if successful, false otherwise
+ */
+TRANTOR_EXPORT bool secureRandomBytes(void *ptr, size_t size);
+
 }  // namespace utils
 
 }  // namespace trantor

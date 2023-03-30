@@ -57,20 +57,17 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     {
         nextLoopIdx_ = 0;
     }
-    std::shared_ptr<TcpConnectionImpl> newPtr;
-    if (sslCtxPtr_)
+    TcpConnectionPtr newPtr;
+    if (policyPtr_)
     {
-#ifdef USE_OPENSSL
+        assert(sslContextPtr_);
         newPtr = std::make_shared<TcpConnectionImpl>(
             ioLoop,
             sockfd,
             InetAddress(Socket::getLocalAddr(sockfd)),
             peer,
-            sslCtxPtr_);
-#else
-        LOG_FATAL << "OpenSSL is not found in your system!";
-        throw std::runtime_error("OpenSSL is not found in your system!");
-#endif
+            policyPtr_,
+            sslContextPtr_);
     }
     else
     {
@@ -186,10 +183,8 @@ void TcpServer::handleCloseInLoop(const TcpConnectionPtr &connectionPtr)
     // may be in loop_'s current active channels, waiting to be processed.
     // If `connectDestroyed()` is called here, we will be using an wild pointer
     // later.
-    connLoop->queueInLoop([connectionPtr]() {
-        static_cast<TcpConnectionImpl *>(connectionPtr.get())
-            ->connectDestroyed();
-    });
+    connLoop->queueInLoop(
+        [connectionPtr]() { connectionPtr->connectDestroyed(); });
 }
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
@@ -222,20 +217,10 @@ void TcpServer::enableSSL(
     const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
     const std::string &caPath)
 {
-#ifdef USE_OPENSSL
-    /* Create a new OpenSSL context */
-    sslCtxPtr_ =
-        newSSLServerContext(certPath, keyPath, useOldTLS, sslConfCmds, caPath);
-#else
-    // When not using OpenSSL, using `void` here will
-    // work around the unused parameter warnings without overhead.
-    (void)certPath;
-    (void)keyPath;
-    (void)useOldTLS;
-    (void)sslConfCmds;
-    (void)caPath;
-
-    LOG_FATAL << "OpenSSL is not found in your system!";
-    throw std::runtime_error("OpenSSL is not found in your system!");
-#endif
+    policyPtr_ = TLSPolicy::defaultServerPolicy(certPath, keyPath);
+    policyPtr_->setUseOldTLS(useOldTLS)
+        .setConfCmds(sslConfCmds)
+        .setCaPath(caPath)
+        .setValidate(caPath.empty() ? false : true);
+    sslContextPtr_ = newSSLContext(*policyPtr_, true);
 }

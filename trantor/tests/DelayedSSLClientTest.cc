@@ -18,8 +18,8 @@ int main()
 #endif
     std::shared_ptr<trantor::TcpClient> client[10];
     std::atomic_int connCount;
-    connCount = 10;
-    for (int i = 0; i < 10; ++i)
+    connCount = 1;
+    for (int i = 0; i < 1; ++i)
     {
         client[i] = std::make_shared<trantor::TcpClient>(&loop,
                                                          serverAddr,
@@ -37,27 +37,27 @@ int main()
                         loop.quit();
                 }
             });
-        client[i]->setMessageCallback(
-            [](const TcpConnectionPtr &conn, MsgBuffer *buf) {
-                auto msg = std::string(buf->peek(), buf->readableBytes());
+        client[i]->setMessageCallback([](const TcpConnectionPtr &conn,
+                                         MsgBuffer *buf) {
+            auto msg = std::string(buf->peek(), buf->readableBytes());
 
-                LOG_INFO << msg;
-                if (msg == "hello")
-                {
-                    buf->retrieveAll();
-                    conn->startClientEncryption(
-                        [conn]() {
-                            LOG_INFO << "SSL established";
-                            conn->send("Hello");
-                        },
-                        false,
-                        false);
-                }
-                if (conn->isSSLConnection())
-                {
-                    buf->retrieveAll();
-                }
-            });
+            LOG_INFO << msg;
+            if (msg == "hello")
+            {
+                buf->retrieveAll();
+                auto policy = TLSPolicy::defaultClientPolicy();
+                policy->setValidate(false);
+                conn->startEncryption(
+                    policy, false, [](const TcpConnectionPtr &encryptedConn) {
+                        LOG_INFO << "SSL established";
+                        encryptedConn->send("Hello");
+                    });
+            }
+            if (conn->isSSLConnection())
+            {
+                buf->retrieveAll();
+            }
+        });
         client[i]->connect();
     }
     loop.loop();
