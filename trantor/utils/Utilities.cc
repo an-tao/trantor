@@ -31,6 +31,7 @@
 
 #if defined(USE_OPENSSL)
 #include <openssl/rand.h>
+#include <limits>
 #elif defined(USE_BOTAN)
 #include <botan/auto_rng.h>
 #else
@@ -42,7 +43,6 @@
 #include <fstream>
 #include <chrono>
 #include <random>
-#include <limites>
 #endif
 
 #if defined(__x86_64__) || defined(__i386__)
