@@ -54,6 +54,8 @@
 #endif
 
 #include <cassert>
+#include <functional>
+#include <trantor/utils/Logger.h>
 
 namespace trantor
 {
