@@ -207,8 +207,8 @@ void EventLoop::loop()
     quit_.store(false, std::memory_order_release);
 
     std::exception_ptr loopException;
-    // try
-    //{  // Scope where the loop flag is set
+    try
+    {  // Scope where the loop flag is set
 
     auto loopFlagCleaner = makeScopeExit(
         [this]() { looping_.store(false, std::memory_order_release); });
@@ -236,15 +236,15 @@ void EventLoop::loop()
         // std::cout << "looping" << endl;
         doRunInLoopFuncs();
     }
-    // loopFlagCleaner clears the loop flag here
-    // }
-    // catch (std::exception &e)
-    // {
-    //     LOG_WARN << "Exception thrown from event loop, rethrowing after "
-    //                 "running functions on quit: "
-    //              << e.what();
-    //     loopException = std::current_exception();
-    // }
+    loopFlagCleaner clears the loop flag here
+    }
+    catch (std::exception &e)
+    {
+        LOG_WARN << "Exception thrown from event loop, rethrowing after "
+                    "running functions on quit: "
+                 << e.what();
+        loopException = std::current_exception();
+    }
 
     // Run the quit functions even if exceptions were thrown
     // TODO: if more exceptions are thrown in the quit functions, some are left
