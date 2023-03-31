@@ -13,7 +13,7 @@
 #include <list>
 #include <unordered_map>
 #include <array>
-#include <climits>
+#include <limits>
 
 using namespace trantor;
 
@@ -704,7 +704,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     void processApplicationData()
     {
         constexpr size_t maxSingleRead = 128 * 1024;
-        constexpr size_t maxWritibleBytes = INT_MAX;
+        constexpr size_t maxWritibleBytes = (std::numeric_limits<int>::max)();
         auto inBio = SSL_get_rbio(ssl_);
         while (true)
         {
