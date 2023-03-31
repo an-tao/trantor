@@ -262,6 +262,7 @@ class TcpConnectionImpl : public TcpConnection,
             if (streamCallback_)
                 streamCallback_(nullptr, 0);  // cleanup callback internals
         }
+        bool closeConnection_ = false;
     };
     using BufferNodePtr = std::shared_ptr<BufferNode>;
     enum class ConnStatus
@@ -306,6 +307,8 @@ class TcpConnectionImpl : public TcpConnection,
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
     std::unique_ptr<TLSProvider> tlsProviderPtr_;
     std::function<void(const TcpConnectionPtr &)> upgradeCallback_;
+
+    bool closeOnEmpty_{false};
 
     static void onSslError(TcpConnection *self, SSLError err);
     static void onHandshakeFinished(TcpConnection *self);

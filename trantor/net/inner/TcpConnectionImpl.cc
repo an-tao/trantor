@@ -313,6 +313,14 @@ void TcpConnectionImpl::writeCallback()
                 sendFileInLoop(writeBuffer_);
             }
         }
+
+        if (closeOnEmpty_ &&
+            (writeBufferList_.empty() ||
+             (tlsProviderPtr_ == nullptr ||
+              tlsProviderPtr_->getBufferedData().readableBytes() == 0)))
+        {
+            shutdown();
+        }
     }
     else
     {
@@ -394,7 +402,24 @@ void TcpConnectionImpl::shutdown()
         if (thisPtr->status_ == ConnStatus::Connected)
         {
             if (thisPtr->tlsProviderPtr_)
+            {
+                // there's still data to be sent, so we can't close the
+                // connection just yet
+                if (thisPtr->tlsProviderPtr_->getBufferedData()
+                            .readableBytes() != 0 ||
+                    thisPtr->writeBufferList_.size() != 0)
+                {
+                    thisPtr->closeOnEmpty_ = true;
+                    return;
+                }
                 thisPtr->tlsProviderPtr_->close();
+            }
+            if (thisPtr->tlsProviderPtr_ == nullptr &&
+                thisPtr->writeBufferList_.size() != 0)
+            {
+                thisPtr->closeOnEmpty_ = true;
+                return;
+            }
             thisPtr->status_ = ConnStatus::Disconnecting;
             if (!thisPtr->ioChannelPtr_->isWriting())
             {
