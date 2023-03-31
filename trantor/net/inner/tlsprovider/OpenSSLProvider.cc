@@ -212,9 +212,9 @@ struct SSLContext
         // Ungodly amount of preprocessor macros to support older versions of
         // OpenSSL and LibreSSL
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
-#define SSL_METHOD TLS_method
-#else
 #define SSL_METHOD SSLv23_method
+#else
+#define SSL_METHOD TLS_method
 #endif
 
 #ifdef LIBRESSL_VERSION_NUMBER
