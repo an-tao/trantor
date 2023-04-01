@@ -519,7 +519,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         processHandshake();
     }
 
-    virtual void recvData(MsgBuffer *buffer)
+    virtual void recvData(MsgBuffer *buffer) override
     {
         LOG_TRACE << "Received " << buffer->readableBytes()
                   << " bytes from lower layer";
