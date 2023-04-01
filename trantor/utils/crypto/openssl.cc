@@ -8,7 +8,7 @@
 #endif
 
 // Hack: LibreSSL does not support SHA3. We use our own implementation.
-#if defined(LIBRESSL_VERSION_NUMBER)
+#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER < 0x10100000L
 #include "sha3.h"
 #include "sha3.cc"
 #endif
@@ -90,7 +90,7 @@ Hash256 sha256(const void* data, size_t len)
 
 Hash256 sha3(const void* data, size_t len)
 {
-#if defined(LIBRESSL_VERSION_NUMBER)
+#if defined(LIBRESSL_VERSION_NUMBER) || (OPENSSL_VERSION_NUMBER < 0x10100000L)
     Hash256 hash;
     trantor_sha3((const unsigned char*)data, len, &hash, sizeof(hash));
     return hash;
