@@ -831,7 +831,7 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 #ifdef _WIN32
         internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctx->ctx()));
 #else
-        SSL_CTX_set_default_verify_paths(ctx->ctx());
+            SSL_CTX_set_default_verify_paths(ctx->ctx());
 #endif
     }
 
