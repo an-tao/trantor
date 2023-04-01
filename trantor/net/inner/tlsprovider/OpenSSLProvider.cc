@@ -13,7 +13,7 @@
 #include <list>
 #include <unordered_map>
 #include <array>
-#include <climits>
+#include <limits>
 
 using namespace trantor;
 
@@ -212,9 +212,9 @@ struct SSLContext
         // Ungodly amount of preprocessor macros to support older versions of
         // OpenSSL and LibreSSL
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
-#define SSL_METHOD TLS_method
-#else
 #define SSL_METHOD SSLv23_method
+#else
+#define SSL_METHOD TLS_method
 #endif
 
 #ifdef LIBRESSL_VERSION_NUMBER
@@ -381,6 +381,7 @@ class SessionManager
                SSL_SESSION *session,
                EventLoop *loop)
     {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
         {
             std::lock_guard<std::mutex> lock(mutex_);
             auto key = toKey(hostname, peerAddr);
@@ -408,6 +409,13 @@ class SessionManager
             sessionMap_[key] = sessions_.begin();
         }
         removeExcessSession();
+#else
+        (void)hostname;
+        (void)peerAddr;
+        (void)session;
+        (void)loop;
+        assert(false && "not support under ancient openssl");
+#endif
     }
 
     SSL_SESSION *get(const std::string &hostname, InetAddress peerAddr)
@@ -519,7 +527,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         processHandshake();
     }
 
-    virtual void recvData(MsgBuffer *buffer)
+    virtual void recvData(MsgBuffer *buffer) override
     {
         LOG_TRACE << "Received " << buffer->readableBytes()
                   << " bytes from lower layer";
@@ -619,6 +627,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     setApplicationProtocol(std::string((char *)alpn, alpnlen));
                 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
                 SSL_SESSION *session = SSL_get0_session(ssl_);
                 assert(session);
                 if (SSL_SESSION_is_resumable(session))
@@ -630,6 +639,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                                              session,
                                              loop_);
                 }
+#endif
             }
 
             auto cert = SSL_get_peer_certificate(ssl_);
@@ -704,7 +714,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     void processApplicationData()
     {
         constexpr size_t maxSingleRead = 128 * 1024;
-        constexpr size_t maxWritibleBytes = INT_MAX;
+        constexpr size_t maxWritibleBytes = (std::numeric_limits<int>::max)();
         auto inBio = SSL_get_rbio(ssl_);
         while (true)
         {

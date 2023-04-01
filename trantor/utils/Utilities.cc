@@ -31,6 +31,7 @@
 
 #if defined(USE_OPENSSL)
 #include <openssl/rand.h>
+#include <limits>
 #elif defined(USE_BOTAN)
 #include <botan/auto_rng.h>
 #else
@@ -53,6 +54,8 @@
 #endif
 
 #include <cassert>
+#include <functional>
+#include <trantor/utils/Logger.h>
 
 namespace trantor
 {
@@ -392,9 +395,10 @@ bool secureRandomBytes(void *data, size_t len)
 {
 #if defined(USE_OPENSSL)
     // OpenSSL's RAND_bytes() uses int as the length parameter
-    for (size_t i = 0; i < len; i += INT_MAX)
+    for (size_t i = 0; i < len; i += (std::numeric_limits<int>::max)())
     {
-        int fillSize = (int)(std::min)(len - i, (size_t)INT_MAX);
+        int fillSize =
+            (int)(std::min)(len - i, (size_t)(std::numeric_limits<int>::max)());
         if (!RAND_bytes((unsigned char *)data + i, fillSize))
             return false;
     }

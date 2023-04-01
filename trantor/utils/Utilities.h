@@ -279,6 +279,13 @@ inline std::string toHexString(const Hash256 &hash)
  * @param ptr Pointer to the buffer to fill
  * @param size Size of the buffer
  * @return true if successful, false otherwise
+ *
+ * @note This function really sholdn't fail, but it's possible that
+ *
+ *   - OpenSSL can't access /dev/urandom
+ *   - Compiled with glibc that supports getentropy() but the kernel doesn't
+ *
+ * When using Botan or on *BSD/macOS, this function will always succeed.
  */
 TRANTOR_EXPORT bool secureRandomBytes(void *ptr, size_t size);
 
