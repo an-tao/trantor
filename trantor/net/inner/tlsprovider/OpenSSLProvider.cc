@@ -639,8 +639,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                                              session,
                                              loop_);
                 }
-            }
 #endif
+            }
 
             auto cert = SSL_get_peer_certificate(ssl_);
             bool needCert = policyPtr_->getValidate();
