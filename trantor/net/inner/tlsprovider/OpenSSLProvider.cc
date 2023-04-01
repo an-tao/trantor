@@ -381,6 +381,7 @@ class SessionManager
                SSL_SESSION *session,
                EventLoop *loop)
     {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
         {
             std::lock_guard<std::mutex> lock(mutex_);
             auto key = toKey(hostname, peerAddr);
@@ -408,6 +409,13 @@ class SessionManager
             sessionMap_[key] = sessions_.begin();
         }
         removeExcessSession();
+#else
+        (void)hostname;
+        (void)peerAddr;
+        (void)session;
+        (void)loop;
+        assert(false && "not support under ancient openssl");
+#endif
     }
 
     SSL_SESSION *get(const std::string &hostname, InetAddress peerAddr)
@@ -619,6 +627,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     setApplicationProtocol(std::string((char *)alpn, alpnlen));
                 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
                 SSL_SESSION *session = SSL_get0_session(ssl_);
                 assert(session);
                 if (SSL_SESSION_is_resumable(session))
@@ -631,6 +640,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                                              loop_);
                 }
             }
+#endif
 
             auto cert = SSL_get_peer_certificate(ssl_);
             bool needCert = policyPtr_->getValidate();
