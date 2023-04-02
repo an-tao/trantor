@@ -567,7 +567,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         sendTLSData();
     }
 
-    virtual ssize_t sendData(const char *data, size_t len)
+    virtual ssize_t sendData(const char *data, size_t len) override
     {
         if (getBufferedData().readableBytes() != 0)
         {
