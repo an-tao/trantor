@@ -119,8 +119,8 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
 {
     if (!loggerFilePtr_)
     {
-        loggerFilePtr_ = std::unique_ptr<LoggerFile>(
-            new LoggerFile(filePath_, fileBaseName_, fileExtName_, bRenameOnLimitOnly_));
+        loggerFilePtr_ = std::unique_ptr<LoggerFile>(new LoggerFile(
+            filePath_, fileBaseName_, fileExtName_, bRenameOnLimitOnly_));
     }
     loggerFilePtr_->writeLog(buf);
     if (loggerFilePtr_->getLength() > sizeLimit_)
@@ -236,7 +236,7 @@ uint64_t AsyncFileLogger::LoggerFile::getLength()
 /**
  * Force store the current file (with the base name)
  * with the newly generated name by adding time point.
- * 
+ *
  * @param bOnDestroy - true for keeping log file opened and continuing logging,
  *                     false for destroy file object
  */
@@ -249,9 +249,9 @@ void AsyncFileLogger::LoggerFile::nextFileName(bool bOnDestroy)
 
         char seq[12];
         snprintf(seq,
-            sizeof(seq),
-            ".%06llu",
-            static_cast<long long unsigned int>(fileSeq_ % 1000000));
+                 sizeof(seq),
+                 ".%06llu",
+                 static_cast<long long unsigned int>(fileSeq_ % 1000000));
         ++fileSeq_;
         std::string newName =
             filePath_ + fileBaseName_ + "." +
@@ -261,18 +261,19 @@ void AsyncFileLogger::LoggerFile::nextFileName(bool bOnDestroy)
         rename(fileFullName_.c_str(), newName.c_str());
 #else
         // Convert UTF-8 file to UCS-2
-        auto wFullName{ utils::toNativePath(fileFullName_) };
-        auto wNewName{ utils::toNativePath(newName) };
+        auto wFullName{utils::toNativePath(fileFullName_)};
+        auto wNewName{utils::toNativePath(newName)};
         _wrename(wFullName.c_str(), wNewName.c_str());
 #endif
-        if(!bOnDestroy)
-            open(); // continue logging with base name until next renaming will be required
+        if (!bOnDestroy)
+            open();  // continue logging with base name until next renaming will
+                     // be required
     }
 }
 
 AsyncFileLogger::LoggerFile::~LoggerFile()
 {
-    if(!bRenameOnLimitOnly_) // rename on each destroy
+    if (!bRenameOnLimitOnly_)  // rename on each destroy
         nextFileName(true);
     if (fp_)
         fclose(fp_);
