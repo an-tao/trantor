@@ -388,7 +388,7 @@ struct RngState
     Hash256 secret;
     Hash256 prev;
     int64_t time;
-    uint64_t counter;
+    uint64_t counter = 0;
 };
 
 bool secureRandomBytes(void *data, size_t len)
