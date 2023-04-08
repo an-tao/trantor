@@ -447,16 +447,13 @@ bool secureRandomBytes(void *data, size_t len)
     defined(_M_IX86)
     state.time = __rdtsc();
 #elif defined(__aarch64__) || defined(_M_ARM64)
-    auto rdtsc = []() {
-        uint64_t val;
 #ifdef _MSC_VER
-        val = _ReadStatusReg(ARM64_CNTVCT_EL0);
+    state.time = _ReadStatusReg(ARM64_CNTVCT_EL0);
 #else
-        asm volatile("mrs %0, cntvct_el0" : "=r"(val));
+    asm volatile("mrs %0, cntvct_el0" : "=r"(state.time));
 #endif
-        return val;
-    };
-    state.time = rdtsc();
+#elif defined(__riscv) && __riscv_xlen == 64
+    asm volatile("rdtime %0" : "=r"(state.time));
 #else
     auto now = chrono::steady_clock::now();
     // the proposed algorithm uses the time in nanoseconds, but we don't have a
