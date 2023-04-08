@@ -884,5 +884,12 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
         // We have our own session cache, so disable OpenSSL's
         SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);
     }
+
+    // Disable weak ciphers. Weak hash and ciphers can die in a fire.
+    int status =
+        SSL_CTX_set_cipher_list(ctx->ctx(), "MEDIUM:HIGH:!aNULL!MD5:!RC4!3DES");
+    if (status != 1)
+        throw std::runtime_error("Failed to select secure ciphers");
+
     return ctx;
 }
