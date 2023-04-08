@@ -45,10 +45,10 @@
 #include <random>
 #endif
 
-#if defined(__x86_64__) || defined(__i386__)
 #ifdef _MSC_VER
 #include <intrin.h>
 #else
+#if defined(__x86_64__) || defined(__i386__)
 #include <x86intrin.h>
 #endif
 #endif
@@ -449,7 +449,11 @@ bool secureRandomBytes(void *data, size_t len)
 #elif defined(__aarch64__) || defined(_M_ARM64)
     auto rdtsc = []() {
         uint64_t val;
+#ifdef _MSC_VER
+        val = _ReadStatusReg(ARM64_CNTVCT_EL0);
+#else
         asm volatile("mrs %0, cntvct_el0" : "=r"(val));
+#endif
         return val;
     };
     state.time = rdtsc();
