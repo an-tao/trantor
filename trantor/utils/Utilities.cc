@@ -447,6 +447,9 @@ bool secureRandomBytes(void *data, size_t len)
     defined(_M_IX86)
     state.time = __rdtsc();
 #elif defined(__aarch64__) || defined(_M_ARM64)
+    // IMPORTANT! ARMv8 cntvct_el0 is not a cycle counter. It's a free running
+    // counter that increments at 1~50MHz. 20~40x slower than the CPU. But
+    // hashing takes more then that. So it's still good enough.
 #ifdef _MSC_VER
     state.time = _ReadStatusReg(ARM64_CNTVCT_EL0);
 #else
@@ -454,6 +457,13 @@ bool secureRandomBytes(void *data, size_t len)
 #endif
 #elif defined(__riscv) && __riscv_xlen == 64
     asm volatile("rdtime %0" : "=r"(state.time));
+#elif defined(__riscv) && __riscv_xlen == 32
+    uint32_t timeLo, timeHi;
+    asm volatile("rdtimeh %0" : "=r"(timeHi));
+    asm volatile("rdtime %0" : "=r"(timeLo));
+    state.time = (uint64_t)timeHi << 32 | timeLo;
+#elif defined(__s390__)  // both s390 and s390x
+    asm volatile("stck %0" : "=Q"(state.time));
 #else
     auto now = chrono::steady_clock::now();
     // the proposed algorithm uses the time in nanoseconds, but we don't have a
