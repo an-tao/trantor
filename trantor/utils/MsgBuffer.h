@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <cstdint>
 #ifdef _WIN32
 using ssize_t = std::intptr_t;
 #endif
