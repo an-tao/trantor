@@ -69,9 +69,9 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         sizeLimit_ = limit;
     }
 
-    void SetRenameOnLimitOnly(bool bSet = true)
+    void setRenameOnLimitOnly(bool flag = true)
     {
-        bRenameOnLimitOnly_ = bSet;
+        renameOnLimitOnly_ = flag;
     }
 
     /**
@@ -112,8 +112,8 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
     std::string fileBaseName_{"trantor"};
     std::string fileExtName_{".log"};
     uint64_t sizeLimit_{20 * 1024 * 1024};
-    bool bRenameOnLimitOnly_{false};  // write logs into one file until the size
-                                      // limit will be reached
+    bool renameOnLimitOnly_{false};  // write logs into one file until the size
+                                     // limit will be reached
 
     class LoggerFile : NonCopyable
     {
@@ -121,7 +121,7 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         LoggerFile(const std::string &filePath,
                    const std::string &fileBaseName,
                    const std::string &fileExtName,
-                   bool bRenameOnLimitOnly = false);
+                   bool renameOnLimitOnly = false);
         ~LoggerFile();
         void writeLog(const StringPtr buf);
         void open();
@@ -141,8 +141,8 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         std::string fileBaseName_;
         std::string fileExtName_;
         static uint64_t fileSeq_;
-        bool bRenameOnLimitOnly_{false};  // by default false, will generate new
-                                          // file name on each destroy
+        bool renameOnLimitOnly_{false};  // by default false, will generate new
+                                         // file name on each destroy
     };
     std::unique_ptr<LoggerFile> loggerFilePtr_;
 

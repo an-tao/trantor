@@ -120,7 +120,7 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
     if (!loggerFilePtr_)
     {
         loggerFilePtr_ = std::unique_ptr<LoggerFile>(new LoggerFile(
-            filePath_, fileBaseName_, fileExtName_, bRenameOnLimitOnly_));
+            filePath_, fileBaseName_, fileExtName_, renameOnLimitOnly_));
     }
     loggerFilePtr_->writeLog(buf);
     if (loggerFilePtr_->getLength() > sizeLimit_)
@@ -178,12 +178,12 @@ void AsyncFileLogger::startLogging()
 AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
                                         const std::string &fileBaseName,
                                         const std::string &fileExtName,
-                                        bool bRenameOnLimitOnly)
+                                        bool renameOnLimitOnly)
     : creationDate_(Date::date()),
       filePath_(filePath),
       fileBaseName_(fileBaseName),
       fileExtName_(fileExtName),
-      bRenameOnLimitOnly_(bRenameOnLimitOnly)
+      renameOnLimitOnly_(renameOnLimitOnly)
 {
     open();
 }
@@ -273,7 +273,7 @@ void AsyncFileLogger::LoggerFile::nextFileName(bool bOnDestroy)
 
 AsyncFileLogger::LoggerFile::~LoggerFile()
 {
-    if (!bRenameOnLimitOnly_)  // rename on each destroy
+    if (!renameOnLimitOnly_)  // rename on each destroy
         nextFileName(true);
     if (fp_)
         fclose(fp_);
