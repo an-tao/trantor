@@ -69,9 +69,16 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         sizeLimit_ = limit;
     }
 
-    void setRenameOnLimitOnly(bool flag = true)
+    /**
+     * @brief Set whether to switch the log file when the AsyncFileLogger object
+     * is destroyed. If this flag is set to true, the log file is not switched
+     * when the AsyncFileLogger object is destroyed.
+     *
+     * @param flag
+     */
+    void setSwitchOnLimitOnly(bool flag = true)
     {
-        renameOnLimitOnly_ = flag;
+        switchOnLimitOnly_ = flag;
     }
 
     /**
@@ -112,8 +119,8 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
     std::string fileBaseName_{"trantor"};
     std::string fileExtName_{".log"};
     uint64_t sizeLimit_{20 * 1024 * 1024};
-    bool renameOnLimitOnly_{false};  // write logs into one file until the size
-                                     // limit will be reached
+    bool switchOnLimitOnly_{false};  // by default false, will generate new
+                                     // file name on each destroy.
 
     class LoggerFile : NonCopyable
     {
@@ -121,11 +128,11 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         LoggerFile(const std::string &filePath,
                    const std::string &fileBaseName,
                    const std::string &fileExtName,
-                   bool renameOnLimitOnly = false);
+                   bool switchOnLimitOnly = false);
         ~LoggerFile();
         void writeLog(const StringPtr buf);
         void open();
-        void nextFileName(bool bOnDestroy = false);
+        void switchLog(bool openNewOne);
         uint64_t getLength();
         explicit operator bool() const
         {
@@ -141,7 +148,7 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         std::string fileBaseName_;
         std::string fileExtName_;
         static uint64_t fileSeq_;
-        bool renameOnLimitOnly_{false};  // by default false, will generate new
+        bool switchOnLimitOnly_{false};  // by default false, will generate new
                                          // file name on each destroy
     };
     std::unique_ptr<LoggerFile> loggerFilePtr_;

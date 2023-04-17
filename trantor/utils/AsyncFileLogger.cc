@@ -120,12 +120,12 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
     if (!loggerFilePtr_)
     {
         loggerFilePtr_ = std::unique_ptr<LoggerFile>(new LoggerFile(
-            filePath_, fileBaseName_, fileExtName_, renameOnLimitOnly_));
+            filePath_, fileBaseName_, fileExtName_, switchOnLimitOnly_));
     }
     loggerFilePtr_->writeLog(buf);
     if (loggerFilePtr_->getLength() > sizeLimit_)
     {
-        loggerFilePtr_->nextFileName();
+        loggerFilePtr_->switchLog(true);
     }
 }
 
@@ -178,12 +178,12 @@ void AsyncFileLogger::startLogging()
 AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
                                         const std::string &fileBaseName,
                                         const std::string &fileExtName,
-                                        bool renameOnLimitOnly)
+                                        bool switchOnLimitOnly)
     : creationDate_(Date::date()),
       filePath_(filePath),
       fileBaseName_(fileBaseName),
       fileExtName_(fileExtName),
-      renameOnLimitOnly_(renameOnLimitOnly)
+      switchOnLimitOnly_(switchOnLimitOnly)
 {
     open();
 }
@@ -237,10 +237,9 @@ uint64_t AsyncFileLogger::LoggerFile::getLength()
  * Force store the current file (with the base name)
  * with the newly generated name by adding time point.
  *
- * @param bOnDestroy - true for keeping log file opened and continuing logging,
- *                     false for destroy file object
+ * @param openNewOne - true for keeping log file opened and continuing logging
  */
-void AsyncFileLogger::LoggerFile::nextFileName(bool bOnDestroy)
+void AsyncFileLogger::LoggerFile::switchLog(bool openNewOne)
 {
     if (fp_)
     {
@@ -265,7 +264,7 @@ void AsyncFileLogger::LoggerFile::nextFileName(bool bOnDestroy)
         auto wNewName{utils::toNativePath(newName)};
         _wrename(wFullName.c_str(), wNewName.c_str());
 #endif
-        if (!bOnDestroy)
+        if (openNewOne)
             open();  // continue logging with base name until next renaming will
                      // be required
     }
@@ -273,8 +272,8 @@ void AsyncFileLogger::LoggerFile::nextFileName(bool bOnDestroy)
 
 AsyncFileLogger::LoggerFile::~LoggerFile()
 {
-    if (!renameOnLimitOnly_)  // rename on each destroy
-        nextFileName(true);
+    if (!switchOnLimitOnly_)  // rename on each destroy
+        switchLog(false);
     if (fp_)
         fclose(fp_);
 }
