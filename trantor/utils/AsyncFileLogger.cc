@@ -119,13 +119,13 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
 {
     if (!loggerFilePtr_)
     {
-        loggerFilePtr_ = std::unique_ptr<LoggerFile>(
-            new LoggerFile(filePath_, fileBaseName_, fileExtName_));
+        loggerFilePtr_ = std::unique_ptr<LoggerFile>(new LoggerFile(
+            filePath_, fileBaseName_, fileExtName_, switchOnLimitOnly_));
     }
     loggerFilePtr_->writeLog(buf);
     if (loggerFilePtr_->getLength() > sizeLimit_)
     {
-        loggerFilePtr_.reset();
+        loggerFilePtr_->switchLog(true);
     }
 }
 
@@ -177,13 +177,24 @@ void AsyncFileLogger::startLogging()
 
 AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
                                         const std::string &fileBaseName,
-                                        const std::string &fileExtName)
+                                        const std::string &fileExtName,
+                                        bool switchOnLimitOnly)
     : creationDate_(Date::date()),
       filePath_(filePath),
       fileBaseName_(fileBaseName),
-      fileExtName_(fileExtName)
+      fileExtName_(fileExtName),
+      switchOnLimitOnly_(switchOnLimitOnly)
 {
-    fileFullName_ = filePath + fileBaseName + fileExtName;
+    open();
+}
+
+/**
+ * Open file for append logs
+ * Always write to file with base name.
+ */
+void AsyncFileLogger::LoggerFile::open()
+{
+    fileFullName_ = filePath_ + fileBaseName_ + fileExtName_;
 #ifndef _MSC_VER
     fp_ = fopen(fileFullName_.c_str(), "a");
 #else
@@ -222,11 +233,19 @@ uint64_t AsyncFileLogger::LoggerFile::getLength()
     return 0;
 }
 
-AsyncFileLogger::LoggerFile::~LoggerFile()
+/**
+ * Force store the current file (with the base name)
+ * with the newly generated name by adding time point.
+ *
+ * @param openNewOne - true for keeping log file opened and continuing logging
+ */
+void AsyncFileLogger::LoggerFile::switchLog(bool openNewOne)
 {
     if (fp_)
     {
         fclose(fp_);
+        fp_ = nullptr;
+
         char seq[12];
         snprintf(seq,
                  sizeof(seq),
@@ -245,7 +264,18 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
         auto wNewName{utils::toNativePath(newName)};
         _wrename(wFullName.c_str(), wNewName.c_str());
 #endif
+        if (openNewOne)
+            open();  // continue logging with base name until next renaming will
+                     // be required
     }
+}
+
+AsyncFileLogger::LoggerFile::~LoggerFile()
+{
+    if (!switchOnLimitOnly_)  // rename on each destroy
+        switchLog(false);
+    if (fp_)
+        fclose(fp_);
 }
 
 void AsyncFileLogger::swapBuffer()

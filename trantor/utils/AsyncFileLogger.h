@@ -70,6 +70,18 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
     }
 
     /**
+     * @brief Set whether to switch the log file when the AsyncFileLogger object
+     * is destroyed. If this flag is set to true, the log file is not switched
+     * when the AsyncFileLogger object is destroyed.
+     *
+     * @param flag
+     */
+    void setSwitchOnLimitOnly(bool flag = true)
+    {
+        switchOnLimitOnly_ = flag;
+    }
+
+    /**
      * @brief Set the log file name.
      *
      * @param baseName The base name of the log file.
@@ -107,14 +119,20 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
     std::string fileBaseName_{"trantor"};
     std::string fileExtName_{".log"};
     uint64_t sizeLimit_{20 * 1024 * 1024};
+    bool switchOnLimitOnly_{false};  // by default false, will generate new
+                                     // file name on each destroy.
+
     class LoggerFile : NonCopyable
     {
       public:
         LoggerFile(const std::string &filePath,
                    const std::string &fileBaseName,
-                   const std::string &fileExtName);
+                   const std::string &fileExtName,
+                   bool switchOnLimitOnly = false);
         ~LoggerFile();
         void writeLog(const StringPtr buf);
+        void open();
+        void switchLog(bool openNewOne);
         uint64_t getLength();
         explicit operator bool() const
         {
@@ -130,6 +148,8 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         std::string fileBaseName_;
         std::string fileExtName_;
         static uint64_t fileSeq_;
+        bool switchOnLimitOnly_{false};  // by default false, will generate new
+                                         // file name on each destroy
     };
     std::unique_ptr<LoggerFile> loggerFilePtr_;
 
