@@ -1,13 +1,14 @@
 
 if(NOT WIN32)
-  find_package(PkgConfig REQUIRED)
-
-  if (NOT TARGET Botan::Botan)
-    pkg_check_modules(Botan QUIET IMPORTED_TARGET botan-2)
-    if (TARGET PkgConfig::Botan)
-      add_library(Botan::Botan ALIAS PkgConfig::Botan)
+  find_package(PkgConfig)
+  if(PKG_CONFIG_FOUND)
+    if (NOT TARGET Botan::Botan)
+      pkg_check_modules(Botan QUIET IMPORTED_TARGET botan-2)
+      if (TARGET PkgConfig::Botan)
+        add_library(Botan::Botan ALIAS PkgConfig::Botan)
+      endif ()
     endif ()
-  endif ()
+  endif()
 endif()
 
 if (NOT TARGET Botan::Botan)
