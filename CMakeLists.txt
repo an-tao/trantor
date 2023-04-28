@@ -147,6 +147,8 @@ if(TRANTOR_USE_TLS STREQUAL "openssl" OR TRANTOR_USE_TLS STREQUAL "")
       ${TRANTOR_SOURCES}
       trantor/net/inner/tlsprovider/OpenSSLProvider.cc
       trantor/utils/crypto/openssl.cc)
+  elseif(TRANTOR_USE_TLS STREQUAL "openssl")
+    message(FATAL_ERROR "Requested OpenSSL TLS provider but OpenSSL was not found")
   endif()
 endif()
 
@@ -162,6 +164,8 @@ if(TRANTOR_TLS_PROVIDER STREQUAL "None"
         ${TRANTOR_SOURCES}
         trantor/net/inner/tlsprovider/BotanTLSProvider.cc
         trantor/utils/crypto/botan.cc)
+  elseif(TRANTOR_USE_TLS STREQUAL "botan")
+    message(FATAL_ERROR "Requested Botan TLS provider but Botan was not found")
   endif()
 endif()
 
