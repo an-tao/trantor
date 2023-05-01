@@ -202,9 +202,6 @@ void AresResolver::onSockCreate(int sockfd, int type)
 void AresResolver::onSockStateChange(int sockfd, bool read, bool write)
 {
     (void)write;
-    loop_->assertInLoopThread();
-    ChannelList::iterator it = channels_.find(sockfd);
-    assert(it != channels_.end());
     if (read)
     {
         // update
@@ -212,6 +209,9 @@ void AresResolver::onSockStateChange(int sockfd, bool read, bool write)
     }
     else if (*loopValid_)
     {
+        loop_->assertInLoopThread();
+        ChannelList::iterator it = channels_.find(sockfd);
+        assert(it != channels_.end());
         // remove
         it->second->disableAll();
         it->second->remove();
