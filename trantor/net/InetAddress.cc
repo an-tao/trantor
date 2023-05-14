@@ -9,6 +9,7 @@
 #include <trantor/net/InetAddress.h>
 
 #include <trantor/utils/Logger.h>
+#include <cstring>
 // #include <muduo/net/Endian.h>
 
 #ifdef _WIN32
@@ -117,6 +118,18 @@ std::string InetAddress::toIpPort() const
     snprintf(buf, sizeof(buf), ":%u", port);
     return toIp() + std::string(buf);
 }
+std::string InetAddress::toIpPortNetEndian() const
+{
+    std::string buf;
+    static constexpr auto bytes = sizeof(addr_.sin_port);
+    buf.resize(bytes);
+#if defined _MSC_VER && _MSC_VER >= 1900
+    std::memcpy((PVOID)&buf[0], (PVOID)&addr_.sin_port, bytes);
+#else
+    std::memcpy(&buf[0], &addr_.sin_port, bytes);
+#endif
+    return toIpNetEndian() + buf;
+}
 bool InetAddress::isIntranetIp() const
 {
     if (addr_.sin_family == AF_INET)
@@ -200,6 +213,33 @@ std::string InetAddress::toIp() const
         ::inet_ntop(AF_INET6, (PVOID)&addr6_.sin6_addr, buf, sizeof(buf));
 #else
         ::inet_ntop(AF_INET6, &addr6_.sin6_addr, buf, sizeof(buf));
+#endif
+    }
+
+    return buf;
+}
+
+std::string InetAddress::toIpNetEndian() const
+{
+    std::string buf;
+    if (addr_.sin_family == AF_INET)
+    {
+        static constexpr auto bytes = sizeof(addr_.sin_addr.s_addr);
+        buf.resize(bytes);
+#if defined _MSC_VER && _MSC_VER >= 1900
+        std::memcpy((PVOID)&buf[0], (PVOID)&addr_.sin_addr.s_addr, bytes);
+#else
+        std::memcpy(&buf[0], &addr_.sin_addr.s_addr, bytes);
+#endif
+    }
+    else if (addr_.sin_family == AF_INET6)
+    {
+        static constexpr auto bytes = sizeof(addr6_.sin6_addr);
+        buf.resize(bytes);
+#if defined _MSC_VER && _MSC_VER >= 1900
+        std::memcpy((PVOID)&buf[0], (PVOID)ip6NetEndian(), bytes);
+#else
+        std::memcpy(&buf[0], ip6NetEndian(), bytes);
 #endif
     }
 

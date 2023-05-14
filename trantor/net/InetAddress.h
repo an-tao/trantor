@@ -113,6 +113,21 @@ class TRANTOR_EXPORT InetAddress
     std::string toIpPort() const;
 
     /**
+     * @brief Return the IP bytes of the endpoint in net endian byte order
+     *
+     * @return std::string
+     */
+    std::string toIpNetEndian() const;
+
+    /**
+     * @brief Return the IP and port bytes of the endpoint in net endian byte
+     * order
+     *
+     * @return std::string
+     */
+    std::string toIpPortNetEndian() const;
+
+    /**
      * @brief Return the port number of the endpoint.
      *
      * @return uint16_t
