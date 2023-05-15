@@ -17,10 +17,8 @@ TEST(InetAddress, innerIpTest)
 }
 TEST(InetAddress, toIpPortNetEndianTest)
 {
-    EXPECT_EQ(
-        std::string(
-            {char(192), char(168), 0, 1, (80 & 0xff00) >> 8, 80 & 0x00ff}),
-        InetAddress("192.168.0.1", 80).toIpPortNetEndian());
+    EXPECT_EQ(std::string({char(192), char(168), 0, 1, 0, 80}),
+              InetAddress("192.168.0.1", 80).toIpPortNetEndian());
     EXPECT_EQ(std::string({0x20,
                            0x01,
                            0x0d,
@@ -37,8 +35,8 @@ TEST(InetAddress, toIpPortNetEndianTest)
                            0x77,
                            char(0x88),
                            char(0x88),
-                           char((443 & 0xff00) >> 8),
-                           char(443 & 0x00ff)}),
+                           1,
+                           char(187)}),
               InetAddress("2001:0db8:3333:4444:5555:6666:7777:8888", 443, true)
                   .toIpPortNetEndian());
 }
