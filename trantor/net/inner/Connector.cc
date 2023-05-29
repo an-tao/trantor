@@ -79,6 +79,8 @@ void Connector::connect()
 {
     socketHanded_ = false;
     fd_ = Socket::createNonblockingSocketOrDie(serverAddr_.family());
+    if (sockOptCallback_)
+        sockOptCallback_(fd_);
     errno = 0;
     int ret = Socket::connect(fd_, serverAddr_);
     int savedErrno = (ret == 0) ? 0 : errno;

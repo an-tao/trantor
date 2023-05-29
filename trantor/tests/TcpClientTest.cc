@@ -4,6 +4,13 @@
 #include <string>
 #include <iostream>
 #include <atomic>
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#endif
+
 using namespace trantor;
 #define USE_IPV6 0
 int main()
@@ -24,6 +31,29 @@ int main()
         client[i] = std::make_shared<trantor::TcpClient>(&loop,
                                                          serverAddr,
                                                          "tcpclienttest");
+        client[i]->setSockOptCallback([](int fd) {
+            LOG_DEBUG << "setSockOptCallback!";
+#ifdef _WIN32
+#elif __linux__
+            int optval = 10;
+            ::setsockopt(fd,
+                         SOL_TCP,
+                         TCP_KEEPCNT,
+                         &optval,
+                         static_cast<socklen_t>(sizeof optval));
+            ::setsockopt(fd,
+                         SOL_TCP,
+                         TCP_KEEPIDLE,
+                         &optval,
+                         static_cast<socklen_t>(sizeof optval));
+            ::setsockopt(fd,
+                         SOL_TCP,
+                         TCP_KEEPINTVL,
+                         &optval,
+                         static_cast<socklen_t>(sizeof optval));
+#else
+#endif
+        });
         client[i]->setConnectionCallback(
             [i, &loop, &connCount](const TcpConnectionPtr &conn) {
                 if (conn->connected())

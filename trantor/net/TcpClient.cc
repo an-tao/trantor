@@ -133,6 +133,16 @@ void TcpClient::stop()
     connector_->stop();
 }
 
+void TcpClient::setSockOptCallback(SockOptCallback &&cb)
+{
+    connector_->setSockOptCallback(std::move(cb));
+}
+
+void TcpClient::setSockOptCallback(const SockOptCallback &cb)
+{
+    connector_->setSockOptCallback(cb);
+}
+
 void TcpClient::newConnection(int sockfd)
 {
     loop_->assertInLoopThread();

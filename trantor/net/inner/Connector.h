@@ -28,6 +28,7 @@ class Connector : public NonCopyable,
   public:
     using NewConnectionCallback = std::function<void(int sockfd)>;
     using ConnectionErrorCallback = std::function<void()>;
+    using SockOptCallback = std::function<void(int sockfd)>;
     Connector(EventLoop *loop, const InetAddress &addr, bool retry = true);
     Connector(EventLoop *loop, InetAddress &&addr, bool retry = true);
     ~Connector();
@@ -47,6 +48,14 @@ class Connector : public NonCopyable,
     {
         errorCallback_ = std::move(cb);
     }
+    void setSockOptCallback(const SockOptCallback &cb)
+    {
+        sockOptCallback_ = cb;
+    }
+    void setSockOptCallback(SockOptCallback &&cb)
+    {
+        sockOptCallback_ = std::move(cb);
+    }
     const InetAddress &serverAddress() const
     {
         return serverAddr_;
@@ -58,6 +67,7 @@ class Connector : public NonCopyable,
   private:
     NewConnectionCallback newConnectionCallback_;
     ConnectionErrorCallback errorCallback_;
+    SockOptCallback sockOptCallback_;
     enum class Status
     {
         Disconnected,
