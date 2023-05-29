@@ -191,6 +191,13 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     }
 
     /**
+     * @brief Set the callback for set socket option
+     * @param cb The callback is called, before connect
+     */
+    void setSockOptCallback(const SockOptCallback &cb);
+    void setSockOptCallback(SockOptCallback &&cb);
+
+    /**
      * @brief Enable SSL encryption.
      * @param useOldTLS If true, the TLS 1.0 and 1.1 are supported by the
      * client.
