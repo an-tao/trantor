@@ -22,7 +22,7 @@
 #include <string.h>  // memcpy
 #include <string>
 
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
 #include <string_view>
 #endif
 
@@ -204,10 +204,10 @@ class TRANTOR_EXPORT LogStream : NonCopyable
         append(v.c_str(), v.size());
         return *this;
     }
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
     self &operator<<(const std::string_view v)
     {
-        append(v.begin(), v.size());
+        append(v.data(), v.length());
         return *this;
     }
 #endif
