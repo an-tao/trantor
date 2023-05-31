@@ -40,7 +40,8 @@ A million repetitions of "a"
 
 #if defined(vax) || defined(ns32000) || defined(sun386) ||      \
     defined(__i386__) || defined(MIPSEL) || defined(_MIPSEL) || \
-    defined(BIT_ZERO_ON_RIGHT) || defined(__alpha__) || defined(__alpha)
+    defined(BIT_ZERO_ON_RIGHT) || defined(__alpha__) || defined(__alpha) || \
+    defined(__CYGWIN32__) || defined(_WIN64) || defined(_WIN32)
 #define BYTE_ORDER LITTLE_ENDIAN
 #endif
 
@@ -112,6 +113,10 @@ A million repetitions of "a"
     w = rol(w, 30);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
+
+#ifdef _WIN32
+using u_int32_t = uint32_t;
+#endif
 
 void TrantorSHA1Transform(u_int32_t state[5], const unsigned char buffer[64])
 {
@@ -249,10 +254,10 @@ void TrantorSHA1Init(SHA1_CTX* context)
 
 void TrantorSHA1Update(SHA1_CTX* context,
                        const unsigned char* data,
-                       u_int32_t len)
+                       size_t len)
 {
-    u_int32_t i;
-    u_int32_t j;
+    size_t i;
+    size_t j;
 
     j = context->count[0];
     if ((context->count[0] += len << 3) < j)
