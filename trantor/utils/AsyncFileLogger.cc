@@ -266,6 +266,7 @@ void AsyncFileLogger::LoggerFile::switchLog(bool openNewOne)
                  ".%06llu",
                  static_cast<long long unsigned int>(fileSeq_ % 1000000));
         ++fileSeq_;
+        // NOTE: Remember to update initFilenameQueue() if name format changes
         std::string newName =
             filePath_ + fileBaseName_ + "." +
             creationDate_.toCustomedFormattedString("%y%m%d-%H%M%S") +
