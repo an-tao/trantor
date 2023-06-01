@@ -119,8 +119,12 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
 {
     if (!loggerFilePtr_)
     {
-        loggerFilePtr_ = std::unique_ptr<LoggerFile>(new LoggerFile(
-            filePath_, fileBaseName_, fileExtName_, switchOnLimitOnly_));
+        loggerFilePtr_ =
+            std::unique_ptr<LoggerFile>(new LoggerFile(filePath_,
+                                                       fileBaseName_,
+                                                       fileExtName_,
+                                                       switchOnLimitOnly_,
+                                                       maxFiles_));
     }
     loggerFilePtr_->writeLog(buf);
     if (loggerFilePtr_->getLength() > sizeLimit_)
@@ -178,14 +182,21 @@ void AsyncFileLogger::startLogging()
 AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
                                         const std::string &fileBaseName,
                                         const std::string &fileExtName,
-                                        bool switchOnLimitOnly)
+                                        bool switchOnLimitOnly,
+                                        size_t maxFiles)
     : creationDate_(Date::date()),
       filePath_(filePath),
       fileBaseName_(fileBaseName),
       fileExtName_(fileExtName),
-      switchOnLimitOnly_(switchOnLimitOnly)
+      switchOnLimitOnly_(switchOnLimitOnly),
+      maxFiles_(maxFiles)
 {
     open();
+
+    if (maxFiles_ > 0)
+    {
+        initFilenameQueue();
+    }
 }
 
 /**
@@ -264,6 +275,14 @@ void AsyncFileLogger::LoggerFile::switchLog(bool openNewOne)
         auto wNewName{utils::toNativePath(newName)};
         _wrename(wFullName.c_str(), wNewName.c_str());
 #endif
+        if (maxFiles_ > 0)
+        {
+            filenameQueue_.push_back(newName);
+            if (filenameQueue_.size() > maxFiles_)
+            {
+                deleteOldFiles();
+            }
+        }
         if (openNewOne)
             open();  // continue logging with base name until next renaming will
                      // be required
@@ -276,6 +295,45 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
         switchLog(false);
     if (fp_)
         fclose(fp_);
+}
+
+void AsyncFileLogger::LoggerFile::initFilenameQueue()
+{
+    if (maxFiles_ <= 0)
+    {
+        return;
+    }
+    // walk through the directory and file all files
+    // TODO: how to do this efficiently?
+    // for f in listdir(logdir):
+    //      if f.startswith(fileBaseName) and f.endswith(fileExtName):
+    //          filenameQueue_.push_back(f)
+    // filenameQueue_.sort()
+    // deleteOldFiles();
+}
+
+void AsyncFileLogger::LoggerFile::deleteOldFiles()
+{
+    while (filenameQueue_.size() > maxFiles_)
+    {
+        std::string filename = std::move(filenameQueue_.front());
+        filenameQueue_.pop_front();
+
+#if !defined(_WIN32) || defined(__MINGW32__)
+        int r = remove(filename.c_str());
+#else
+        // Convert UTF-8 file to UCS-2
+        auto wName{utils::toNativePath(filename)};
+        int r = _wremove(wName.c_str());
+#endif
+        if (r != 0)
+        {
+            fprintf(stderr,
+                    "Failed to remove file %s: %s\n",
+                    filename.c_str(),
+                    strerror_tl(errno));
+        }
+    }
 }
 
 void AsyncFileLogger::swapBuffer()
