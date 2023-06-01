@@ -16,6 +16,8 @@
 #include <trantor/utils/Utilities.h>
 #ifndef _WIN32
 #include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
@@ -23,6 +25,7 @@
 #include <Windows.h>
 #endif
 #include <string.h>
+#include <algorithm>
 #include <iostream>
 #include <functional>
 #include <chrono>
@@ -303,13 +306,68 @@ void AsyncFileLogger::LoggerFile::initFilenameQueue()
     {
         return;
     }
+
     // walk through the directory and file all files
-    // TODO: how to do this efficiently?
-    // for f in listdir(logdir):
-    //      if f.startswith(fileBaseName) and f.endswith(fileExtName):
-    //          filenameQueue_.push_back(f)
-    // filenameQueue_.sort()
-    // deleteOldFiles();
+#if !defined(_WIN32) || defined(__MINGW32__)
+    DIR *dp;
+    struct dirent *dirp;
+    struct stat st;
+
+    if ((dp = opendir(filePath_.c_str())) == nullptr)
+    {
+        fprintf(stderr,
+                "Can't open dir %s: %s\n",
+                filePath_.c_str(),
+                strerror_tl(errno));
+        return;
+    }
+
+    while ((dirp = readdir(dp)) != nullptr)
+    {
+        std::string name = dirp->d_name;
+        // <base>.yymmdd-hhmmss.000000<ext>
+        // NOTE: magic number 21: the length of middle part of generated name
+        if (name.size() != fileBaseName_.size() + 21 + fileExtName_.size() ||
+            name.compare(0, fileBaseName_.size(), fileBaseName_) != 0 ||
+            name.compare(name.size() - fileExtName_.size(),
+                         fileExtName_.size(),
+                         fileExtName_) != 0)
+        {
+            continue;
+        }
+        std::string fullname = filePath_ + name;
+        if (stat(fullname.c_str(), &st) == -1)
+        {
+            fprintf(stderr,
+                    "Can't stat file %s: %s\n",
+                    fullname.c_str(),
+                    strerror_tl(errno));
+            continue;
+        }
+        if (!S_ISREG(st.st_mode))
+        {
+            continue;
+        }
+        filenameQueue_.push_back(fullname);
+        std::push_heap(filenameQueue_.begin(),
+                       filenameQueue_.end(),
+                       std::greater<>());
+        if (filenameQueue_.size() > maxFiles_)
+        {
+            std::pop_heap(filenameQueue_.begin(),
+                          filenameQueue_.end(),
+                          std::greater<>());
+            auto fileToRemove = std::move(filenameQueue_.back());
+            filenameQueue_.pop_back();
+            remove(fileToRemove.c_str());
+        }
+    }
+    closedir(dp);
+#else
+    // TODO: windows implementation
+#endif
+
+    std::sort(filenameQueue_.begin(), filenameQueue_.end(), std::less<>());
 }
 
 void AsyncFileLogger::LoggerFile::deleteOldFiles()
