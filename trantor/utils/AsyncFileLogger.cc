@@ -16,6 +16,8 @@
 #include <trantor/utils/Utilities.h>
 #ifndef _WIN32
 #include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
@@ -23,6 +25,7 @@
 #include <Windows.h>
 #endif
 #include <string.h>
+#include <algorithm>
 #include <iostream>
 #include <functional>
 #include <chrono>
@@ -119,8 +122,12 @@ void AsyncFileLogger::writeLogToFile(const StringPtr buf)
 {
     if (!loggerFilePtr_)
     {
-        loggerFilePtr_ = std::unique_ptr<LoggerFile>(new LoggerFile(
-            filePath_, fileBaseName_, fileExtName_, switchOnLimitOnly_));
+        loggerFilePtr_ =
+            std::unique_ptr<LoggerFile>(new LoggerFile(filePath_,
+                                                       fileBaseName_,
+                                                       fileExtName_,
+                                                       switchOnLimitOnly_,
+                                                       maxFiles_));
     }
     loggerFilePtr_->writeLog(buf);
     if (loggerFilePtr_->getLength() > sizeLimit_)
@@ -178,14 +185,21 @@ void AsyncFileLogger::startLogging()
 AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
                                         const std::string &fileBaseName,
                                         const std::string &fileExtName,
-                                        bool switchOnLimitOnly)
+                                        bool switchOnLimitOnly,
+                                        size_t maxFiles)
     : creationDate_(Date::date()),
       filePath_(filePath),
       fileBaseName_(fileBaseName),
       fileExtName_(fileExtName),
-      switchOnLimitOnly_(switchOnLimitOnly)
+      switchOnLimitOnly_(switchOnLimitOnly),
+      maxFiles_(maxFiles)
 {
     open();
+
+    if (maxFiles_ > 0)
+    {
+        initFilenameQueue();
+    }
 }
 
 /**
@@ -252,6 +266,7 @@ void AsyncFileLogger::LoggerFile::switchLog(bool openNewOne)
                  ".%06llu",
                  static_cast<long long unsigned int>(fileSeq_ % 1000000));
         ++fileSeq_;
+        // NOTE: Remember to update initFilenameQueue() if name format changes
         std::string newName =
             filePath_ + fileBaseName_ + "." +
             creationDate_.toCustomedFormattedString("%y%m%d-%H%M%S") +
@@ -264,6 +279,14 @@ void AsyncFileLogger::LoggerFile::switchLog(bool openNewOne)
         auto wNewName{utils::toNativePath(newName)};
         _wrename(wFullName.c_str(), wNewName.c_str());
 #endif
+        if (maxFiles_ > 0)
+        {
+            filenameQueue_.push_back(newName);
+            if (filenameQueue_.size() > maxFiles_)
+            {
+                deleteOldFiles();
+            }
+        }
         if (openNewOne)
             open();  // continue logging with base name until next renaming will
                      // be required
@@ -276,6 +299,100 @@ AsyncFileLogger::LoggerFile::~LoggerFile()
         switchLog(false);
     if (fp_)
         fclose(fp_);
+}
+
+void AsyncFileLogger::LoggerFile::initFilenameQueue()
+{
+    if (maxFiles_ <= 0)
+    {
+        return;
+    }
+
+    // walk through the directory and file all files
+#if !defined(_WIN32) || defined(__MINGW32__)
+    DIR *dp;
+    struct dirent *dirp;
+    struct stat st;
+
+    if ((dp = opendir(filePath_.c_str())) == nullptr)
+    {
+        fprintf(stderr,
+                "Can't open dir %s: %s\n",
+                filePath_.c_str(),
+                strerror_tl(errno));
+        return;
+    }
+
+    while ((dirp = readdir(dp)) != nullptr)
+    {
+        std::string name = dirp->d_name;
+        // <base>.yymmdd-hhmmss.000000<ext>
+        // NOTE: magic number 21: the length of middle part of generated name
+        if (name.size() != fileBaseName_.size() + 21 + fileExtName_.size() ||
+            name.compare(0, fileBaseName_.size(), fileBaseName_) != 0 ||
+            name.compare(name.size() - fileExtName_.size(),
+                         fileExtName_.size(),
+                         fileExtName_) != 0)
+        {
+            continue;
+        }
+        std::string fullname = filePath_ + name;
+        if (stat(fullname.c_str(), &st) == -1)
+        {
+            fprintf(stderr,
+                    "Can't stat file %s: %s\n",
+                    fullname.c_str(),
+                    strerror_tl(errno));
+            continue;
+        }
+        if (!S_ISREG(st.st_mode))
+        {
+            continue;
+        }
+        filenameQueue_.push_back(fullname);
+        std::push_heap(filenameQueue_.begin(),
+                       filenameQueue_.end(),
+                       std::greater<>());
+        if (filenameQueue_.size() > maxFiles_)
+        {
+            std::pop_heap(filenameQueue_.begin(),
+                          filenameQueue_.end(),
+                          std::greater<>());
+            auto fileToRemove = std::move(filenameQueue_.back());
+            filenameQueue_.pop_back();
+            remove(fileToRemove.c_str());
+        }
+    }
+    closedir(dp);
+#else
+    // TODO: windows implementation
+#endif
+
+    std::sort(filenameQueue_.begin(), filenameQueue_.end(), std::less<>());
+}
+
+void AsyncFileLogger::LoggerFile::deleteOldFiles()
+{
+    while (filenameQueue_.size() > maxFiles_)
+    {
+        std::string filename = std::move(filenameQueue_.front());
+        filenameQueue_.pop_front();
+
+#if !defined(_WIN32) || defined(__MINGW32__)
+        int r = remove(filename.c_str());
+#else
+        // Convert UTF-8 file to UCS-2
+        auto wName{utils::toNativePath(filename)};
+        int r = _wremove(wName.c_str());
+#endif
+        if (r != 0)
+        {
+            fprintf(stderr,
+                    "Failed to remove file %s: %s\n",
+                    filename.c_str(),
+                    strerror_tl(errno));
+        }
+    }
 }
 
 void AsyncFileLogger::swapBuffer()
