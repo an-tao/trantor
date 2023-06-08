@@ -38,8 +38,8 @@ A million repetitions of "a"
 #define BIG_ENDIAN 4321    /* most-significant byte first (IBM, net) */
 #define PDP_ENDIAN 3412    /* LSB first in word, MSW first in long (pdp)*/
 
-#if defined(vax) || defined(ns32000) || defined(sun386) ||      \
-    defined(__i386__) || defined(MIPSEL) || defined(_MIPSEL) || \
+#if defined(vax) || defined(ns32000) || defined(sun386) ||                  \
+    defined(__i386__) || defined(MIPSEL) || defined(_MIPSEL) ||             \
     defined(BIT_ZERO_ON_RIGHT) || defined(__alpha__) || defined(__alpha) || \
     defined(__CYGWIN32__) || defined(_WIN64) || defined(_WIN32)
 #define BYTE_ORDER LITTLE_ENDIAN
@@ -252,9 +252,7 @@ void TrantorSHA1Init(SHA1_CTX* context)
 
 /* Run your data through this. */
 
-void TrantorSHA1Update(SHA1_CTX* context,
-                       const unsigned char* data,
-                       size_t len)
+void TrantorSHA1Update(SHA1_CTX* context, const unsigned char* data, size_t len)
 {
     size_t i;
     size_t j;
