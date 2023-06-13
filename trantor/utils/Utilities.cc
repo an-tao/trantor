@@ -79,18 +79,16 @@ std::string toUtf8(const std::wstring &wstr)
                           nSizeNeeded,
                           NULL,
                           NULL);
-#else  // _WIN32
-#if __cplusplus < 201103L || __cplusplus >= 201703L
+#elif __cplusplus < 201103L || __cplusplus >= 201703L
     // Note: Introduced in c++11 and deprecated with c++17.
     // Revert to C99 code since there no replacement yet
     strTo.resize(3 * wstr.length(), 0);
     auto nLen = wcstombs(&strTo[0], wstr.c_str(), strTo.length());
     strTo.resize(nLen);
-#else   // c++11 to c++14
+#else  // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     strTo = utf8conv.to_bytes(wstr);
-#endif  // __cplusplus
-#endif  // _WIN32
+#endif
     return strTo;
 }
 std::wstring fromUtf8(const std::string &str)
@@ -110,7 +108,7 @@ std::wstring fromUtf8(const std::string &str)
     wstrTo.resize(str.length(), 0);
     auto nLen = mbstowcs(&wstrTo[0], str.c_str(), wstrTo.length());
     wstrTo.resize(nLen);
-#else   // c++11 to c++14
+#else  // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     try
     {
@@ -119,7 +117,7 @@ std::wstring fromUtf8(const std::string &str)
     catch (...)  // Should never fail if str valid UTF-8
     {
     }
-#endif 
+#endif
     return wstrTo;
 }
 
