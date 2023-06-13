@@ -91,7 +91,7 @@ std::string toUtf8(const std::wstring &wstr)
         utf8 = newlocale(LC_ALL_MASK, "C.UTF8", NULL);
     if (!utf8)
         utf8 = newlocale(LC_ALL_MASK, "C.utf8", NULL);
-    auto nLen = wcstombs_l(&strTo[0], wstr.c_str(), strTo.length(), utf8);
+    auto nLen = wcstombs(&strTo[0], wstr.c_str(), strTo.length());
     strTo.resize(nLen);
     freelocale(utf8);
 #else   // c++11 to c++14
@@ -124,7 +124,7 @@ std::wstring fromUtf8(const std::string &str)
         utf8 = newlocale(LC_ALL_MASK, "C.UTF8", NULL);
     if (!utf8)
         utf8 = newlocale(LC_ALL_MASK, "C.utf8", NULL);
-    auto nLen = mbstowcs_l(&wstrTo[0], str.c_str(), wstrTo.length(), utf8);
+    auto nLen = mbstowcs(&wstrTo[0], str.c_str(), wstrTo.length());
     wstrTo.resize(nLen);
     freelocale(utf8);
 #else   // c++11 to c++14

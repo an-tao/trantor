@@ -17,15 +17,15 @@
 #include <botan/pkix_types.h>
 #include <botan/certstor_flatfile.h>
 #include <botan/x509path.h>
+#include <botan/tls_session_manager_memory.h>
 
 using namespace trantor;
 using namespace std::placeholders;
 
-static Botan::System_RNG sessionManagerRng;
-// Is this Ok? C++ technically doesn't guarantee static object initialization
-// order.
-static Botan::TLS::Session_Manager_In_Memory sessionManager(sessionManagerRng);
-static thread_local Botan::System_RNG rng;
+static std::once_flag sessionManagerInitFlag;
+static std::shared_ptr<Botan::AutoSeeded_RNG> sessionManagerRng;
+static std::shared_ptr<Botan::TLS::Session_Manager_In_Memory> sessionManager;
+static thread_local std::shared_ptr<Botan::AutoSeeded_RNG> rng;
 static Botan::System_Certificate_Store certStore;
 
 using namespace trantor;
@@ -33,7 +33,7 @@ using namespace trantor;
 class Credentials : public Botan::Credentials_Manager
 {
   public:
-    Credentials(Botan::Private_Key *key,
+    Credentials(std::shared_ptr<Botan::Private_Key> key,
                 Botan::X509_Certificate *cert,
                 Botan::Certificate_Store *certStore)
         : certStore_(certStore), cert_(cert), key_(key)
@@ -50,18 +50,22 @@ class Credentials : public Botan::Credentials_Manager
         return {certStore_};
     }
 
-    std::vector<Botan::X509_Certificate> cert_chain(
+    std::vector<Botan::X509_Certificate> find_cert_chain(
         const std::vector<std::string> &cert_key_types,
+        const std::vector<Botan::AlgorithmIdentifier> &cert_signature_schemes,
+        const std::vector<Botan::X509_DN> &acceptable_CAs,
         const std::string &type,
         const std::string &context) override
     {
         (void)type;
         (void)context;
+        (void)cert_signature_schemes;
+        (void)acceptable_CAs;
         if (cert_ == nullptr)
             return {};
 
         auto key_algo =
-            cert_->subject_public_key_algo().get_oid().to_formatted_string();
+            cert_->subject_public_key_algo().oid().to_formatted_string();
         auto it =
             std::find(cert_key_types.begin(), cert_key_types.end(), key_algo);
         if (it == cert_key_types.end())
@@ -69,9 +73,10 @@ class Credentials : public Botan::Credentials_Manager
         return {*cert_};
     }
 
-    Botan::Private_Key *private_key_for(const Botan::X509_Certificate &cert,
-                                        const std::string &type,
-                                        const std::string &context) override
+    std::shared_ptr<Botan::Private_Key> private_key_for(
+        const Botan::X509_Certificate &cert,
+        const std::string &type,
+        const std::string &context) override
     {
         (void)cert;
         (void)type;
@@ -80,7 +85,7 @@ class Credentials : public Botan::Credentials_Manager
     }
     Botan::Certificate_Store *certStore_ = nullptr;
     Botan::X509_Certificate *cert_ = nullptr;
-    Botan::Private_Key *key_ = nullptr;
+    std::shared_ptr<Botan::Private_Key> key_ = nullptr;
 };
 
 struct BotanCertificate : public Certificate
@@ -110,7 +115,7 @@ namespace trantor
 {
 struct SSLContext
 {
-    std::unique_ptr<Botan::Private_Key> key;
+    std::shared_ptr<Botan::Private_Key> key;
     std::unique_ptr<Botan::X509_Certificate> cert;
     std::shared_ptr<Botan::Certificate_Store> certStore;
     bool isServer = false;
@@ -136,7 +141,8 @@ class TrantorPolicy : public Botan::TLS::Policy
 
 struct BotanTLSProvider : public TLSProvider,
                           public NonCopyable,
-                          public Botan::TLS::Callbacks
+                          public Botan::TLS::Callbacks,
+                          public std::enable_shared_from_this<BotanTLSProvider>
 {
   public:
     BotanTLSProvider(TcpConnection *conn,
@@ -144,6 +150,7 @@ struct BotanTLSProvider : public TLSProvider,
                      SSLContextPtr ctx)
         : TLSProvider(conn, std::move(policy), std::move(ctx))
     {
+        validationPolicy_ = std::make_shared<TrantorPolicy>();
     }
 
     virtual void recvData(MsgBuffer *buffer) override
@@ -163,7 +170,7 @@ struct BotanTLSProvider : public TLSProvider,
 
             if (tlsConnected_ == false)
             {
-                if (e.type() == Botan::TLS::Alert::BAD_CERTIFICATE)
+                if (e.type() == Botan::TLS::Alert::BadCertificate)
                     handleSSLError(SSLError::kSSLInvalidCertificate);
                 else
                     handleSSLError(SSLError::kSSLHandshakeError);
@@ -226,31 +233,44 @@ struct BotanTLSProvider : public TLSProvider,
 
     virtual void startEncryption() override
     {
-        credsPtr_ = std::make_unique<Credentials>(contextPtr_->key.get(),
+        credsPtr_ = std::make_shared<Credentials>(contextPtr_->key,
                                                   contextPtr_->cert.get(),
                                                   contextPtr_->certStore.get());
         if (policyPtr_->getConfCmds().empty() == false)
             LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
+
+        // initialize rng and session manager if we haven't already
+        std::call_once(sessionManagerInitFlag, []() {
+            sessionManagerRng = std::make_shared<Botan::AutoSeeded_RNG>();
+            sessionManager =
+                std::make_shared<Botan::TLS::Session_Manager_In_Memory>(
+                    sessionManagerRng);
+        });
+        if (rng == nullptr)
+            rng = std::make_shared<Botan::AutoSeeded_RNG>();
         if (contextPtr_->isServer)
         {
             // TODO: Need a more scalable way to manage session validation rules
-            validationPolicy_.requireClientCert_ =
+            validationPolicy_->requireClientCert_ =
                 contextPtr_->requireClientCert;
-            channel_ = std::make_unique<Botan::TLS::Server>(
-                *this, sessionManager, *credsPtr_, validationPolicy_, rng);
+            channel_ = std::make_unique<Botan::TLS::Server>(shared_from_this(),
+                                                            sessionManager,
+                                                            credsPtr_,
+                                                            validationPolicy_,
+                                                            rng);
         }
         else
         {
-            validationPolicy_.requireClientCert_ =
+            validationPolicy_->requireClientCert_ =
                 contextPtr_->requireClientCert;
             // technically Botan2 does support TLS 1.0 and 1.1, but Botan3 does
             // not. So we just disable them to keep compatibility.
             if (policyPtr_->getUseOldTLS())
                 LOG_WARN << "Old TLS not supported by Botan (only >= TLS 1.2)";
             channel_ = std::make_unique<Botan::TLS::Client>(
-                *this,
+                shared_from_this(),
                 sessionManager,
-                *credsPtr_,
+                credsPtr_,
                 validationPolicy_,
                 rng,
                 Botan::TLS::Server_Information(policyPtr_->getHostname(),
@@ -270,32 +290,32 @@ struct BotanTLSProvider : public TLSProvider,
 
     virtual ~BotanTLSProvider() override = default;
 
-    void tls_emit_data(const uint8_t data[], size_t size) override
+    void tls_emit_data(std::span<const uint8_t> data) override
     {
-        auto n = writeCallback_(conn_, data, size);
+        auto n = writeCallback_(conn_, data.data(), data.size_bytes());
         lastWriteSize_ = n;
 
         // store the unsent data and send it later
-        if (n == ssize_t(size))
+        if (n == ssize_t(data.size_bytes()))
             return;
         if (n == -1)
             n = 0;
-        appendToWriteBuffer((const char *)data + n, size - n);
+        appendToWriteBuffer((const char *)data.data() + n,
+                            data.size_bytes() - n);
     }
 
     void tls_record_received(uint64_t seq_no,
-                             const uint8_t data[],
-                             size_t size) override
+                             std::span<const uint8_t> data) override
     {
         (void)seq_no;
-        recvBuffer_.append((const char *)data, size);
+        recvBuffer_.append((const char *)data.data(), data.size_bytes());
         if (messageCallback_)
             messageCallback_(conn_, &recvBuffer_);
     }
 
     void tls_alert(Botan::TLS::Alert alert) override
     {
-        if (alert.type() == Botan::TLS::Alert::CLOSE_NOTIFY)
+        if (alert.type() == Botan::TLS::Alert::CloseNotify)
         {
             LOG_TRACE << "TLS close notify received";
             if (closeCallback_)
@@ -324,7 +344,7 @@ struct BotanTLSProvider : public TLSProvider,
 
     void tls_verify_cert_chain(
         const std::vector<Botan::X509_Certificate> &certs,
-        const std::vector<std::shared_ptr<const Botan::OCSP::Response>> &ocsp,
+        const std::vector<std::optional<Botan::OCSP::Response>> &ocsp,
         const std::vector<Botan::Certificate_Store *> &trusted_roots,
         Botan::Usage_Type usage,
         const std::string &hostname,
@@ -338,38 +358,31 @@ struct BotanTLSProvider : public TLSProvider,
         {
             if (certs.size() == 0)
                 throw Botan::TLS::TLS_Exception(
-                    Botan::TLS::Alert::NO_CERTIFICATE,
+                    Botan::TLS::Alert::NoCertificate,
                     "Certificate validation failed: no certificate");
             // handle self-signed certificate
-            std::vector<std::shared_ptr<const Botan::X509_Certificate>>
-                selfSigned = {
-                    std::make_shared<Botan::X509_Certificate>(certs[0])};
+            std::vector<Botan::X509_Certificate> selfSigned = {certs[0]};
 
             Botan::Path_Validation_Restrictions restrictions(
                 false,  // require revocation
-                validationPolicy_.minimum_signature_strength());
+                validationPolicy_->minimum_signature_strength());
 
             auto now = std::chrono::system_clock::now();
-            const auto status =
-                Botan::PKIX::check_chain(selfSigned,
-                                         now,
-                                         hostname,
-                                         usage,
-                                         restrictions.minimum_key_strength(),
-                                         restrictions.trusted_hashes());
+            const auto status = Botan::PKIX::check_chain(
+                selfSigned, now, hostname, usage, restrictions);
 
             const auto result = Botan::PKIX::overall_status(status);
 
             if (result != Botan::Certificate_Status_Code::OK)
                 throw Botan::TLS::TLS_Exception(
-                    Botan::TLS::Alert::BAD_CERTIFICATE,
+                    Botan::TLS::Alert::BadCertificate,
                     std::string("Certificate validation failed: ") +
                         Botan::to_string(result));
         }
     }
 
-    TrantorPolicy validationPolicy_;
-    std::unique_ptr<Botan::Credentials_Manager> credsPtr_;
+    std::shared_ptr<TrantorPolicy> validationPolicy_;
+    std::shared_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
     bool tlsConnected_ = false;
     ssize_t lastWriteSize_ = 0;
