@@ -45,12 +45,12 @@ endfunction()
 
 find_package(PkgConfig)
 if(NOT WIN32 AND PKG_CONFIG_FOUND)
-  find_botan_pkgconfig(botan-2 2)
+  # find_botan_pkgconfig(botan-2 2)
   find_botan_pkgconfig(botan-3 3)
 endif()
 
 if(NOT TARGET Botan::Botan)
-  find_botan_search(botan-2 2)
+  # find_botan_search(botan-2 2)
   find_botan_search(botan-3 3)
 endif()
 
