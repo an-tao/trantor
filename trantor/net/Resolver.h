@@ -22,6 +22,8 @@ class TRANTOR_EXPORT Resolver
 {
   public:
     using Callback = std::function<void(const trantor::InetAddress&)>;
+    using ResolverResultsCallback =
+        std::function<void(const std::vector<trantor::InetAddress>&)>;
 
     /**
      * @brief Create a new DNS resolver.
@@ -41,6 +43,15 @@ class TRANTOR_EXPORT Resolver
      */
     virtual void resolve(const std::string& hostname,
                          const Callback& callback) = 0;
+
+    /**
+     * @brief Resolve an address array asynchronously.
+     *
+     * @param hostname
+     * @param callback
+     */
+    virtual void resolve(const std::string& hostname,
+                         const ResolverResultsCallback& callback) = 0;
 
     virtual ~Resolver()
     {

@@ -43,12 +43,7 @@ class AresResolver : public Resolver,
                 if (timeout_ == 0 ||
                     cachedAddr.second.after(timeout_) > trantor::Date::date())
                 {
-                    struct sockaddr_in addr;
-                    memset(&addr, 0, sizeof addr);
-                    addr.sin_family = AF_INET;
-                    addr.sin_port = 0;
-                    addr.sin_addr = cachedAddr.first;
-                    inet = InetAddress(addr);
+                    inet = (cachedAddr.first)[0];
                     cached = true;
                 }
             }
@@ -56,6 +51,49 @@ class AresResolver : public Resolver,
         if (cached)
         {
             cb(inet);
+            return;
+        }
+        if (loop_->isInLoopThread())
+        {
+            resolveInLoop(hostname,
+                          [cb](const std::vector<trantor::InetAddress>& inets) {
+                              cb(inets[0]);
+                          });
+        }
+        else
+        {
+            loop_->queueInLoop([thisPtr = shared_from_this(), hostname, cb]() {
+                thisPtr->resolveInLoop(
+                    hostname,
+                    [cb](const std::vector<trantor::InetAddress>& inets) {
+                        cb(inets[0]);
+                    });
+            });
+        }
+    }
+
+    virtual void resolve(const std::string& hostname,
+                         const ResolverResultsCallback& cb) override
+    {
+        bool cached = false;
+        std::vector<trantor::InetAddress> inets;
+        {
+            std::lock_guard<std::mutex> lock(globalMutex());
+            auto iter = globalCache().find(hostname);
+            if (iter != globalCache().end())
+            {
+                auto& cachedAddr = iter->second;
+                if (timeout_ == 0 ||
+                    cachedAddr.second.after(timeout_) > trantor::Date::date())
+                {
+                    inets = cachedAddr.first;
+                    cached = true;
+                }
+            }
+        }
+        if (cached)
+        {
+            cb(inets);
             return;
         }
         if (loop_->isInLoopThread())
@@ -74,16 +112,17 @@ class AresResolver : public Resolver,
     struct QueryData
     {
         AresResolver* owner_;
-        Callback callback_;
+        ResolverResultsCallback callback_;
         std::string hostname_;
         QueryData(AresResolver* o,
-                  const Callback& cb,
+                  const ResolverResultsCallback& cb,
                   const std::string& hostname)
             : owner_(o), callback_(cb), hostname_(hostname)
         {
         }
     };
-    void resolveInLoop(const std::string& hostname, const Callback& cb);
+    void resolveInLoop(const std::string& hostname,
+                       const ResolverResultsCallback& cb);
     void init();
     trantor::EventLoop* loop_;
     std::shared_ptr<bool> loopValid_;
@@ -91,12 +130,14 @@ class AresResolver : public Resolver,
     bool timerActive_{false};
     using ChannelList = std::map<int, std::unique_ptr<trantor::Channel>>;
     ChannelList channels_;
-    static std::unordered_map<std::string,
-                              std::pair<struct in_addr, trantor::Date>>&
+    static std::unordered_map<
+        std::string,
+        std::pair<std::vector<InetAddress>, trantor::Date>>&
     globalCache()
     {
-        static std::unordered_map<std::string,
-                                  std::pair<struct in_addr, trantor::Date>>
+        static std::unordered_map<
+            std::string,
+            std::pair<std::vector<InetAddress>, trantor::Date>>
             dnsCache;
         return dnsCache;
     }
@@ -118,7 +159,7 @@ class AresResolver : public Resolver,
     void onQueryResult(int status,
                        struct hostent* result,
                        const std::string& hostname,
-                       const Callback& callback);
+                       const ResolverResultsCallback& callback);
     void onSockCreate(int sockfd, int type);
     void onSockStateChange(int sockfd, bool read, bool write);
 

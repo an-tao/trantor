@@ -9,6 +9,15 @@ void dns(const std::shared_ptr<trantor::Resolver> &resolver)
         std::cout << "baidu:" << addr.toIp() << " " << interval / 1000 << "ms"
                   << std::endl;
     });
+    resolver->resolve("www.baidu.com",
+                      [now](const std::vector<trantor::InetAddress> &addrs) {
+                          auto interval =
+                              trantor::Date::now().microSecondsSinceEpoch() -
+                              now.microSecondsSinceEpoch();
+                          for (auto &addr : addrs)
+                              std::cout << "baidu:" << addr.toIp() << " "
+                                        << interval / 1000 << "ms" << std::endl;
+                      });
     resolver->resolve("www.google.com",
                       [now](const trantor::InetAddress &addr) {
                           auto interval =
