@@ -110,13 +110,14 @@ AresResolver::~AresResolver()
 }
 
 void AresResolver::resolveInLoop(const std::string& hostname,
-                                 const Callback& cb)
+                                 const ResolverResultsCallback& cb)
 {
     loop_->assertInLoopThread();
 #ifdef _WIN32
     if (hostname == "localhost")
     {
-        const static trantor::InetAddress localhost_{"127.0.0.1", 0};
+        const static std::vector<trantor::InetAddress> localhost_{
+            trantor::InetAddress{"127.0.0.1", 0}};
         cb(localhost_);
         return;
     }
@@ -167,25 +168,39 @@ void AresResolver::onTimer()
 void AresResolver::onQueryResult(int status,
                                  struct hostent* result,
                                  const std::string& hostname,
-                                 const Callback& callback)
+                                 const ResolverResultsCallback& callback)
 {
     LOG_TRACE << "onQueryResult " << status;
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof addr);
-    addr.sin_family = AF_INET;
-    addr.sin_port = 0;
+    std::vector<trantor::InetAddress> inets;
     if (result)
     {
-        addr.sin_addr = *reinterpret_cast<in_addr*>(result->h_addr);
+        auto pptr = (struct in_addr**)result->h_addr_list;
+        for (; *pptr != nullptr; pptr++)
+        {
+            struct sockaddr_in addr;
+            memset(&addr, 0, sizeof addr);
+            addr.sin_family = AF_INET;
+            addr.sin_port = 0;
+            addr.sin_addr = *reinterpret_cast<in_addr*>(*pptr);
+            inets.emplace_back(trantor::InetAddress{addr});
+        }
     }
-    InetAddress inet(addr);
+    if (inets.empty())
+    {
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof addr);
+        addr.sin_family = AF_INET;
+        addr.sin_port = 0;
+        InetAddress inet(addr);
+        inets.emplace_back(std::move(inet));
+    }
     {
         std::lock_guard<std::mutex> lock(globalMutex());
         auto& addrItem = globalCache()[hostname];
-        addrItem.first = addr.sin_addr;
+        addrItem.first = inets;
         addrItem.second = trantor::Date::date();
     }
-    callback(inet);
+    callback(inets);
 }
 
 void AresResolver::onSockCreate(int sockfd, int type)
