@@ -43,7 +43,7 @@ class AresResolver : public Resolver,
                 if (timeout_ == 0 ||
                     cachedAddr.second.after(timeout_) > trantor::Date::date())
                 {
-                    inet = (cachedAddr.first)[0];
+                    inet = (*cachedAddr.first)[0];
                     cached = true;
                 }
             }
@@ -75,8 +75,7 @@ class AresResolver : public Resolver,
     virtual void resolve(const std::string& hostname,
                          const ResolverResultsCallback& cb) override
     {
-        bool cached = false;
-        std::vector<trantor::InetAddress> inets;
+        std::shared_ptr<std::vector<trantor::InetAddress>> inets_ptr{nullptr};
         {
             std::lock_guard<std::mutex> lock(globalMutex());
             auto iter = globalCache().find(hostname);
@@ -86,14 +85,13 @@ class AresResolver : public Resolver,
                 if (timeout_ == 0 ||
                     cachedAddr.second.after(timeout_) > trantor::Date::date())
                 {
-                    inets = cachedAddr.first;
-                    cached = true;
+                    inets_ptr = cachedAddr.first;
                 }
             }
         }
-        if (cached)
+        if (inets_ptr)
         {
-            cb(inets);
+            cb(*inets_ptr);
             return;
         }
         if (loop_->isInLoopThread())
@@ -132,12 +130,14 @@ class AresResolver : public Resolver,
     ChannelList channels_;
     static std::unordered_map<
         std::string,
-        std::pair<std::vector<InetAddress>, trantor::Date>>&
+        std::pair<std::shared_ptr<std::vector<trantor::InetAddress>>,
+                  trantor::Date>>&
     globalCache()
     {
         static std::unordered_map<
             std::string,
-            std::pair<std::vector<InetAddress>, trantor::Date>>
+            std::pair<std::shared_ptr<std::vector<trantor::InetAddress>>,
+                      trantor::Date>>
             dnsCache;
         return dnsCache;
     }

@@ -171,7 +171,7 @@ void AresResolver::onQueryResult(int status,
                                  const ResolverResultsCallback& callback)
 {
     LOG_TRACE << "onQueryResult " << status;
-    std::vector<trantor::InetAddress> inets;
+    auto inets_ptr = std::make_shared<std::vector<trantor::InetAddress>>();
     if (result)
     {
         auto pptr = (struct in_addr**)result->h_addr_list;
@@ -182,25 +182,25 @@ void AresResolver::onQueryResult(int status,
             addr.sin_family = AF_INET;
             addr.sin_port = 0;
             addr.sin_addr = *reinterpret_cast<in_addr*>(*pptr);
-            inets.emplace_back(trantor::InetAddress{addr});
+            inets_ptr->emplace_back(trantor::InetAddress{addr});
         }
     }
-    if (inets.empty())
+    if (inets_ptr->empty())
     {
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof addr);
         addr.sin_family = AF_INET;
         addr.sin_port = 0;
         InetAddress inet(addr);
-        inets.emplace_back(std::move(inet));
+        inets_ptr->emplace_back(std::move(inet));
     }
     {
         std::lock_guard<std::mutex> lock(globalMutex());
         auto& addrItem = globalCache()[hostname];
-        addrItem.first = inets;
+        addrItem.first = inets_ptr;
         addrItem.second = trantor::Date::date();
     }
-    callback(inets);
+    callback(*inets_ptr);
 }
 
 void AresResolver::onSockCreate(int sockfd, int type)
