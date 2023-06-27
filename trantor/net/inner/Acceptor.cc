@@ -54,6 +54,8 @@ Acceptor::~Acceptor()
 void Acceptor::listen()
 {
     loop_->assertInLoopThread();
+    if (beforeListenSetSockOptCallback_)
+        beforeListenSetSockOptCallback_(sock_.fd());
     sock_.listen();
     acceptChannel_.enableReading();
 }
@@ -64,6 +66,8 @@ void Acceptor::readCallback()
     int newsock = sock_.accept(&peer);
     if (newsock >= 0)
     {
+        if (afterAcceptSetSockOptCallback_)
+            afterAcceptSetSockOptCallback_(newsock);
         if (newConnectionCallback_)
         {
             newConnectionCallback_(newsock, peer);

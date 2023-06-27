@@ -161,6 +161,19 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     }
 
     /**
+     * @brief Set the before listen setsockopt callback.
+     *
+     * @param cb This callback will be called before the listen
+     */
+    void setBeforeListenSockOptCallback(SockOptCallback cb);
+    /**
+     * @brief Set the after accept setsockopt callback.
+     *
+     * @param cb This callback will be called after accept
+     */
+    void setAfterAcceptSockOptCallback(SockOptCallback cb);
+
+    /**
      * @brief Get the name of the server.
      *
      * @return const std::string&
