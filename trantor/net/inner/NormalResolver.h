@@ -23,6 +23,13 @@ class NormalResolver : public Resolver,
   public:
     virtual void resolve(const std::string& hostname,
                          const Callback& callback) override;
+    virtual void resolve(const std::string& hostname,
+                         const ResolverResultsCallback& callback) override
+    {
+        resolve(hostname, [callback](const trantor::InetAddress& inet) {
+            callback(std::vector<trantor::InetAddress>{inet});
+        });
+    }
     explicit NormalResolver(size_t timeout)
         : timeout_(timeout), resolveBuffer_(kResolveBufferLength)
     {
