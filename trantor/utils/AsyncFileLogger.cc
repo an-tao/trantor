@@ -14,7 +14,7 @@
 
 #include <trantor/utils/AsyncFileLogger.h>
 #include <trantor/utils/Utilities.h>
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(__MINGW32__)
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
