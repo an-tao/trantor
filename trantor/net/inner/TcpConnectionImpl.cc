@@ -878,7 +878,7 @@ void TcpConnectionImpl::sendFile(FILE *fp, size_t offset, size_t length)
     BufferNodePtr node = std::make_shared<BufferNode>();
     node->sendFp_ = fp;
 #endif
-    node->offset_ = static_cast<off_t>(offset);
+    node->offset_ = offset;
     node->fileBytesToSend_ = length;
     if (loop_->isInLoopThread())
     {
@@ -1159,7 +1159,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             if (nSend >= 0)
             {
                 filePtr->fileBytesToSend_ -= nSend;
-                filePtr->offset_ += static_cast<off_t>(nSend);
+                filePtr->offset_ += nSend;
                 if (static_cast<size_t>(nSend) < static_cast<size_t>(n))
                 {
                     if (!ioChannelPtr_->isWriting())
