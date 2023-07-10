@@ -67,10 +67,6 @@ jobs:
             buildname: 'ubuntu-20.04/gcc'
             triplet: x64-linux
             compiler: gcc_64
-          - os: ubuntu-22.04
-            buildname: 'ubuntu-22.04/gcc - Botan'
-            triplet: x64-linux
-            compiler: gcc_64
           - os: macos-latest
             buildname: 'macos/clang'
             triplet: x64-osx
@@ -94,12 +90,6 @@ jobs:
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
         sudo apt install openssl libssl-dev dos2unix
-    - name: (Linux) Install dependencies - Botan
-      if: matrix.buildname == 'ubuntu-22.04/gcc - Botan'
-      run: |
-        # Installing packages might fail as the github image becomes outdated
-        sudo apt update
-        sudo apt install libbotan-2-dev dos2unix
     - name: (Linux) Install dependencies
       if: matrix.buildname == 'ubuntu-20.04/gcc'
       run: |
@@ -120,20 +110,10 @@ jobs:
       # We'll use this as our working directory for all subsequent commands
       shell: bash
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      if: matrix.buildname != 'ubuntu-22.04/gcc - Botan'
       run: |
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on
-
-    - name: Create Build Environment & Configure Cmake (Botan)
-      shell: bash
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      if: matrix.buildname == 'ubuntu-22.04/gcc - Botan'
-      run: |
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on -DTRANTOR_USE_TLS="botan"
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}

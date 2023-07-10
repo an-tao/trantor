@@ -79,26 +79,16 @@ std::string toUtf8(const std::wstring &wstr)
                           nSizeNeeded,
                           NULL,
                           NULL);
-#else  // _WIN32
-#if __cplusplus < 201103L || __cplusplus >= 201703L
+#elif __cplusplus < 201103L || __cplusplus >= 201703L
     // Note: Introduced in c++11 and deprecated with c++17.
     // Revert to C99 code since there no replacement yet
     strTo.resize(3 * wstr.length(), 0);
-    locale_t utf8 = newlocale(LC_ALL_MASK, "C.UTF-8", NULL);
-    if (!utf8)
-        utf8 = newlocale(LC_ALL_MASK, "C.utf-8", NULL);
-    if (!utf8)
-        utf8 = newlocale(LC_ALL_MASK, "C.UTF8", NULL);
-    if (!utf8)
-        utf8 = newlocale(LC_ALL_MASK, "C.utf8", NULL);
-    auto nLen = wcstombs_l(&strTo[0], wstr.c_str(), strTo.length(), utf8);
+    auto nLen = wcstombs(&strTo[0], wstr.c_str(), strTo.length());
     strTo.resize(nLen);
-    freelocale(utf8);
-#else   // c++11 to c++14
+#else  // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     strTo = utf8conv.to_bytes(wstr);
-#endif  // __cplusplus
-#endif  // _WIN32
+#endif
     return strTo;
 }
 std::wstring fromUtf8(const std::string &str)
@@ -112,22 +102,13 @@ std::wstring fromUtf8(const std::string &str)
     wstrTo.resize(nSizeNeeded, 0);
     ::MultiByteToWideChar(
         CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], nSizeNeeded);
-#else  // _WIN32
-#if __cplusplus < 201103L || __cplusplus >= 201703L
+#elif __cplusplus < 201103L || __cplusplus >= 201703L
     // Note: Introduced in c++11 and deprecated with c++17.
     // Revert to C99 code since there no replacement yet
     wstrTo.resize(str.length(), 0);
-    locale_t utf8 = newlocale(LC_ALL_MASK, "en_US.UTF-8", NULL);
-    if (!utf8)
-        utf8 = newlocale(LC_ALL_MASK, "C.utf-8", NULL);
-    if (!utf8)
-        utf8 = newlocale(LC_ALL_MASK, "C.UTF8", NULL);
-    if (!utf8)
-        utf8 = newlocale(LC_ALL_MASK, "C.utf8", NULL);
-    auto nLen = mbstowcs_l(&wstrTo[0], str.c_str(), wstrTo.length(), utf8);
+    auto nLen = mbstowcs(&wstrTo[0], str.c_str(), wstrTo.length());
     wstrTo.resize(nLen);
-    freelocale(utf8);
-#else   // c++11 to c++14
+#else  // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     try
     {
@@ -136,8 +117,7 @@ std::wstring fromUtf8(const std::string &str)
     catch (...)  // Should never fail if str valid UTF-8
     {
     }
-#endif  // __cplusplus
-#endif  // _WIN32
+#endif
     return wstrTo;
 }
 
