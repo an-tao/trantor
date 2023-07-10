@@ -24,6 +24,7 @@
 namespace trantor
 {
 using NewConnectionCallback = std::function<void(int fd, const InetAddress &)>;
+using AcceptorSockOptCallback = std::function<void(int)>;
 class Acceptor : NonCopyable
 {
   public:
@@ -42,6 +43,16 @@ class Acceptor : NonCopyable
     };
     void listen();
 
+    void setBeforeListenSockOptCallback(AcceptorSockOptCallback cb)
+    {
+        beforeListenSetSockOptCallback_ = std::move(cb);
+    }
+
+    void setAfterAcceptSockOptCallback(AcceptorSockOptCallback cb)
+    {
+        afterAcceptSetSockOptCallback_ = std::move(cb);
+    }
+
   protected:
 #ifndef _WIN32
     int idleFd_;
@@ -52,5 +63,7 @@ class Acceptor : NonCopyable
     NewConnectionCallback newConnectionCallback_;
     Channel acceptChannel_;
     void readCallback();
+    AcceptorSockOptCallback beforeListenSetSockOptCallback_;
+    AcceptorSockOptCallback afterAcceptSetSockOptCallback_;
 };
 }  // namespace trantor

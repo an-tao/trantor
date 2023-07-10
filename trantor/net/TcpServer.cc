@@ -47,6 +47,16 @@ TcpServer::~TcpServer()
     LOG_TRACE << "TcpServer::~TcpServer [" << serverName_ << "] destructing";
 }
 
+void TcpServer::setBeforeListenSockOptCallback(SockOptCallback cb)
+{
+    acceptorPtr_->setBeforeListenSockOptCallback(std::move(cb));
+}
+
+void TcpServer::setAfterAcceptSockOptCallback(SockOptCallback cb)
+{
+    acceptorPtr_->setAfterAcceptSockOptCallback(std::move(cb));
+}
+
 void TcpServer::newConnection(int sockfd, const InetAddress &peer)
 {
     LOG_TRACE << "new connection:fd=" << sockfd

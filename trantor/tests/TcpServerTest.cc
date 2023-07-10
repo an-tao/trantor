@@ -17,6 +17,12 @@ int main()
     InetAddress addr(8888);
 #endif
     TcpServer server(loopThread.getLoop(), addr, "test");
+    server.setBeforeListenSockOptCallback([](int fd) {
+        std::cout << "setBeforeListenSockOptCallback:" << fd << std::endl;
+    });
+    server.setAfterAcceptSockOptCallback([](int fd) {
+        std::cout << "afterAcceptSockOptCallback:" << fd << std::endl;
+    });
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             // LOG_DEBUG<<"recv callback!";
