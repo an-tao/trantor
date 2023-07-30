@@ -77,7 +77,8 @@ class TRANTOR_EXPORT Date
     static int64_t timezoneOffset()
     {
         static int64_t offset =
-            -Date::fromDbStringLocal("1970-01-01 00:00:00").secondsSinceEpoch();
+        -(Date::fromDbStringLocal("1970-01-03 00:00:00").secondsSinceEpoch() -
+          2LL * 3600LL * 24LL * MICRO_SECONDS_PRE_SEC);
         return offset;
     }
 
