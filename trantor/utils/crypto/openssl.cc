@@ -13,10 +13,10 @@
 #include "sha3.cc"
 #endif
 
-#if OPENSSL_VERSION_MAJOR < 3 || defined(LIBRESSL_VERSION_NUMBER)
+// Some OpenSSL installations does not come with BLAKE2b-256
+// We use our own implementation in such case
 #include "blake2.h"
 #include "blake2.cc"
-#endif
 
 namespace trantor
 {
@@ -118,21 +118,22 @@ Hash256 sha3(const void* data, size_t len)
 
 Hash256 blake2b(const void* data, size_t len)
 {
+    Hash256 hash;
 #if OPENSSL_VERSION_MAJOR >= 3
-    Hash256 hash;
     auto blake2b = EVP_MD_fetch(nullptr, "BLAKE2b-256", nullptr);
-    auto ctx = EVP_MD_CTX_new();
-    EVP_DigestInit_ex(ctx, blake2b, nullptr);
-    EVP_DigestUpdate(ctx, data, len);
-    EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
-    EVP_MD_CTX_free(ctx);
-    EVP_MD_free(blake2b);
-    return hash;
-#else
-    Hash256 hash;
+    if(blake2b != nullptr)
+    {
+        auto ctx = EVP_MD_CTX_new();
+        EVP_DigestInit_ex(ctx, blake2b, nullptr);
+        EVP_DigestUpdate(ctx, data, len);
+        EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
+        EVP_MD_CTX_free(ctx);
+        EVP_MD_free(blake2b);
+        return hash;
+    }
+#endif
     trantor_blake2b(&hash, sizeof(hash), data, len, nullptr, 0);
     return hash;
-#endif
 }
 
 }  // namespace utils
