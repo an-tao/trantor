@@ -47,10 +47,9 @@ EventLoop *EventLoopThreadPool::getNextLoop()
 {
     if (loopThreadVector_.size() > 0)
     {
-        EventLoop *loop = loopThreadVector_[loopIndex_]->getLoop();
-        ++loopIndex_;
-        if (loopIndex_ >= loopThreadVector_.size())
-            loopIndex_ = 0;
+        size_t index = loopIndex_.fetch_add(1, std::memory_order_relaxed);
+        EventLoop *loop =
+            loopThreadVector_[index % loopThreadVector_.size()]->getLoop();
         return loop;
     }
     return nullptr;
