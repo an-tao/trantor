@@ -121,7 +121,7 @@ Hash256 blake2b(const void* data, size_t len)
     Hash256 hash;
 #if OPENSSL_VERSION_MAJOR >= 3
     auto blake2b = EVP_MD_fetch(nullptr, "BLAKE2b-256", nullptr);
-    if(blake2b != nullptr)
+    if (blake2b != nullptr)
     {
         auto ctx = EVP_MD_CTX_new();
         EVP_DigestInit_ex(ctx, blake2b, nullptr);
