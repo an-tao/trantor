@@ -18,6 +18,7 @@
 #include <trantor/exports.h>
 #include <vector>
 #include <memory>
+#include <atomic>
 
 namespace trantor
 {
@@ -87,6 +88,6 @@ class TRANTOR_EXPORT EventLoopThreadPool : NonCopyable
 
   private:
     std::vector<std::shared_ptr<EventLoopThread>> loopThreadVector_;
-    size_t loopIndex_;
+    std::atomic<size_t> loopIndex_{0};
 };
 }  // namespace trantor
