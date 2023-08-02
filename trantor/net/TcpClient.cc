@@ -67,20 +67,6 @@ TcpClient::TcpClient(EventLoop *loop,
       connect_(true)
 {
     (void)validateCert_;
-    connector_->setNewConnectionCallback(
-        std::bind(&TcpClient::newConnection, this, _1));
-    // WORKAROUND: somehow we got use-after-free error
-    auto guard = std::shared_ptr<TcpClient>(this, [](TcpClient *) {});
-    auto weakPtr = std::weak_ptr<TcpClient>(shared_from_this());
-    connector_->setErrorCallback([weakPtr]() {
-        auto ptr = weakPtr.lock();
-        if (!ptr)
-            return;
-        if (ptr->connectionErrorCallback_)
-        {
-            ptr->connectionErrorCallback_();
-        }
-    });
     LOG_TRACE << "TcpClient::TcpClient[" << name_ << "] - connector ";
 }
 
@@ -110,6 +96,23 @@ void TcpClient::connect()
     // TODO: check state
     LOG_TRACE << "TcpClient::connect[" << name_ << "] - connecting to "
               << connector_->serverAddress().toIpPort();
+
+    auto weakPtr = std::weak_ptr<TcpClient>(shared_from_this());
+    connector_->setNewConnectionCallback([weakPtr](int sockfd) {
+        auto ptr = weakPtr.lock();
+        if (ptr)
+        {
+            ptr->newConnection(sockfd);
+        }
+    });
+    // WORKAROUND: somehow we got use-after-free error
+    connector_->setErrorCallback([weakPtr]() {
+        auto ptr = weakPtr.lock();
+        if (ptr && ptr->connectionErrorCallback_)
+        {
+            ptr->connectionErrorCallback_();
+        }
+    });
     connect_ = true;
     connector_->start();
 }
