@@ -27,14 +27,81 @@ TEST(Date, DatabaseStringTest)
 {
     auto now = trantor::Date::now();
     EXPECT_EQ(now, trantor::Date::fromDbStringLocal(now.toDbStringLocal()));
+    EXPECT_EQ(now, trantor::Date::fromDbString(now.toDbString()));
     std::string dbString = "2018-01-01 00:00:00.123";
     auto dbDate = trantor::Date::fromDbStringLocal(dbString);
     auto ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
     EXPECT_EQ(ms, 123);
+    EXPECT_EQ(dbDate, trantor::Date::fromDbStringLocal(dbDate.toDbStringLocal()));
+    EXPECT_EQ(dbDate, trantor::Date::fromDbString(dbDate.toDbString()));
+    dbString = "2018-01-01 00:00:00.023";
+    dbDate = trantor::Date::fromDbStringLocal(dbString);
+    ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
+    EXPECT_EQ(ms, 23);
+    EXPECT_EQ(dbDate, trantor::Date::fromDbStringLocal(dbDate.toDbStringLocal()));
+    EXPECT_EQ(dbDate, trantor::Date::fromDbString(dbDate.toDbString()));
+    dbString = "2018-01-01 00:00:00.003";
+    dbDate = trantor::Date::fromDbStringLocal(dbString);
+    ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
+    EXPECT_EQ(ms, 3);
+    EXPECT_EQ(dbDate, trantor::Date::fromDbStringLocal(dbDate.toDbStringLocal()));
+    EXPECT_EQ(dbDate, trantor::Date::fromDbString(dbDate.toDbString()));
+    dbString = "2018-01-01 00:00:00.000123";
+    dbDate = trantor::Date::fromDbStringLocal(dbString);
+    auto us = (dbDate.microSecondsSinceEpoch() % 1000000) ;
+    EXPECT_EQ(us, 123);
+    EXPECT_EQ(dbDate, trantor::Date::fromDbStringLocal(dbDate.toDbStringLocal()));
+    EXPECT_EQ(dbDate, trantor::Date::fromDbString(dbDate.toDbString()));
+    dbString = "2018-01-01 00:00:00.000023";
+    dbDate = trantor::Date::fromDbStringLocal(dbString);
+    us = (dbDate.microSecondsSinceEpoch() % 1000000) ;
+    EXPECT_EQ(us, 23);
+    EXPECT_EQ(dbDate, trantor::Date::fromDbStringLocal(dbDate.toDbStringLocal()));
+    EXPECT_EQ(dbDate, trantor::Date::fromDbString(dbDate.toDbString()));
+    dbString = "2018-01-01 00:00:00.000003";
+    dbDate = trantor::Date::fromDbStringLocal(dbString);
+    us = (dbDate.microSecondsSinceEpoch() % 1000000) ;
+    EXPECT_EQ(us, 3);
+
     dbString = "2018-01-01 00:00:00";
     dbDate = trantor::Date::fromDbStringLocal(dbString);
     ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
     EXPECT_EQ(ms, 0);
+
+    dbString = "2018-01-01 00:00:00";
+    dbDate = trantor::Date::fromDbStringLocal(dbString);
+    auto dbDateGMT = trantor::Date::fromDbString(dbString);
+    auto secLocal = (dbDate.microSecondsSinceEpoch() / 1000000) ;
+    auto secGMT = (dbDateGMT.microSecondsSinceEpoch() / 1000000) ;
+    // timeZone at least 1 minute (can be >=1 hour, 30 min, 15 min. Error if difference less then minute)
+    auto timeZoneOffsetMinutePart =(secLocal-secGMT)%60;
+    EXPECT_EQ(timeZoneOffsetMinutePart, 0);
+    dbString = "2018-01-01 00:00:00.123";
+    dbDate = trantor::Date::fromDbString(dbString);
+    ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
+    EXPECT_EQ(ms, 123);
+    dbString = "2018-01-01 00:00:00.023";
+    dbDate = trantor::Date::fromDbString(dbString);
+    ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
+    EXPECT_EQ(ms, 23);
+    dbString = "2018-01-01 00:00:00.003";
+    dbDate = trantor::Date::fromDbString(dbString);
+    ms = (dbDate.microSecondsSinceEpoch() % 1000000) / 1000;
+    EXPECT_EQ(ms, 3);
+    dbString = "2018-01-01 00:00:00.000123";
+    dbDate = trantor::Date::fromDbString(dbString);
+    us = (dbDate.microSecondsSinceEpoch() % 1000000) ;
+    EXPECT_EQ(us, 123);
+    dbString = "2018-01-01 00:00:00.000023";
+    dbDate = trantor::Date::fromDbString(dbString);
+    us = (dbDate.microSecondsSinceEpoch() % 1000000) ;
+    EXPECT_EQ(us, 23);
+    dbString = "2018-01-01 00:00:00.000003";
+    dbDate = trantor::Date::fromDbString(dbString);
+    us = (dbDate.microSecondsSinceEpoch() % 1000000) ;
+    EXPECT_EQ(us, 3);
+
+
 }
 int main(int argc, char **argv)
 {
