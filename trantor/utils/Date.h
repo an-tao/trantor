@@ -78,7 +78,7 @@ class TRANTOR_EXPORT Date
     {
         static int64_t offset = -(
             Date::fromDbStringLocal("1970-01-03 00:00:00").secondsSinceEpoch() -
-            2LL * 3600LL * 24LL );
+            2LL * 3600LL * 24LL);
         return offset;
     }
 
