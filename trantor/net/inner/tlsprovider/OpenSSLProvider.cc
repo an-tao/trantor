@@ -697,9 +697,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
             else
             {
-                static bool processed = false;
-                if (!processed)
-                    processed = true;
+                if (!processedHandshakeError_)
+                    processedHandshakeError_ = true;
                 else
                     return false;
                 LOG_TRACE << "SSL handshake error: "
@@ -776,9 +775,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     {
         sendTLSData();
 
-        static bool first = true;
-        if (first)
-            first = false;
+        if(!processedSslError_)
+            processedSslError_ = true;
         else
             return;
         if (errorCallback_)
@@ -788,6 +786,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     SSL *ssl_;
     BIO *rbio_;
     BIO *wbio_;
+    bool processedHandshakeError_ = false;
+    bool processedSslError_ = false;
 };
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
