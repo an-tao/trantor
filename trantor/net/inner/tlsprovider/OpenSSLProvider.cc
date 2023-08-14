@@ -775,7 +775,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     {
         sendTLSData();
 
-        if(!processedSslError_)
+        if (!processedSslError_)
             processedSslError_ = true;
         else
             return;
