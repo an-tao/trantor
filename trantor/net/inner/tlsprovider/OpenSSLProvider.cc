@@ -270,7 +270,7 @@ struct SSLContext
         return ctx_;
     }
 
-    bool isServer = false;
+    bool isServer{false};
 };
 
 struct OpenSSLCertificate : public Certificate
@@ -786,8 +786,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     SSL *ssl_;
     BIO *rbio_;
     BIO *wbio_;
-    bool processedHandshakeError_ = false;
-    bool processedSslError_ = false;
+    bool processedHandshakeError_{false};
+    bool processedSslError_{false};
 };
 
 std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
