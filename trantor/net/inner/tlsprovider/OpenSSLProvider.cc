@@ -806,9 +806,9 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
                                             isServer);
     if (!policy.getCertPath().empty() && !policy.getKeyPath().empty())
     {
-        if (SSL_CTX_use_certificate_file(ctx->ctx(),
-                                         policy.getCertPath().data(),
-                                         SSL_FILETYPE_PEM) <= 0)
+        if (SSL_CTX_use_certificate_chain_file(ctx->ctx(),
+                                               policy.getCertPath().data()) <=
+            0)
         {
             throw std::runtime_error("Failed to load certificate " +
                                      policy.getCertPath());
