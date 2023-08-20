@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.12] - 2023-08-20
+
+### API changes list
+
+- Add NetEndian versions of toIp and toIpPort.
+
+- Add setsockopt to TcpClient and TcpServer.
+
+- Support setting max files in AsyncFileLogger.
+
+- Support returning multiple results for dns parsing.
+
+### Changed
+
+- Refactor SSL handling.
+
+- Add ability to use one log file until the size-limit.
+
+- Make the std::string_view work on windows.
+
+- Drop Botan 2 support and support Botan 3.
+
+- Make the getNextLoop method multi-thread safe.
+
+- Add fallback when OpenSSL not providing BLAKE2b.
+
+### Fixed
+
+- Fix override mark.
+
+- Add missing <cstdint> header with GCC 13.
+
+- Fix AresResolver.
+
+- Fix building built-in hashes on Windows.
+
+- Fix MSYS2/Cygwin compatibility issues.
+
+- Fix more build errors on win32/mingw.
+
+- Fix off_t(on windows off_t defined with long, not longlong).
+
+- Fix bug with Trantor::Date timeZoneOffset calculation.
+
+- Fix wrong usage of shared pointer in TcpClient ctor.
+
 ## [1.5.11] - 2023-03-17
 
 ### API Changes list
@@ -520,7 +566,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.11...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.12...HEAD
+
+[1.5.12]: https://github.com/an-tao/trantor/compare/v1.5.11...v1.5.12
 
 [1.5.11]: https://github.com/an-tao/trantor/compare/v1.5.10...v1.5.11
 
