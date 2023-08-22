@@ -44,6 +44,7 @@ using namespace trantor;
 #define ECONNRESET WSAECONNRESET
 #endif
 
+static const int kMaxSendFileBufferSize = 16 * 1024;
 TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
                                      const InetAddress &localAddr,
@@ -1038,7 +1039,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
         if (!fileBufferPtr_)
         {
             fileBufferPtr_ = std::make_unique<std::vector<char>>();
-            fileBufferPtr_->reserve(16 * 1024);
+            fileBufferPtr_->reserve(kMaxSendFileBufferSize);
         }
         while ((filePtr->fileBytesToSend_ > 0) || !fileBufferPtr_->empty())
         {
@@ -1047,7 +1048,7 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
             {
                 //                LOG_TRACE << "send stream in loop: fetch data
                 //                on buffer empty";
-                fileBufferPtr_->resize(16 * 1024);
+                fileBufferPtr_->resize(kMaxSendFileBufferSize);
                 std::size_t nData;
                 nData = filePtr->streamCallback_(fileBufferPtr_->data(),
                                                  fileBufferPtr_->size());
@@ -1129,7 +1130,12 @@ void TcpConnectionImpl::sendFileInLoop(const BufferNodePtr &filePtr)
     LOG_TRACE << "send file in loop";
     if (!fileBufferPtr_)
     {
-        fileBufferPtr_ = std::make_unique<std::vector<char>>(16 * 1024);
+        fileBufferPtr_ =
+            std::make_unique<std::vector<char>>(kMaxSendFileBufferSize);
+    }
+    if (fileBufferPtr_->size() < kMaxSendFileBufferSize)
+    {
+        fileBufferPtr_->resize(kMaxSendFileBufferSize);
     }
 #ifndef _WIN32
     lseek(filePtr->sendFd_, filePtr->offset_, SEEK_SET);
