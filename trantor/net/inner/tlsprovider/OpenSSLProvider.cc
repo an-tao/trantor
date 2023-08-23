@@ -9,6 +9,7 @@
 #include <openssl/x509v3.h>
 
 #include <fstream>
+#include <memory>
 #include <mutex>
 #include <list>
 #include <unordered_map>
@@ -788,11 +789,11 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     bool processedSslError_{false};
 };
 
-std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
+std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
                                                      TLSPolicyPtr policy,
                                                      SSLContextPtr ctx)
 {
-    return std::make_unique<OpenSSLProvider>(conn,
+    return std::make_shared<OpenSSLProvider>(conn,
                                              std::move(policy),
                                              std::move(ctx));
 }

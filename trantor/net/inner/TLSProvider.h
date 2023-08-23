@@ -165,7 +165,7 @@ struct TLSProvider
     MsgBuffer writeBuffer_;
 };
 
-std::unique_ptr<TLSProvider> newTLSProvider(TcpConnection* conn,
+std::shared_ptr<TLSProvider> newTLSProvider(TcpConnection* conn,
                                             TLSPolicyPtr policy,
                                             SSLContextPtr ctx);
 }  // namespace trantor

@@ -18,6 +18,7 @@
 #include <botan/certstor_flatfile.h>
 #include <botan/x509path.h>
 #include <botan/tls_session_manager_memory.h>
+#include <memory>
 
 using namespace trantor;
 using namespace std::placeholders;
@@ -388,11 +389,11 @@ struct BotanTLSProvider : public TLSProvider,
     ssize_t lastWriteSize_ = 0;
 };
 
-std::unique_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
+std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
                                                      TLSPolicyPtr policy,
                                                      SSLContextPtr ctx)
 {
-    return std::make_unique<BotanTLSProvider>(conn,
+    return std::make_shared<BotanTLSProvider>(conn,
                                               std::move(policy),
                                               std::move(ctx));
 }
