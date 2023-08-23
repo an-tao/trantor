@@ -714,13 +714,11 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     {
         constexpr size_t maxSingleRead = 128 * 1024;
         constexpr size_t maxWritibleBytes = (std::numeric_limits<int>::max)();
-        auto inBio = SSL_get_rbio(ssl_);
         while (true)
         {
-            auto pending = BIO_pending(inBio);
-            if (pending <= 0)
-                break;
+            auto pending = BIO_pending(rbio_);
             // horrible syntax, because MSVC
+            pending = (std::max)(0, pending);
             recvBuffer_.ensureWritableBytes(
                 (std::min)(maxSingleRead, (size_t)pending));
             // clamp to int, because that's what SSL_read accepts
@@ -734,7 +732,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 conn_->shutdown();
                 return;
             }
-            if (n > 0)
+            else if (n > 0)
             {
                 recvBuffer_.hasWritten(n);
                 LOG_TRACE << "Received " << n << " bytes from SSL";
