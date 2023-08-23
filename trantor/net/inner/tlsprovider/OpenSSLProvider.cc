@@ -718,7 +718,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         {
             auto pending = BIO_pending(rbio_);
             // horrible syntax, because MSVC
-            pending = (std::min)(1024, pending);
+            pending = (std::max)(1024, pending);
             recvBuffer_.ensureWritableBytes(
                 (std::min)(maxSingleRead, (size_t)pending));
             // clamp to int, because that's what SSL_read accepts
