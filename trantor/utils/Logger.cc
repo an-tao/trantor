@@ -29,9 +29,6 @@
 #include <spdlog/spdlog.h>
 #include <map>
 #include <mutex>
-#if defined(__cpp_lib_string_view) || (defined(_MSC_VER) && (_MSC_VER >= 1912) && _HAS_CXX17)
-#include <string_view>
-#endif
 #endif
 
 #if defined __FreeBSD__
@@ -285,39 +282,46 @@ static std::string defaultSpdloggerName(int index)
         loggerName.append(std::to_string(index));
     return loggerName;
 }
-// a map with int keys is more efficient than spdlog internal registry based on strings (logger name)
+// a map with int keys is more efficient than spdlog internal registry based on
+// strings (logger name)
 static std::map<int, std::shared_ptr<spdlog::logger>> spdLoggers;
 static std::mutex spdLoggersMtx;
 static std::shared_ptr<spdlog::logger> getDefaultSpdlogger(int index)
 {
     auto loggerName = defaultSpdloggerName(index);
     auto logger = spdlog::get(loggerName);
-    if (logger) return logger;
-    // Create a new spdlog logger with the same sinks as the current default Logger or spdlog logger
-    auto &sinks = ((spdLoggers.begin() != spdLoggers.end() ? spdLoggers.begin()->second : spdlog::default_logger()))
-                      ->sinks();
-    logger = std::make_shared<spdlog::logger>(
-        loggerName,
-        sinks.begin(),
-        sinks.end());
-    // keep the same log format similar to the existing one, but with coloured level on console since it's nice :)
-    // note:  %t=thread id, %l=level, %s=file, %#=line, %!=function
-    logger->set_pattern("%Y%m%d %H:%M:%S.%e %6t %^%7l%$ [%!] %v - %s:%#");
+    if (logger)
+        return logger;
+    // Create a new spdlog logger with the same sinks as the current default
+    // Logger or spdlog logger
+    auto &sinks =
+        ((spdLoggers.begin() != spdLoggers.end() ? spdLoggers.begin()->second
+                                                 : spdlog::default_logger()))
+            ->sinks();
+    logger = std::make_shared<spdlog::logger>(loggerName,
+                                              sinks.begin(),
+                                              sinks.end());
+    // keep the same log format similar to the existing one, but with coloured
+    // level on console since it's nice :)
+    // see reference: https://github.com/gabime/spdlog/wiki/3.-Custom-formatting
+    logger->set_pattern("%Y%m%d %T.%f %6t %^%=8l%$ [%!] %v - %s:%#");
     // the filtering is done at Logger level, so no need to filter here
     logger->set_level(spdlog::level::trace);
     spdlog::register_logger(logger);
-    
+
     return logger;
 }
 std::shared_ptr<spdlog::logger> Logger::getSpdlogger(int index)
 {
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
     auto it = spdLoggers.find((index < 0) ? -1 : index);
-    return (it == spdLoggers.end()) ? std::shared_ptr<spdlog::logger>() : it->second;
+    return (it == spdLoggers.end()) ? std::shared_ptr<spdlog::logger>()
+                                    : it->second;
 }
 void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
 {
-    if (index < -1) index = -1;
+    if (index < -1)
+        index = -1;
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
     spdLoggers[index] = logger ? logger : getDefaultSpdlogger(index);
 }
@@ -326,7 +330,7 @@ void Logger::disableSpdLog(int index)
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
     spdLoggers.erase((index < 0) ? -1 : index);
 }
-#endif
+#endif  // TRANTOR_SPDLOG_SUPPORT
 
 Logger::~Logger()
 {
@@ -344,10 +348,15 @@ Logger::~Logger()
         spdlog::source_loc spdLocation;
         if (sourceFile_.data_)
             spdLocation = {sourceFile_.data_, fileLine_, func_ ? func_ : ""};
-        spdlog::string_view_t message(logStream_.bufferData(), logStream_.bufferLength());
+        spdlog::string_view_t message(logStream_.bufferData(),
+                                      logStream_.bufferLength());
         message.remove_prefix(spdLogMessageOffset_);
-        spdLogger->log(std::chrono::system_clock::time_point(std::chrono::duration<int64_t, std::micro>(date_.microSecondsSinceEpoch())),
-                       spdLocation, spdlogLevel.at(level_), message);
+        spdLogger->log(std::chrono::system_clock::time_point(
+                           std::chrono::duration<int64_t, std::micro>(
+                               date_.microSecondsSinceEpoch())),
+                       spdLocation,
+                       spdlogLevel.at(level_),
+                       message);
         if (level_ >= kError)
             spdLogger->flush();
         return;

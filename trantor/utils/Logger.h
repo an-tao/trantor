@@ -24,8 +24,7 @@
 #include <vector>
 #ifdef TRANTOR_SPDLOG_SUPPORT
 namespace spdlog { class logger; }
-//#pragma comment(lib, "V:/installed/x64-windows-static/debug/lib/spdlog.lib")
-//#pragma comment(lib, "V:/installed/x64-windows-static/debug/lib/fmt.lib")
+#include <memory>
 #endif
 
 #define TRANTOR_IF_(cond) for (int _r = 0; _r == 0 && (cond); _r = 1)
@@ -276,13 +275,13 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     LogStream logStream_;
     Date date_{Date::now()};
     SourceFile sourceFile_;
+    int fileLine_;
+    LogLevel level_;
+    int index_{-1};
 #ifdef TRANTOR_SPDLOG_SUPPORT
     const char *func_{nullptr};
     std::size_t spdLogMessageOffset_{0};
 #endif
-    int fileLine_;
-    LogLevel level_;
-    int index_{-1};
 };
 class TRANTOR_EXPORT RawLogger : public NonCopyable
 {
