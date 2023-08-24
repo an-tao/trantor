@@ -48,6 +48,11 @@ set(targets_list
     delayed_ssl_server_test
     delayed_ssl_client_test)
 
+if(USE_SPDLOG)
+  add_executable(spdlogger_test SpdLoggerTest.cc)
+  list(APPEND targets_list spdlogger_test)
+endif(USE_SPDLOG)
+
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${targets_list} PROPERTY CXX_EXTENSIONS OFF)

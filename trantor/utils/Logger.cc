@@ -25,6 +25,14 @@
 #elif defined _WIN32
 #include <sstream>
 #endif
+#ifdef TRANTOR_SPDLOG_SUPPORT
+#include <spdlog/spdlog.h>
+#include <map>
+#include <mutex>
+#if defined(__cpp_lib_string_view) || (defined(_MSC_VER) && (_MSC_VER >= 1912) && _HAS_CXX17)
+#include <string_view>
+#endif
+#endif
 
 #if defined __FreeBSD__
 #include <pthread_np.h>
@@ -181,24 +189,39 @@ Logger::Logger(SourceFile file, int line)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    spdLogMessageOffset_ = logStream_.bufferLength();
+#endif
 }
 Logger::Logger(SourceFile file, int line, LogLevel level)
     : sourceFile_(file), fileLine_(line), level_(level)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    spdLogMessageOffset_ = logStream_.bufferLength();
+#endif
 }
 Logger::Logger(SourceFile file, int line, LogLevel level, const char *func)
     : sourceFile_(file), fileLine_(line), level_(level)
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    , func_{func}
+#endif
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7) << "[" << func << "] ";
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    spdLogMessageOffset_ = logStream_.bufferLength();
+#endif
 }
 Logger::Logger(SourceFile file, int line, bool)
     : sourceFile_(file), fileLine_(line), level_(kFatal)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    spdLogMessageOffset_ = logStream_.bufferLength();
+#endif
     if (errno != 0)
     {
         logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
@@ -210,16 +233,25 @@ Logger::Logger() : level_(kInfo)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    spdLogMessageOffset_ = logStream_.bufferLength();
+#endif
 }
 Logger::Logger(LogLevel level) : level_(level)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    spdLogMessageOffset_ = logStream_.bufferLength();
+#endif
 }
 Logger::Logger(bool) : level_(kFatal)
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    spdLogMessageOffset_ = logStream_.bufferLength();
+#endif
     if (errno != 0)
     {
         logStream_ << strerror_tl(errno) << " (errno=" << errno << ") ";
@@ -243,8 +275,84 @@ RawLogger::~RawLogger()
         oFunc(logStream_.bufferData(), logStream_.bufferLength());
     }
 }
+
+#ifdef TRANTOR_SPDLOG_SUPPORT
+static std::string defaultSpdloggerName(int index)
+{
+    using namespace std::literals::string_literals;
+    std::string loggerName = "trantor"s;
+    if (index >= 0)
+        loggerName.append(std::to_string(index));
+    return loggerName;
+}
+// a map with int keys is more efficient than spdlog internal registry based on strings (logger name)
+static std::map<int, std::shared_ptr<spdlog::logger>> spdLoggers;
+static std::mutex spdLoggersMtx;
+static std::shared_ptr<spdlog::logger> getDefaultSpdlogger(int index)
+{
+    auto loggerName = defaultSpdloggerName(index);
+    auto logger = spdlog::get(loggerName);
+    if (logger) return logger;
+    // Create a new spdlog logger with the same sinks as the current default Logger or spdlog logger
+    auto &sinks = ((spdLoggers.begin() != spdLoggers.end() ? spdLoggers.begin()->second : spdlog::default_logger()))
+                      ->sinks();
+    logger = std::make_shared<spdlog::logger>(
+        loggerName,
+        sinks.begin(),
+        sinks.end());
+    // keep the same log format similar to the existing one, but with coloured level on console since it's nice :)
+    // note:  %t=thread id, %l=level, %s=file, %#=line, %!=function
+    logger->set_pattern("%Y%m%d %H:%M:%S.%e %6t %^%7l%$ [%!] %v - %s:%#");
+    // the filtering is done at Logger level, so no need to filter here
+    logger->set_level(spdlog::level::trace);
+    spdlog::register_logger(logger);
+    
+    return logger;
+}
+std::shared_ptr<spdlog::logger> Logger::getSpdlogger(int index)
+{
+    std::lock_guard<std::mutex> lck(spdLoggersMtx);
+    auto it = spdLoggers.find((index < 0) ? -1 : index);
+    return (it == spdLoggers.end()) ? std::shared_ptr<spdlog::logger>() : it->second;
+}
+void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
+{
+    if (index < -1) index = -1;
+    std::lock_guard<std::mutex> lck(spdLoggersMtx);
+    spdLoggers[index] = logger ? logger : getDefaultSpdlogger(index);
+}
+void Logger::disableSpdLog(int index)
+{
+    std::lock_guard<std::mutex> lck(spdLoggersMtx);
+    spdLoggers.erase((index < 0) ? -1 : index);
+}
+#endif
+
 Logger::~Logger()
 {
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    static std::map<LogLevel, spdlog::level::level_enum> spdlogLevel{
+        {kTrace, spdlog::level::trace},
+        {kDebug, spdlog::level::debug},
+        {kInfo, spdlog::level::info},
+        {kWarn, spdlog::level::warn},
+        {kError, spdlog::level::err},
+        {kFatal, spdlog::level::critical}};
+    auto spdLogger = getSpdlogger(index_);
+    if (spdLogger)
+    {
+        spdlog::source_loc spdLocation;
+        if (sourceFile_.data_)
+            spdLocation = {sourceFile_.data_, fileLine_, func_ ? func_ : ""};
+        spdlog::string_view_t message(logStream_.bufferData(), logStream_.bufferLength());
+        message.remove_prefix(spdLogMessageOffset_);
+        spdLogger->log(std::chrono::system_clock::time_point(std::chrono::duration<int64_t, std::micro>(date_.microSecondsSinceEpoch())),
+                       spdLocation, spdlogLevel.at(level_), message);
+        if (level_ >= kError)
+            spdLogger->flush();
+        return;
+    }
+#endif
     if (sourceFile_.data_)
         logStream_ << T(" - ", 3) << sourceFile_ << ':' << fileLine_ << '\n';
     else

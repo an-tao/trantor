@@ -22,6 +22,11 @@
 #include <functional>
 #include <iostream>
 #include <vector>
+#ifdef TRANTOR_SPDLOG_SUPPORT
+namespace spdlog { class logger; }
+//#pragma comment(lib, "V:/installed/x64-windows-static/debug/lib/spdlog.lib")
+//#pragma comment(lib, "V:/installed/x64-windows-static/debug/lib/fmt.lib")
+#endif
 
 #define TRANTOR_IF_(cond) for (int _r = 0; _r == 0 && (cond); _r = 1)
 
@@ -167,6 +172,39 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     {
         displayLocalTime_() = showLocalTime;
     }
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    /**
+     * @brief Enable logging with spdlog for the specified channel
+     * @param[in] channel index (-1 = default channel)
+     * @param[in] spdlog logger to use.
+     *                   If none given, a spdlog::logger is created
+     * @details The created spdlog::logger is named "trantor<index>"
+     *          (or "trantor" for the default channel) and registered
+     *          to the spdlog logger registry
+     */
+    static void enableSpdLog(int index, std::shared_ptr<spdlog::logger> = {});
+    /**
+     * @brief Disable logging with spdlog for the specified channel
+     * @param[in] channel index (-1 = default channel)
+     * @note The spdlog::logger object is not deleted and can be
+     *       re-enabled later
+     */
+    inline static void enableSpdLog(std::shared_ptr<spdlog::logger> logger = {})
+    {
+        enableSpdLog(-1, logger);
+    }
+    static void disableSpdLog(int index);
+    static void disableSpdLog()
+    {
+        disableSpdLog(-1);
+    }
+    /**
+     * @brief Get the spdlog::logger for the specified channel
+     * @param[in] channel index (-1 = default channel)
+     * @return the logger, if set, else an null pointer
+     */
+    static std::shared_ptr<spdlog::logger> getSpdlogger(int index = -1);
+#endif
 
   protected:
     static void defaultOutputFunction(const char *msg, const uint64_t len)
@@ -238,6 +276,10 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     LogStream logStream_;
     Date date_{Date::now()};
     SourceFile sourceFile_;
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    const char *func_{nullptr};
+    std::size_t spdLogMessageOffset_{0};
+#endif
     int fileLine_;
     LogLevel level_;
     int index_{-1};
