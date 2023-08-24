@@ -305,7 +305,7 @@ class TcpConnectionImpl : public TcpConnection,
     size_t bytesReceived_{0};
 
     std::unique_ptr<std::vector<char>> fileBufferPtr_;
-    std::unique_ptr<TLSProvider> tlsProviderPtr_;
+    std::shared_ptr<TLSProvider> tlsProviderPtr_;
     std::function<void(const TcpConnectionPtr &)> upgradeCallback_;
 
     bool closeOnEmpty_{false};
