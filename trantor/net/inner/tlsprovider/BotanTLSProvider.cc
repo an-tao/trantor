@@ -329,7 +329,8 @@ struct BotanTLSProvider : public TLSProvider,
         }
     }
 
-    bool tls_session_established(const Botan::TLS::Session &session)
+    void tls_session_established(
+        const Botan::TLS::Session_Summary &session) override
     {
         (void)session;
         LOG_TRACE << "tls_session_established";
@@ -339,8 +340,6 @@ struct BotanTLSProvider : public TLSProvider,
             if (handshakeCallback_)
                 handshakeCallback_(conn_);
         });
-        // Do we want to cache all sessions?
-        return true;
     }
 
     void tls_verify_cert_chain(
