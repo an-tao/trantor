@@ -73,7 +73,7 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
      * @brief Set the max number of log files. When the number exceeds the
      * limit, the oldest log file will be deleted.
      *
-     * @param limit
+     * @param maxFiles
      */
     void setMaxFiles(size_t maxFiles)
     {

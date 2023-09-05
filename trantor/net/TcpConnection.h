@@ -125,7 +125,7 @@ class TRANTOR_EXPORT TcpConnection
      */
     virtual bool disconnected() const = 0;
 
-    /**
+    /* *
      * @brief Get the buffer in which the received data stored.
      *
      * @return MsgBuffer*

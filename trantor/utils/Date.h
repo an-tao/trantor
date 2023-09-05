@@ -195,20 +195,22 @@ class TRANTOR_EXPORT Date
 
     /**
      * @brief Generate a UTC time string
-     * @example:
-     * 20180101 10:10:25            //If the @param showMicroseconds is false
-     * 20180101 10:10:25:102414     //If the @param showMicroseconds is true
+     * @param showMicroseconds whether the microseconds are returned.
+     * @note Examples:
+     *  - "20180101 10:10:25" if the @p showMicroseconds is false
+     *  - "20180101 10:10:25:102414" if the @p showMicroseconds is true
      */
     std::string toFormattedString(bool showMicroseconds) const;
 
     /**
-     * @brief Generate a UTC time string formated by the @param fmtStr
-     * The @param fmtStr is the format string for the function strftime()
-     * @example:
-     * 2018-01-01 10:10:25          //If the @param fmtStr is "%Y-%m-%d
-     * %H:%M:%S" and the @param showMicroseconds is false 2018-01-01
-     * 10:10:25:102414   //If the @param fmtStr is "%Y-%m-%d %H:%M:%S" and the
-     * @param showMicroseconds is true
+     * @brief Generate a UTC time string formated by the @p fmtStr
+     * @param fmtStr is the format string for the function strftime()
+     * @param showMicroseconds whether the microseconds are returned.
+     * @note Examples:
+     *  - "2018-01-01 10:10:25" if the @p fmtStr is "%Y-%m-%d %H:%M:%S" and the
+     *    @p showMicroseconds is false
+     *  - "2018-01-01 10:10:25:102414" if the @p fmtStr is "%Y-%m-%d %H:%M:%S"
+     *    and the @p showMicroseconds is true
      */
     std::string toCustomedFormattedString(const std::string &fmtStr,
                                           bool showMicroseconds = false) const;
@@ -223,7 +225,7 @@ class TRANTOR_EXPORT Date
     std::string toFormattedStringLocal(bool showMicroseconds) const;
 
     /**
-     * @brief Generate a local time zone string formated by the @param fmtStr
+     * @brief Generate a local time zone string formated by the @p fmtStr
      *
      * @param fmtStr
      * @param showMicroseconds
@@ -235,10 +237,10 @@ class TRANTOR_EXPORT Date
 
     /**
      * @brief Generate a local time zone string for database.
-     * @example:
-     * 2018-01-01                   //If hours, minutes, seconds and
-     * microseconds are zero 2018-01-01 10:10:25          //If the microsecond
-     * is zero 2018-01-01 10:10:25:102414   //If the microsecond is not zero
+     * @note Examples:
+     *  - "2018-01-01" if hours, minutes, seconds and microseconds are zero
+     *  - "2018-01-01 10:10:25" if the microsecond is zero
+     *  - "2018-01-01 10:10:25:102414" if the microsecond is not zero
      */
     std::string toDbStringLocal() const;
     /**

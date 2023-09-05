@@ -209,6 +209,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
      * OpenSSL.
      * @param certPath The path of the certificate file.
      * @param keyPath The path of the private key file.
+     * @param caPath The path of the certificate authority file.
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */

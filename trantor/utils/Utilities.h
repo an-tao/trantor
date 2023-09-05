@@ -29,7 +29,7 @@ namespace utils
  * @brief Convert a wide string to a UTF-8.
  * @details UCS2 on Windows, UTF-32 on Linux & Mac
  *
- * @param str String to convert
+ * @param wstr String to convert
  *
  * @return converted string.
  */
@@ -178,7 +178,7 @@ inline std::string fromNativePath(const std::wstring &strPath)
  *
  * @return true if matches. false otherwise
  */
-bool verifySslName(const std::string &certName, const std::string &hostname);
+bool verifySslName(const std::string &certName, const std::string &hostName);
 
 /**
  * @brief Returns the TLS backend used by trantor. Could be "None", "OpenSSL" or

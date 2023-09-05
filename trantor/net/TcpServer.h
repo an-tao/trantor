@@ -240,6 +240,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      * server.
      * @param sslConfCmds The commands used to call the SSL_CONF_cmd function in
      * OpenSSL.
+     * @param caPath The path of the certificate authority file.
      * @note It's well known that TLS 1.0 and 1.1 are not considered secure in
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
