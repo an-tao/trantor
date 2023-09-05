@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <thread>
 #include <spdlog/spdlog.h>
+
 int main()
 {
     trantor::Logger::enableSpdLog();
+    trantor::Logger::enableSpdLog(5);
     int i;
     LOG_COMPACT_DEBUG << "Hello, world!";
     LOG_DEBUG << (float)3.14;

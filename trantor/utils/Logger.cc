@@ -255,25 +255,8 @@ Logger::Logger(bool) : level_(kFatal)
     }
 }
 
-RawLogger::~RawLogger()
-{
-    if (index_ < 0)
-    {
-        auto &oFunc = Logger::outputFunc_();
-        if (!oFunc)
-            return;
-        oFunc(logStream_.bufferData(), logStream_.bufferLength());
-    }
-    else
-    {
-        auto &oFunc = Logger::outputFunc_(index_);
-        if (!oFunc)
-            return;
-        oFunc(logStream_.bufferData(), logStream_.bufferLength());
-    }
-}
-
 #ifdef TRANTOR_SPDLOG_SUPPORT
+// Helper for uniform naming
 static std::string defaultSpdloggerName(int index)
 {
     using namespace std::literals::string_literals;
@@ -285,8 +268,10 @@ static std::string defaultSpdloggerName(int index)
 // a map with int keys is more efficient than spdlog internal registry based on
 // strings (logger name)
 static std::map<int, std::shared_ptr<spdlog::logger>> spdLoggers;
+// same sinks, but the format pattern is only "%v", for LOG_RAW[_TO]
+static std::map<int, std::shared_ptr<spdlog::logger>> rawSpdLoggers;  
 static std::mutex spdLoggersMtx;
-static std::shared_ptr<spdlog::logger> getDefaultSpdlogger(int index)
+std::shared_ptr<spdlog::logger> Logger::getDefaultSpdlogger(int index)
 {
     auto loggerName = defaultSpdloggerName(index);
     auto logger = spdlog::get(loggerName);
@@ -307,6 +292,7 @@ static std::shared_ptr<spdlog::logger> getDefaultSpdlogger(int index)
     logger->set_pattern("%Y%m%d %T.%f %6t %^%=8l%$ [%!] %v - %s:%#");
     // the filtering is done at Logger level, so no need to filter here
     logger->set_level(spdlog::level::trace);
+    logger->flush_on(spdlog::level::err);
     spdlog::register_logger(logger);
 
     return logger;
@@ -318,6 +304,38 @@ std::shared_ptr<spdlog::logger> Logger::getSpdlogger(int index)
     return (it == spdLoggers.end()) ? std::shared_ptr<spdlog::logger>()
                                     : it->second;
 }
+static std::shared_ptr<spdlog::logger> getRawSpdlogger(int index)
+{
+    // Create/delete RAW logger on-the fly
+    // drawback: changes to the main logger's level or sinks won't be
+    //           reflected in the raw logger once it's created
+    if (index < -1)
+        index = -1;
+    std::lock_guard<std::mutex> lck(spdLoggersMtx);
+    auto itMain = spdLoggers.find(index);
+    auto itRaw = rawSpdLoggers.find(index);
+    if (itMain == spdLoggers.end())
+    {
+        if (itRaw != rawSpdLoggers.end())
+        {
+            spdlog::drop(itRaw->second->name());
+            rawSpdLoggers.erase(itRaw);
+        }
+        return {};
+    }
+    auto mainLogger = itMain->second;
+    if (itRaw != rawSpdLoggers.end()) return itRaw->second;
+    auto rawLogger =
+        std::make_shared<spdlog::logger>(mainLogger->name() + "_raw",
+                                         mainLogger->sinks().begin(),
+                                         mainLogger->sinks().end());
+    rawLogger->set_pattern("%v");
+    rawLogger->set_level(mainLogger->level());
+    rawLogger->flush_on(mainLogger->flush_level());
+    rawSpdLoggers[index] = rawLogger;
+    spdlog::register_logger(rawLogger);
+    return rawLogger;
+}
 void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
 {
     if (index < -1)
@@ -328,9 +346,53 @@ void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
 void Logger::disableSpdLog(int index)
 {
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
-    spdLoggers.erase((index < 0) ? -1 : index);
+    if (index < -1)
+        index = -1;
+    auto it = spdLoggers.find(index);
+    if (it == spdLoggers.end())
+        return;
+    // auto-unregister
+    if (it->second->name() == defaultSpdloggerName(index))
+        spdlog::drop(it->second->name());
+    spdLoggers.erase(it);
 }
 #endif  // TRANTOR_SPDLOG_SUPPORT
+
+RawLogger::~RawLogger()
+{
+#ifdef TRANTOR_SPDLOG_SUPPORT
+    auto logger = getRawSpdlogger(index_);
+    if (logger)
+    {
+        // The only way to be fully compatible with the existing non-spdlog RAW
+        // mode (dumping raw without adding a '\n') would be to store the
+        // concatenated messages along the logger, and pass the complete message
+        // to spdlog only when it ends with '\n'.
+        // But it's overkill...
+        // For now, just remove the trailing '\n', if any, since spdlog
+        // automatically adds one.
+        auto msglen = logStream_.bufferLength();
+        if ((msglen > 0) && (logStream_.bufferData()[msglen - 1] == '\n'))
+            msglen--;
+        logger->info(spdlog::string_view_t(logStream_.bufferData(), msglen));
+        return;
+    }
+#endif
+    if (index_ < 0)
+    {
+        auto &oFunc = Logger::outputFunc_();
+        if (!oFunc)
+            return;
+        oFunc(logStream_.bufferData(), logStream_.bufferLength());
+    }
+    else
+    {
+        auto &oFunc = Logger::outputFunc_(index_);
+        if (!oFunc)
+            return;
+        oFunc(logStream_.bufferData(), logStream_.bufferLength());
+    }
+}
 
 Logger::~Logger()
 {
@@ -357,8 +419,6 @@ Logger::~Logger()
                        spdLocation,
                        spdlogLevel.at(level_),
                        message);
-        if (level_ >= kError)
-            spdLogger->flush();
         return;
     }
 #endif
