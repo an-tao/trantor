@@ -417,12 +417,18 @@ Logger::~Logger()
         spdlog::string_view_t message(logStream_.bufferData(),
                                       logStream_.bufferLength());
         message.remove_prefix(spdLogMessageOffset_);
+#if defined(SPDLOG_VERSION) && (SPDLOG_VERSION > 10600)
         spdLogger->log(std::chrono::system_clock::time_point(
                            std::chrono::duration<int64_t, std::micro>(
                                date_.microSecondsSinceEpoch())),
                        spdLocation,
                        spdlogLevel.at(level_),
                        message);
+#else   // very old version, cannot specify time
+        spdLogger->log(spdLocation,
+                       spdlogLevel.at(level_),
+                       message);
+#endif
         return;
     }
 #endif
