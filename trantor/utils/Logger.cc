@@ -424,7 +424,7 @@ Logger::~Logger()
                        spdLocation,
                        spdlogLevel.at(level_),
                        message);
-#else   // very old version, cannot specify time
+#else  // very old version, cannot specify time
         spdLogger->log(spdLocation, spdlogLevel.at(level_), message);
 #endif
         return;
