@@ -89,13 +89,13 @@ jobs:
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
-        sudo apt install openssl libssl-dev dos2unix libspdlog-dev
+        sudo apt install openssl libssl-dev dos2unix libspdlog-dev libfmt-dev
     - name: (Linux) Install dependencies
       if: matrix.buildname == 'ubuntu-20.04/gcc'
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
-        sudo apt install dos2unix
+        sudo apt install dos2unix libspdlog-dev libfmt-dev
     - name: install gtest
       run: |
         wget https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz
