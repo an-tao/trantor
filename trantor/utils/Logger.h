@@ -25,7 +25,7 @@
 #ifdef TRANTOR_SPDLOG_SUPPORT
 namespace spdlog
 {
-    class logger;
+class logger;
 }
 #include <memory>
 #endif

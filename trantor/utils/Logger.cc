@@ -205,7 +205,7 @@ Logger::Logger(SourceFile file, int line, LogLevel level, const char *func)
       level_(level)
 #ifdef TRANTOR_SPDLOG_SUPPORT
       ,
-      func_{func}
+      func_(func)
 #endif
 {
     formatTime();
@@ -272,7 +272,7 @@ static std::string defaultSpdLoggerName(int index)
 // strings (logger name)
 static std::map<int, std::shared_ptr<spdlog::logger>> spdLoggers;
 // same sinks, but the format pattern is only "%v", for LOG_RAW[_TO]
-static std::map<int, std::shared_ptr<spdlog::logger>> rawSpdLoggers;  
+static std::map<int, std::shared_ptr<spdlog::logger>> rawSpdLoggers;
 static std::mutex spdLoggersMtx;
 std::shared_ptr<spdlog::logger> Logger::getDefaultSpdLogger(int index)
 {
@@ -417,7 +417,7 @@ Logger::~Logger()
         spdlog::string_view_t message(logStream_.bufferData(),
                                       logStream_.bufferLength());
         message.remove_prefix(spdLogMessageOffset_);
-#if defined(SPDLOG_VERSION) && (SPDLOG_VERSION > 10600)
+#if defined(SPDLOG_VERSION) && (SPDLOG_VERSION >= 10600)
         spdLogger->log(std::chrono::system_clock::time_point(
                            std::chrono::duration<int64_t, std::micro>(
                                date_.microSecondsSinceEpoch())),
@@ -425,9 +425,7 @@ Logger::~Logger()
                        spdlogLevel.at(level_),
                        message);
 #else   // very old version, cannot specify time
-        spdLogger->log(spdLocation,
-                       spdlogLevel.at(level_),
-                       message);
+        spdLogger->log(spdLocation, spdlogLevel.at(level_), message);
 #endif
         return;
     }
