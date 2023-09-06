@@ -23,7 +23,10 @@
 #include <iostream>
 #include <vector>
 #ifdef TRANTOR_SPDLOG_SUPPORT
-namespace spdlog { class logger; }
+namespace spdlog
+{
+    class logger;
+}
 #include <memory>
 #endif
 
@@ -181,7 +184,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @remarks If provided, it is not registered with the spdlog logger
      *          registry, it's up to you to register/drop it.
      */
-    static void enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger = {});
+    static void enableSpdLog(int index,
+                             std::shared_ptr<spdlog::logger> logger = {});
     /**
      * @brief Enable logging with spdlog for the default channel.
      * @param logger spdlog::logger object to use.
@@ -197,7 +201,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @brief Disable logging with spdlog for the specified channel.
      * @param[in] channel index (-1 = default channel).
      * @remarks The spdlog::logger object is unregistered and
-     *          destroyed only if it was created by getDefaultSpdLogger(@p index).
+     *          destroyed only if it was created by
+     *          getDefaultSpdLogger(@p index).
      *          Custom loggers are only unset.
      */
     static void disableSpdLog(int index);

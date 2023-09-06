@@ -200,9 +200,12 @@ Logger::Logger(SourceFile file, int line, LogLevel level)
 #endif
 }
 Logger::Logger(SourceFile file, int line, LogLevel level, const char *func)
-    : sourceFile_(file), fileLine_(line), level_(level)
+    : sourceFile_(file),
+      fileLine_(line),
+      level_(level)
 #ifdef TRANTOR_SPDLOG_SUPPORT
-    , func_{func}
+      ,
+      func_{func}
 #endif
 {
     formatTime();
@@ -324,7 +327,8 @@ static std::shared_ptr<spdlog::logger> getRawSpdLogger(int index)
         return {};
     }
     auto mainLogger = itMain->second;
-    if (itRaw != rawSpdLoggers.end()) return itRaw->second;
+    if (itRaw != rawSpdLoggers.end())
+        return itRaw->second;
     auto rawLogger =
         std::make_shared<spdlog::logger>(mainLogger->name() + "_raw",
                                          mainLogger->sinks().begin(),
