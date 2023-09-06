@@ -177,7 +177,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @brief Enable logging with spdlog for the specified channel.
      * @param index channel index (-1 = default channel).
      * @param logger spdlog::logger object to use.
-     *               If none given, defaults to getDefaultSpdlogger(@p index).
+     *               If none given, defaults to getDefaultSpdLogger(@p index).
      * @remarks If provided, it is not registered with the spdlog logger
      *          registry, it's up to you to register/drop it.
      */
@@ -185,7 +185,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     /**
      * @brief Enable logging with spdlog for the default channel.
      * @param logger spdlog::logger object to use.
-     *               If none given, defaults to getDefaultSpdlogger().
+     *               If none given, defaults to getDefaultSpdLogger().
      * @remarks If provided, it is not registered with the spdlog logger
      *          registry, it's up to you to register/drop it.
      */
@@ -197,14 +197,14 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @brief Disable logging with spdlog for the specified channel.
      * @param[in] channel index (-1 = default channel).
      * @remarks The spdlog::logger object is unregistered and
-     *          destroyed only if it was created by getDefaultSpdlogger().
+     *          destroyed only if it was created by getDefaultSpdLogger(@p index).
      *          Custom loggers are only unset.
      */
     static void disableSpdLog(int index);
     /**
      * @brief Disable logging with spdlog for the default channel
      * @remarks The spdlog::logger object is unregistered and
-     *          destroyed only if it was created by getDefaultSpdlogger().
+     *          destroyed only if it was created by getDefaultSpdLogger().
      *          Custom loggers are only unset.
      */
     static void disableSpdLog()
@@ -216,7 +216,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @param[in] channel index (-1 = default channel).
      * @return the logger, if set, else a null pointer.
      */
-    static std::shared_ptr<spdlog::logger> getSpdlogger(int index = -1);
+    static std::shared_ptr<spdlog::logger> getSpdLogger(int index = -1);
     /**
      * @brief Get a default spdlog::logger for the specified channel.
      * @details This helper function provides a default spdlog::logger with a
@@ -242,7 +242,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @note To add custom sinks to all the channels, you can do that this way:
      *        -# (optional) add your sinks to spdlog::default_logger(),
      *        -# create the default logger for the default channel using
-     *           getDefaultSpdlogger(-1),
+     *           getDefaultSpdLogger(-1),
      *        -# if not done at step 1., add your sinks to this logger,
      *        -# enable the logger with enableSpdLog(),
      *        -# for the other channels, invoke enableSpdLog(index).
@@ -251,7 +251,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @param[in] channel index (-1 = default channel).
      * @return the default spdlog logger for the channel.
      */
-    static std::shared_ptr<spdlog::logger> getDefaultSpdlogger(int index);
+    static std::shared_ptr<spdlog::logger> getDefaultSpdLogger(int index);
 #endif
 
   protected:

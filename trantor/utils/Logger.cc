@@ -257,7 +257,7 @@ Logger::Logger(bool) : level_(kFatal)
 
 #ifdef TRANTOR_SPDLOG_SUPPORT
 // Helper for uniform naming
-static std::string defaultSpdloggerName(int index)
+static std::string defaultSpdLoggerName(int index)
 {
     using namespace std::literals::string_literals;
     std::string loggerName = "trantor"s;
@@ -271,9 +271,9 @@ static std::map<int, std::shared_ptr<spdlog::logger>> spdLoggers;
 // same sinks, but the format pattern is only "%v", for LOG_RAW[_TO]
 static std::map<int, std::shared_ptr<spdlog::logger>> rawSpdLoggers;  
 static std::mutex spdLoggersMtx;
-std::shared_ptr<spdlog::logger> Logger::getDefaultSpdlogger(int index)
+std::shared_ptr<spdlog::logger> Logger::getDefaultSpdLogger(int index)
 {
-    auto loggerName = defaultSpdloggerName(index);
+    auto loggerName = defaultSpdLoggerName(index);
     auto logger = spdlog::get(loggerName);
     if (logger)
         return logger;
@@ -286,7 +286,7 @@ std::shared_ptr<spdlog::logger> Logger::getDefaultSpdlogger(int index)
     logger = std::make_shared<spdlog::logger>(loggerName,
                                               sinks.begin(),
                                               sinks.end());
-    // keep the same log format similar to the existing one, but with coloured
+    // keep a log format similar to the existing one, but with coloured
     // level on console since it's nice :)
     // see reference: https://github.com/gabime/spdlog/wiki/3.-Custom-formatting
     logger->set_pattern("%Y%m%d %T.%f %6t %^%=8l%$ [%!] %v - %s:%#");
@@ -297,14 +297,14 @@ std::shared_ptr<spdlog::logger> Logger::getDefaultSpdlogger(int index)
 
     return logger;
 }
-std::shared_ptr<spdlog::logger> Logger::getSpdlogger(int index)
+std::shared_ptr<spdlog::logger> Logger::getSpdLogger(int index)
 {
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
     auto it = spdLoggers.find((index < 0) ? -1 : index);
     return (it == spdLoggers.end()) ? std::shared_ptr<spdlog::logger>()
                                     : it->second;
 }
-static std::shared_ptr<spdlog::logger> getRawSpdlogger(int index)
+static std::shared_ptr<spdlog::logger> getRawSpdLogger(int index)
 {
     // Create/delete RAW logger on-the fly
     // drawback: changes to the main logger's level or sinks won't be
@@ -341,7 +341,7 @@ void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
     if (index < -1)
         index = -1;
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
-    spdLoggers[index] = logger ? logger : getDefaultSpdlogger(index);
+    spdLoggers[index] = logger ? logger : getDefaultSpdLogger(index);
 }
 void Logger::disableSpdLog(int index)
 {
@@ -352,7 +352,7 @@ void Logger::disableSpdLog(int index)
     if (it == spdLoggers.end())
         return;
     // auto-unregister
-    if (it->second->name() == defaultSpdloggerName(index))
+    if (it->second->name() == defaultSpdLoggerName(index))
         spdlog::drop(it->second->name());
     spdLoggers.erase(it);
 }
@@ -361,7 +361,7 @@ void Logger::disableSpdLog(int index)
 RawLogger::~RawLogger()
 {
 #ifdef TRANTOR_SPDLOG_SUPPORT
-    auto logger = getRawSpdlogger(index_);
+    auto logger = getRawSpdLogger(index_);
     if (logger)
     {
         // The only way to be fully compatible with the existing non-spdlog RAW
@@ -404,7 +404,7 @@ Logger::~Logger()
         {kWarn, spdlog::level::warn},
         {kError, spdlog::level::err},
         {kFatal, spdlog::level::critical}};
-    auto spdLogger = getSpdlogger(index_);
+    auto spdLogger = getSpdLogger(index_);
     if (spdLogger)
     {
         spdlog::source_loc spdLocation;
