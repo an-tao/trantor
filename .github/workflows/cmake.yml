@@ -51,7 +51,7 @@ jobs:
         shell: bash
         run: |
           cd build
-          cmake --build . --target install --parallel
+          cmake --build . --target install --parallel --verbose
   unix:
     name: ${{matrix.buildname}}
     runs-on: ${{matrix.os}}
