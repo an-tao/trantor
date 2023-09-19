@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.14] - 2023-09-19
+
+### [Fixed]
+
+- Fix OpenSSL: read can be incomplete.
+
+- Fix botan provider.
+
+- Fix botan3 not triggering handshake finish event.
+
+- Fix an compilation error when no STL lib is found.
+
 ## [1.5.13] - 2023-08-23
 
 ### Fixed
@@ -574,7 +586,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.13...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.14...HEAD
+
+[1.5.14]: https://github.com/an-tao/trantor/compare/v1.5.13...v1.5.14
 
 [1.5.13]: https://github.com/an-tao/trantor/compare/v1.5.12...v1.5.13
 
