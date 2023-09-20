@@ -22,13 +22,11 @@
 #include <functional>
 #include <iostream>
 #include <vector>
-#ifdef TRANTOR_SPDLOG_SUPPORT
 namespace spdlog
 {
 class logger;
 }
 #include <memory>
-#endif
 
 #define TRANTOR_IF_(cond) for (int _r = 0; _r == 0 && (cond); _r = 1)
 
@@ -175,7 +173,13 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     {
         displayLocalTime_() = showLocalTime;
     }
-#ifdef TRANTOR_SPDLOG_SUPPORT
+
+    /**
+     * @brief Check whether trantor was build with spdlog support
+     * @retval true if yes
+     * @retval false if not - in this case, all the spdlog functions are noop functions
+     */
+    static bool hasSpdLogSupport();
     /**
      * @brief Enable logging with spdlog for the specified channel.
      * @param index channel index (-1 = default channel).
@@ -257,7 +261,6 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @return the default spdlog logger for the channel.
      */
     static std::shared_ptr<spdlog::logger> getDefaultSpdLogger(int index);
-#endif
 
   protected:
     static void defaultOutputFunction(const char *msg, const uint64_t len)
@@ -332,10 +335,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     int fileLine_;
     LogLevel level_;
     int index_{-1};
-#ifdef TRANTOR_SPDLOG_SUPPORT
     const char *func_{nullptr};
     std::size_t spdLogMessageOffset_{0};
-#endif
 };
 class TRANTOR_EXPORT RawLogger : public NonCopyable
 {
