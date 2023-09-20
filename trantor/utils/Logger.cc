@@ -449,14 +449,6 @@ RawLogger::~RawLogger()
 Logger::~Logger()
 {
 #ifdef TRANTOR_SPDLOG_SUPPORT
-    static spdlog::level::level_enum
-        spdLogLevel[Logger::LogLevel::kNumberOfLogLevels]{
-            spdlog::level::trace,
-            spdlog::level::debug,
-            spdlog::level::info,
-            spdlog::level::warn,
-            spdlog::level::err,
-            spdlog::level::critical};
     auto spdLogger = getSpdLogger(index_);
     if (spdLogger)
     {
@@ -471,10 +463,10 @@ Logger::~Logger()
                            std::chrono::duration<int64_t, std::micro>(
                                date_.microSecondsSinceEpoch())),
                        spdLocation,
-                       spdLogLevel[level_],
+                       spdlog::level::level_enum(level_),
                        message);
 #else  // very old version, cannot specify time
-        spdLogger->log(spdLocation, spdLogLevel[level_], message);
+        spdLogger->log(spdLocation, spdlog::level::level_enum(level_), message);
 #endif
         return;
     }
