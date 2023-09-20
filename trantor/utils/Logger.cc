@@ -32,8 +32,9 @@
 #endif
 #if (__cplusplus >= 201703L) || \
     (defined(_MSVC_LANG) &&     \
-     (_MSVC_LANG >= 201703L))  // c++17 - the _MSVC_LANG extra check can be
-                               // removed if the support for VS2015 & 2017 is dropped
+     (_MSVC_LANG >=             \
+      201703L))  // c++17 - the _MSVC_LANG extra check can be
+                 // removed if the support for VS2015 & 2017 is dropped
 #include <algorithm>
 #else
 namespace std
