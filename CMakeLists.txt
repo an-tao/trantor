@@ -47,6 +47,13 @@ if(BUILD_SHARED_LIBS)
   endif()
 endif(BUILD_SHARED_LIBS)
 
+# Tells Visual Studio 2017 (15.7+) and newer to correctly set the value of the standard __cplusplus macro,
+# instead of leaving it to 199711L and settings the effective c++ version in _MSVC_LANG
+# Dropping support for older versions of VS would allow to only rely on __cplusplus
+if(MSVC AND MSVC_VERSION GREATER_EQUAL 1914)
+  add_compile_options(/Zc:__cplusplus)
+endif(MSVC)
+
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID MATCHES Clang|GNU)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
 endif()
