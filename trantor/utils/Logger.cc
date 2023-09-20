@@ -330,6 +330,7 @@ std::shared_ptr<spdlog::logger> Logger::getDefaultSpdLogger(int index)
 
     return logger;
 #else
+    (void)index;
     return {};
 #endif  // TRANTOR_SPDLOG_SUPPORT
 }
@@ -342,13 +343,14 @@ std::shared_ptr<spdlog::logger> Logger::getSpdLogger(int index)
     return (it == spdLoggers.end()) ? std::shared_ptr<spdlog::logger>()
                                     : it->second;
 #else
+    (void)index;
     return {};
 #endif  // TRANTOR_SPDLOG_SUPPORT
 }
 
+#ifdef TRANTOR_SPDLOG_SUPPORT
 static std::shared_ptr<spdlog::logger> getRawSpdLogger(int index)
 {
-#ifdef TRANTOR_SPDLOG_SUPPORT
     // Create/delete RAW logger on-the fly
     // drawback: changes to the main logger's level or sinks won't be
     //           reflected in the raw logger once it's created
@@ -379,10 +381,8 @@ static std::shared_ptr<spdlog::logger> getRawSpdLogger(int index)
     rawSpdLoggers[index] = rawLogger;
     spdlog::register_logger(rawLogger);
     return rawLogger;
-#else
-    return {};
-#endif  // TRANTOR_SPDLOG_SUPPORT
 }
+#endif  // TRANTOR_SPDLOG_SUPPORT
 
 void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
 {
@@ -391,6 +391,9 @@ void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
         index = -1;
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
     spdLoggers[index] = logger ? logger : getDefaultSpdLogger(index);
+#else
+    (void)index;
+    bool(logger);
 #endif  // TRANTOR_SPDLOG_SUPPORT
 }
 
@@ -407,6 +410,8 @@ void Logger::disableSpdLog(int index)
     if (it->second->name() == defaultSpdLoggerName(index))
         spdlog::drop(it->second->name());
     spdLoggers.erase(it);
+#else
+    (void)index;
 #endif  // TRANTOR_SPDLOG_SUPPORT
 }
 
