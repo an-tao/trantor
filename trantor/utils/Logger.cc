@@ -33,7 +33,7 @@
 #if (__cplusplus >= 201703L) || \
     (defined(_MSVC_LANG) &&     \
      (_MSVC_LANG >= 201703L))  // c++17 - the _MSVC_LANG extra check can be
-                               // removed if the support for VS2015 is dropped
+                               // removed if the support for VS2015 & 2017 is dropped
 #include <algorithm>
 #else
 namespace std
@@ -206,7 +206,9 @@ Logger::Logger(SourceFile file, int line)
 #endif
 }
 Logger::Logger(SourceFile file, int line, LogLevel level)
-    : sourceFile_(file), fileLine_(line), level_(std::clamp(level, kTrace, kFatal))
+    : sourceFile_(file),
+      fileLine_(line),
+      level_(std::clamp(level, kTrace, kFatal))
 {
     formatTime();
     logStream_ << T(logLevelStr[level_], 7);

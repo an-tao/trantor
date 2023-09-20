@@ -177,7 +177,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     /**
      * @brief Check whether trantor was build with spdlog support
      * @retval true if yes
-     * @retval false if not - in this case, all the spdlog functions are noop functions
+     * @retval false if not - in this case, all the spdlog functions are noop
+     *         functions
      */
     static bool hasSpdLogSupport();
     /**
