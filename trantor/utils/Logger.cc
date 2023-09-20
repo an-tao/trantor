@@ -393,7 +393,7 @@ void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
     spdLoggers[index] = logger ? logger : getDefaultSpdLogger(index);
 #else
     (void)index;
-    bool(logger);
+    (bool)logger;
 #endif  // TRANTOR_SPDLOG_SUPPORT
 }
 
