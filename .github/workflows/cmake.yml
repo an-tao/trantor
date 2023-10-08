@@ -44,7 +44,7 @@ jobs:
         working-directory: ./build
         run: |
           [[ ${{ matrix.link }} == "SHARED" ]] && shared="ON" || shared="OFF"
-          cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=on -DBUILD_SHARED_LIBS=$shared -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
+          cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=on -DUSE_SPDLOG=ON -DBUILD_SHARED_LIBS=$shared -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
 
       - name: Build
         working-directory: ${{env.GITHUB_WORKSPACE}}
@@ -82,20 +82,20 @@ jobs:
     - name: (macOS) Install dependencies
       if: runner.os == 'macOS'
       run: |
-        brew install c-ares openssl
+        brew install c-ares openssl spdlog
 
     - name: (Linux) Install dependencies - OpenSSL
       if: matrix.buildname == 'ubuntu-20.04/gcc - OpenSSL'
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
-        sudo apt install openssl libssl-dev dos2unix
+        sudo apt install openssl libssl-dev dos2unix libspdlog-dev libfmt-dev
     - name: (Linux) Install dependencies
       if: matrix.buildname == 'ubuntu-20.04/gcc'
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
-        sudo apt install dos2unix
+        sudo apt install dos2unix libspdlog-dev libfmt-dev
     - name: install gtest
       run: |
         wget https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz
@@ -113,7 +113,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on
+        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on -DUSE_SPDLOG=ON
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}

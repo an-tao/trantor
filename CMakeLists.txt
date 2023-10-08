@@ -3,8 +3,10 @@ project(trantor)
 
 option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_C-ARES "Build C-ARES" ON)
+option(BUILD_TESTING "Build tests" OFF)
 option(BUILD_SHARED_LIBS "Build trantor as a shared lib" OFF)
 option(TRANTOR_USE_TLS "TLS provider for trantor. Valid options are 'openssl', 'botan' or '' (let the build scripr decide)" "")
+option(USE_SPDLOG "Allow using the spdlog logging library" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
@@ -44,6 +46,13 @@ if(BUILD_SHARED_LIBS)
     target_compile_options(${PROJECT_NAME} PUBLIC /wd4251 /wd4275)
   endif()
 endif(BUILD_SHARED_LIBS)
+
+# Tells Visual Studio 2017 (15.7+) and newer to correctly set the value of the standard __cplusplus macro,
+# instead of leaving it to 199711L and settings the effective c++ version in _MSVC_LANG
+# Dropping support for older versions of VS would allow to only rely on __cplusplus
+if(MSVC AND MSVC_VERSION GREATER_EQUAL 1914)
+  add_compile_options(/Zc:__cplusplus)
+endif(MSVC)
 
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID MATCHES Clang|GNU)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
@@ -188,6 +197,19 @@ endif()
 message(STATUS "Trantor using SSL library: ${TRANTOR_TLS_PROVIDER}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE TRANTOR_TLS_PROVIDER=${TRANTOR_TLS_PROVIDER})
 
+set(HAVE_SPDLOG NO)
+if(USE_SPDLOG)
+  find_package(spdlog CONFIG)
+  if(spdlog_FOUND)
+    message(STATUS "spdlog found!")
+    set(HAVE_SPDLOG TRUE)
+  endif(spdlog_FOUND)
+endif(USE_SPDLOG)
+if(HAVE_SPDLOG)
+  target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog_header_only)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC TRANTOR_SPDLOG_SUPPORT SPDLOG_FMT_EXTERNAL FMT_HEADER_ONLY)
+endif(HAVE_SPDLOG)
+
 set(HAVE_C-ARES NO)
 if (BUILD_C-ARES)
     find_package(c-ares)
@@ -206,7 +228,9 @@ if(HAVE_C-ARES)
       ${private_headers}
       trantor/net/inner/AresResolver.h)
   if(APPLE)
-      target_link_libraries(${PROJECT_NAME} PRIVATE resolv)
+    target_link_libraries(${PROJECT_NAME} PRIVATE resolv)
+  elseif(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Iphlpapi)
   endif()
 else()
   set(TRANTOR_SOURCES

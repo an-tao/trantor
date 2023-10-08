@@ -22,7 +22,7 @@ All notable changes to this project will be documented in this file.
 
 - Fix an error when sending files.
 
-- Include <memory> header in TcpConnectionImpl.cc.
+- Include &lt;memory&gt; header in TcpConnectionImpl.cc.
 
 ## [1.5.12] - 2023-08-20
 
@@ -54,7 +54,7 @@ All notable changes to this project will be documented in this file.
 
 - Fix override mark.
 
-- Add missing <cstdint> header with GCC 13.
+- Add missing &lt;cstdint&gt; header with GCC 13.
 
 - Fix AresResolver.
 

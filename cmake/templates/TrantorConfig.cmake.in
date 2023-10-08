@@ -20,6 +20,9 @@ if(@c-ares_FOUND@)
   find_dependency(c-ares)
 endif()
 find_dependency(Threads)
+if(@spdlog_FOUND@)
+  find_dependency(spdlog)
+endif()
 # Compute paths
 
 # Our library dependencies (contains definitions for IMPORTED targets)

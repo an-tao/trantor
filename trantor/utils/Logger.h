@@ -22,6 +22,11 @@
 #include <functional>
 #include <iostream>
 #include <vector>
+namespace spdlog
+{
+class logger;
+}
+#include <memory>
 
 #define TRANTOR_IF_(cond) for (int _r = 0; _r == 0 && (cond); _r = 1)
 
@@ -113,6 +118,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      *
      * @param outputFunc The function to output a log message.
      * @param flushFunc The function to flush.
+     * @param index The channel index.
      * @note Logs are output to the standard output by default.
      */
     static void setOutputFunction(
@@ -167,6 +173,95 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     {
         displayLocalTime_() = showLocalTime;
     }
+
+    /**
+     * @brief Check whether trantor was build with spdlog support
+     * @retval true if yes
+     * @retval false if not - in this case, all the spdlog functions are noop
+     *         functions
+     */
+    static bool hasSpdLogSupport();
+    /**
+     * @brief Enable logging with spdlog for the specified channel.
+     * @param index channel index (-1 = default channel).
+     * @param logger spdlog::logger object to use.
+     *               If none given, defaults to getDefaultSpdLogger(@p index).
+     * @remarks If provided, it is not registered with the spdlog logger
+     *          registry, it's up to you to register/drop it.
+     */
+    static void enableSpdLog(int index,
+                             std::shared_ptr<spdlog::logger> logger = {});
+    /**
+     * @brief Enable logging with spdlog for the default channel.
+     * @param logger spdlog::logger object to use.
+     *               If none given, defaults to getDefaultSpdLogger().
+     * @remarks If provided, it is not registered with the spdlog logger
+     *          registry, it's up to you to register/drop it.
+     */
+    inline static void enableSpdLog(std::shared_ptr<spdlog::logger> logger = {})
+    {
+        enableSpdLog(-1, logger);
+    }
+    /**
+     * @brief Disable logging with spdlog for the specified channel.
+     * @param[in] channel index (-1 = default channel).
+     * @remarks The spdlog::logger object is unregistered and
+     *          destroyed only if it was created by
+     *          getDefaultSpdLogger(@p index).
+     *          Custom loggers are only unset.
+     */
+    static void disableSpdLog(int index);
+    /**
+     * @brief Disable logging with spdlog for the default channel
+     * @remarks The spdlog::logger object is unregistered and
+     *          destroyed only if it was created by getDefaultSpdLogger().
+     *          Custom loggers are only unset.
+     */
+    static void disableSpdLog()
+    {
+        disableSpdLog(-1);
+    }
+    /**
+     * @brief Get the spdlog::logger set on the specified channel.
+     * @param[in] channel index (-1 = default channel).
+     * @return the logger, if set, else a null pointer.
+     */
+    static std::shared_ptr<spdlog::logger> getSpdLogger(int index = -1);
+    /**
+     * @brief Get a default spdlog::logger for the specified channel.
+     * @details This helper function provides a default spdlog::logger with a
+     *          similar output format as the existing non-spdlog trantor::Logger
+     *          format.
+     *
+     *          If a default logger was already created for the channel, it is
+     *          returned as-is.
+     *
+     *          Otherwise, a new spdlog::logger object named "trantor" (for
+     *          index < 0) or "trantor<channel>" is created, registered with
+     *          spdlog, and configured as follows:
+     *          - it has the same sinks as the lowest (index) enabled channel,
+     *            or those of the spdlog::default_logger(), which by defaults
+     *            outputs to stdout (spdlog::sinks::stdout_color_mt),
+     *          - its format pattern is set to resemble to the existing
+     *            non-spdlog trantor::Logger format
+     *            ("%Y%m%d %T.%f %6t %^%=8l%$ [%!] %v - %s:%#"),
+     *          - the logging level is set to unfiltered (spdlog::level::trace)
+     *            since the internal trantor/drogon level filtering is still
+     *            managed by trantor:::Logger,
+     *          - the flush level is set to spdlog::level::error.
+     * @note To add custom sinks to all the channels, you can do that this way:
+     *        -# (optional) add your sinks to spdlog::default_logger(),
+     *        -# create the default logger for the default channel using
+     *           getDefaultSpdLogger(-1),
+     *        -# if not done at step 1., add your sinks to this logger,
+     *        -# enable the logger with enableSpdLog(),
+     *        -# for the other channels, invoke enableSpdLog(index).
+     * @remarks The created spdlog::logger is automatically registered
+     *          with the spdlog logger registry.
+     * @param[in] channel index (-1 = default channel).
+     * @return the default spdlog logger for the channel.
+     */
+    static std::shared_ptr<spdlog::logger> getDefaultSpdLogger(int index);
 
   protected:
     static void defaultOutputFunction(const char *msg, const uint64_t len)
@@ -241,6 +336,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     int fileLine_;
     LogLevel level_;
     int index_{-1};
+    const char *func_{nullptr};
+    std::size_t spdLogMessageOffset_{0};
 };
 class TRANTOR_EXPORT RawLogger : public NonCopyable
 {
