@@ -620,12 +620,12 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     const unsigned char *alpn = nullptr;
                     unsigned int alpnlen = 0;
                     SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
-                    if (!alpn)
+                    if (alpn)
                     {
-                        handleSSLError(SSLError::kSSLHandshakeError);
-                        return false;
+                        assert(alpnlen > 0);
+                        setApplicationProtocol(
+                            std::string((char *)alpn, alpnlen));
                     }
-                    setApplicationProtocol(std::string((char *)alpn, alpnlen));
                 }
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
