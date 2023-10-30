@@ -234,9 +234,12 @@ struct BotanTLSProvider : public TLSProvider,
 
     virtual void startEncryption() override
     {
+        auto certStorePtr = contextPtr_->certStore.get();
+        if (certStorePtr == nullptr)
+            certStorePtr = &certStore;
         credsPtr_ = std::make_shared<Credentials>(contextPtr_->key,
                                                   contextPtr_->cert.get(),
-                                                  contextPtr_->certStore.get());
+                                                  certStorePtr);
         if (policyPtr_->getConfCmds().empty() == false)
             LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
 
