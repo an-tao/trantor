@@ -335,10 +335,11 @@ struct BotanTLSProvider : public TLSProvider,
         (void)session;
         LOG_TRACE << "tls_session_established";
         tlsConnected_ = true;
-        loop_->queueInLoop([this]() {
-            setApplicationProtocol(channel_->application_protocol());
-            if (handshakeCallback_)
-                handshakeCallback_(conn_);
+        loop_->queueInLoop([thisPtr = shared_from_this()]() {
+            thisPtr->setApplicationProtocol(
+                thisPtr->channel_->application_protocol());
+            if (thisPtr->handshakeCallback_)
+                thisPtr->handshakeCallback_(thisPtr->conn_);
         });
     }
 
