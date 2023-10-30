@@ -347,10 +347,10 @@ struct BotanTLSProvider : public TLSProvider,
         const std::vector<std::optional<Botan::OCSP::Response>> &ocsp,
         const std::vector<Botan::Certificate_Store *> &trusted_roots,
         Botan::Usage_Type usage,
-        const std::string &hostname,
-        const Botan::TLS::Policy &policy)
+        std::string_view hostname,
+        const Botan::TLS::Policy &policy) override
     {
-        setSniName(hostname);
+        setSniName(std::string(hostname));
         if (policyPtr_->getValidate() && !policyPtr_->getAllowBrokenChain())
             Botan::TLS::Callbacks::tls_verify_cert_chain(
                 certs, ocsp, trusted_roots, usage, hostname, policy);
@@ -379,6 +379,9 @@ struct BotanTLSProvider : public TLSProvider,
                     std::string("Certificate validation failed: ") +
                         Botan::to_string(result));
         }
+
+        if (certs.size() > 0)
+            setPeerCertificate(std::make_shared<BotanCertificate>(certs[0]));
     }
 
     std::shared_ptr<TrantorPolicy> validationPolicy_;
