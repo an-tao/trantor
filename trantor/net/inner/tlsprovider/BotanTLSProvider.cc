@@ -332,18 +332,13 @@ struct BotanTLSProvider : public TLSProvider,
         }
     }
 
-    void tls_session_established(
-        const Botan::TLS::Session_Summary &session) override
+    void tls_session_activated() override
     {
-        (void)session;
-        LOG_TRACE << "tls_session_established";
+        LOG_TRACE << "tls_session_activated";
         tlsConnected_ = true;
-        loop_->queueInLoop([thisPtr = shared_from_this()]() {
-            thisPtr->setApplicationProtocol(
-                thisPtr->channel_->application_protocol());
-            if (thisPtr->handshakeCallback_)
-                thisPtr->handshakeCallback_(thisPtr->conn_);
-        });
+        setApplicationProtocol(channel_->application_protocol());
+        if (handshakeCallback_)
+            handshakeCallback_(conn_);
     }
 
     void tls_verify_cert_chain(
