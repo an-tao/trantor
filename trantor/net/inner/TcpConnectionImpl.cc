@@ -346,7 +346,6 @@ void TcpConnectionImpl::connectEstablished()
 }
 void TcpConnectionImpl::handleClose()
 {
-    abort();
     LOG_TRACE << "connection closed, fd=" << socketPtr_->fd();
     loop_->assertInLoopThread();
     status_ = ConnStatus::Disconnected;
