@@ -234,9 +234,12 @@ struct BotanTLSProvider : public TLSProvider,
 
     virtual void startEncryption() override
     {
+        auto certStorePtr = contextPtr_->certStore.get();
+        if (certStorePtr == nullptr)
+            certStorePtr = &certStore;
         credsPtr_ = std::make_shared<Credentials>(contextPtr_->key,
                                                   contextPtr_->cert.get(),
-                                                  contextPtr_->certStore.get());
+                                                  certStorePtr);
         if (policyPtr_->getConfCmds().empty() == false)
             LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
 
@@ -329,17 +332,13 @@ struct BotanTLSProvider : public TLSProvider,
         }
     }
 
-    void tls_session_established(
-        const Botan::TLS::Session_Summary &session) override
+    void tls_session_activated() override
     {
-        (void)session;
-        LOG_TRACE << "tls_session_established";
+        LOG_TRACE << "tls_session_activated";
         tlsConnected_ = true;
-        loop_->queueInLoop([this]() {
-            setApplicationProtocol(channel_->application_protocol());
-            if (handshakeCallback_)
-                handshakeCallback_(conn_);
-        });
+        setApplicationProtocol(channel_->application_protocol());
+        if (handshakeCallback_)
+            handshakeCallback_(conn_);
     }
 
     void tls_verify_cert_chain(
@@ -347,10 +346,10 @@ struct BotanTLSProvider : public TLSProvider,
         const std::vector<std::optional<Botan::OCSP::Response>> &ocsp,
         const std::vector<Botan::Certificate_Store *> &trusted_roots,
         Botan::Usage_Type usage,
-        const std::string &hostname,
-        const Botan::TLS::Policy &policy)
+        std::string_view hostname,
+        const Botan::TLS::Policy &policy) override
     {
-        setSniName(hostname);
+        setSniName(std::string(hostname));
         if (policyPtr_->getValidate() && !policyPtr_->getAllowBrokenChain())
             Botan::TLS::Callbacks::tls_verify_cert_chain(
                 certs, ocsp, trusted_roots, usage, hostname, policy);
@@ -379,6 +378,9 @@ struct BotanTLSProvider : public TLSProvider,
                     std::string("Certificate validation failed: ") +
                         Botan::to_string(result));
         }
+
+        if (certs.size() > 0)
+            setPeerCertificate(std::make_shared<BotanCertificate>(certs[0]));
     }
 
     std::shared_ptr<TrantorPolicy> validationPolicy_;
