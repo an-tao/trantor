@@ -101,7 +101,6 @@ Hash256 sha3(const void* data, size_t len)
         return hash;
     }
 #elif !defined(LIBRESSL_VERSION_NUMBER)
-    Hash256 hash;
     auto sha3 = EVP_sha3_256();
     if (sha3 != nullptr)
     {
