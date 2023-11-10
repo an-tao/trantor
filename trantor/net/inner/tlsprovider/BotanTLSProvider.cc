@@ -229,7 +229,10 @@ struct BotanTLSProvider : public TLSProvider,
     virtual void close() override
     {
         if (channel_ && channel_->is_active())
+        {
             channel_->close();
+            channel_ = nullptr;
+        }
     }
 
     virtual void startEncryption() override

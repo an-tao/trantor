@@ -439,6 +439,9 @@ void TcpConnectionImpl::forceClose()
         {
             thisPtr->status_ = ConnStatus::Disconnecting;
             thisPtr->handleClose();
+
+            if (thisPtr->tlsProviderPtr_)
+                thisPtr->tlsProviderPtr_->close();
         }
     });
 }
