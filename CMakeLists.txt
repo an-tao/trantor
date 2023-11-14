@@ -52,7 +52,7 @@ endif(BUILD_SHARED_LIBS)
 # Dropping support for older versions of VS would allow to only rely on __cplusplus
 if(MSVC AND MSVC_VERSION GREATER_EQUAL 1914)
   add_compile_options(/Zc:__cplusplus)
-endif(MSVC)
+endif(MSVC AND MSVC_VERSION GREATER_EQUAL 1914)
 
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND CMAKE_CXX_COMPILER_ID MATCHES Clang|GNU)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
