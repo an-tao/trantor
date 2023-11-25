@@ -93,7 +93,7 @@ jobs:
         brew install c-ares openssl spdlog botan
 
     - name: (Linux) Install dependencies
-      if: matrix.os != 'macOS'
+      if: matrix.os == 'Linux'
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
