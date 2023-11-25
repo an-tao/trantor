@@ -58,6 +58,20 @@
 #include <memory>
 #include <trantor/utils/Logger.h>
 
+#if __cplusplus >= 202002L
+template <class Facet>
+struct deletable_facet : Facet
+{
+    template <class... Args>
+    deletable_facet(Args &&...args) : Facet(std::forward<Args>(args)...)
+    {
+    }
+    ~deletable_facet()
+    {
+    }
+};
+#endif
+
 namespace trantor
 {
 namespace utils
@@ -80,12 +94,25 @@ std::string toUtf8(const std::wstring &wstr)
                           nSizeNeeded,
                           NULL,
                           NULL);
+#elif __cplusplus >= 202002L
+    std::wstring_convert<
+        deletable_facet<std::codecvt<char16_t, char, std::mbstate_t> >,
+        char16_t>
+        utf8conv;
+    std::u16string u16str(wstr.begin(), wstr.end());
+    strTo = utf8conv.to_bytes(u16str);
 #elif __cplusplus < 201103L || __cplusplus >= 201703L
-    // Note: Introduced in c++11 and deprecated with c++17.
-    // Revert to C99 code since there no replacement yet
+    // Note: codecvt_utf8 is deprecated in c++17 but replacement is only
+    // available in c++20
+    std::string old_locale = setlocale(LC_ALL, NULL);
+    bool needToSetLocale = old_locale == "C";
+    if (needToSetLocale)
+        setlocale(LC_ALL, "en_US.utf8");
     strTo.resize(3 * wstr.length(), 0);
     auto nLen = wcstombs(&strTo[0], wstr.c_str(), strTo.length());
     strTo.resize(nLen);
+    if (needToSetLocale)
+        setlocale(LC_ALL, old_locale.c_str());
 #else  // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     strTo = utf8conv.to_bytes(wstr);
@@ -103,12 +130,30 @@ std::wstring fromUtf8(const std::string &str)
     wstrTo.resize(nSizeNeeded, 0);
     ::MultiByteToWideChar(
         CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], nSizeNeeded);
+#elif __cplusplus >= 202002L
+    std::wstring_convert<
+        deletable_facet<std::codecvt<char16_t, char, std::mbstate_t> >,
+        char16_t>
+        utf8conv;
+    auto u16str = utf8conv.from_bytes(str);
+    wstrTo.resize(u16str.size());
+    std::transform(u16str.begin(),
+                   u16str.end(),
+                   wstrTo.begin(),
+                   [](char16_t c) { return static_cast<wchar_t>(c); });
 #elif __cplusplus < 201103L || __cplusplus >= 201703L
-    // Note: Introduced in c++11 and deprecated with c++17.
-    // Revert to C99 code since there no replacement yet
-    wstrTo.resize(str.length(), 0);
+    // Note: codecvt_utf8 is deprecated in c++17 but replacement is only
+    // available in c++20
+    std::string old_locale = setlocale(LC_ALL, NULL);
+    bool needToSetLocale = old_locale == "C";
+    if (needToSetLocale)
+        setlocale(LC_ALL, "en_US.utf8");
+    wstrTo.resize(str.size() * 3, 0);
     auto nLen = mbstowcs(&wstrTo[0], str.c_str(), wstrTo.length());
     wstrTo.resize(nLen);
+
+    if (needToSetLocale)
+        setlocale(LC_ALL, old_locale.c_str());
 #else  // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     try
