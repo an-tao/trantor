@@ -58,20 +58,95 @@
 #include <memory>
 #include <trantor/utils/Logger.h>
 
-#if __cplusplus >= 202002L
-template <class Facet>
-struct deletable_facet : Facet
+static std::wstring utf8Toutf16(const std::string &utf8Str)
 {
-    template <class... Args>
-    deletable_facet(Args &&...args) : Facet(std::forward<Args>(args)...)
-    {
-    }
-    ~deletable_facet()
-    {
-    }
-};
-#endif
+    std::wstring utf16Str;
+    utf16Str.reserve(utf8Str.length());  // Reserve space to avoid reallocations
 
+    for (size_t i = 0; i < utf8Str.length();)
+    {
+        wchar_t unicode_char;
+
+        // Check the first byte
+        if ((utf8Str[i] & 0b10000000) == 0)
+        {
+            // Single-byte character (ASCII)
+            unicode_char = utf8Str[i++];
+        }
+        else if ((utf8Str[i] & 0b11100000) == 0b11000000)
+        {
+            if (i + 1 >= utf8Str.length())
+            {
+                // Invalid UTF-8 sequence
+                // Handle the error as needed
+                return L"";
+            }
+            // Two-byte character
+            unicode_char = ((utf8Str[i] & 0b00011111) << 6) |
+                           (utf8Str[i + 1] & 0b00111111);
+            i += 2;
+        }
+        else if ((utf8Str[i] & 0b11110000) == 0b11100000)
+        {
+            if (i + 2 >= utf8Str.length())
+            {
+                // Invalid UTF-8 sequence
+                // Handle the error as needed
+                return L"";
+            }
+            // Three-byte character
+            unicode_char = ((utf8Str[i] & 0b00001111) << 12) |
+                           ((utf8Str[i + 1] & 0b00111111) << 6) |
+                           (utf8Str[i + 2] & 0b00111111);
+            i += 3;
+        }
+        else
+        {
+            // Invalid UTF-8 sequence
+            // Handle the error as needed
+            return L"";
+        }
+
+        utf16Str.push_back(unicode_char);
+    }
+
+    return utf16Str;
+}
+
+static std::string utf16Toutf8(const std::wstring &utf16Str)
+{
+    std::string utf8Str;
+    utf8Str.reserve(utf16Str.length() * 3);
+
+    for (size_t i = 0; i < utf16Str.length(); ++i)
+    {
+        wchar_t unicode_char = utf16Str[i];
+
+        if (unicode_char <= 0x7F)
+        {
+            // Single-byte character (ASCII)
+            utf8Str.push_back(static_cast<char>(unicode_char));
+        }
+        else if (unicode_char <= 0x7FF)
+        {
+            // Two-byte character
+            utf8Str.push_back(
+                static_cast<char>(0xC0 | ((unicode_char >> 6) & 0x1F)));
+            utf8Str.push_back(static_cast<char>(0x80 | (unicode_char & 0x3F)));
+        }
+        else
+        {
+            // Three-byte character
+            utf8Str.push_back(
+                static_cast<char>(0xE0 | ((unicode_char >> 12) & 0x0F)));
+            utf8Str.push_back(
+                static_cast<char>(0x80 | ((unicode_char >> 6) & 0x3F)));
+            utf8Str.push_back(static_cast<char>(0x80 | (unicode_char & 0x3F)));
+        }
+    }
+
+    return utf8Str;
+}
 namespace trantor
 {
 namespace utils
@@ -95,17 +170,7 @@ std::string toUtf8(const std::wstring &wstr)
                           NULL,
                           NULL);
 #elif __cplusplus < 201103L || __cplusplus >= 201703L
-    // Note: codecvt_utf8 is deprecated in c++17 but no real replacement is
-    // available
-    std::string old_locale = setlocale(LC_ALL, NULL);
-    bool needToSetLocale = old_locale == "C";
-    if (needToSetLocale)
-        setlocale(LC_ALL, "en_US.utf8");
-    strTo.resize(3 * wstr.length(), 0);
-    auto nLen = wcstombs(&strTo[0], wstr.c_str(), strTo.length());
-    strTo.resize(nLen);
-    if (needToSetLocale)
-        setlocale(LC_ALL, old_locale.c_str());
+    strTo = utf16Toutf8(wstr);
 #else  // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     strTo = utf8conv.to_bytes(wstr);
@@ -124,18 +189,7 @@ std::wstring fromUtf8(const std::string &str)
     ::MultiByteToWideChar(
         CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], nSizeNeeded);
 #elif __cplusplus < 201103L || __cplusplus >= 201703L
-    // Note: codecvt_utf8 is deprecated in c++17 but no real replacement is
-    // available
-    std::string old_locale = setlocale(LC_ALL, NULL);
-    bool needToSetLocale = old_locale == "C";
-    if (needToSetLocale)
-        setlocale(LC_ALL, "en_US.utf8");
-    wstrTo.resize(str.size() * 3, 0);
-    auto nLen = mbstowcs(&wstrTo[0], str.c_str(), wstrTo.length());
-    wstrTo.resize(nLen);
-
-    if (needToSetLocale)
-        setlocale(LC_ALL, old_locale.c_str());
+    wstrTo = utf8Toutf16(str);
 #else  // c++11 to c++14
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> utf8conv;
     try
