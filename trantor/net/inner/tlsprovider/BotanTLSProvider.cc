@@ -27,7 +27,8 @@ static std::once_flag sessionManagerInitFlag;
 static std::shared_ptr<Botan::AutoSeeded_RNG> sessionManagerRng;
 static std::shared_ptr<Botan::TLS::Session_Manager_In_Memory> sessionManager;
 static thread_local std::shared_ptr<Botan::AutoSeeded_RNG> rng;
-static Botan::System_Certificate_Store certStore;
+static std::unique_ptr<Botan::System_Certificate_Store> systemCertStore;
+static std::once_flag systemCertStoreInitFlag;
 
 using namespace trantor;
 
@@ -231,7 +232,6 @@ struct BotanTLSProvider : public TLSProvider,
         if (channel_ && channel_->is_active())
         {
             channel_->close();
-            channel_ = nullptr;
         }
     }
 
@@ -239,7 +239,13 @@ struct BotanTLSProvider : public TLSProvider,
     {
         auto certStorePtr = contextPtr_->certStore.get();
         if (certStorePtr == nullptr)
-            certStorePtr = &certStore;
+        {
+            std::call_once(systemCertStoreInitFlag, []() {
+                systemCertStore =
+                    std::make_unique<Botan::System_Certificate_Store>();
+            });
+            certStorePtr = systemCertStore.get();
+        }
         credsPtr_ = std::make_shared<Credentials>(contextPtr_->key,
                                                   contextPtr_->cert.get(),
                                                   certStorePtr);
@@ -255,12 +261,14 @@ struct BotanTLSProvider : public TLSProvider,
         });
         if (rng == nullptr)
             rng = std::make_shared<Botan::AutoSeeded_RNG>();
+
+        auto fakeThis = std::shared_ptr<BotanTLSProvider>(this, [](auto) {});
         if (contextPtr_->isServer)
         {
             // TODO: Need a more scalable way to manage session validation rules
             validationPolicy_->requireClientCert_ =
                 contextPtr_->requireClientCert;
-            channel_ = std::make_unique<Botan::TLS::Server>(shared_from_this(),
+            channel_ = std::make_unique<Botan::TLS::Server>(std::move(fakeThis),
                                                             sessionManager,
                                                             credsPtr_,
                                                             validationPolicy_,
@@ -275,7 +283,7 @@ struct BotanTLSProvider : public TLSProvider,
             if (policyPtr_->getUseOldTLS())
                 LOG_WARN << "Old TLS not supported by Botan (only >= TLS 1.2)";
             channel_ = std::make_unique<Botan::TLS::Client>(
-                shared_from_this(),
+                std::move(fakeThis),
                 sessionManager,
                 credsPtr_,
                 validationPolicy_,
