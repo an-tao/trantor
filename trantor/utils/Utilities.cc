@@ -58,6 +58,7 @@
 #include <memory>
 #include <trantor/utils/Logger.h>
 
+#if __cplusplus < 201103L || __cplusplus >= 201703L
 static std::wstring utf8Toutf16(const std::string &utf8Str)
 {
     std::wstring utf16Str;
@@ -147,6 +148,8 @@ static std::string utf16Toutf8(const std::wstring &utf16Str)
 
     return utf8Str;
 }
+#endif  // __cplusplus
+
 namespace trantor
 {
 namespace utils
