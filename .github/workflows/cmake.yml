@@ -63,14 +63,22 @@ jobs:
             buildname: 'ubuntu-20.04/gcc - OpenSSL'
             triplet: x64-linux
             compiler: gcc_64
+            tls_provider: openssl
           - os: ubuntu-20.04
             buildname: 'ubuntu-20.04/gcc'
             triplet: x64-linux
             compiler: gcc_64
+            tls_provider: none
           - os: macos-latest
             buildname: 'macos/clang'
             triplet: x64-osx
             compiler: clang_64
+            tls_provider: openssl
+          - os: macos-latest
+            buildname: 'macos/clang - Botan'
+            triplet: x64-osx
+            compiler: clang_64
+            tls_provider: botan
 
     steps:
     - name: Checkout Trantor source code
@@ -82,20 +90,14 @@ jobs:
     - name: (macOS) Install dependencies
       if: runner.os == 'macOS'
       run: |
-        brew install c-ares openssl spdlog
+        brew install c-ares openssl spdlog botan
 
-    - name: (Linux) Install dependencies - OpenSSL
-      if: matrix.buildname == 'ubuntu-20.04/gcc - OpenSSL'
+    - name: (Linux) Install dependencies
+      if: matrix.os == 'Linux'
       run: |
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
         sudo apt install openssl libssl-dev dos2unix libspdlog-dev libfmt-dev
-    - name: (Linux) Install dependencies
-      if: matrix.buildname == 'ubuntu-20.04/gcc'
-      run: |
-        # Installing packages might fail as the github image becomes outdated
-        sudo apt update
-        sudo apt install dos2unix libspdlog-dev libfmt-dev
     - name: install gtest
       run: |
         wget https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz
@@ -113,7 +115,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on -DUSE_SPDLOG=ON
+        cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTING=on -DUSE_SPDLOG=ON -DTRANTOR_USE_TLS=${{ matrix.tls_provider }}
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
