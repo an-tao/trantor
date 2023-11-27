@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.15] - 2023-11-27
+
+### Changed
+
+- Feature: Integrate spdlog as logging backend for Trantor Logger.
+
+### Fixed
+
+- Fix the botan backend always validating certificate and OpenSSL allowing empty ALPN.
+
+- Fix build error on OpenBSD.
+
+- Fix Botan leaking memory if connection force closed.
+
+- Fix a cmake warning.
+
+- Workaround botan backend init failure on MacOS.
+
+- Fix failing wstr conversion if locale is set to C.
+
 ## [1.5.14] - 2023-09-19
 
 ### [Fixed]
@@ -586,7 +606,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.14...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.15...HEAD
+
+[1.5.15]: https://github.com/an-tao/trantor/compare/v1.5.14...v1.5.15
 
 [1.5.14]: https://github.com/an-tao/trantor/compare/v1.5.13...v1.5.14
 
