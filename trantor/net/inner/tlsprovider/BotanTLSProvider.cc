@@ -345,7 +345,7 @@ struct BotanTLSProvider : public TLSProvider,
         const std::vector<std::string> &client_protos) override
     {
         assert(contextPtr_->isServer);
-        if (policyPtr_->getAlpnProtocols().empty())
+        if (policyPtr_->getAlpnProtocols().empty() || client_protos.empty())
             return "";
 
         for (auto const &proto : client_protos)
