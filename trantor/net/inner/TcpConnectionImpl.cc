@@ -1298,7 +1298,8 @@ void TcpConnectionImpl::startEncryption(
         return;
     }
     auto sslContextPtr = newSSLContext(*policy, isServer);
-    tlsProviderPtr_ = newTLSProvider(this, policy, sslContextPtr);
+    tlsProviderPtr_ =
+        newTLSProvider(this, std::move(policy), std::move(sslContextPtr));
     tlsProviderPtr_->setWriteCallback(onSslWrite);
     tlsProviderPtr_->setErrorCallback(onSslError);
     tlsProviderPtr_->setHandshakeCallback(onHandshakeFinished);
@@ -1311,9 +1312,9 @@ void TcpConnectionImpl::startEncryption(
 
 void TcpConnectionImpl::onSslError(TcpConnection *self, SSLError err)
 {
-    self->forceClose();
     if (self->sslErrorCallback_)
         self->sslErrorCallback_(err);
+    self->forceClose();
 }
 void TcpConnectionImpl::onHandshakeFinished(TcpConnection *self)
 {

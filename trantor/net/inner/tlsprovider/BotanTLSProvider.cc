@@ -32,6 +32,19 @@ static std::once_flag systemCertStoreInitFlag;
 
 using namespace trantor;
 
+static std::string join(const std::vector<std::string> &vec,
+                        const std::string &delim)
+{
+    std::string ret;
+    for (auto const &str : vec)
+    {
+        if (ret.empty() == false)
+            ret += delim;
+        ret += str;
+    }
+    return ret;
+}
+
 class Credentials : public Botan::Credentials_Manager
 {
   public:
@@ -326,6 +339,28 @@ struct BotanTLSProvider : public TLSProvider,
         recvBuffer_.append((const char *)data.data(), data.size_bytes());
         if (messageCallback_)
             messageCallback_(conn_, &recvBuffer_);
+    }
+
+    std::string tls_server_choose_app_protocol(
+        const std::vector<std::string> &client_protos) override
+    {
+        assert(contextPtr_->isServer);
+        if (policyPtr_->getAlpnProtocols().empty() || client_protos.empty())
+            return "";
+
+        for (auto const &proto : client_protos)
+        {
+            if (std::find(policyPtr_->getAlpnProtocols().begin(),
+                          policyPtr_->getAlpnProtocols().end(),
+                          proto) != policyPtr_->getAlpnProtocols().end())
+                return proto;
+        }
+
+        throw Botan::TLS::TLS_Exception(
+            Botan::TLS::Alert::NoApplicationProtocol,
+            "No supported application protocol found. Client offered: " +
+                join(client_protos, ", ") + " but we support: " +
+                join(policyPtr_->getAlpnProtocols(), ", "));
     }
 
     void tls_alert(Botan::TLS::Alert alert) override
