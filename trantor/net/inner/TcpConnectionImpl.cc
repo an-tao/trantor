@@ -44,7 +44,6 @@ using namespace trantor;
 #define ECONNRESET WSAECONNRESET
 #endif
 
-static const int kMaxSendFileBufferSize = 16 * 1024;
 TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
                                      const InetAddress &localAddr,
