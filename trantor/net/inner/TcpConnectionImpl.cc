@@ -876,13 +876,12 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
 {
     loop_->assertInLoopThread();
 #ifdef __linux__
-    if (nodePtr->ifFile() && !tlsProviderPtr_)
+    if (nodePtr->isFile() && !tlsProviderPtr_)
     {
         LOG_TRACE << "send file in loop using linux kernel sendfile()";
-        auto bytesSent = sendfile(socketPtr_->fd(),
-                                  nodePtr->getSendFd(),
-                                  &filePtr->offset_,
-                                  filePtr->fileBytesToSend_);
+        auto toSend = nodePtr->remainingBytes();
+        auto bytesSent =
+            sendfile(socketPtr_->fd(), nodePtr->getFd(), nullptr, toSend);
         if (bytesSent < 0)
         {
             if (errno != EAGAIN)
@@ -893,7 +892,7 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
             }
             return;
         }
-        if (bytesSent < filePtr->fileBytesToSend_)
+        if (static_cast<size_t>(bytesSent) < toSend)
         {
             if (bytesSent == 0)
             {
@@ -902,7 +901,7 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
             }
         }
         LOG_TRACE << "sendfile() " << bytesSent << " bytes sent";
-        filePtr->fileBytesToSend_ -= bytesSent;
+        nodePtr->retrieve(bytesSent);
         if (!ioChannelPtr_->isWriting())
         {
             ioChannelPtr_->enableWriting();
