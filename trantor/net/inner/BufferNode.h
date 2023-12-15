@@ -41,7 +41,7 @@ class BufferNode : public NonCopyable
         return false;
     }
     virtual void getData(const char *&data, size_t &len) = 0;
-    virtual void append(const char *data, size_t len)
+    virtual void append(const char *, size_t)
     {
         LOG_FATAL << "Not a memory buffer node";
     }

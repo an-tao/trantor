@@ -1,4 +1,8 @@
 #include <trantor/net/inner/BufferNode.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <algorithm>
 
 namespace trantor
 {
@@ -25,7 +29,7 @@ class FileBufferNode : public BufferNode
         if (msgBuffer_.readableBytes() == 0)
         {
             msgBuffer_.ensureWritableBytes(
-                std::min(kMaxSendFileBufferSize, fileBytesToSend_));
+                (std::min)(kMaxSendFileBufferSize, fileBytesToSend_));
             auto n = read(sendFd_,
                           msgBuffer_.beginWrite(),
                           msgBuffer_.writableBytes());
@@ -56,7 +60,7 @@ class FileBufferNode : public BufferNode
 
   private:
     int sendFd_{-1};
-    ssize_t fileBytesToSend_{0};
+    size_t fileBytesToSend_{0};
     MsgBuffer msgBuffer_;
 };
 

@@ -69,7 +69,7 @@ class FileBufferNode : public BufferNode
     FILE *sendFp_{nullptr};
     long long offset_{0};
 
-    ssize_t fileBytesToSend_{0};
+    size_t fileBytesToSend_{0};
 
     MsgBuffer msgBuffer_;
 };
