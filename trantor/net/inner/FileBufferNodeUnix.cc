@@ -56,7 +56,13 @@ class FileBufferNode : public BufferNode
             return 0;
         return fileBytesToSend_;
     }
-    ~FileBufferNode() override;
+    ~FileBufferNode() override
+    {
+        if (sendFd_ >= 0)
+        {
+            close(sendFd_);
+        }
+    }
 
   private:
     int sendFd_{-1};
