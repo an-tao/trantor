@@ -79,7 +79,6 @@ Hash256 blake2b(const void* data, size_t len)
     Hash256 hash;
     if (attemptHash("BLAKE2b(256)", hash, data, len))
         return hash;
-    auto blake2b = Botan::HashFunction::create("BLAKE2b(256)");
 
     trantor_blake2b(&hash, sizeof(hash), data, len, NULL, 0);
     return hash;
