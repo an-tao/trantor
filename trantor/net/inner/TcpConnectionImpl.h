@@ -17,6 +17,7 @@
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/TimingWheel.h>
 #include <trantor/net/inner/TLSProvider.h>
+#include <trantor/net/inner/BufferNode.h>
 #include <list>
 #include <mutex>
 #ifndef _WIN32
@@ -219,52 +220,6 @@ class TcpConnectionImpl : public TcpConnection,
 #endif
 
   protected:
-    struct BufferNode
-    {
-        // sendFile() specific
-#ifndef _WIN32
-        int sendFd_{-1};
-        off_t offset_{0};
-#else
-        FILE *sendFp_{nullptr};
-        long long offset_{0};
-#endif
-        ssize_t fileBytesToSend_{0};
-        // sendStream() specific
-        std::function<std::size_t(char *, std::size_t)> streamCallback_;
-#ifndef NDEBUG  // defined by CMake for release build
-        std::size_t nDataWritten_{0};
-#endif
-        // generic
-        std::shared_ptr<MsgBuffer> msgBuffer_;
-        bool isFile() const
-        {
-            if (streamCallback_)
-                return true;
-#ifndef _WIN32
-            if (sendFd_ >= 0)
-                return true;
-#else
-            if (sendFp_)
-                return true;
-#endif
-            return false;
-        }
-        ~BufferNode()
-        {
-#ifndef _WIN32
-            if (sendFd_ >= 0)
-                close(sendFd_);
-#else
-            if (sendFp_)
-                fclose(sendFp_);
-#endif
-            if (streamCallback_)
-                streamCallback_(nullptr, 0);  // cleanup callback internals
-        }
-        bool closeConnection_ = false;
-    };
-    using BufferNodePtr = std::shared_ptr<BufferNode>;
     enum class ConnStatus
     {
         Disconnected,
@@ -285,7 +240,7 @@ class TcpConnectionImpl : public TcpConnection,
     void handleError();
     // virtual void sendInLoop(const std::string &msg);
 
-    void sendFileInLoop(const BufferNodePtr &file);
+    void sendNodeInLoop(const BufferNodePtr &node);
 #ifndef _WIN32
     void sendInLoop(const void *buffer, size_t length);
     ssize_t writeRaw(const void *buffer, size_t length);
@@ -304,7 +259,7 @@ class TcpConnectionImpl : public TcpConnection,
     size_t bytesSent_{0};
     size_t bytesReceived_{0};
 
-    std::unique_ptr<std::vector<char>> fileBufferPtr_;
+    // std::unique_ptr<std::vector<char>> fileBufferPtr_;
     std::shared_ptr<TLSProvider> tlsProviderPtr_;
     std::function<void(const TcpConnectionPtr &)> upgradeCallback_;
 
