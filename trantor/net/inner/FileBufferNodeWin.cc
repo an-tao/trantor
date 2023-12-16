@@ -5,10 +5,57 @@ static const size_t kMaxSendFileBufferSize = 16 * 1024;
 class FileBufferNode : public BufferNode
 {
   public:
-    FileBufferNode(FILE *fp, long long offset, size_t length)
-        : sendFp_(fp), fileBytesToSend_(length)
+    FileBufferNode(const wchar_t *fileName, long long offset, size_t length)
     {
-        assert(fp);
+#ifndef _MSC_VER
+        sendFp_ = _wfopen(fileName, L"rb");
+#else   // _MSC_VER
+        if (_wfopen_s(&sendFp_, fileName, L"rb") != 0)
+            sendFp_ = nullptr;
+#endif  // _MSC_VER
+        if (sendFp_ == nullptr)
+        {
+            LOG_SYSERR << fileName << " open error";
+            isDone_ = true;
+            return;
+        }
+        struct _stati64 filestat;
+        if (_wstati64(fileName, &filestat) < 0)
+        {
+            LOG_SYSERR << fileName << " stat error";
+            fclose(sendFp_);
+            sendFp_ = nullptr;
+            isDone_ = true;
+            return;
+        }
+        if (length == 0)
+        {
+            if (offset >= filestat.st_size)
+            {
+                LOG_ERROR << "The file size is " << filestat.st_size
+                          << " bytes, but the offset is " << offset
+                          << " bytes and the length is " << length << " bytes";
+                fclose(sendFp_);
+                sendFp_ = nullptr;
+                isDone_ = true;
+                return;
+            }
+            fileBytesToSend_ = filestat.st_size - offset;
+        }
+        else
+        {
+            if (length + offset > filestat.st_size)
+            {
+                LOG_ERROR << "The file size is " << filestat.st_size
+                          << " bytes, but the offset is " << offset
+                          << " bytes and the length is " << length << " bytes";
+                fclose(sendFp_);
+                sendFp_ = nullptr;
+                isDone_ = true;
+                return;
+            }
+            fileBytesToSend_ = length;
+        }
         _fseeki64(sendFp_, offset, SEEK_SET);
     }
 
@@ -19,7 +66,7 @@ class FileBufferNode : public BufferNode
 
     void getData(const char *&data, size_t &len) override
     {
-        if (msgBuffer_.readableBytes() == 0)
+        if (msgBuffer_.readableBytes() == 0 && fileBytesToSend_ > 0 && sendFp_)
         {
             msgBuffer_.ensureWritableBytes(kMaxSendFileBufferSize <
                                                    fileBytesToSend_
@@ -68,19 +115,20 @@ class FileBufferNode : public BufferNode
         LOG_ERROR << "getFd() is not supported on Windows";
         return 0;
     }
+    bool available() const override
+    {
+        return sendFp_ != nullptr;
+    }
 
   private:
     FILE *sendFp_{nullptr};
-    long long offset_{0};
-
     size_t fileBytesToSend_{0};
-
     MsgBuffer msgBuffer_;
 };
-BufferNodePtr BufferNode::newFileBufferNode(FILE *fp,
+BufferNodePtr BufferNode::newFileBufferNode(const wchar_t *fileName,
                                             long long offset,
                                             size_t length)
 {
-    return std::make_shared<FileBufferNode>(fp, offset, length);
+    return std::make_shared<FileBufferNode>(fileName, offset, length);
 }
 }  // namespace trantor

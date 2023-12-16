@@ -689,27 +689,15 @@ void TcpConnectionImpl::sendFile(const char *fileName,
 #ifdef _WIN32
     sendFile(utils::toNativePath(fileName).c_str(), offset, length);
 #else   // _WIN32
-    int fd = open(fileName, O_RDONLY);
+    auto fileNode = BufferNode::newFileBufferNode(fileName, offset, length);
 
-    if (fd < 0)
+    if (!fileNode->available())
     {
         LOG_SYSERR << fileName << " open error";
         return;
     }
 
-    if (length == 0)
-    {
-        struct stat filestat;
-        if (stat(fileName, &filestat) < 0)
-        {
-            LOG_SYSERR << fileName << " stat error";
-            close(fd);
-            return;
-        }
-        length = filestat.st_size;
-    }
-
-    sendFile(fd, offset, length);
+    sendFile(std::move(fileNode));
 #endif  // _WIN32
 }
 
@@ -720,58 +708,29 @@ void TcpConnectionImpl::sendFile(const wchar_t *fileName,
     assert(fileName);
 #ifndef _WIN32
     sendFile(utils::toNativePath(fileName).c_str(), offset, length);
-#else  // _WIN32
-    FILE *fp;
-#ifndef _MSC_VER
-    fp = _wfopen(fileName, L"rb");
-#else   // _MSC_VER
-    if (_wfopen_s(&fp, fileName, L"rb") != 0)
-        fp = nullptr;
-#endif  // _MSC_VER
-    if (fp == nullptr)
+#else
+    auto fileNode = BufferNode::newFileBufferNode(fileName, offset, length);
+    if (!fileNode->available())
     {
         LOG_SYSERR << fileName << " open error";
         return;
     }
-
-    if (length == 0)
-    {
-        struct _stati64 filestat;
-        if (_wstati64(fileName, &filestat) < 0)
-        {
-            LOG_SYSERR << fileName << " stat error";
-            fclose(fp);
-            return;
-        }
-        length = filestat.st_size;
-    }
-
-    sendFile(fp, offset, length);
+    sendFile(std::move(fileNode));
 #endif  // _WIN32
 }
 
-#ifndef _WIN32
-void TcpConnectionImpl::sendFile(int sfd, size_t offset, size_t length)
-#else
-void TcpConnectionImpl::sendFile(FILE *fp, size_t offset, size_t length)
-#endif
+void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
 {
-    assert(length > 0);
-#ifndef _WIN32
-    assert(sfd >= 0);
-    auto node = BufferNode::newFileBufferNode(sfd, offset, length);
-#else
-    assert(fp);
-    auto node = BufferNode::newFileBufferNode(fp, offset, length);
-#endif
+    assert(fileNode->isFile() && fileNode->remainingBytes() > 0);
     if (loop_->isInLoopThread())
     {
         std::lock_guard<std::mutex> guard(sendNumMutex_);
         if (sendNum_ == 0)
         {
-            writeBufferList_.push_back(node);
+            writeBufferList_.push_back(std::move(fileNode));
             if (writeBufferList_.size() == 1)
             {
+                // TODO:move this out of the mutex lock
                 sendNodeInLoop(writeBufferList_.front());
                 return;
             }
@@ -780,7 +739,7 @@ void TcpConnectionImpl::sendFile(FILE *fp, size_t offset, size_t length)
         {
             ++sendNum_;
             auto thisPtr = shared_from_this();
-            loop_->queueInLoop([thisPtr, node]() {
+            loop_->queueInLoop([thisPtr, node = std::move(fileNode)]() {
                 thisPtr->writeBufferList_.push_back(node);
                 {
                     std::lock_guard<std::mutex> guard1(thisPtr->sendNumMutex_);
@@ -799,7 +758,7 @@ void TcpConnectionImpl::sendFile(FILE *fp, size_t offset, size_t length)
         auto thisPtr = shared_from_this();
         std::lock_guard<std::mutex> guard(sendNumMutex_);
         ++sendNum_;
-        loop_->queueInLoop([thisPtr, node]() {
+        loop_->queueInLoop([thisPtr, node = std::move(fileNode)]() {
             LOG_TRACE << "Push sendfile to list";
             thisPtr->writeBufferList_.push_back(node);
 

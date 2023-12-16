@@ -52,6 +52,11 @@ class BufferNode : public NonCopyable
         LOG_FATAL << "Not a file buffer node";
         return -1;
     }
+    virtual bool available() const
+    {
+        return true;
+    }
+
     void done()
     {
         isDone_ = true;
@@ -60,11 +65,13 @@ class BufferNode : public NonCopyable
 
     static BufferNodePtr newStreamBufferNode(StreamCallback &&cb);
 #ifdef _WIN32
-    static BufferNodePtr newFileBufferNode(FILE *fp,
+    static BufferNodePtr newFileBufferNode(const wchar_t *fileName,
                                            long long offset,
                                            size_t length);
 #else
-    static BufferNodePtr newFileBufferNode(int fd, off_t offset, size_t length);
+    static BufferNodePtr newFileBufferNode(const char *fileName,
+                                           off_t offset,
+                                           size_t length);
 #endif
   protected:
     bool isDone_{false};

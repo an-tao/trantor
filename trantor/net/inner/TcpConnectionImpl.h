@@ -213,11 +213,7 @@ class TcpConnectionImpl : public TcpConnection,
     size_t idleTimeout_{0};
     Date lastTimingWheelUpdateTime_;
     void extendLife();
-#ifndef _WIN32
-    void sendFile(int sfd, size_t offset = 0, size_t length = 0);
-#else
-    void sendFile(FILE *fp, size_t offset = 0, size_t length = 0);
-#endif
+    void sendFile(BufferNodePtr &&fileNode);
 
   protected:
     enum class ConnStatus
