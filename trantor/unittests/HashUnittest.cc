@@ -7,6 +7,10 @@
 using namespace trantor;
 using namespace trantor::utils;
 
+#ifdef __APPLE__
+#include <execinfo.h>
+#endif
+
 TEST(Hash, MD5)
 {
     EXPECT_EQ(toHexString(md5("hello")), "5D41402ABC4B2A76B9719D911017C592");
@@ -53,6 +57,15 @@ TEST(Hash, BLAKE2b)
 
 int main(int argc, char **argv)
 {
+#ifdef __APPLE__
+    signal(SIGILL, [](int) {
+        void *array[128];
+        size_t size;
+        size = backtrace(array, 128);
+        backtrace_symbols_fd(array, size, STDERR_FILENO);
+        exit(-1);
+    });
+#endif
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
