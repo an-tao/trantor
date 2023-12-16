@@ -730,7 +730,6 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
             writeBufferList_.push_back(std::move(fileNode));
             if (writeBufferList_.size() == 1)
             {
-                // TODO:move this out of the mutex lock
                 sendNodeInLoop(writeBufferList_.front());
                 return;
             }
