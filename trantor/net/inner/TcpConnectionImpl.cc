@@ -952,18 +952,17 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
                 LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
 #endif
                 // abort
-                LOG_TRACE << "send stream in loop: return on connection closed";
-                nodePtr->done();
+                LOG_TRACE << "send node in loop: return on connection closed";
                 return;
             }
             // TODO: any others?
-            LOG_SYSERR << "send stream in loop: return on unexpected error("
+            LOG_SYSERR << "send node in loop: return on unexpected error("
                        << errno << ")";
-            nodePtr->done();
             return;
         }
         // Socket buffer full - return and wait for next call
         LOG_TRACE << "send stream in loop: break on socket buffer full (?)";
+        LOG_TRACE << "error(" << errno << ") on send Node in loop";
         break;
     }
     if (!ioChannelPtr_->isWriting())
