@@ -12,6 +12,13 @@ class FileBufferNode : public BufferNode
   public:
     FileBufferNode(const char *fileName, off_t offset, size_t length)
     {
+        assert(offset >= 0);
+        if (offset < 0)
+        {
+            LOG_ERROR << "offset must be greater than or equal to 0";
+            isDone_ = true;
+            return;
+        }
         sendFd_ = open(fileName, O_RDONLY);
 
         if (sendFd_ < 0)
@@ -45,7 +52,7 @@ class FileBufferNode : public BufferNode
         }
         else
         {
-            if (length + offset > filestat.st_size)
+            if (static_cast<off_t>(length) > filestat.st_size - offset)
             {
                 LOG_ERROR << "The file size is " << filestat.st_size
                           << " bytes, but the offset is " << offset
@@ -122,8 +129,10 @@ class FileBufferNode : public BufferNode
     MsgBuffer msgBuffer_;
 };
 
-BufferNodePtr BufferNode::newFileBufferNode(int fd, off_t offset, size_t length)
+BufferNodePtr BufferNode::newFileBufferNode(const char *fileName,
+                                            off_t offset,
+                                            size_t length)
 {
-    return std::make_shared<FileBufferNode>(fd, offset, length);
+    return std::make_shared<FileBufferNode>(fileName, offset, length);
 }
 }  // namespace trantor
