@@ -316,7 +316,7 @@ void TcpConnectionImpl::writeCallback()
         }
 
         if (closeOnEmpty_ &&
-            (writeBufferList_.empty() ||
+            (writeBufferList_.empty() &&
              (tlsProviderPtr_ == nullptr ||
               tlsProviderPtr_->getBufferedData().readableBytes() == 0)))
         {
