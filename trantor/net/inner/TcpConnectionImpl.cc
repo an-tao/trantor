@@ -918,6 +918,11 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
     {
         // get next chunk
         nodePtr->getData(data, len);
+        if (len == 0)
+        {
+            nodePtr->done();
+            break;
+        }
         auto nWritten = writeInLoop(data, len);
         if (nWritten >= 0)
         {

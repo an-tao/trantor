@@ -33,6 +33,10 @@ class FileBufferNode : public BufferNode
             {
                 msgBuffer_.hasWritten(n);
             }
+            else if (n == 0)
+            {
+                LOG_TRACE << "Read the end of file.";
+            }
             else
             {
                 LOG_SYSERR << "FileBufferNode::getData()";
