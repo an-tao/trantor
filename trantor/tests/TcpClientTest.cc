@@ -59,8 +59,7 @@ int main()
                 if (conn->connected())
                 {
                     LOG_DEBUG << i << " connected!";
-                    char tmp[20];
-                    sprintf(tmp, "%d client!!", i);
+                    std::string tmp = std::to_string(i) + " client!!";
                     conn->send(tmp);
                 }
                 else

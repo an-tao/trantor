@@ -399,7 +399,8 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         if (!ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
         if (highWaterMarkCallback_ &&
-            writeBufferList_.back()->remainingBytes() > highWaterMarkLen_)
+            writeBufferList_.back()->remainingBytes() >
+                static_cast<long long>(highWaterMarkLen_))
         {
             highWaterMarkCallback_(shared_from_this(),
                                    writeBufferList_.back()->remainingBytes());
