@@ -98,7 +98,8 @@ class TRANTOR_EXPORT TcpConnection
 
     /**
      * @brief Send a stream to the peer asynchronously.
-     * @note The subsequent data sent after the async stream will be sent after the stream is closed.
+     * @note The subsequent data sent after the async stream will be sent after
+     * the stream is closed.
      */
     virtual AsyncStreamPtr sendAsyncStream() = 0;
     /**

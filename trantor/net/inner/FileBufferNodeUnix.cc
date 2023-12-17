@@ -76,9 +76,10 @@ class FileBufferNode : public BufferNode
     }
     void getData(const char *&data, size_t &len) override
     {
-        if(msgBufferPtr_ == nullptr)
+        if (msgBufferPtr_ == nullptr)
         {
-            msgBufferPtr_ = std::make_unique<MsgBuffer>((std::min)(kMaxSendFileBufferSize, fileBytesToSend_));
+            msgBufferPtr_ = std::make_unique<MsgBuffer>(
+                (std::min)(kMaxSendFileBufferSize, fileBytesToSend_));
         }
         if (msgBufferPtr_->readableBytes() == 0 && fileBytesToSend_ > 0 &&
             sendFd_ >= 0)
@@ -106,7 +107,10 @@ class FileBufferNode : public BufferNode
     }
     void retrieve(size_t len) override
     {
-        msgBufferPtr_->retrieve(len);
+        if (msgBufferPtr_)
+        {
+            msgBufferPtr_->retrieve(len);
+        }
         fileBytesToSend_ -= len;
     }
     size_t remainingBytes() const override

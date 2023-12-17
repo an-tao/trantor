@@ -71,10 +71,9 @@ class FileBufferNode : public BufferNode
             isDone_ = true;
             return;
         }
-        msgBufferPtr_ = std::make_unique<MsgBuffer>(kMaxSendFileBufferSize <
-                                                            fileBytesToSend_
-                                                        ? kMaxSendFileBufferSize
-                                                        : fileBytesToSend_);
+        msgBufferPtr_ = std::make_unique<MsgBuffer>(
+            kMaxSendFileBufferSize < fileBytesToSend_ ? kMaxSendFileBufferSize
+                                                      : fileBytesToSend_);
     }
 
     bool isFile() const override
@@ -88,9 +87,9 @@ class FileBufferNode : public BufferNode
             sendHandle_ != INVALID_HANDLE_VALUE)
         {
             msgBufferPtr_->ensureWritableBytes(kMaxSendFileBufferSize <
-                                                   fileBytesToSend_
-                                               ? kMaxSendFileBufferSize
-                                               : fileBytesToSend_);
+                                                       fileBytesToSend_
+                                                   ? kMaxSendFileBufferSize
+                                                   : fileBytesToSend_);
             DWORD n = 0;
             if (!ReadFile(sendHandle_,
                           msgBufferPtr_->beginWrite(),

@@ -78,6 +78,7 @@ class BufferNode : public NonCopyable
                                            size_t length);
 #endif
     static BufferNodePtr newAsyncStreamBufferNode();
+
   protected:
     bool isDone_{false};
 };
