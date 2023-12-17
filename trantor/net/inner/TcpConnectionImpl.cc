@@ -1071,7 +1071,7 @@ class AsyncStreamImpl : public AsyncStream
 AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
 {
     auto asyncStreamNode = BufferNode::newAsyncStreamBufferNode();
-    auto weakPtr = weak_from_this();
+    std::weak_ptr<TcpConnectionImpl> weakPtr = shared_from_this();
     auto asyncStream = std::make_unique<AsyncStreamImpl>(
         [asyncStreamNode, weakPtr](const char *data, size_t len) {
             auto thisPtr = weakPtr.lock();
@@ -1150,7 +1150,8 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
     {
         if (len > 0)
         {
-            if (node == writeBufferList_.front() && node->remainingBytes() == 0)
+            if (!writeBufferList_.empty() && node == writeBufferList_.front() &&
+                node->remainingBytes() == 0)
             {
                 auto nWritten = writeInLoop(data, len);
                 if (nWritten < 0)
