@@ -10,7 +10,7 @@ static const size_t kMaxSendFileBufferSize = 16 * 1024;
 class FileBufferNode : public BufferNode
 {
   public:
-    FileBufferNode(const char *fileName, off_t offset, size_t length)
+    FileBufferNode(const char *fileName, long long offset, long long length)
     {
         assert(offset >= 0);
         if (offset < 0)
@@ -52,7 +52,7 @@ class FileBufferNode : public BufferNode
         }
         else
         {
-            if (static_cast<off_t>(length) > filestat.st_size - offset)
+            if (length > filestat.st_size - offset)
             {
                 LOG_ERROR << "The file size is " << filestat.st_size
                           << " bytes, but the offset is " << offset
@@ -111,9 +111,11 @@ class FileBufferNode : public BufferNode
         {
             msgBufferPtr_->retrieve(len);
         }
-        fileBytesToSend_ -= len;
+        fileBytesToSend_ -= static_cast<long long>(len);
+        if (fileBytesToSend_ < 0)
+            fileBytesToSend_ = 0;
     }
-    size_t remainingBytes() const override
+    long long remainingBytes() const override
     {
         if (isDone_)
             return 0;
@@ -138,8 +140,8 @@ class FileBufferNode : public BufferNode
 };
 
 BufferNodePtr BufferNode::newFileBufferNode(const char *fileName,
-                                            off_t offset,
-                                            size_t length)
+                                            long long offset,
+                                            long long length)
 {
     return std::make_shared<FileBufferNode>(fileName, offset, length);
 }

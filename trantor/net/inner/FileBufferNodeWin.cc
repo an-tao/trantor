@@ -7,7 +7,7 @@ static const size_t kMaxSendFileBufferSize = 16 * 1024;
 class FileBufferNode : public BufferNode
 {
   public:
-    FileBufferNode(const wchar_t *fileName, long long offset, size_t length)
+    FileBufferNode(const wchar_t *fileName, long long offset, long long length)
     {
         sendHandle_ = CreateFileW(fileName,
                                   GENERIC_READ,
@@ -118,9 +118,11 @@ class FileBufferNode : public BufferNode
     void retrieve(size_t len) override
     {
         msgBufferPtr_->retrieve(len);
-        fileBytesToSend_ -= len;
+        fileBytesToSend_ -= static_cast<long long>(len);
+        if (fileBytesToSend_ < 0)
+            fileBytesToSend_ = 0;
     }
-    size_t remainingBytes() const override
+    long long remainingBytes() const override
     {
         if (isDone_)
             return 0;
@@ -145,12 +147,12 @@ class FileBufferNode : public BufferNode
 
   private:
     HANDLE sendHandle_{INVALID_HANDLE_VALUE};
-    size_t fileBytesToSend_{0};
+    long long fileBytesToSend_{0};
     std::unique_ptr<MsgBuffer> msgBufferPtr_;
 };
 BufferNodePtr BufferNode::newFileBufferNode(const wchar_t *fileName,
                                             long long offset,
-                                            size_t length)
+                                            long long length)
 {
     return std::make_shared<FileBufferNode>(fileName, offset, length);
 }

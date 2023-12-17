@@ -15,10 +15,10 @@ class AsyncBufferNode : public BufferNode
     {
         return true;
     }
-    size_t remainingBytes() const override
+    long long remainingBytes() const override
     {
         if (msgBufferPtr_)
-            return msgBufferPtr_->readableBytes();
+            return static_cast<long long>(msgBufferPtr_->readableBytes());
         return 0;
     }
     bool available() const override

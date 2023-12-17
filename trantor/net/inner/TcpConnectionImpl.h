@@ -78,10 +78,12 @@ class TcpConnectionImpl : public TcpConnection,
     void send(MsgBuffer &&buffer) override;
     void send(const std::shared_ptr<std::string> &msgPtr) override;
     void send(const std::shared_ptr<MsgBuffer> &msgPtr) override;
-    void sendFile(const char *fileName, size_t offset, size_t length) override;
+    void sendFile(const char *fileName,
+                  long long offset,
+                  long long length) override;
     void sendFile(const wchar_t *fileName,
-                  size_t offset,
-                  size_t length) override;
+                  long long offset,
+                  long long length) override;
     void sendStream(
         std::function<std::size_t(char *, std::size_t)> callback) override;
 

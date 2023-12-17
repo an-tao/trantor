@@ -41,7 +41,7 @@ class StreamBufferNode : public BufferNode
                   << " / total bytes written: " << dataWritten_;
 #endif
     }
-    size_t remainingBytes() const override
+    long long remainingBytes() const override
     {
         if (isDone_)
             return 0;

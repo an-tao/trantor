@@ -534,8 +534,8 @@ void TcpConnectionImpl::send(MsgBuffer &&buffer)
     }
 }
 void TcpConnectionImpl::sendFile(const char *fileName,
-                                 size_t offset,
-                                 size_t length)
+                                 long long offset,
+                                 long long length)
 {
     assert(fileName);
 #ifdef _WIN32
@@ -554,8 +554,8 @@ void TcpConnectionImpl::sendFile(const char *fileName,
 }
 
 void TcpConnectionImpl::sendFile(const wchar_t *fileName,
-                                 size_t offset,
-                                 size_t length)
+                                 long long offset,
+                                 long long length)
 {
     assert(fileName);
 #ifndef _WIN32

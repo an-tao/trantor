@@ -46,7 +46,7 @@ class BufferNode : public NonCopyable
         LOG_FATAL << "Not a memory buffer node";
     }
     virtual void retrieve(size_t len) = 0;
-    virtual size_t remainingBytes() const = 0;
+    virtual long long remainingBytes() const = 0;
     virtual int getFd() const
     {
         LOG_FATAL << "Not a file buffer node";
@@ -71,11 +71,11 @@ class BufferNode : public NonCopyable
 #ifdef _WIN32
     static BufferNodePtr newFileBufferNode(const wchar_t *fileName,
                                            long long offset,
-                                           size_t length);
+                                           long long length);
 #else
     static BufferNodePtr newFileBufferNode(const char *fileName,
-                                           off_t offset,
-                                           size_t length);
+                                           long long offset,
+                                           long long length);
 #endif
     static BufferNodePtr newAsyncStreamBufferNode();
 

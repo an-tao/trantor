@@ -70,8 +70,8 @@ class TRANTOR_EXPORT TcpConnection
      * @param length
      */
     virtual void sendFile(const char *fileName,
-                          size_t offset = 0,
-                          size_t length = 0) = 0;
+                          long long offset = 0,
+                          long long length = 0) = 0;
     /**
      * @brief Send a file to the peer.
      *
@@ -80,8 +80,8 @@ class TRANTOR_EXPORT TcpConnection
      * @param length
      */
     virtual void sendFile(const wchar_t *fileName,
-                          size_t offset = 0,
-                          size_t length = 0) = 0;
+                          long long offset = 0,
+                          long long length = 0) = 0;
     /**
      * @brief Send a stream to the peer.
      *

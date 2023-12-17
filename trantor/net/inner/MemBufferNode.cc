@@ -15,11 +15,11 @@ class MemBufferNode : public BufferNode
     {
         buffer_.retrieve(len);
     }
-    size_t remainingBytes() const override
+    long long remainingBytes() const override
     {
         if (isDone_)
             return 0;
-        return buffer_.readableBytes();
+        return static_cast<long long>(buffer_.readableBytes());
     }
     void append(const char *data, size_t len) override
     {
