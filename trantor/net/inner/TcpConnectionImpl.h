@@ -31,15 +31,12 @@ namespace trantor
 class Channel;
 class Socket;
 class TcpServer;
-void removeConnection(EventLoop *loop, const TcpConnectionPtr &conn);
 class TcpConnectionImpl : public TcpConnection,
                           public NonCopyable,
                           public std::enable_shared_from_this<TcpConnectionImpl>
 {
     friend class TcpServer;
     friend class TcpClient;
-    friend void trantor::removeConnection(EventLoop *loop,
-                                          const TcpConnectionPtr &conn);
 
   public:
     class KickoffEntry
@@ -247,11 +244,8 @@ class TcpConnectionImpl : public TcpConnection,
     ssize_t writeRaw(const char *buffer, size_t length);
     ssize_t writeInLoop(const char *buffer, size_t length);
 #endif
-    size_t highWaterMarkLen_;
+    size_t highWaterMarkLen_{0};
     std::string name_;
-
-    uint64_t sendNum_{0};
-    std::mutex sendNumMutex_;
 
     size_t bytesSent_{0};
     size_t bytesReceived_{0};
