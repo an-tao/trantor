@@ -1058,6 +1058,7 @@ class AsyncStreamImpl : public AsyncStream
     void close() override
     {
         callback_(nullptr, 0);
+        callback_ = nullptr;
     }
     ~AsyncStreamImpl() override
     {
@@ -1091,13 +1092,25 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
             }
             else
             {
-                std::string buffer(data, len);
-                thisPtr->loop_->queueInLoop(
-                    [thisPtr, asyncStreamNode, buffer = std::move(buffer)]() {
+                if (data)
+                {
+                    std::string buffer(data, len);
+                    thisPtr->loop_->queueInLoop([thisPtr,
+                                                 asyncStreamNode,
+                                                 buffer = std::move(buffer)]() {
                         thisPtr->sendAsyncDataInLoop(asyncStreamNode,
                                                      buffer.data(),
                                                      buffer.length());
                     });
+                }
+                else
+                {
+                    thisPtr->loop_->queueInLoop([thisPtr, asyncStreamNode]() {
+                        thisPtr->sendAsyncDataInLoop(asyncStreamNode,
+                                                     nullptr,
+                                                     0);
+                    });
+                }
             }
         });
     if (loop_->isInLoopThread())
