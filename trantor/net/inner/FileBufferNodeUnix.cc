@@ -135,7 +135,7 @@ class FileBufferNode : public BufferNode
 
   private:
     int sendFd_{-1};
-    size_t fileBytesToSend_{0};
+    long long fileBytesToSend_{0};
     std::unique_ptr<MsgBuffer> msgBufferPtr_;
 };
 
