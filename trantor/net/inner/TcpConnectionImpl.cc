@@ -630,10 +630,20 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
 #ifdef __linux__
     if (nodePtr->isFile() && !tlsProviderPtr_)
     {
+        static const long long kMaxSendBytes = 0x7ffff000;
         LOG_TRACE << "send file in loop using linux kernel sendfile()";
         auto toSend = nodePtr->remainingBytes();
+        if (toSend <= 0)
+        {
+            LOG_ERROR << "0 or negative bytes to send";
+            return;
+        }
         auto bytesSent =
-            sendfile(socketPtr_->fd(), nodePtr->getFd(), nullptr, toSend);
+            sendfile(socketPtr_->fd(),
+                     nodePtr->getFd(),
+                     nullptr,
+                     static_cast<size_t>(
+                         toSend < kMaxSendBytes ? toSend : kMaxSendBytes));
         if (bytesSent < 0)
         {
             if (errno != EAGAIN)
@@ -642,9 +652,14 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
                 if (ioChannelPtr_->isWriting())
                     ioChannelPtr_->disableWriting();
             }
+            else
+            {
+                if (!ioChannelPtr_->isWriting())
+                    ioChannelPtr_->enableWriting();
+            }
             return;
         }
-        if (static_cast<size_t>(bytesSent) < toSend)
+        if (bytesSent < toSend)
         {
             if (bytesSent == 0)
             {
