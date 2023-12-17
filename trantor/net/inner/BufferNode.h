@@ -56,6 +56,10 @@ class BufferNode : public NonCopyable
     {
         return true;
     }
+    virtual bool isAsync() const
+    {
+        return false;
+    }
 
     void done()
     {
@@ -73,6 +77,7 @@ class BufferNode : public NonCopyable
                                            off_t offset,
                                            size_t length);
 #endif
+    static BufferNodePtr newAsyncStreamBufferNode();
   protected:
     bool isDone_{false};
 };

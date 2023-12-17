@@ -184,21 +184,29 @@ void TcpConnectionImpl::writeCallback()
         if (nodePtr->remainingBytes() == 0)
         {
             // finished sending
-            writeBufferList_.pop_front();
-            if (writeBufferList_.empty())
+            if (!nodePtr->isAsync() || !nodePtr->available())
             {
-                // stop writing
-                ioChannelPtr_->disableWriting();
-                if (writeCompleteCallback_)
-                    writeCompleteCallback_(shared_from_this());
-                if (status_ == ConnStatus::Disconnecting)
+                writeBufferList_.pop_front();
+                if (writeBufferList_.empty())
                 {
-                    socketPtr_->closeWrite();
+                    // stop writing
+                    ioChannelPtr_->disableWriting();
+                    if (writeCompleteCallback_)
+                        writeCompleteCallback_(shared_from_this());
+                    if (status_ == ConnStatus::Disconnecting)
+                    {
+                        socketPtr_->closeWrite();
+                    }
+                }
+                else
+                {
+                    sendNodeInLoop(writeBufferList_.front());
                 }
             }
             else
             {
-                sendNodeInLoop(writeBufferList_.front());
+                // the first node is an async node and is available
+                ioChannelPtr_->disableWriting();
             }
         }
         else
@@ -1034,4 +1042,140 @@ ssize_t TcpConnectionImpl::onSslWrite(TcpConnection *self,
 void TcpConnectionImpl::onSslCloseAlert(TcpConnection *self)
 {
     self->shutdown();
+}
+class AsyncStreamImpl : public AsyncStream
+{
+  public:
+    explicit AsyncStreamImpl(std::function<void(const char *, size_t)> callback)
+        : callback_(std::move(callback))
+    {
+    }
+    AsyncStreamImpl() = delete;
+    void send(const char *data, size_t len) override
+    {
+        callback_(data, len);
+    }
+    void close() override
+    {
+        callback_(nullptr, 0);
+    }
+    ~AsyncStreamImpl() override
+    {
+        if (callback_)
+            callback_(nullptr, 0);
+    }
+
+  private:
+    std::function<void(const char *, size_t)> callback_;
+};
+AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
+{
+    auto asyncStreamNode = BufferNode::newAsyncStreamBufferNode();
+    auto weakPtr = weak_from_this();
+    auto asyncStream = std::make_unique<AsyncStreamImpl>(
+        [asyncStreamNode, weakPtr](const char *data, size_t len) {
+            auto thisPtr = weakPtr.lock();
+            if (!thisPtr)
+            {
+                LOG_DEBUG << "Connection is closed,give up sending";
+                return;
+            }
+            if (thisPtr->status_ != ConnStatus::Connected)
+            {
+                LOG_DEBUG << "Connection is not connected,give up sending";
+                return;
+            }
+            if (thisPtr->loop_->isInLoopThread())
+            {
+                thisPtr->sendAsyncDataInLoop(asyncStreamNode, data, len);
+            }
+            else
+            {
+                std::string buffer(data, len);
+                thisPtr->loop_->queueInLoop(
+                    [thisPtr, asyncStreamNode, buffer = std::move(buffer)]() {
+                        thisPtr->sendAsyncDataInLoop(asyncStreamNode,
+                                                     buffer.data(),
+                                                     buffer.length());
+                    });
+            }
+        });
+    if (loop_->isInLoopThread())
+    {
+        std::lock_guard<std::mutex> guard(sendNumMutex_);
+        if (sendNum_ == 0)
+        {
+            writeBufferList_.push_back(asyncStreamNode);
+        }
+        else
+        {
+            ++sendNum_;
+            auto thisPtr = shared_from_this();
+            loop_->queueInLoop([thisPtr, node = std::move(asyncStreamNode)]() {
+                thisPtr->writeBufferList_.push_back(node);
+                {
+                    std::lock_guard<std::mutex> guard1(thisPtr->sendNumMutex_);
+                    --thisPtr->sendNum_;
+                }
+                if (thisPtr->writeBufferList_.size() == 1 &&
+                    node->remainingBytes() > 0)
+                    thisPtr->sendNodeInLoop(thisPtr->writeBufferList_.front());
+            });
+        }
+    }
+    else
+    {
+        auto thisPtr = shared_from_this();
+        std::lock_guard<std::mutex> guard(sendNumMutex_);
+        ++sendNum_;
+        loop_->queueInLoop([thisPtr, node = std::move(asyncStreamNode)]() {
+            LOG_TRACE << "Push sendstream to list";
+            thisPtr->writeBufferList_.push_back(node);
+            {
+                std::lock_guard<std::mutex> guard1(thisPtr->sendNumMutex_);
+                --thisPtr->sendNum_;
+            }
+            if (thisPtr->writeBufferList_.size() == 1 &&
+                node->remainingBytes() > 0)
+                thisPtr->sendNodeInLoop(thisPtr->writeBufferList_.front());
+        });
+    }
+    return asyncStream;
+}
+void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
+                                            const char *data,
+                                            size_t len)
+{
+    if (data)
+    {
+        if (len > 0)
+        {
+            if (node == writeBufferList_.front() && node->remainingBytes() == 0)
+            {
+                auto nWritten = writeInLoop(data, len);
+                if (nWritten < 0)
+                {
+                    LOG_SYSERR << "write error";
+                    nWritten = 0;
+                }
+                if (nWritten < len)
+                {
+                    node->append(data + nWritten, len - nWritten);
+                    if (!ioChannelPtr_->isWriting())
+                        ioChannelPtr_->enableWriting();
+                }
+            }
+            else
+            {
+                node->append(data, len);
+            }
+        }
+    }
+    else
+    {
+        // stream is closed
+        node->done();
+        if (!ioChannelPtr_->isWriting())
+            ioChannelPtr_->enableWriting();
+    }
 }

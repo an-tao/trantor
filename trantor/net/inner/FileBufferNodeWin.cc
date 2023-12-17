@@ -71,6 +71,10 @@ class FileBufferNode : public BufferNode
             isDone_ = true;
             return;
         }
+        msgBufferPtr_ = std::make_unique<MsgBuffer>(kMaxSendFileBufferSize <
+                                                            fileBytesToSend_
+                                                        ? kMaxSendFileBufferSize
+                                                        : fileBytesToSend_);
     }
 
     bool isFile() const override
@@ -80,17 +84,17 @@ class FileBufferNode : public BufferNode
 
     void getData(const char *&data, size_t &len) override
     {
-        if (msgBuffer_.readableBytes() == 0 && fileBytesToSend_ > 0 &&
+        if (msgBufferPtr_->readableBytes() == 0 && fileBytesToSend_ > 0 &&
             sendHandle_ != INVALID_HANDLE_VALUE)
         {
-            msgBuffer_.ensureWritableBytes(kMaxSendFileBufferSize <
+            msgBufferPtr_->ensureWritableBytes(kMaxSendFileBufferSize <
                                                    fileBytesToSend_
                                                ? kMaxSendFileBufferSize
                                                : fileBytesToSend_);
             DWORD n = 0;
             if (!ReadFile(sendHandle_,
-                          msgBuffer_.beginWrite(),
-                          msgBuffer_.writableBytes(),
+                          msgBufferPtr_->beginWrite(),
+                          msgBufferPtr_->writableBytes(),
                           &n,
                           nullptr))
             {
@@ -98,7 +102,7 @@ class FileBufferNode : public BufferNode
             }
             if (n > 0)
             {
-                msgBuffer_.hasWritten(n);
+                msgBufferPtr_->hasWritten(n);
             }
             else if (n == 0)
             {
@@ -109,12 +113,12 @@ class FileBufferNode : public BufferNode
                 LOG_SYSERR << "FileBufferNode::getData()";
             }
         }
-        data = msgBuffer_.peek();
-        len = msgBuffer_.readableBytes();
+        data = msgBufferPtr_->peek();
+        len = msgBufferPtr_->readableBytes();
     }
     void retrieve(size_t len) override
     {
-        msgBuffer_.retrieve(len);
+        msgBufferPtr_->retrieve(len);
         fileBytesToSend_ -= len;
     }
     size_t remainingBytes() const override
@@ -143,7 +147,7 @@ class FileBufferNode : public BufferNode
   private:
     HANDLE sendHandle_{INVALID_HANDLE_VALUE};
     size_t fileBytesToSend_{0};
-    MsgBuffer msgBuffer_;
+    std::unique_ptr<MsgBuffer> msgBufferPtr_;
 };
 BufferNodePtr BufferNode::newFileBufferNode(const wchar_t *fileName,
                                             long long offset,

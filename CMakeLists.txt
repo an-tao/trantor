@@ -106,6 +106,7 @@ set(TRANTOR_SOURCES
     trantor/net/inner/Socket.cc
     trantor/net/inner/MemBufferNode.cc
     trantor/net/inner/StreamBufferNode.cc
+    trantor/net/inner/AsyncStreamBufferNode.cc
     trantor/net/inner/TcpConnectionImpl.cc
     trantor/net/inner/Timer.cc
     trantor/net/inner/TimerQueue.cc
@@ -290,6 +291,7 @@ set(public_net_headers
     trantor/net/TcpClient.h
     trantor/net/TcpConnection.h
     trantor/net/TcpServer.h
+    trantor/net/AsyncStream.h
     trantor/net/callbacks.h
     trantor/net/Resolver.h
     trantor/net/Channel.h
