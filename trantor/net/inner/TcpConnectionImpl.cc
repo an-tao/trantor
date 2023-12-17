@@ -1159,7 +1159,7 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
                     LOG_SYSERR << "write error";
                     nWritten = 0;
                 }
-                if (nWritten < len)
+                if (static_cast<size_t>(nWritten) < len)
                 {
                     node->append(data + nWritten, len - nWritten);
                     if (!ioChannelPtr_->isWriting())
