@@ -79,13 +79,15 @@ class FileBufferNode : public BufferNode
         if (msgBufferPtr_ == nullptr)
         {
             msgBufferPtr_ = std::make_unique<MsgBuffer>(
-                (std::min)(kMaxSendFileBufferSize, fileBytesToSend_));
+                (std::min)(kMaxSendFileBufferSize,
+                           static_cast<size_t>(fileBytesToSend_)));
         }
         if (msgBufferPtr_->readableBytes() == 0 && fileBytesToSend_ > 0 &&
             sendFd_ >= 0)
         {
             msgBufferPtr_->ensureWritableBytes(
-                (std::min)(kMaxSendFileBufferSize, fileBytesToSend_));
+                (std::min)(kMaxSendFileBufferSize,
+                           static_cast<size_t>(fileBytesToSend_)));
             auto n = read(sendFd_,
                           msgBufferPtr_->beginWrite(),
                           msgBufferPtr_->writableBytes());
