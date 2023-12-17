@@ -1,4 +1,6 @@
 #include <trantor/net/inner/BufferNode.h>
+#include <windows.h>
+
 namespace trantor
 {
 static const size_t kMaxSendFileBufferSize = 16 * 1024;
@@ -7,56 +9,68 @@ class FileBufferNode : public BufferNode
   public:
     FileBufferNode(const wchar_t *fileName, long long offset, size_t length)
     {
-#ifndef _MSC_VER
-        sendFp_ = _wfopen(fileName, L"rb");
-#else   // _MSC_VER
-        if (_wfopen_s(&sendFp_, fileName, L"rb") != 0)
-            sendFp_ = nullptr;
-#endif  // _MSC_VER
-        if (sendFp_ == nullptr)
+        sendHandle_ = CreateFileW(fileName,
+                                  GENERIC_READ,
+                                  FILE_SHARE_READ,
+                                  nullptr,
+                                  OPEN_EXISTING,
+                                  FILE_ATTRIBUTE_NORMAL,
+                                  nullptr);
+        if (sendHandle_ == INVALID_HANDLE_VALUE)
         {
             LOG_SYSERR << fileName << " open error";
             isDone_ = true;
             return;
         }
-        struct _stati64 filestat;
-        if (_wstati64(fileName, &filestat) < 0)
+        LARGE_INTEGER fileSize;
+        if (!GetFileSizeEx(sendHandle_, &fileSize))
         {
             LOG_SYSERR << fileName << " stat error";
-            fclose(sendFp_);
-            sendFp_ = nullptr;
+            CloseHandle(sendHandle_);
+            sendHandle_ = INVALID_HANDLE_VALUE;
             isDone_ = true;
             return;
         }
+
         if (length == 0)
         {
-            if (offset >= filestat.st_size)
+            if (offset >= fileSize.QuadPart)
             {
-                LOG_ERROR << "The file size is " << filestat.st_size
+                LOG_ERROR << "The file size is " << fileSize.QuadPart
                           << " bytes, but the offset is " << offset
                           << " bytes and the length is " << length << " bytes";
-                fclose(sendFp_);
-                sendFp_ = nullptr;
+                CloseHandle(sendHandle_);
+                sendHandle_ = INVALID_HANDLE_VALUE;
                 isDone_ = true;
                 return;
             }
-            fileBytesToSend_ = filestat.st_size - offset;
+            fileBytesToSend_ = fileSize.QuadPart - offset;
         }
         else
         {
-            if (length + offset > filestat.st_size)
+            if (length + offset > fileSize.QuadPart)
             {
-                LOG_ERROR << "The file size is " << filestat.st_size
+                LOG_ERROR << "The file size is " << fileSize.QuadPart
                           << " bytes, but the offset is " << offset
                           << " bytes and the length is " << length << " bytes";
-                fclose(sendFp_);
-                sendFp_ = nullptr;
+                CloseHandle(sendHandle_);
+                sendHandle_ = INVALID_HANDLE_VALUE;
                 isDone_ = true;
                 return;
             }
+
             fileBytesToSend_ = length;
         }
-        _fseeki64(sendFp_, offset, SEEK_SET);
+        LARGE_INTEGER li;
+        li.QuadPart = offset;
+        if (!SetFilePointerEx(sendHandle_, li, nullptr, FILE_BEGIN))
+        {
+            LOG_SYSERR << fileName << " seek error";
+            CloseHandle(sendHandle_);
+            sendHandle_ = INVALID_HANDLE_VALUE;
+            isDone_ = true;
+            return;
+        }
     }
 
     bool isFile() const override
@@ -66,16 +80,22 @@ class FileBufferNode : public BufferNode
 
     void getData(const char *&data, size_t &len) override
     {
-        if (msgBuffer_.readableBytes() == 0 && fileBytesToSend_ > 0 && sendFp_)
+        if (msgBuffer_.readableBytes() == 0 && fileBytesToSend_ > 0 &&
+            sendHandle_ != INVALID_HANDLE_VALUE)
         {
             msgBuffer_.ensureWritableBytes(kMaxSendFileBufferSize <
                                                    fileBytesToSend_
                                                ? kMaxSendFileBufferSize
                                                : fileBytesToSend_);
-            auto n = fread(msgBuffer_.beginWrite(),
-                           1,
-                           msgBuffer_.writableBytes(),
-                           sendFp_);
+            DWORD n = 0;
+            if (!ReadFile(sendHandle_,
+                          msgBuffer_.beginWrite(),
+                          msgBuffer_.writableBytes(),
+                          &n,
+                          nullptr))
+            {
+                LOG_SYSERR << "FileBufferNode::getData()";
+            }
             if (n > 0)
             {
                 msgBuffer_.hasWritten(n);
@@ -105,9 +125,9 @@ class FileBufferNode : public BufferNode
     }
     ~FileBufferNode() override
     {
-        if (sendFp_)
+        if (sendHandle_ != INVALID_HANDLE_VALUE)
         {
-            fclose(sendFp_);
+            CloseHandle(sendHandle_);
         }
     }
     int getFd() const override
@@ -117,11 +137,11 @@ class FileBufferNode : public BufferNode
     }
     bool available() const override
     {
-        return sendFp_ != nullptr;
+        return sendHandle_ != INVALID_HANDLE_VALUE;
     }
 
   private:
-    FILE *sendFp_{nullptr};
+    HANDLE sendHandle_{INVALID_HANDLE_VALUE};
     size_t fileBytesToSend_{0};
     MsgBuffer msgBuffer_;
 };
