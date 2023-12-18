@@ -165,51 +165,39 @@ void TcpConnectionImpl::writeCallback()
             bool sentAll = tlsProviderPtr_->sendBufferedData();
             if (!sentAll)
             {
-                ioChannelPtr_->enableWriting();
                 return;
             }
         }
-        assert(!writeBufferList_.empty());
-        auto nodePtr = writeBufferList_.front();
-        // not a file
-        if (nodePtr->remainingBytes() == 0)
+        while (!writeBufferList_.empty())
         {
-            // finished sending
-            if (!nodePtr->isAsync() || !nodePtr->available())
+            auto &nodePtr = writeBufferList_.front();
+            if (nodePtr->remainingBytes() == 0)
             {
-                writeBufferList_.pop_front();
-                if (writeBufferList_.empty())
+                if (!nodePtr->isAsync() || !nodePtr->available())
                 {
-                    // stop writing
-                    ioChannelPtr_->disableWriting();
-                    if (writeCompleteCallback_)
-                        writeCompleteCallback_(shared_from_this());
-                    if (status_ == ConnStatus::Disconnecting)
-                    {
-                        socketPtr_->closeWrite();
-                    }
+                    // finished sending
+                    writeBufferList_.pop_front();
                 }
                 else
                 {
-                    sendNodeInLoop(writeBufferList_.front());
+                    // the first node is an async node and is available
+                    ioChannelPtr_->disableWriting();
+                    return;
                 }
             }
             else
             {
-                // the first node is an async node and is available
-                ioChannelPtr_->disableWriting();
+                // continue sending
+                sendNodeInLoop(nodePtr);
+                if (nodePtr->remainingBytes() > 0)
+                    return;
             }
         }
-        else
-        {
-            // continue sending
-            sendNodeInLoop(nodePtr);
-        }
-
+        assert(writeBufferList_.empty());
+        ioChannelPtr_->disableWriting();
         if (closeOnEmpty_ &&
-            (writeBufferList_.empty() &&
-             (tlsProviderPtr_ == nullptr ||
-              tlsProviderPtr_->getBufferedData().readableBytes() == 0)))
+            (tlsProviderPtr_ == nullptr ||
+             tlsProviderPtr_->getBufferedData().readableBytes() == 0))
         {
             shutdown();
         }
