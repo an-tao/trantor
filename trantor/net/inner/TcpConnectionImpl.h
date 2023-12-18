@@ -237,13 +237,17 @@ class TcpConnectionImpl : public TcpConnection,
                              const char *data,
                              size_t len);
     void sendNodeInLoop(const BufferNodePtr &node);
+    // return true if EAGAIN
+    bool isEAGAIN();
 #ifndef _WIN32
     void sendInLoop(const void *buffer, size_t length);
     ssize_t writeRaw(const void *buffer, size_t length);
     ssize_t writeInLoop(const void *buffer, size_t length);
 #else
     void sendInLoop(const char *buffer, size_t length);
+    // -1: error, 0: EAGAIN, >0: bytes sent
     ssize_t writeRaw(const char *buffer, size_t length);
+    // -1: error, 0: EAGAIN, >0: bytes sent
     ssize_t writeInLoop(const char *buffer, size_t length);
 #endif
     size_t highWaterMarkLen_{0};

@@ -573,7 +573,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         if (getBufferedData().readableBytes() != 0)
         {
             errno = EAGAIN;
-            return -1;
+            return 0;
         }
         // Limit the size of the data we send in one go to avoid holding massive
         // buffers in memory.
@@ -761,12 +761,10 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         if (len == 0)
             return 0;
         int n = writeCallback_(conn_, data, len);
-
-        int offset = n;
-        if (n == -1)
-            offset = 0;
-        appendToWriteBuffer((char *)data + offset, len - offset);
         BIO_reset(wbio_);
+        if (n == -1)
+            return -1;
+        appendToWriteBuffer((char *)data + n, len - n);
         return len;
     }
 

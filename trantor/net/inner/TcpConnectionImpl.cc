@@ -347,27 +347,8 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         sendLen = writeInLoop(buffer, length);
         if (sendLen < 0)
         {
-            // error
-#ifdef _WIN32
-            if (errno != 0 && errno != EWOULDBLOCK)
-#else
-            if (errno != EWOULDBLOCK)
-#endif
-            {
-                if (errno == EPIPE || errno == ECONNRESET)  // TODO: any others?
-                {
-#ifdef _WIN32
-                    LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno="
-                              << errno;
-#else
-                    LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
-#endif
-                    return;
-                }
-                LOG_SYSERR << "Unexpected error(" << errno << ")";
-                return;
-            }
-            sendLen = 0;
+            LOG_TRACE << "write error";
+            return;
         }
         remainLen -= sendLen;
     }
@@ -381,8 +362,6 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         writeBufferList_.back()->append(static_cast<const char *>(buffer) +
                                             sendLen,
                                         remainLen);
-        if (!ioChannelPtr_->isWriting())
-            ioChannelPtr_->enableWriting();
         if (highWaterMarkCallback_ &&
             writeBufferList_.back()->remainingBytes() >
                 static_cast<long long>(highWaterMarkLen_))
@@ -629,34 +608,18 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
                      nullptr,
                      static_cast<size_t>(
                          toSend < kMaxSendBytes ? toSend : kMaxSendBytes));
-        if (bytesSent < 0)
+        if (bytesSent > 0)
         {
-            if (errno != EAGAIN)
-            {
-                LOG_SYSERR << "TcpConnectionImpl::sendFileInLoop";
-                if (ioChannelPtr_->isWriting())
-                    ioChannelPtr_->disableWriting();
-            }
-            else
-            {
-                if (!ioChannelPtr_->isWriting())
-                    ioChannelPtr_->enableWriting();
-            }
-            return;
+            nodePtr->retrieve(bytesSent);
+            bytesSent_ += bytesSent;
         }
+        else if (!isEAGAIN())
+            return;
         if (bytesSent < toSend)
         {
-            if (bytesSent == 0)
-            {
-                LOG_SYSERR << "TcpConnectionImpl::sendFileInLoop";
-                return;
-            }
-        }
-        LOG_TRACE << "sendfile() " << bytesSent << " bytes sent";
-        nodePtr->retrieve(bytesSent);
-        if (!ioChannelPtr_->isWriting())
-        {
-            ioChannelPtr_->enableWriting();
+            LOG_TRACE << "nWritten = " << nWritten << " length = " << length;
+            if (!ioChannelPtr_->isWriting())
+                ioChannelPtr_->enableWriting();
         }
         return;
     }
@@ -681,45 +644,13 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
             nodePtr->retrieve(nWritten);
             if (static_cast<std::size_t>(nWritten) < len)
             {
-                if (!ioChannelPtr_->isWriting())
-                    ioChannelPtr_->enableWriting();
-                LOG_TRACE << "send stream in loop: return on partial write "
-                             "(socket buffer full?)";
-                return;
+                break;
             }
             continue;
         }
-        // nWritten < 0
-#ifdef _WIN32
-        if (errno != 0 && errno != EWOULDBLOCK)
-#else
-        if (errno != EWOULDBLOCK)
-#endif
-        {
-            if (errno == EPIPE || errno == ECONNRESET)
-            {
-#ifdef _WIN32
-                LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << errno;
-#else
-                LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
-#endif
-                // abort
-                LOG_TRACE << "send node in loop: return on connection closed";
-                return;
-            }
-            // TODO: any others?
-            LOG_SYSERR << "send node in loop: return on unexpected error("
-                       << errno << ")";
-            return;
-        }
-        // Socket buffer full - return and wait for next call
-        LOG_TRACE << "send stream in loop: break on socket buffer full (?)";
         LOG_TRACE << "error(" << errno << ") on send Node in loop";
         break;
     }
-    if (!ioChannelPtr_->isWriting())
-        ioChannelPtr_->enableWriting();
-    LOG_TRACE << "send stream in loop: return on loop exit";
 }
 #ifndef _WIN32
 ssize_t TcpConnectionImpl::writeRaw(const void *buffer, size_t length)
@@ -737,6 +668,18 @@ ssize_t TcpConnectionImpl::writeRaw(const char *buffer, size_t length)
 #endif
     if (nWritten > 0)
         bytesSent_ += nWritten;
+    else if (!isEAGAIN())
+        return nWritten;
+    if (nWritten < 0)
+    {
+        nWritten = 0;
+    }
+    if (nWritten < static_cast<int>(length))
+    {
+        LOG_TRACE << "nWritten = " << nWritten << " length = " << length;
+        if (!ioChannelPtr_->isWriting())
+            ioChannelPtr_->enableWriting();
+    }
     return nWritten;
 }
 
@@ -930,14 +873,12 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
                 auto nWritten = writeInLoop(data, len);
                 if (nWritten < 0)
                 {
-                    LOG_SYSERR << "write error";
-                    nWritten = 0;
+                    LOG_TRACE << "write error";
+                    return;
                 }
                 if (static_cast<size_t>(nWritten) < len)
                 {
                     node->append(data + nWritten, len - nWritten);
-                    if (!ioChannelPtr_->isWriting())
-                        ioChannelPtr_->enableWriting();
                 }
             }
             else
@@ -952,5 +893,31 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
         node->done();
         if (!ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
+    }
+}
+
+bool TcpConnectionImpl::isEAGAIN()
+{
+    if (errno == EWOULDBLOCK || errno == EAGAIN)
+    {
+        LOG_TRACE << "write buffer is full";
+        return true;
+    }
+    else if (errno == EPIPE || errno == ECONNRESET)
+    {
+#ifdef _WIN32
+        LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << errno;
+#else
+        LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
+#endif
+        LOG_TRACE << "send node in loop: return on connection closed";
+        return false;
+    }
+    else
+    {
+        // TODO: any others?
+        LOG_SYSERR << "send node in loop: return on unexpected error(" << errno
+                   << ")";
+        return false;
     }
 }

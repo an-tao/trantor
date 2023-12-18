@@ -219,7 +219,7 @@ struct BotanTLSProvider : public TLSProvider,
         if (getBufferedData().readableBytes() != 0)
         {
             errno = EAGAIN;
-            return -1;
+            return 0;
         }
 
         // Limit the size of the data we send in one go to avoid holding massive
