@@ -617,7 +617,7 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
             return;
         if (bytesSent < toSend)
         {
-            LOG_TRACE << "nWritten = " << nWritten << " length = " << length;
+            LOG_TRACE << "bytesSent = " << bytesSent << " toSend = " << toSend;
             if (!ioChannelPtr_->isWriting())
                 ioChannelPtr_->enableWriting();
         }
