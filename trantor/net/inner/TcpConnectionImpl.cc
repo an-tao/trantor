@@ -194,12 +194,14 @@ void TcpConnectionImpl::writeCallback()
             }
         }
         assert(writeBufferList_.empty());
-        ioChannelPtr_->disableWriting();
-        if (closeOnEmpty_ &&
-            (tlsProviderPtr_ == nullptr ||
-             tlsProviderPtr_->getBufferedData().readableBytes() == 0))
+        if (tlsProviderPtr_ == nullptr ||
+            tlsProviderPtr_->getBufferedData().readableBytes() == 0)
         {
-            shutdown();
+            ioChannelPtr_->disableWriting();
+            if (closeOnEmpty_)
+            {
+                shutdown();
+            }
         }
     }
     else
