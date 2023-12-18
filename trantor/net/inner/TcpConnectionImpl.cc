@@ -23,12 +23,7 @@
 #include <sys/types.h>
 #ifndef _WIN32
 #include <unistd.h>
-#else
-
-#include <wincrypt.h>
 #endif
-#include <sys/stat.h>
-#include <fcntl.h>
 
 using namespace trantor;
 
