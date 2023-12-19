@@ -226,7 +226,7 @@ struct BotanTLSProvider : public TLSProvider,
         // buffers in memory.
         constexpr size_t maxSend = 64 * 1024;
         size_t hasSent = 0;
-        while (hasSent < size && getBufferedData().readdableBytes() == 0)
+        while (hasSent < size && getBufferedData().readableBytes() == 0)
         {
             auto trunkLen = size - hasSent;
             if (trunkLen > maxSend)
