@@ -228,6 +228,12 @@ void TcpConnectionImpl::connectEstablished()
 void TcpConnectionImpl::handleClose()
 {
     LOG_TRACE << "connection closed, fd=" << socketPtr_->fd();
+    LOG_TRACE << "write buffer size: " << writeBufferList_.size();
+    if (!writeBufferList_.empty())
+    {
+        LOG_TRACE << writeBufferList_.front()->isFile();
+        LOG_TRACE << writeBufferList_.front()->isStream();
+    }
     loop_->assertInLoopThread();
     status_ = ConnStatus::Disconnected;
     ioChannelPtr_->disableAll();
@@ -541,24 +547,34 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
     assert(fileNode->isFile() && fileNode->remainingBytes() > 0);
     if (loop_->isInLoopThread())
     {
-        writeBufferList_.push_back(std::move(fileNode));
-        if (writeBufferList_.size() == 1)
+        if (writeBufferList_.empty())
         {
-            sendNodeInLoop(writeBufferList_.front());
+            sendNodeInLoop(fileNode);
+            if (fileNode->remainingBytes() > 0)
+                writeBufferList_.push_back(std::move(fileNode));
             return;
+        }
+        else
+        {
+            writeBufferList_.push_back(std::move(fileNode));
         }
     }
     else
     {
-        loop_->queueInLoop(
-            [thisPtr = shared_from_this(), node = std::move(fileNode)]() {
-                LOG_TRACE << "Push sendfile to list";
-                thisPtr->writeBufferList_.push_back(node);
-                if (thisPtr->writeBufferList_.size() == 1)
-                {
-                    thisPtr->sendNodeInLoop(thisPtr->writeBufferList_.front());
-                }
-            });
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            node = std::move(fileNode)]() mutable {
+            LOG_TRACE << "Push sendfile to list";
+            if (thisPtr->writeBufferList_.empty())
+            {
+                thisPtr->sendNodeInLoop(node);
+                if (node->remainingBytes() > 0)
+                    thisPtr->writeBufferList_.push_back(std::move(node));
+            }
+            else
+            {
+                thisPtr->writeBufferList_.push_back(std::move(node));
+            }
+        });
     }
 }
 
@@ -568,23 +584,26 @@ void TcpConnectionImpl::sendStream(
     auto node = BufferNode::newStreamBufferNode(std::move(callback));
     if (loop_->isInLoopThread())
     {
-        writeBufferList_.push_back(node);
-        if (writeBufferList_.size() == 1)
+        if (writeBufferList_.empty())
         {
-            sendNodeInLoop(writeBufferList_.front());
+            sendNodeInLoop(node);
+            if (node->remainingBytes() > 0)
+                writeBufferList_.push_back(std::move(node));
             return;
         }
     }
     else
     {
-        loop_->queueInLoop([thisPtr = shared_from_this(), node]() {
-            LOG_TRACE << "Push send stream to list";
-            thisPtr->writeBufferList_.push_back(node);
-            if (thisPtr->writeBufferList_.size() == 1)
-            {
-                thisPtr->sendNodeInLoop(thisPtr->writeBufferList_.front());
-            }
-        });
+        loop_->queueInLoop(
+            [thisPtr = shared_from_this(), node = std::move(node)]() mutable {
+                LOG_TRACE << "Push send stream to list";
+                if (thisPtr->writeBufferList_.empty())
+                {
+                    thisPtr->sendNodeInLoop(node);
+                    if (node->remainingBytes() > 0)
+                        thisPtr->writeBufferList_.push_back(std::move(node));
+                }
+            });
     }
 }
 
