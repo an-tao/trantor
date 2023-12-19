@@ -36,6 +36,8 @@ struct TLSProvider
 
     /**
      * @brief Encrypt and send data via TLS
+     * @return the number of bytes sent, or -1 on error, or 0 if EAGAIN or
+     * EWOULDBLOCK.
      */
     virtual ssize_t sendData(const char* ptr, size_t size) = 0;
 

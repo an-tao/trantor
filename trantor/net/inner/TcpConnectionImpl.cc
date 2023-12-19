@@ -37,6 +37,31 @@ using namespace trantor;
 #undef ECONNRESET
 #define ECONNRESET WSAECONNRESET
 #endif
+static inline bool isEAGAIN()
+{
+    if (errno == EWOULDBLOCK || errno == EAGAIN || errno == 0)
+    {
+        LOG_TRACE << "write buffer is full";
+        return true;
+    }
+    else if (errno == EPIPE || errno == ECONNRESET)
+    {
+#ifdef _WIN32
+        LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << errno;
+#else
+        LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
+#endif
+        LOG_TRACE << "send node in loop: return on connection closed";
+        return false;
+    }
+    else
+    {
+        // TODO: any others?
+        LOG_SYSERR << "send node in loop: return on unexpected error(" << errno
+                   << ")";
+        return false;
+    }
+}
 
 TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
                                      int socketfd,
@@ -188,8 +213,8 @@ void TcpConnectionImpl::writeCallback()
             else
             {
                 // continue sending
-                sendNodeInLoop(nodePtr);
-                if (nodePtr->remainingBytes() > 0)
+                auto n = sendNodeInLoop(nodePtr);
+                if (nodePtr->remainingBytes() > 0 || n < 0)
                     return;
             }
         }
@@ -345,7 +370,6 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         return;
     }
     extendLife();
-    size_t remainLen = length;
     ssize_t sendLen = 0;
     if (!ioChannelPtr_->isWriting() && writeBufferList_.empty())
     {
@@ -356,9 +380,9 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
             LOG_TRACE << "write error";
             return;
         }
-        remainLen -= sendLen;
+        length -= sendLen;
     }
-    if (remainLen > 0 && status_ == ConnStatus::Connected)
+    if (length > 0 && status_ == ConnStatus::Connected)
     {
         if (writeBufferList_.empty() || writeBufferList_.back()->isFile() ||
             writeBufferList_.back()->isStream())
@@ -367,7 +391,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         }
         writeBufferList_.back()->append(static_cast<const char *>(buffer) +
                                             sendLen,
-                                        remainLen);
+                                        length);
         if (highWaterMarkCallback_ &&
             writeBufferList_.back()->remainingBytes() >
                 static_cast<long long>(highWaterMarkLen_))
@@ -549,8 +573,8 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
     {
         if (writeBufferList_.empty())
         {
-            sendNodeInLoop(fileNode);
-            if (fileNode->remainingBytes() > 0)
+            auto n = sendNodeInLoop(fileNode);
+            if (fileNode->remainingBytes() > 0 && n >= 0)
                 writeBufferList_.push_back(std::move(fileNode));
             return;
         }
@@ -563,11 +587,10 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
                             node = std::move(fileNode)]() mutable {
-            LOG_TRACE << "Push sendfile to list";
             if (thisPtr->writeBufferList_.empty())
             {
-                thisPtr->sendNodeInLoop(node);
-                if (node->remainingBytes() > 0)
+                auto n = thisPtr->sendNodeInLoop(node);
+                if (node->remainingBytes() > 0 && n >= 0)
                     thisPtr->writeBufferList_.push_back(std::move(node));
             }
             else
@@ -586,8 +609,8 @@ void TcpConnectionImpl::sendStream(
     {
         if (writeBufferList_.empty())
         {
-            sendNodeInLoop(node);
-            if (node->remainingBytes() > 0)
+            auto n = sendNodeInLoop(node);
+            if (node->remainingBytes() > 0 && n >= 0)
                 writeBufferList_.push_back(std::move(node));
             return;
         }
@@ -599,15 +622,19 @@ void TcpConnectionImpl::sendStream(
                 LOG_TRACE << "Push send stream to list";
                 if (thisPtr->writeBufferList_.empty())
                 {
-                    thisPtr->sendNodeInLoop(node);
-                    if (node->remainingBytes() > 0)
+                    auto n = thisPtr->sendNodeInLoop(node);
+                    if (node->remainingBytes() > 0 && n >= 0)
                         thisPtr->writeBufferList_.push_back(std::move(node));
+                }
+                else
+                {
+                    thisPtr->writeBufferList_.push_back(std::move(node));
                 }
             });
     }
 }
 
-void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
+ssize_t TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
 {
     loop_->assertInLoopThread();
 #ifdef __linux__
@@ -619,7 +646,7 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
         if (toSend <= 0)
         {
             LOG_ERROR << "0 or negative bytes to send";
-            return;
+            return -1;
         }
         auto bytesSent =
             sendfile(socketPtr_->fd(),
@@ -633,14 +660,14 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
             bytesSent_ += bytesSent;
         }
         else if (!isEAGAIN())
-            return;
+            return -1;
         if (bytesSent < toSend)
         {
             LOG_TRACE << "bytesSent = " << bytesSent << " toSend = " << toSend;
             if (!ioChannelPtr_->isWriting())
                 ioChannelPtr_->enableWriting();
         }
-        return;
+        return bytesSent;
     }
 #endif
     // Send stream
@@ -648,6 +675,7 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
     LOG_TRACE << "send node in loop";
     const char *data;
     size_t len;
+    ssize_t hasSent = 0;
     while ((nodePtr->remainingBytes() > 0))
     {
         // get next chunk
@@ -660,6 +688,7 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
         auto nWritten = writeInLoop(data, len);
         if (nWritten >= 0)
         {
+            hasSent += nWritten;
             nodePtr->retrieve(nWritten);
             if (static_cast<std::size_t>(nWritten) < len)
             {
@@ -667,9 +696,13 @@ void TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
             }
             continue;
         }
-        LOG_TRACE << "error(" << errno << ") on send Node in loop";
-        break;
+        else
+        {
+            LOG_TRACE << "error(" << errno << ") on send Node in loop";
+            return -1;
+        }
     }
+    return hasSent;
 }
 #ifndef _WIN32
 ssize_t TcpConnectionImpl::writeRaw(const void *buffer, size_t length)
@@ -868,12 +901,17 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
     else
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
-                            node = std::move(asyncStreamNode)]() {
-            LOG_TRACE << "Push send stream to list";
-            thisPtr->writeBufferList_.push_back(node);
-            if (thisPtr->writeBufferList_.size() == 1 &&
-                node->remainingBytes() > 0)
-                thisPtr->sendNodeInLoop(node);
+                            node = std::move(asyncStreamNode)]() mutable {
+            if (thisPtr->writeBufferList_.empty() && node->remainingBytes() > 0)
+            {
+                auto n = thisPtr->sendNodeInLoop(node);
+                if (n >= 0 && (node->remainingBytes() > 0 || node->available()))
+                    thisPtr->writeBufferList_.push_back(std::move(node));
+            }
+            else
+            {
+                thisPtr->writeBufferList_.push_back(std::move(node));
+            }
         });
     }
     return asyncStream;
@@ -912,31 +950,5 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
         node->done();
         if (!ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
-    }
-}
-
-bool TcpConnectionImpl::isEAGAIN()
-{
-    if (errno == EWOULDBLOCK || errno == EAGAIN)
-    {
-        LOG_TRACE << "write buffer is full";
-        return true;
-    }
-    else if (errno == EPIPE || errno == ECONNRESET)
-    {
-#ifdef _WIN32
-        LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << errno;
-#else
-        LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
-#endif
-        LOG_TRACE << "send node in loop: return on connection closed";
-        return false;
-    }
-    else
-    {
-        // TODO: any others?
-        LOG_SYSERR << "send node in loop: return on unexpected error(" << errno
-                   << ")";
-        return false;
     }
 }

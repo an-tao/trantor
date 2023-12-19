@@ -236,9 +236,8 @@ class TcpConnectionImpl : public TcpConnection,
     void sendAsyncDataInLoop(const BufferNodePtr &node,
                              const char *data,
                              size_t len);
-    void sendNodeInLoop(const BufferNodePtr &node);
-    // return true if EAGAIN
-    bool isEAGAIN();
+    // -1: error, 0: EAGAIN, >0: bytes sent
+    ssize_t sendNodeInLoop(const BufferNodePtr &node);
 #ifndef _WIN32
     void sendInLoop(const void *buffer, size_t length);
     ssize_t writeRaw(const void *buffer, size_t length);
