@@ -578,19 +578,24 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         // Limit the size of the data we send in one go to avoid holding massive
         // buffers in memory.
         constexpr size_t maxSend = 64 * 1024;
-        if (len > maxSend)
-            len = maxSend;
-
-        int n = SSL_write(ssl_, data, (int)len);
-        if (n <= 0 && len != 0)
+        size_t hasSent = 0;
+        while (hasSent < len && getBufferedData().readableBytes() == 0)
         {
-            handleSSLError(SSLError::kSSLProtocolError);
-            return -1;
+            auto trunkLen = len - hasSent;
+            if (trunkLen > maxSend)
+                trunkLen = maxSend;
+            int n = SSL_write(ssl_, data + hasSent, (int)trunkLen);
+            if (n <= 0 && len != 0)
+            {
+                handleSSLError(SSLError::kSSLProtocolError);
+                return -1;
+            }
+            auto num = sendTLSData();
+            if (num == -1)
+                return -1;
+            hasSent += trunkLen;
         }
-        auto num = sendTLSData();
-        if (num == -1)
-            return -1;
-        return len;
+        return static_cast<ssize_t>(hasSent);
     }
 
     bool processHandshake()
