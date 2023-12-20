@@ -948,7 +948,8 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
     {
         // stream is closed
         node->done();
-        if (!ioChannelPtr_->isWriting())
+        if (!writeBufferList_.empty() && node == writeBufferList_.front() &&
+            !ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
     }
 }
