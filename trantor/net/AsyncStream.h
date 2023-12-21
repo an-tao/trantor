@@ -40,7 +40,7 @@ class TRANTOR_EXPORT AsyncStream : public NonCopyable
     virtual bool send(const char *data, size_t len) = 0;
     bool send(const std::string &data)
     {
-        send(data.data(), data.length());
+        return send(data.data(), data.length());
     }
     /**
      * @brief Terminate the stream.
