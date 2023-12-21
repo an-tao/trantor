@@ -826,14 +826,14 @@ void TcpConnectionImpl::onSslCloseAlert(TcpConnection *self)
 class AsyncStreamImpl : public AsyncStream
 {
   public:
-    explicit AsyncStreamImpl(std::function<void(const char *, size_t)> callback)
+    explicit AsyncStreamImpl(std::function<bool(const char *, size_t)> callback)
         : callback_(std::move(callback))
     {
     }
     AsyncStreamImpl() = delete;
-    void send(const char *data, size_t len) override
+    bool send(const char *data, size_t len) override
     {
-        callback_(data, len);
+        return callback_(data, len);
     }
     void close() override
     {
@@ -847,7 +847,7 @@ class AsyncStreamImpl : public AsyncStream
     }
 
   private:
-    std::function<void(const char *, size_t)> callback_;
+    std::function<bool(const char *, size_t)> callback_;
 };
 AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
 {
@@ -860,12 +860,12 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
             if (!thisPtr)
             {
                 LOG_DEBUG << "Connection is closed,give up sending";
-                return;
+                return false;
             }
             if (thisPtr->status_ != ConnStatus::Connected)
             {
                 LOG_DEBUG << "Connection is not connected,give up sending";
-                return;
+                return false;
             }
             if (thisPtr->loop_->isInLoopThread())
             {
@@ -893,6 +893,7 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
                     });
                 }
             }
+            return true;
         });
     if (loop_->isInLoopThread())
     {

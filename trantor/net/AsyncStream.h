@@ -28,10 +28,10 @@ class TRANTOR_EXPORT AsyncStream : public NonCopyable
 {
   public:
     virtual ~AsyncStream() = default;
-    virtual void send(const char *msg, size_t len) = 0;
-    void send(const std::string &msg)
+    virtual bool send(const char *msg, size_t len) = 0;
+    bool send(const std::string &msg)
     {
-        send(msg.data(), msg.length());
+        return send(msg.data(), msg.length());
     }
     virtual void close() = 0;
 };
