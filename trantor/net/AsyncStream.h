@@ -28,11 +28,23 @@ class TRANTOR_EXPORT AsyncStream : public NonCopyable
 {
   public:
     virtual ~AsyncStream() = default;
-    virtual void send(const char *msg, size_t len) = 0;
-    void send(const std::string &msg)
+    /**
+     * @brief Send data asynchronously.
+     *
+     * @param data The data to be sent
+     * @param len The length of the data
+     * @return true if the data is sent successfully or at least is put in the
+     * send buffer.
+     * @return false if the connection is closed.
+     */
+    virtual bool send(const char *data, size_t len) = 0;
+    bool send(const std::string &data)
     {
-        send(msg.data(), msg.length());
+        send(data.data(), data.length());
     }
+    /**
+     * @brief Terminate the stream.
+     */
     virtual void close() = 0;
 };
 using AsyncStreamPtr = std::unique_ptr<AsyncStream>;

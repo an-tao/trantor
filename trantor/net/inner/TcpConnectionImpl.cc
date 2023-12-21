@@ -826,14 +826,14 @@ void TcpConnectionImpl::onSslCloseAlert(TcpConnection *self)
 class AsyncStreamImpl : public AsyncStream
 {
   public:
-    explicit AsyncStreamImpl(std::function<void(const char *, size_t)> callback)
+    explicit AsyncStreamImpl(std::function<bool(const char *, size_t)> callback)
         : callback_(std::move(callback))
     {
     }
     AsyncStreamImpl() = delete;
-    void send(const char *data, size_t len) override
+    bool send(const char *data, size_t len) override
     {
-        callback_(data, len);
+        return callback_(data, len);
     }
     void close() override
     {
@@ -847,7 +847,7 @@ class AsyncStreamImpl : public AsyncStream
     }
 
   private:
-    std::function<void(const char *, size_t)> callback_;
+    std::function<bool(const char *, size_t)> callback_;
 };
 AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
 {
@@ -855,17 +855,17 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
     std::weak_ptr<TcpConnectionImpl> weakPtr = shared_from_this();
     auto asyncStream = std::make_unique<AsyncStreamImpl>(
         [asyncStreamNode, weakPtr = std::move(weakPtr)](const char *data,
-                                                        size_t len) {
+                                                        size_t len) -> bool {
             auto thisPtr = weakPtr.lock();
             if (!thisPtr)
             {
                 LOG_DEBUG << "Connection is closed,give up sending";
-                return;
+                return false;
             }
             if (thisPtr->status_ != ConnStatus::Connected)
             {
                 LOG_DEBUG << "Connection is not connected,give up sending";
-                return;
+                return false;
             }
             if (thisPtr->loop_->isInLoopThread())
             {
@@ -893,6 +893,7 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
                     });
                 }
             }
+            return true;
         });
     if (loop_->isInLoopThread())
     {
