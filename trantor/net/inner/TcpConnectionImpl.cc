@@ -897,12 +897,33 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
         });
     if (loop_->isInLoopThread())
     {
+        auto entry = kickoffEntry_.lock();
+        if (entry)
+        {
+            entry->reset();
+            kickoffEntry_.reset();
+        }
+
+        timingWheelWeakPtr_.reset();
+        idleTimeout_ = 0;
+
         writeBufferList_.push_back(asyncStreamNode);
     }
     else
     {
-        loop_->queueInLoop([thisPtr = shared_from_this(),
+        loop_->queueInLoop([this,
+                            thisPtr = shared_from_this(),
                             node = std::move(asyncStreamNode)]() mutable {
+            auto entry = kickoffEntry_.lock();
+            if (entry)
+            {
+                entry->reset();
+                kickoffEntry_.reset();
+            }
+
+            timingWheelWeakPtr_.reset();
+            idleTimeout_ = 0;
+
             if (thisPtr->writeBufferList_.empty() && node->remainingBytes() > 0)
             {
                 auto n = thisPtr->sendNodeInLoop(node);
@@ -921,6 +942,7 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
                                             const char *data,
                                             size_t len)
 {
+    loop_->assertInLoopThread();
     if (data)
     {
         if (len > 0)
