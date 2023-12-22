@@ -183,23 +183,23 @@ void TcpConnectionImpl::extendLife()
 {
     if (idleTimeout_ > 0)
     {
+        auto entry = kickoffEntry_.lock();
+        if (!entry)
+        {
+            return;
+        }
         auto now = Date::date();
         if (now < lastTimingWheelUpdateTime_.after(1.0))
             return;
         lastTimingWheelUpdateTime_ = now;
-        auto entry = kickoffEntry_.lock();
-        if (entry)
-        {
-            auto timingWheelPtr = timingWheelWeakPtr_.lock();
-            if (timingWheelPtr)
-                timingWheelPtr->insertEntry(idleTimeout_, entry);
-        }
+        auto timingWheelPtr = timingWheelWeakPtr_.lock();
+        if (timingWheelPtr)
+            timingWheelPtr->insertEntry(idleTimeout_, entry);
     }
 }
 void TcpConnectionImpl::writeCallback()
 {
     loop_->assertInLoopThread();
-    extendLife();
     if (ioChannelPtr_->isWriting())
     {
         if (tlsProviderPtr_)
@@ -386,7 +386,6 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         LOG_WARN << "Connection is not connected,give up sending";
         return;
     }
-    extendLife();
     ssize_t sendLen = 0;
     if (!ioChannelPtr_->isWriting() && writeBufferList_.empty())
     {
@@ -678,6 +677,7 @@ ssize_t TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
         }
         else if (!isEAGAIN())
             return -1;
+        extendLife();
         if (bytesSent < toSend)
         {
             LOG_TRACE << "bytesSent = " << bytesSent << " toSend = " << toSend;
@@ -749,6 +749,7 @@ ssize_t TcpConnectionImpl::writeRaw(const char *buffer, size_t length)
         if (!ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
     }
+    extendLife();
     return nWritten;
 }
 
