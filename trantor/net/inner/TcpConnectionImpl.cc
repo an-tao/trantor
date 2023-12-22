@@ -98,6 +98,21 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 }
 TcpConnectionImpl::~TcpConnectionImpl()
 {
+    LOG_DEBUG << "write node list size:" << writeBufferList_.size();
+    if (!writeBufferList_.empty())
+    {
+        LOG_DEBUG << "first node is file? "
+                  << writeBufferList_.front()->isFile();
+        LOG_DEBUG << "first node is stream? "
+                  << writeBufferList_.front()->isStream();
+        LOG_DEBUG << "first node is async? "
+                  << writeBufferList_.front()->isAsync();
+    }
+    if (tlsProviderPtr_)
+    {
+        LOG_DEBUG << "buffered TLS data size:"
+                  << tlsProviderPtr_->getBufferedData().readableBytes();
+    }
     // send a close alert to peer if we are still connected
     if (tlsProviderPtr_ && status_ == ConnStatus::Connected)
         tlsProviderPtr_->close();
