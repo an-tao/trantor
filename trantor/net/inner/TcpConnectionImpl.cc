@@ -197,7 +197,7 @@ void TcpConnectionImpl::extendLife()
         {
             auto timingWheelPtr = timingWheelWeakPtr_.lock();
             if (timingWheelPtr)
-                timingWheelPtr->insertEntry(idleTimeout_, entry);
+                timingWheelPtr->insertEntryInloop(idleTimeout_, entry);
         }
     }
 }
@@ -970,7 +970,6 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
                                             size_t len)
 {
     loop_->assertInLoopThread();
-    extendLife();
     if (data)
     {
         if (len > 0)
