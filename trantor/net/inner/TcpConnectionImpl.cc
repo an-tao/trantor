@@ -105,20 +105,20 @@ TcpConnectionImpl::~TcpConnectionImpl()
     }
     if (!writeBufferList_.empty())
     {
-        LOG_WARN << "write node list size: " << writeBufferList_.size()
-                 << " first node is file? "
-                 << writeBufferList_.front()->isFile()
-                 << " first node is stream? "
-                 << writeBufferList_.front()->isStream()
-                 << " first node is async? "
-                 << writeBufferList_.front()->isAsync() << " first node size: "
-                 << writeBufferList_.front()->remainingBytes()
-                 << " buffered TLS data size: " << readableTlsBytes;
+        LOG_DEBUG << "write node list size: " << writeBufferList_.size()
+                  << " first node is file? "
+                  << writeBufferList_.front()->isFile()
+                  << " first node is stream? "
+                  << writeBufferList_.front()->isStream()
+                  << " first node is async? "
+                  << writeBufferList_.front()->isAsync() << " first node size: "
+                  << writeBufferList_.front()->remainingBytes()
+                  << " buffered TLS data size: " << readableTlsBytes;
     }
     else if (readableTlsBytes != 0)
     {
-        LOG_WARN << "write node list size: 0 buffered TLS data size: "
-                 << readableTlsBytes;
+        LOG_DEBUG << "write node list size: 0 buffered TLS data size: "
+                  << readableTlsBytes;
     }
     // send a close alert to peer if we are still connected
     if (tlsProviderPtr_ && status_ == ConnStatus::Connected)
