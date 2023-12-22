@@ -1011,7 +1011,7 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
                 kickoffEntry_ = entry;
                 idleTimeout_ = idleTimeoutBackup_;
                 idleTimeoutBackup_ = 0;
-                timingWheel->insertEntryInloop(idleTimeout_, std::move(entry));
+                timingWheel->insertEntry(idleTimeout_, std::move(entry));
             }
         }
     }
