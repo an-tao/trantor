@@ -197,7 +197,7 @@ void TcpConnectionImpl::extendLife()
         {
             auto timingWheelPtr = timingWheelWeakPtr_.lock();
             if (timingWheelPtr)
-                timingWheelPtr->insertEntryInloop(idleTimeout_, entry);
+                timingWheelPtr->insertEntry(idleTimeout_, entry);
         }
     }
 }
