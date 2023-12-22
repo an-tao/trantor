@@ -183,18 +183,17 @@ void TcpConnectionImpl::extendLife()
 {
     if (idleTimeout_ > 0)
     {
-        auto entry = kickoffEntry_.lock();
-        if (!entry)
-        {
-            return;
-        }
         auto now = Date::date();
         if (now < lastTimingWheelUpdateTime_.after(1.0))
             return;
         lastTimingWheelUpdateTime_ = now;
-        auto timingWheelPtr = timingWheelWeakPtr_.lock();
-        if (timingWheelPtr)
-            timingWheelPtr->insertEntry(idleTimeout_, entry);
+        auto entry = kickoffEntry_.lock();
+        if (entry)
+        {
+            auto timingWheelPtr = timingWheelWeakPtr_.lock();
+            if (timingWheelPtr)
+                timingWheelPtr->insertEntry(idleTimeout_, entry);
+        }
     }
 }
 void TcpConnectionImpl::writeCallback()
