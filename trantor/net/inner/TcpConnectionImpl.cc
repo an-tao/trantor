@@ -871,7 +871,7 @@ class AsyncStreamImpl : public AsyncStream
   private:
     std::function<bool(const char *, size_t)> callback_;
 };
-AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
+AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
 {
     auto asyncStreamNode = BufferNode::newAsyncStreamBufferNode();
     std::weak_ptr<TcpConnectionImpl> weakPtr = shared_from_this();
@@ -919,15 +919,17 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
         });
     if (loop_->isInLoopThread())
     {
-        auto entry = kickoffEntry_.lock();
-        if (entry)
+        if (disableKickoff)
         {
-            entry->reset();
-            kickoffEntry_.reset();
+            auto entry = kickoffEntry_.lock();
+            if (entry)
+            {
+                entry->reset();
+                kickoffEntry_.reset();
+            }
+            idleTimeoutBackup_ = idleTimeout_;
+            idleTimeout_ = 0;
         }
-
-        timingWheelWeakPtr_.reset();
-        idleTimeout_ = 0;
 
         writeBufferList_.push_back(asyncStreamNode);
     }
@@ -935,16 +937,19 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
     {
         loop_->queueInLoop([this,
                             thisPtr = shared_from_this(),
-                            node = std::move(asyncStreamNode)]() mutable {
-            auto entry = kickoffEntry_.lock();
-            if (entry)
+                            node = std::move(asyncStreamNode),
+                            disableKickoff]() mutable {
+            if (disableKickoff)
             {
-                entry->reset();
-                kickoffEntry_.reset();
+                auto entry = kickoffEntry_.lock();
+                if (entry)
+                {
+                    entry->reset();
+                    kickoffEntry_.reset();
+                }
+                idleTimeoutBackup_ = idleTimeout_;
+                idleTimeout_ = 0;
             }
-
-            timingWheelWeakPtr_.reset();
-            idleTimeout_ = 0;
 
             if (thisPtr->writeBufferList_.empty() && node->remainingBytes() > 0)
             {
@@ -965,6 +970,7 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
                                             size_t len)
 {
     loop_->assertInLoopThread();
+    extendLife();
     if (data)
     {
         if (len > 0)
@@ -996,5 +1002,18 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
         if (!writeBufferList_.empty() && node == writeBufferList_.front() &&
             !ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
+
+        if (idleTimeoutBackup_ > 0)
+        {
+            auto timingWheel = timingWheelWeakPtr_.lock();
+            if (timingWheel)
+            {
+                auto entry = std::make_shared<KickoffEntry>(shared_from_this());
+                kickoffEntry_ = entry;
+                idleTimeout_ = idleTimeoutBackup_;
+                idleTimeoutBackup_ = 0;
+                timingWheel->insertEntryInloop(idleTimeout_, std::move(entry));
+            }
+        }
     }
 }

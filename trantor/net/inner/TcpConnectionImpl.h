@@ -187,7 +187,7 @@ class TcpConnectionImpl : public TcpConnection,
         TLSPolicyPtr policy,
         bool isServer,
         std::function<void(const TcpConnectionPtr &)> upgradeCallback) override;
-    AsyncStreamPtr sendAsyncStream() override;
+    AsyncStreamPtr sendAsyncStream(bool disableKickoff) override;
 
     void enableKickingOff(
         size_t timeout,
@@ -209,6 +209,7 @@ class TcpConnectionImpl : public TcpConnection,
     std::weak_ptr<KickoffEntry> kickoffEntry_;
     std::weak_ptr<TimingWheel> timingWheelWeakPtr_;
     size_t idleTimeout_{0};
+    size_t idleTimeoutBackup_{0};
     Date lastTimingWheelUpdateTime_;
     void extendLife();
     void sendFile(BufferNodePtr &&fileNode);
