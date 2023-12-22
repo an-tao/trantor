@@ -107,6 +107,8 @@ TcpConnectionImpl::~TcpConnectionImpl()
                   << writeBufferList_.front()->isStream();
         LOG_DEBUG << "first node is async? "
                   << writeBufferList_.front()->isAsync();
+        LOG_DEBUG << "first node size:"
+                  << writeBufferList_.front()->remainingBytes();
     }
     if (tlsProviderPtr_)
     {
