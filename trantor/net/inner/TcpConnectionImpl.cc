@@ -98,6 +98,23 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 }
 TcpConnectionImpl::~TcpConnectionImpl()
 {
+    LOG_DEBUG << "write node list size:" << writeBufferList_.size();
+    if (!writeBufferList_.empty())
+    {
+        LOG_DEBUG << "first node is file? "
+                  << writeBufferList_.front()->isFile();
+        LOG_DEBUG << "first node is stream? "
+                  << writeBufferList_.front()->isStream();
+        LOG_DEBUG << "first node is async? "
+                  << writeBufferList_.front()->isAsync();
+        LOG_DEBUG << "first node size:"
+                  << writeBufferList_.front()->remainingBytes();
+    }
+    if (tlsProviderPtr_)
+    {
+        LOG_DEBUG << "buffered TLS data size:"
+                  << tlsProviderPtr_->getBufferedData().readableBytes();
+    }
     // send a close alert to peer if we are still connected
     if (tlsProviderPtr_ && status_ == ConnStatus::Connected)
         tlsProviderPtr_->close();
@@ -855,7 +872,7 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
     std::weak_ptr<TcpConnectionImpl> weakPtr = shared_from_this();
     auto asyncStream = std::make_unique<AsyncStreamImpl>(
         [asyncStreamNode, weakPtr = std::move(weakPtr)](const char *data,
-                                                        size_t len) {
+                                                        size_t len) -> bool {
             auto thisPtr = weakPtr.lock();
             if (!thisPtr)
             {
