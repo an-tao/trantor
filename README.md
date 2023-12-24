@@ -1,6 +1,5 @@
 # TRANTOR
 
-[![Build Travis CI](https://travis-ci.org/an-tao/trantor.svg?branch=master)](https://travis-ci.org/an-tao/trantor)
 [![Build Ubuntu gcc](https://github.com/an-tao/trantor/actions/workflows/ubuntu-gcc.yml/badge.svg)](https://github.com/an-tao/trantor/actions)
 [![Build Macos clang](https://github.com/an-tao/trantor/actions/workflows/macos-clang.yml/badge.svg)](https://github.com/an-tao/trantor/actions)
 [![Build RockyLinux gcc](https://github.com/an-tao/trantor/actions/workflows/rockylinux-gcc.yml/badge.svg)](https://github.com/an-tao/trantor/actions)
