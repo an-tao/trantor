@@ -25,7 +25,6 @@ jobs:
         # Installing packages might fail as the github image becomes outdated
         sudo apt update
         sudo apt install dos2unix clang-format
-        pip install cmake-format
 
     - name: Lint
       if: matrix.os == 'ubuntu-20.04'
