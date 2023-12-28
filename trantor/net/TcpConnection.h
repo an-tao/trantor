@@ -21,6 +21,7 @@
 #include <trantor/net/callbacks.h>
 #include <trantor/net/Certificate.h>
 #include <trantor/net/TLSPolicy.h>
+#include <trantor/net/AsyncStream.h>
 #include <memory>
 #include <functional>
 #include <string>
@@ -96,10 +97,17 @@ class TRANTOR_EXPORT TcpConnection
                                                 // of data put in buffer
 
     /**
+     * @brief Send a stream to the peer asynchronously.
+     * @note The subsequent data sent after the async stream will be sent after
+     * the stream is closed.
+     */
+    virtual AsyncStreamPtr sendAsyncStream() = 0;
+    /**
      * @brief Get the local address of the connection.
      *
      * @return const InetAddress&
      */
+
     virtual const InetAddress &localAddr() const = 0;
 
     /**

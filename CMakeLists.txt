@@ -104,6 +104,9 @@ set(TRANTOR_SOURCES
     trantor/net/inner/Connector.cc
     trantor/net/inner/Poller.cc
     trantor/net/inner/Socket.cc
+    trantor/net/inner/MemBufferNode.cc
+    trantor/net/inner/StreamBufferNode.cc
+    trantor/net/inner/AsyncStreamBufferNode.cc
     trantor/net/inner/TcpConnectionImpl.cc
     trantor/net/inner/Timer.cc
     trantor/net/inner/TimerQueue.cc
@@ -126,11 +129,16 @@ if(WIN32)
   set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}
       third_party/wepoll/Wepoll.c
-      trantor/utils/WindowsSupport.cc)
+      trantor/utils/WindowsSupport.cc
+      trantor/net/inner/FileBufferNodeWin.cc)
   set(private_headers
       ${private_headers}
       third_party/wepoll/Wepoll.h
       trantor/utils/WindowsSupport.h)
+else(WIN32)
+    set(TRANTOR_SOURCES
+        ${TRANTOR_SOURCES}
+        trantor/net/inner/FileBufferNodeUnix.cc)
 endif(WIN32)
 
 # Somehow the default value of TRANTOR_USE_TLS is OFF
@@ -283,6 +291,7 @@ set(public_net_headers
     trantor/net/TcpClient.h
     trantor/net/TcpConnection.h
     trantor/net/TcpServer.h
+    trantor/net/AsyncStream.h
     trantor/net/callbacks.h
     trantor/net/Resolver.h
     trantor/net/Channel.h

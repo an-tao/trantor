@@ -22,6 +22,7 @@ add_executable(path_conversion_test PathConversionTest.cc)
 add_executable(logger_macro_test LoggerMacroTest.cc)
 add_executable(delayed_ssl_server_test DelayedSSLServerTest.cc)
 add_executable(delayed_ssl_client_test DelayedSSLClientTest.cc)
+add_executable(tcp_asyncstream_server_test TcpAsyncStreamServerTest.cc)
 set(targets_list
     ssl_server_test
     ssl_client_test
@@ -46,7 +47,8 @@ set(targets_list
     path_conversion_test
     logger_macro_test
     delayed_ssl_server_test
-    delayed_ssl_client_test)
+    delayed_ssl_client_test
+    tcp_asyncstream_server_test)
 
 if(HAVE_SPDLOG)
   add_executable(spdlogger_test SpdLoggerTest.cc)

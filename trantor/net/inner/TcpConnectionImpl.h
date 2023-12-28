@@ -17,6 +17,7 @@
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/TimingWheel.h>
 #include <trantor/net/inner/TLSProvider.h>
+#include <trantor/net/inner/BufferNode.h>
 #include <list>
 #include <mutex>
 #ifndef _WIN32
@@ -71,38 +72,36 @@ class TcpConnectionImpl : public TcpConnection,
                       const InetAddress &peerAddr,
                       TLSPolicyPtr policy = nullptr,
                       SSLContextPtr ctx = nullptr);
-    virtual ~TcpConnectionImpl();
-    virtual void send(const char *msg, size_t len) override;
-    virtual void send(const void *msg, size_t len) override;
-    virtual void send(const std::string &msg) override;
-    virtual void send(std::string &&msg) override;
-    virtual void send(const MsgBuffer &buffer) override;
-    virtual void send(MsgBuffer &&buffer) override;
-    virtual void send(const std::shared_ptr<std::string> &msgPtr) override;
-    virtual void send(const std::shared_ptr<MsgBuffer> &msgPtr) override;
-    virtual void sendFile(const char *fileName,
-                          size_t offset = 0,
-                          size_t length = 0) override;
-    virtual void sendFile(const wchar_t *fileName,
-                          size_t offset = 0,
-                          size_t length = 0) override;
-    virtual void sendStream(
+    ~TcpConnectionImpl() override;
+    void send(const char *msg, size_t len) override;
+    void send(const void *msg, size_t len) override;
+    void send(const std::string &msg) override;
+    void send(std::string &&msg) override;
+    void send(const MsgBuffer &buffer) override;
+    void send(MsgBuffer &&buffer) override;
+    void send(const std::shared_ptr<std::string> &msgPtr) override;
+    void send(const std::shared_ptr<MsgBuffer> &msgPtr) override;
+    void sendFile(const char *fileName, size_t offset, size_t length) override;
+    void sendFile(const wchar_t *fileName,
+                  size_t offset,
+                  size_t length) override;
+    void sendStream(
         std::function<std::size_t(char *, std::size_t)> callback) override;
 
-    virtual const InetAddress &localAddr() const override
+    const InetAddress &localAddr() const override
     {
         return localAddr_;
     }
-    virtual const InetAddress &peerAddr() const override
+    const InetAddress &peerAddr() const override
     {
         return peerAddr_;
     }
 
-    virtual bool connected() const override
+    bool connected() const override
     {
         return status_ == ConnStatus::Connected;
     }
-    virtual bool disconnected() const override
+    bool disconnected() const override
     {
         return status_ == ConnStatus::Disconnected;
     }
@@ -113,14 +112,14 @@ class TcpConnectionImpl : public TcpConnection,
     //     return &readBuffer_;
     // }
     // set callbacks
-    virtual void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
-                                          size_t markLen) override
+    void setHighWaterMarkCallback(const HighWaterMarkCallback &cb,
+                                  size_t markLen) override
     {
         highWaterMarkCallback_ = cb;
         highWaterMarkLen_ = markLen;
     }
 
-    virtual void keepAlive() override
+    void keepAlive() override
     {
         idleTimeout_ = 0;
         auto entry = kickoffEntry_.lock();
@@ -129,66 +128,67 @@ class TcpConnectionImpl : public TcpConnection,
             entry->reset();
         }
     }
-    virtual bool isKeepAlive() override
+    bool isKeepAlive() override
     {
         return idleTimeout_ == 0;
     }
-    virtual void setTcpNoDelay(bool on) override;
-    virtual void shutdown() override;
-    virtual void forceClose() override;
-    virtual EventLoop *getLoop() override
+    void setTcpNoDelay(bool on) override;
+    void shutdown() override;
+    void forceClose() override;
+    EventLoop *getLoop() override
     {
         return loop_;
     }
 
-    virtual size_t bytesSent() const override
+    size_t bytesSent() const override
     {
         return bytesSent_;
     }
-    virtual size_t bytesReceived() const override
+    size_t bytesReceived() const override
     {
         return bytesReceived_;
     }
 
-    virtual bool isSSLConnection() const override
+    bool isSSLConnection() const override
     {
         return tlsProviderPtr_ != nullptr;
     }
-    virtual void connectEstablished() override;
-    virtual void connectDestroyed() override;
+    void connectEstablished() override;
+    void connectDestroyed() override;
 
-    virtual MsgBuffer *getRecvBuffer() override
+    MsgBuffer *getRecvBuffer() override
     {
         if (tlsProviderPtr_)
             return &tlsProviderPtr_->getRecvBuffer();
         return &readBuffer_;
     }
 
-    virtual std::string applicationProtocol() const override
+    std::string applicationProtocol() const override
     {
         if (tlsProviderPtr_)
             return tlsProviderPtr_->applicationProtocol();
         return "";
     }
 
-    virtual CertificatePtr peerCertificate() const override
+    CertificatePtr peerCertificate() const override
     {
         if (tlsProviderPtr_)
             return tlsProviderPtr_->peerCertificate();
         return nullptr;
     }
 
-    virtual std::string sniName() const override
+    std::string sniName() const override
     {
         if (tlsProviderPtr_)
             return tlsProviderPtr_->sniName();
         return "";
     }
 
-    virtual void startEncryption(TLSPolicyPtr policy,
-                                 bool isServer,
-                                 std::function<void(const TcpConnectionPtr &)>
-                                     upgradeCallback = nullptr) override;
+    void startEncryption(
+        TLSPolicyPtr policy,
+        bool isServer,
+        std::function<void(const TcpConnectionPtr &)> upgradeCallback) override;
+    AsyncStreamPtr sendAsyncStream() override;
 
     void enableKickingOff(
         size_t timeout,
@@ -212,59 +212,9 @@ class TcpConnectionImpl : public TcpConnection,
     size_t idleTimeout_{0};
     Date lastTimingWheelUpdateTime_;
     void extendLife();
-#ifndef _WIN32
-    void sendFile(int sfd, size_t offset = 0, size_t length = 0);
-#else
-    void sendFile(FILE *fp, size_t offset = 0, size_t length = 0);
-#endif
+    void sendFile(BufferNodePtr &&fileNode);
 
   protected:
-    struct BufferNode
-    {
-        // sendFile() specific
-#ifndef _WIN32
-        int sendFd_{-1};
-        off_t offset_{0};
-#else
-        FILE *sendFp_{nullptr};
-        long long offset_{0};
-#endif
-        ssize_t fileBytesToSend_{0};
-        // sendStream() specific
-        std::function<std::size_t(char *, std::size_t)> streamCallback_;
-#ifndef NDEBUG  // defined by CMake for release build
-        std::size_t nDataWritten_{0};
-#endif
-        // generic
-        std::shared_ptr<MsgBuffer> msgBuffer_;
-        bool isFile() const
-        {
-            if (streamCallback_)
-                return true;
-#ifndef _WIN32
-            if (sendFd_ >= 0)
-                return true;
-#else
-            if (sendFp_)
-                return true;
-#endif
-            return false;
-        }
-        ~BufferNode()
-        {
-#ifndef _WIN32
-            if (sendFd_ >= 0)
-                close(sendFd_);
-#else
-            if (sendFp_)
-                fclose(sendFp_);
-#endif
-            if (streamCallback_)
-                streamCallback_(nullptr, 0);  // cleanup callback internals
-        }
-        bool closeConnection_ = false;
-    };
-    using BufferNodePtr = std::shared_ptr<BufferNode>;
     enum class ConnStatus
     {
         Disconnected,
@@ -284,8 +234,10 @@ class TcpConnectionImpl : public TcpConnection,
     void handleClose();
     void handleError();
     // virtual void sendInLoop(const std::string &msg);
-
-    void sendFileInLoop(const BufferNodePtr &file);
+    void sendAsyncDataInLoop(const BufferNodePtr &node,
+                             const char *data,
+                             size_t len);
+    void sendNodeInLoop(const BufferNodePtr &node);
 #ifndef _WIN32
     void sendInLoop(const void *buffer, size_t length);
     ssize_t writeRaw(const void *buffer, size_t length);
@@ -304,7 +256,7 @@ class TcpConnectionImpl : public TcpConnection,
     size_t bytesSent_{0};
     size_t bytesReceived_{0};
 
-    std::unique_ptr<std::vector<char>> fileBufferPtr_;
+    // std::unique_ptr<std::vector<char>> fileBufferPtr_;
     std::shared_ptr<TLSProvider> tlsProviderPtr_;
     std::function<void(const TcpConnectionPtr &)> upgradeCallback_;
 
