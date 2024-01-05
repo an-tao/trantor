@@ -26,6 +26,9 @@ static bool sslInitFlag = []() {
     SSL_load_error_strings();
     ERR_load_BIO_strings();
     ERR_load_crypto_strings();
+#elif defined(LIBRESSL_VERSION_NUMBER)
+    // LibreSSL needs explicit de-init
+    atexit(OPENSSL_cleanup);
 #endif
     return true;
 }();
