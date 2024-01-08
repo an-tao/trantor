@@ -228,6 +228,9 @@ if (BUILD_C-ARES)
 endif ()
 
 if(HAVE_C-ARES)
+  if (NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE CARES_STATICLIB)
+  endif ()
   target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
   set(TRANTOR_SOURCES
       ${TRANTOR_SOURCES}
