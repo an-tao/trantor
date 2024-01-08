@@ -4,7 +4,14 @@ namespace trantor
 class MemBufferNode : public BufferNode
 {
   public:
-    MemBufferNode() = default;
+    explicit MemBufferNode(trantor::MsgBuffer &&buffer)
+        : buffer_(std::move(buffer))
+    {
+    }
+    MemBufferNode(const char *data, size_t len) : buffer_(len)
+    {
+        buffer_.append(data, len);
+    }
 
     void getData(const char *&data, size_t &len) override
     {
@@ -29,8 +36,12 @@ class MemBufferNode : public BufferNode
   private:
     trantor::MsgBuffer buffer_;
 };
-BufferNodePtr BufferNode::newMemBufferNode()
+BufferNodePtr BufferNode::newMemBufferNode(trantor::MsgBuffer buffer)
 {
-    return std::make_shared<MemBufferNode>();
+    return std::make_shared<MemBufferNode>(std::move(buffer));
+}
+BufferNodePtr BufferNode::newMemBufferNode(const char *data, size_t len)
+{
+    return std::make_shared<MemBufferNode>(data, len);
 }
 }  // namespace trantor

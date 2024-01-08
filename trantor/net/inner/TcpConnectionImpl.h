@@ -245,6 +245,7 @@ class TcpConnectionImpl : public TcpConnection,
     ssize_t writeInLoop(const void *buffer, size_t length);
 #else
     void sendInLoop(const char *buffer, size_t length);
+    void sendInLoop(trantor::MsgBuffer &&buffer);
     // -1: error, 0: EAGAIN, >0: bytes sent
     ssize_t writeRaw(const char *buffer, size_t length);
     // -1: error, 0: EAGAIN, >0: bytes sent

@@ -378,6 +378,56 @@ void TcpConnectionImpl::forceClose()
         }
     });
 }
+
+void TcpConnectionImpl::sendInLoop(trantor::MsgBuffer &&buffer)
+{
+    loop_->assertInLoopThread();
+    if (status_ != ConnStatus::Connected)
+    {
+        LOG_WARN << "Connection is not connected,give up sending";
+        return;
+    }
+    if (!ioChannelPtr_->isWriting() && writeBufferList_.empty())
+    {
+        // send directly
+        auto sendLen = writeInLoop(buffer.peek(), buffer.readableBytes());
+        if (sendLen < 0)
+        {
+            LOG_TRACE << "write error";
+            return;
+        }
+        buffer.retrieve(sendLen);
+    }
+    if (buffer.readableBytes() > 0 && status_ == ConnStatus::Connected)
+    {
+        if (writeBufferList_.empty() || writeBufferList_.back()->isFile() ||
+            writeBufferList_.back()->isStream())
+        {
+            writeBufferList_.push_back(
+                BufferNode::newMemBufferNode(std::move(buffer)));
+        }
+        else
+        {
+            writeBufferList_.back()->append(buffer.peek(),
+                                            buffer.readableBytes());
+        }
+        if (highWaterMarkCallback_ &&
+            writeBufferList_.back()->remainingBytes() >
+                static_cast<long long>(highWaterMarkLen_))
+        {
+            highWaterMarkCallback_(shared_from_this(),
+                                   writeBufferList_.back()->remainingBytes());
+        }
+        if (highWaterMarkCallback_ && tlsProviderPtr_ &&
+            tlsProviderPtr_->getBufferedData().readableBytes() >
+                highWaterMarkLen_)
+        {
+            highWaterMarkCallback_(
+                shared_from_this(),
+                tlsProviderPtr_->getBufferedData().readableBytes());
+        }
+    }
+}
 #ifndef _WIN32
 void TcpConnectionImpl::sendInLoop(const void *buffer, size_t length)
 #else
@@ -407,11 +457,15 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         if (writeBufferList_.empty() || writeBufferList_.back()->isFile() ||
             writeBufferList_.back()->isStream())
         {
-            writeBufferList_.push_back(BufferNode::newMemBufferNode());
+            writeBufferList_.push_back(BufferNode::newMemBufferNode(
+                static_cast<const char *>(buffer) + sendLen, length));
         }
-        writeBufferList_.back()->append(static_cast<const char *>(buffer) +
-                                            sendLen,
-                                        length);
+        else
+        {
+            writeBufferList_.back()->append(static_cast<const char *>(buffer) +
+                                                sendLen,
+                                            length);
+        }
         if (highWaterMarkCallback_ &&
             writeBufferList_.back()->remainingBytes() >
                 static_cast<long long>(highWaterMarkLen_))
@@ -448,12 +502,12 @@ void TcpConnectionImpl::send(const std::shared_ptr<MsgBuffer> &msgPtr)
 {
     if (loop_->isInLoopThread())
     {
-        sendInLoop(msgPtr->peek(), msgPtr->readableBytes());
+        sendInLoop(std::move(*msgPtr));
     }
     else
     {
         loop_->queueInLoop([thisPtr = shared_from_this(), msgPtr]() {
-            thisPtr->sendInLoop(msgPtr->peek(), msgPtr->readableBytes());
+            thisPtr->sendInLoop(std::move(*msgPtr));
         });
     }
 }
@@ -465,11 +519,12 @@ void TcpConnectionImpl::send(const char *msg, size_t len)
     }
     else
     {
-        auto buffer = std::make_shared<std::string>(msg, len);
-        loop_->queueInLoop(
-            [thisPtr = shared_from_this(), buffer = std::move(buffer)]() {
-                thisPtr->sendInLoop(buffer->data(), buffer->length());
-            });
+        trantor::MsgBuffer buffer(len);
+        buffer.append(msg, len);
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            buffer = std::move(buffer)]() mutable {
+            thisPtr->sendInLoop(std::move(buffer));
+        });
     }
 }
 void TcpConnectionImpl::send(const void *msg, size_t len)
@@ -484,12 +539,12 @@ void TcpConnectionImpl::send(const void *msg, size_t len)
     }
     else
     {
-        auto buffer =
-            std::make_shared<std::string>(static_cast<const char *>(msg), len);
-        loop_->queueInLoop(
-            [thisPtr = shared_from_this(), buffer = std::move(buffer)]() {
-                thisPtr->sendInLoop(buffer->data(), buffer->length());
-            });
+        trantor::MsgBuffer buffer(len);
+        buffer.append(static_cast<const char *>(msg), len);
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            buffer = std::move(buffer)]() mutable {
+            thisPtr->sendInLoop(std::move(buffer));
+        });
     }
 }
 void TcpConnectionImpl::send(const std::string &msg)
@@ -528,9 +583,10 @@ void TcpConnectionImpl::send(const MsgBuffer &buffer)
     }
     else
     {
-        loop_->queueInLoop([thisPtr = shared_from_this(), buffer]() {
-            thisPtr->sendInLoop(buffer.peek(), buffer.readableBytes());
-        });
+        loop_->queueInLoop(
+            [thisPtr = shared_from_this(), buf = buffer]() mutable {
+                thisPtr->sendInLoop(std::move(buf));
+            });
     }
 }
 
@@ -538,14 +594,14 @@ void TcpConnectionImpl::send(MsgBuffer &&buffer)
 {
     if (loop_->isInLoopThread())
     {
-        sendInLoop(buffer.peek(), buffer.readableBytes());
+        sendInLoop(std::move(buffer));
     }
     else
     {
-        loop_->queueInLoop(
-            [thisPtr = shared_from_this(), buffer = std::move(buffer)]() {
-                thisPtr->sendInLoop(buffer.peek(), buffer.readableBytes());
-            });
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            buffer = std::move(buffer)]() mutable {
+            thisPtr->sendInLoop(std::move(buffer));
+        });
     }
 }
 void TcpConnectionImpl::sendFile(const char *fileName,

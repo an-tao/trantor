@@ -65,8 +65,8 @@ class BufferNode : public NonCopyable
     {
         isDone_ = true;
     }
-    static BufferNodePtr newMemBufferNode();
-
+    static BufferNodePtr newMemBufferNode(trantor::MsgBuffer buffer);
+    static BufferNodePtr newMemBufferNode(const char *data, size_t len);
     static BufferNodePtr newStreamBufferNode(StreamCallback &&cb);
 #ifdef _WIN32
     static BufferNodePtr newFileBufferNode(const wchar_t *fileName,
