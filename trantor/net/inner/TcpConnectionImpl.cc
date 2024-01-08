@@ -98,22 +98,27 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 }
 TcpConnectionImpl::~TcpConnectionImpl()
 {
-    LOG_DEBUG << "write node list size:" << writeBufferList_.size();
-    if (!writeBufferList_.empty())
-    {
-        LOG_DEBUG << "first node is file? "
-                  << writeBufferList_.front()->isFile();
-        LOG_DEBUG << "first node is stream? "
-                  << writeBufferList_.front()->isStream();
-        LOG_DEBUG << "first node is async? "
-                  << writeBufferList_.front()->isAsync();
-        LOG_DEBUG << "first node size:"
-                  << writeBufferList_.front()->remainingBytes();
-    }
+    std::size_t readableTlsBytes = 0;
     if (tlsProviderPtr_)
     {
-        LOG_DEBUG << "buffered TLS data size:"
-                  << tlsProviderPtr_->getBufferedData().readableBytes();
+        readableTlsBytes = tlsProviderPtr_->getBufferedData().readableBytes();
+    }
+    if (!writeBufferList_.empty())
+    {
+        LOG_DEBUG << "write node list size: " << writeBufferList_.size()
+                  << " first node is file? "
+                  << writeBufferList_.front()->isFile()
+                  << " first node is stream? "
+                  << writeBufferList_.front()->isStream()
+                  << " first node is async? "
+                  << writeBufferList_.front()->isAsync() << " first node size: "
+                  << writeBufferList_.front()->remainingBytes()
+                  << " buffered TLS data size: " << readableTlsBytes;
+    }
+    else if (readableTlsBytes != 0)
+    {
+        LOG_DEBUG << "write node list size: 0 buffered TLS data size: "
+                  << readableTlsBytes;
     }
     // send a close alert to peer if we are still connected
     if (tlsProviderPtr_ && status_ == ConnStatus::Connected)
@@ -866,7 +871,7 @@ class AsyncStreamImpl : public AsyncStream
   private:
     std::function<bool(const char *, size_t)> callback_;
 };
-AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
+AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
 {
     auto asyncStreamNode = BufferNode::newAsyncStreamBufferNode();
     std::weak_ptr<TcpConnectionImpl> weakPtr = shared_from_this();
@@ -914,12 +919,38 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream()
         });
     if (loop_->isInLoopThread())
     {
+        if (disableKickoff)
+        {
+            auto entry = kickoffEntry_.lock();
+            if (entry)
+            {
+                entry->reset();
+                kickoffEntry_.reset();
+            }
+            idleTimeoutBackup_ = idleTimeout_;
+            idleTimeout_ = 0;
+        }
+
         writeBufferList_.push_back(asyncStreamNode);
     }
     else
     {
-        loop_->queueInLoop([thisPtr = shared_from_this(),
-                            node = std::move(asyncStreamNode)]() mutable {
+        loop_->queueInLoop([this,
+                            thisPtr = shared_from_this(),
+                            node = std::move(asyncStreamNode),
+                            disableKickoff]() mutable {
+            if (disableKickoff)
+            {
+                auto entry = kickoffEntry_.lock();
+                if (entry)
+                {
+                    entry->reset();
+                    kickoffEntry_.reset();
+                }
+                idleTimeoutBackup_ = idleTimeout_;
+                idleTimeout_ = 0;
+            }
+
             if (thisPtr->writeBufferList_.empty() && node->remainingBytes() > 0)
             {
                 auto n = thisPtr->sendNodeInLoop(node);
@@ -938,6 +969,7 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
                                             const char *data,
                                             size_t len)
 {
+    loop_->assertInLoopThread();
     if (data)
     {
         if (len > 0)
@@ -969,5 +1001,18 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
         if (!writeBufferList_.empty() && node == writeBufferList_.front() &&
             !ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
+
+        if (idleTimeoutBackup_ > 0)
+        {
+            auto timingWheel = timingWheelWeakPtr_.lock();
+            if (timingWheel)
+            {
+                auto entry = std::make_shared<KickoffEntry>(shared_from_this());
+                kickoffEntry_ = entry;
+                idleTimeout_ = idleTimeoutBackup_;
+                idleTimeoutBackup_ = 0;
+                timingWheel->insertEntry(idleTimeout_, std::move(entry));
+            }
+        }
     }
 }

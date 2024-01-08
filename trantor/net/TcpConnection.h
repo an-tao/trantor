@@ -98,10 +98,12 @@ class TRANTOR_EXPORT TcpConnection
 
     /**
      * @brief Send a stream to the peer asynchronously.
+     * @param disableKickoff Disable the kickoff mechanism. If this parameter is
+     * enabled, the connection will not be closed after the inactive timeout.
      * @note The subsequent data sent after the async stream will be sent after
      * the stream is closed.
      */
-    virtual AsyncStreamPtr sendAsyncStream() = 0;
+    virtual AsyncStreamPtr sendAsyncStream(bool disableKickoff = false) = 0;
     /**
      * @brief Get the local address of the connection.
      *
