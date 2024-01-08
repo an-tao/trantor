@@ -26,7 +26,7 @@ int main()
     std::shared_ptr<trantor::TcpClient> client[10];
     std::atomic_int connCount;
     connCount = 10;
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < 10; ++i)
     {
         client[i] = std::make_shared<trantor::TcpClient>(&loop,
                                                          serverAddr,
@@ -59,8 +59,7 @@ int main()
                 if (conn->connected())
                 {
                     LOG_DEBUG << i << " connected!";
-                    char tmp[20];
-                    sprintf(tmp, "%d client!!", i);
+                    std::string tmp = std::to_string(i) + " client!!";
                     conn->send(tmp);
                 }
                 else

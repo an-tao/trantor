@@ -63,10 +63,10 @@ int main(int argc, char *argv[])
                     for (int i = 0; i < 5; ++i)
                     {
                         connPtr->sendFile(argv[1]);
-                        char str[64];
                         ++counter;
-                        sprintf(str, "\n%d files sent!\n", counter);
-                        connPtr->send(str, strlen(str));
+                        std::string str =
+                            "\n" + std::to_string(counter) + " files sent!\n";
+                        connPtr->send(std::move(str));
                     }
                 });
                 t.detach();
@@ -74,10 +74,10 @@ int main(int argc, char *argv[])
                 for (int i = 0; i < 3; ++i)
                 {
                     connPtr->sendFile(argv[1]);
-                    char str[64];
                     ++counter;
-                    sprintf(str, "\n%d files sent!\n", counter);
-                    connPtr->send(str, strlen(str));
+                    std::string str =
+                        "\n" + std::to_string(counter) + " files sent!\n";
+                    connPtr->send(std::move(str));
                 }
             }
             else if (connPtr->disconnected())

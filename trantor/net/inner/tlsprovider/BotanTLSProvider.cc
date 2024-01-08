@@ -219,25 +219,31 @@ struct BotanTLSProvider : public TLSProvider,
         if (getBufferedData().readableBytes() != 0)
         {
             errno = EAGAIN;
-            return -1;
+            return 0;
         }
 
         // Limit the size of the data we send in one go to avoid holding massive
         // buffers in memory.
         constexpr size_t maxSend = 64 * 1024;
-        if (size > maxSend)
-            size = maxSend;
-        channel_->send((const uint8_t *)ptr, size);
-
-        // HACK: Botan doesn't provide a way to know how much raw data has been
-        // written to the underlying transport. So we have to assume that all
-        // data has been written. And cache the unwritten data in writeBuffer_.
-        // Then "fake" the consumed size in sendData() to make the caller think
-        // that all data has been written. Then return -1 if the underlying
-        // socket is not writable at all (i.e. write is all or nothing)
-        if (lastWriteSize_ == -1)
-            return -1;
-        return size;
+        size_t hasSent = 0;
+        while (hasSent < size && getBufferedData().readableBytes() == 0)
+        {
+            auto trunkLen = size - hasSent;
+            if (trunkLen > maxSend)
+                trunkLen = maxSend;
+            channel_->send((const uint8_t *)ptr, size);
+            // HACK: Botan doesn't provide a way to know how much raw data has
+            // been written to the underlying transport. So we have to assume
+            // that all data has been written. And cache the unwritten data in
+            // writeBuffer_. Then "fake" the consumed size in sendData() to make
+            // the caller think that all data has been written. Then return -1
+            // if the underlying socket is not writable at all (i.e. write is
+            // all or nothing)
+            if (lastWriteSize_ == -1)
+                return -1;
+            hasSent += trunkLen;
+        }
+        return static_cast<ssize_t>(hasSent);
     }
 
     virtual void close() override

@@ -21,6 +21,7 @@
 #include <trantor/net/callbacks.h>
 #include <trantor/net/Certificate.h>
 #include <trantor/net/TLSPolicy.h>
+#include <trantor/net/AsyncStream.h>
 #include <memory>
 #include <functional>
 #include <string>
@@ -69,8 +70,8 @@ class TRANTOR_EXPORT TcpConnection
      * @param length
      */
     virtual void sendFile(const char *fileName,
-                          size_t offset = 0,
-                          size_t length = 0) = 0;
+                          long long offset = 0,
+                          long long length = 0) = 0;
     /**
      * @brief Send a file to the peer.
      *
@@ -79,8 +80,8 @@ class TRANTOR_EXPORT TcpConnection
      * @param length
      */
     virtual void sendFile(const wchar_t *fileName,
-                          size_t offset = 0,
-                          size_t length = 0) = 0;
+                          long long offset = 0,
+                          long long length = 0) = 0;
     /**
      * @brief Send a stream to the peer.
      *
@@ -96,10 +97,19 @@ class TRANTOR_EXPORT TcpConnection
                                                 // of data put in buffer
 
     /**
+     * @brief Send a stream to the peer asynchronously.
+     * @param disableKickoff Disable the kickoff mechanism. If this parameter is
+     * enabled, the connection will not be closed after the inactive timeout.
+     * @note The subsequent data sent after the async stream will be sent after
+     * the stream is closed.
+     */
+    virtual AsyncStreamPtr sendAsyncStream(bool disableKickoff = false) = 0;
+    /**
      * @brief Get the local address of the connection.
      *
      * @return const InetAddress&
      */
+
     virtual const InetAddress &localAddr() const = 0;
 
     /**

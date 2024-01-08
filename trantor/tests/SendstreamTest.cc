@@ -79,10 +79,10 @@ int main(int argc, char *argv[])
                                               std::placeholders::_1,
                                               std::placeholders::_2);
                     connPtr->sendStream(callback);
-                    char str[64];
                     ++counter;
-                    sprintf(str, "\n%d streams sent!\n", counter);
-                    connPtr->send(str, strlen(str));
+                    std::string str =
+                        "\n" + std::to_string(counter) + " streams sent!\n";
+                    connPtr->send(std::move(str));
                 }
             });
             t.detach();
@@ -101,10 +101,10 @@ int main(int argc, char *argv[])
                                           std::placeholders::_1,
                                           std::placeholders::_2);
                 connPtr->sendStream(callback);
-                char str[64];
                 ++counter;
-                sprintf(str, "\n%d streams sent!\n", counter);
-                connPtr->send(str, strlen(str));
+                std::string str =
+                    "\n" + std::to_string(counter) + " streams sent!\n";
+                connPtr->send(std::move(str));
             }
         }
         else if (connPtr->disconnected())
