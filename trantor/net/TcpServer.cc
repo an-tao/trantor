@@ -14,6 +14,7 @@
 
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
+#include <cstdint>
 #include <functional>
 #include <vector>
 #include "Acceptor.h"
@@ -90,7 +91,15 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
         assert(timingWheelMap_[ioLoop]);
         newPtr->enableKickingOff(idleTimeout_, timingWheelMap_[ioLoop]);
     }
-    newPtr->setRecvMsgCallback(recvMessageCallback_);
+    newPtr->setRecvMsgCallback(
+        [this](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
+            if (!pipelinePtr_)
+            {
+                recvMessageCallback_(connectionPtr, buffer);
+                return;
+            }
+            pipelinePtr_->unpack(connectionPtr, buffer, recvMessageCallback_);
+        });
 
     newPtr->setConnectionCallback(
         [this](const TcpConnectionPtr &connectionPtr) {
