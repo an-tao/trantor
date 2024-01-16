@@ -13,7 +13,7 @@
 #ifndef _WIN32
 #include <stddef.h>
 #else
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 /****************************** MACROS ******************************/

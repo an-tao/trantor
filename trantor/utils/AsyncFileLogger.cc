@@ -22,7 +22,7 @@
 #include <sys/prctl.h>
 #endif
 #else
-#include <Windows.h>
+#include <windows.h>
 #endif
 #include <string.h>
 #include <algorithm>
@@ -64,7 +64,7 @@ AsyncFileLogger::~AsyncFileLogger()
         }
         while (!writeBuffers_.empty())
         {
-            StringPtr tmpPtr = (StringPtr &&) writeBuffers_.front();
+            StringPtr tmpPtr = (StringPtr &&)writeBuffers_.front();
             writeBuffers_.pop();
             writeLogToFile(tmpPtr);
         }
@@ -162,7 +162,7 @@ void AsyncFileLogger::logThreadFunc()
 
         while (!tmpBuffers_.empty())
         {
-            StringPtr tmpPtr = (StringPtr &&) tmpBuffers_.front();
+            StringPtr tmpPtr = (StringPtr &&)tmpBuffers_.front();
             tmpBuffers_.pop();
             writeLogToFile(tmpPtr);
             tmpPtr->clear();
