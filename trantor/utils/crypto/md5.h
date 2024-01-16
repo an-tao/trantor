@@ -21,7 +21,7 @@
 typedef unsigned char BYTE;  // 8-bit byte
 typedef unsigned int WORD;  // 32-bit word, change to "long" for 16-bit machines
 #else
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 typedef struct
