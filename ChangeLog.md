@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.16] - 2024-01-18
+
+### Changed
+
+- Add build badge for individual OS.
+
+- deinit libressl.
+
+- Remove mutex.
+
+### Fixed
+
+- Pile of fix for h2.
+
+- Fix a bug when sending data.
+
+- Fix c-ares CARES_EXTERN for static builds.
+
+- Fix header file name issue when cross-compiling on Windows.
+
+- Fix name issue when cross-compiling.
+
 ## [1.5.15] - 2023-11-27
 
 ### Changed
@@ -606,7 +628,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.15...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.16...HEAD
+
+[1.5.16]: https://github.com/an-tao/trantor/compare/v1.5.15...v1.5.16
 
 [1.5.15]: https://github.com/an-tao/trantor/compare/v1.5.14...v1.5.15
 
