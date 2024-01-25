@@ -428,7 +428,10 @@ static bool systemRandomBytes(void *ptr, size_t size)
       (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 25))))
     return getentropy(ptr, size) != -1;
 #elif defined(_WIN32)  // Windows
-    return RtlGenRandom(ptr, (ULONG)size);
+    static HCRYPTPROV handle = 0;
+    if (!handle && !CryptAcquireContext(&handle, 0, 0, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
+        return false;
+    return CryptGenRandom(handle, size, (BYTE*)ptr);
 #elif defined(__unix__) || defined(__HAIKU__)
     // fallback to /dev/urandom for other/old UNIX
     thread_local std::unique_ptr<FILE, std::function<void(FILE *)> > fptr(
