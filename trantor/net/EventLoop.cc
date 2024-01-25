@@ -28,7 +28,9 @@
 #include <windows.h>
 #include <io.h>
 #include <synchapi.h>
+#ifndef _SSIZE_T_DEFINED
 using ssize_t = long long;
+#endif
 #else
 #include <poll.h>
 #endif
