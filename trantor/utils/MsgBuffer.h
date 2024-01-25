@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <string.h>
 #include <cstdint>
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_SSIZE_T_DEFINED)
 using ssize_t = std::intptr_t;
 #endif
 
