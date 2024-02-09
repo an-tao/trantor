@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.17] - 2024-02-09
+
+### Changed
+
+- Make FileBufferNodeWin aware of UWP Win32 API.
+
+- Use ssize_t declared by toolchain when available.
+
 ## [1.5.16] - 2024-01-18
 
 ### Changed
@@ -628,7 +636,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.16...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.17...HEAD
+
+[1.5.17]: https://github.com/an-tao/trantor/compare/v1.5.16...v1.5.17
 
 [1.5.16]: https://github.com/an-tao/trantor/compare/v1.5.15...v1.5.16
 
