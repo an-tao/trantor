@@ -27,7 +27,7 @@ Hash128 md5(const void* data, size_t len)
     auto ctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, md5, nullptr);
     EVP_DigestUpdate(ctx, data, len);
-    EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
+    EVP_DigestFinal_ex(ctx, (unsigned char*)&hash.bytes, nullptr);
     EVP_MD_CTX_free(ctx);
     EVP_MD_free(md5);
     return hash;
@@ -36,7 +36,7 @@ Hash128 md5(const void* data, size_t len)
     MD5_CTX ctx;
     MD5_Init(&ctx);
     MD5_Update(&ctx, data, len);
-    MD5_Final((unsigned char*)&hash, &ctx);
+    MD5_Final((unsigned char*)&hash.bytes, &ctx);
     return hash;
 #endif
 }
@@ -49,7 +49,7 @@ Hash160 sha1(const void* data, size_t len)
     auto ctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, sha1, nullptr);
     EVP_DigestUpdate(ctx, data, len);
-    EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
+    EVP_DigestFinal_ex(ctx, (unsigned char*)&hash.bytes, nullptr);
     EVP_MD_CTX_free(ctx);
     EVP_MD_free(sha1);
     return hash;
@@ -58,7 +58,7 @@ Hash160 sha1(const void* data, size_t len)
     SHA_CTX ctx;
     SHA1_Init(&ctx);
     SHA1_Update(&ctx, data, len);
-    SHA1_Final((unsigned char*)&hash, &ctx);
+    SHA1_Final((unsigned char*)&hash.bytes, &ctx);
     return hash;
 #endif
 }
@@ -71,7 +71,7 @@ Hash256 sha256(const void* data, size_t len)
     auto ctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, sha256, nullptr);
     EVP_DigestUpdate(ctx, data, len);
-    EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
+    EVP_DigestFinal_ex(ctx, (unsigned char*)&hash.bytes, nullptr);
     EVP_MD_CTX_free(ctx);
     EVP_MD_free(sha256);
     return hash;
@@ -80,7 +80,7 @@ Hash256 sha256(const void* data, size_t len)
     SHA256_CTX ctx;
     SHA256_Init(&ctx);
     SHA256_Update(&ctx, data, len);
-    SHA256_Final((unsigned char*)&hash, &ctx);
+    SHA256_Final((unsigned char*)&hash.bytes, &ctx);
     return hash;
 #endif
 }
@@ -95,7 +95,7 @@ Hash256 sha3(const void* data, size_t len)
         auto ctx = EVP_MD_CTX_new();
         EVP_DigestInit_ex(ctx, sha3, nullptr);
         EVP_DigestUpdate(ctx, data, len);
-        EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
+        EVP_DigestFinal_ex(ctx, (unsigned char*)&hash.bytes, nullptr);
         EVP_MD_CTX_free(ctx);
         EVP_MD_free(sha3);
         return hash;
@@ -107,7 +107,7 @@ Hash256 sha3(const void* data, size_t len)
         EVP_MD_CTX* ctx = EVP_MD_CTX_new();
         EVP_DigestInit_ex(ctx, sha3, nullptr);
         EVP_DigestUpdate(ctx, data, len);
-        EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
+        EVP_DigestFinal_ex(ctx, (unsigned char*)&hash.bytes, nullptr);
         EVP_MD_CTX_free(ctx);
         return hash;
     }
@@ -126,13 +126,13 @@ Hash256 blake2b(const void* data, size_t len)
         auto ctx = EVP_MD_CTX_new();
         EVP_DigestInit_ex(ctx, blake2b, nullptr);
         EVP_DigestUpdate(ctx, data, len);
-        EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
+        EVP_DigestFinal_ex(ctx, (unsigned char*)&hash.bytes, nullptr);
         EVP_MD_CTX_free(ctx);
         EVP_MD_free(blake2b);
         return hash;
     }
 #endif
-    trantor_blake2b(&hash, sizeof(hash), data, len, nullptr, 0);
+    trantor_blake2b(&hash.bytes, sizeof(hash), data, len, nullptr, 0);
     return hash;
 }
 
