@@ -43,9 +43,9 @@ static const unsigned int k[64] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
 /*********************** FUNCTION DEFINITIONS ***********************/
-void trantor_sha256_transform(SHA256_CTX *ctx, const BYTE data[])
+void trantor_sha256_transform(SHA256_CTX *ctx, const unsigned char data[])
 {
-    WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+    unsigned int a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
 
     for (i = 0, j = 0; i < 16; ++i, j += 4)
         m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) |
@@ -100,9 +100,11 @@ void trantor_sha256_init(SHA256_CTX *ctx)
     ctx->state[7] = 0x5be0cd19;
 }
 
-void trantor_sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len)
+void trantor_sha256_update(SHA256_CTX *ctx,
+                           const unsigned char data[],
+                           size_t len)
 {
-    WORD i;
+    unsigned int i;
 
     for (i = 0; i < len; ++i)
     {
@@ -117,9 +119,9 @@ void trantor_sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len)
     }
 }
 
-void trantor_sha256_final(SHA256_CTX *ctx, BYTE hash[])
+void trantor_sha256_final(SHA256_CTX *ctx, unsigned char hash[])
 {
-    WORD i;
+    unsigned int i;
 
     i = ctx->datalen;
 
@@ -141,14 +143,14 @@ void trantor_sha256_final(SHA256_CTX *ctx, BYTE hash[])
 
     // Append to the padding the total message's length in bits and transform.
     ctx->bitlen += ctx->datalen * 8;
-    ctx->data[63] = ctx->bitlen;
-    ctx->data[62] = ctx->bitlen >> 8;
-    ctx->data[61] = ctx->bitlen >> 16;
-    ctx->data[60] = ctx->bitlen >> 24;
-    ctx->data[59] = ctx->bitlen >> 32;
-    ctx->data[58] = ctx->bitlen >> 40;
-    ctx->data[57] = ctx->bitlen >> 48;
-    ctx->data[56] = ctx->bitlen >> 56;
+    ctx->data[63] = (unsigned char)ctx->bitlen;
+    ctx->data[62] = (unsigned char)(ctx->bitlen >> 8);
+    ctx->data[61] = (unsigned char)(ctx->bitlen >> 16);
+    ctx->data[60] = (unsigned char)(ctx->bitlen >> 24);
+    ctx->data[59] = (unsigned char)(ctx->bitlen >> 32);
+    ctx->data[58] = (unsigned char)(ctx->bitlen >> 40);
+    ctx->data[57] = (unsigned char)(ctx->bitlen >> 48);
+    ctx->data[56] = (unsigned char)(ctx->bitlen >> 56);
     trantor_sha256_transform(ctx, ctx->data);
 
     // Since this implementation uses little endian byte ordering and SHA uses

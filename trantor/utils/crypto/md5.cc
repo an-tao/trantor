@@ -45,9 +45,9 @@ order.
     }
 
 /*********************** FUNCTION DEFINITIONS ***********************/
-void trantor_md5_transform(MD5_CTX *ctx, const BYTE data[])
+void trantor_md5_transform(MD5_CTX *ctx, const unsigned char data[])
 {
-    WORD a, b, c, d, m[16], i, j;
+    unsigned int a, b, c, d, m[16], i, j;
 
     // MD5 specifies big endian byte order, but this implementation assumes a
     // little endian byte order CPU. Reverse all the bytes upon input, and
@@ -145,7 +145,7 @@ void trantor_md5_init(MD5_CTX *ctx)
     ctx->state[3] = 0x10325476;
 }
 
-void trantor_md5_update(MD5_CTX *ctx, const BYTE data[], size_t len)
+void trantor_md5_update(MD5_CTX *ctx, const unsigned char data[], size_t len)
 {
     size_t i;
 
@@ -162,7 +162,7 @@ void trantor_md5_update(MD5_CTX *ctx, const BYTE data[], size_t len)
     }
 }
 
-void trantor_md5_final(MD5_CTX *ctx, BYTE hash[])
+void trantor_md5_final(MD5_CTX *ctx, unsigned char hash[])
 {
     size_t i;
 
@@ -186,14 +186,14 @@ void trantor_md5_final(MD5_CTX *ctx, BYTE hash[])
 
     // Append to the padding the total message's length in bits and transform.
     ctx->bitlen += ctx->datalen * 8;
-    ctx->data[56] = ctx->bitlen;
-    ctx->data[57] = ctx->bitlen >> 8;
-    ctx->data[58] = ctx->bitlen >> 16;
-    ctx->data[59] = ctx->bitlen >> 24;
-    ctx->data[60] = ctx->bitlen >> 32;
-    ctx->data[61] = ctx->bitlen >> 40;
-    ctx->data[62] = ctx->bitlen >> 48;
-    ctx->data[63] = ctx->bitlen >> 56;
+    ctx->data[56] = (unsigned char)ctx->bitlen;
+    ctx->data[57] = (unsigned char)(ctx->bitlen >> 8);
+    ctx->data[58] = (unsigned char)(ctx->bitlen >> 16);
+    ctx->data[59] = (unsigned char)(ctx->bitlen >> 24);
+    ctx->data[60] = (unsigned char)(ctx->bitlen >> 32);
+    ctx->data[61] = (unsigned char)(ctx->bitlen >> 40);
+    ctx->data[62] = (unsigned char)(ctx->bitlen >> 48);
+    ctx->data[63] = (unsigned char)(ctx->bitlen >> 56);
     trantor_md5_transform(ctx, ctx->data);
 
     // Since this implementation uses little endian byte ordering and MD uses

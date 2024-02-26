@@ -366,10 +366,10 @@ Hash128 md5(const void *data, size_t len)
 Hash160 sha1(const void *data, size_t len)
 {
     SHA1_CTX ctx;
-    TrantorSHA1Init(&ctx);
-    TrantorSHA1Update(&ctx, (const unsigned char *)data, len);
+    trantor_sha1_init(&ctx);
+    trantor_sha1_update(&ctx, (const unsigned char *)data, len);
     Hash160 hash;
-    TrantorSHA1Final((unsigned char *)&hash, &ctx);
+    trantor_sha1_final((unsigned char *)&hash, &ctx);
     return hash;
 }
 

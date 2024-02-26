@@ -105,7 +105,7 @@ class FileBufferNode : public BufferNode
             DWORD n = 0;
             if (!ReadFile(sendHandle_,
                           msgBufferPtr_->beginWrite(),
-                          msgBufferPtr_->writableBytes(),
+                          (uint32_t)msgBufferPtr_->writableBytes(),
                           &n,
                           nullptr))
             {
