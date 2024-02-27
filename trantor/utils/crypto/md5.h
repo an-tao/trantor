@@ -11,21 +11,22 @@
 
 /*************************** HEADER FILES ***************************/
 #include <stddef.h>
+#include <stdint.h>
 
 /****************************** MACROS ******************************/
 #define MD5_BLOCK_SIZE 32  // MD5 outputs a 32 byte digest
 
 typedef struct
 {
-    unsigned char data[64];
-    unsigned int datalen;
-    unsigned long long bitlen;
-    unsigned int state[4];
+    uint8_t data[64];
+    uint32_t datalen;
+    uint64_t bitlen;
+    uint32_t state[4];
 } MD5_CTX;
 
 /*********************** FUNCTION DECLARATIONS **********************/
 void trantor_md5_init(MD5_CTX *ctx);
-void trantor_md5_update(MD5_CTX *ctx, const unsigned char data[], size_t len);
-void trantor_md5_final(MD5_CTX *ctx, unsigned char hash[]);
+void trantor_md5_update(MD5_CTX *ctx, const uint8_t data[], size_t len);
+void trantor_md5_final(MD5_CTX *ctx, uint8_t hash[]);
 
 #endif  // MD5_H
