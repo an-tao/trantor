@@ -18,9 +18,9 @@ typedef struct
     unsigned char buffer[64];
 } SHA1_CTX;
 
-void TrantorSHA1Transform(uint32_t state[5], const unsigned char buffer[64]);
-void TrantorSHA1Init(SHA1_CTX* context);
-void TrantorSHA1Update(SHA1_CTX* context,
-                       const unsigned char* data,
-                       size_t len);
-void TrantorSHA1Final(unsigned char digest[20], SHA1_CTX* context);
+void trantor_sha1_transform(uint32_t state[5], const unsigned char buffer[64]);
+void trantor_sha1_init(SHA1_CTX* context);
+void trantor_sha1_update(SHA1_CTX* context,
+                         const unsigned char* data,
+                         size_t len);
+void trantor_sha1_final(unsigned char digest[20], SHA1_CTX* context);

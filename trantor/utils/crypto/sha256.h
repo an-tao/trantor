@@ -10,33 +10,22 @@
 #define SHA256_H
 
 /*************************** HEADER FILES ***************************/
-#ifndef _WIN32
-#include <stddef.h>
-#else
-#include <windows.h>
-#endif
+#include <stdint.h>
 
 /****************************** MACROS ******************************/
 #define SHA256_BLOCK_SIZE 32  // SHA256 outputs a 32 byte digest
 
-/**************************** DATA TYPES ****************************/
-
-#ifndef _WIN32
-typedef unsigned char BYTE;  // 8-bit byte
-typedef unsigned int WORD;  // 32-bit word, change to "long" for 16-bit machines
-#endif
-
 typedef struct
 {
-    BYTE data[64];
-    WORD datalen;
-    unsigned long long bitlen;
-    WORD state[8];
+    uint8_t data[64];
+    uint32_t datalen;
+    uint64_t bitlen;
+    uint32_t state[8];
 } SHA256_CTX;
 
 /*********************** FUNCTION DECLARATIONS **********************/
 void trantor_sha256_init(SHA256_CTX *ctx);
-void trantor_sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
-void trantor_sha256_final(SHA256_CTX *ctx, BYTE hash[]);
+void trantor_sha256_update(SHA256_CTX *ctx, const uint8_t data[], size_t len);
+void trantor_sha256_final(SHA256_CTX *ctx, uint8_t hash[]);
 
 #endif  // SHA256_H

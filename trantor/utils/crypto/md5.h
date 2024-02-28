@@ -11,30 +11,22 @@
 
 /*************************** HEADER FILES ***************************/
 #include <stddef.h>
+#include <stdint.h>
 
 /****************************** MACROS ******************************/
-#define MD5_BLOCK_SIZE 16  // MD5 outputs a 16 byte digest
-
-/**************************** DATA TYPES ****************************/
-
-#ifndef _WIN32
-typedef unsigned char BYTE;  // 8-bit byte
-typedef unsigned int WORD;  // 32-bit word, change to "long" for 16-bit machines
-#else
-#include <windows.h>
-#endif
+#define MD5_BLOCK_SIZE 32  // MD5 outputs a 32 byte digest
 
 typedef struct
 {
-    BYTE data[64];
-    WORD datalen;
-    unsigned long long bitlen;
-    WORD state[4];
+    uint8_t data[64];
+    uint32_t datalen;
+    uint64_t bitlen;
+    uint32_t state[4];
 } MD5_CTX;
 
 /*********************** FUNCTION DECLARATIONS **********************/
 void trantor_md5_init(MD5_CTX *ctx);
-void trantor_md5_update(MD5_CTX *ctx, const BYTE data[], size_t len);
-void trantor_md5_final(MD5_CTX *ctx, BYTE hash[]);
+void trantor_md5_update(MD5_CTX *ctx, const uint8_t data[], size_t len);
+void trantor_md5_final(MD5_CTX *ctx, uint8_t hash[]);
 
 #endif  // MD5_H
