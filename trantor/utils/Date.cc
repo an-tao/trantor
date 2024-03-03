@@ -119,14 +119,14 @@ std::string Date::toFormattedString(bool showMicroseconds) const
             static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
         snprintf(buf,
                  sizeof(buf),
-                 "%4d%02d%02d %02d:%02d:%02d.%06d",
+                 "%4d%02d%02d %02d:%02d:%02d.%d",
                  tm_time.tm_year + 1900,
                  tm_time.tm_mon + 1,
                  tm_time.tm_mday,
                  tm_time.tm_hour,
                  tm_time.tm_min,
                  tm_time.tm_sec,
-                 microseconds);
+                 microseconds / 1000000 < 1 ? microseconds : microseconds / 1000000);
     }
     else
     {
@@ -160,7 +160,7 @@ std::string Date::toCustomedFormattedString(const std::string &fmtStr,
     char decimals[12] = {0};
     int microseconds =
         static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
-    snprintf(decimals, sizeof(decimals), ".%06d", microseconds);
+    snprintf(decimals, sizeof(decimals), ".%d", microseconds / 1000000 < 1 ? microseconds : microseconds / 1000000);
     return std::string(buf) + decimals;
 }
 void Date::toCustomedFormattedString(const std::string &fmtStr,
@@ -197,14 +197,14 @@ std::string Date::toFormattedStringLocal(bool showMicroseconds) const
             static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
         snprintf(buf,
                  sizeof(buf),
-                 "%4d%02d%02d %02d:%02d:%02d.%06d",
+                 "%4d%02d%02d %02d:%02d:%02d.%d",
                  tm_time.tm_year + 1900,
                  tm_time.tm_mon + 1,
                  tm_time.tm_mday,
                  tm_time.tm_hour,
                  tm_time.tm_min,
                  tm_time.tm_sec,
-                 microseconds);
+                 microseconds / 1000000 < 1 ? microseconds : microseconds / 1000000);
     }
     else
     {
@@ -239,14 +239,14 @@ std::string Date::toDbStringLocal() const
             static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
         snprintf(buf,
                  sizeof(buf),
-                 "%4d-%02d-%02d %02d:%02d:%02d.%06d",
+                 "%4d-%02d-%02d %02d:%02d:%02d.%d",
                  tm_time.tm_year + 1900,
                  tm_time.tm_mon + 1,
                  tm_time.tm_mday,
                  tm_time.tm_hour,
                  tm_time.tm_min,
                  tm_time.tm_sec,
-                 microseconds);
+                 microseconds / 1000000 < 1 ? microseconds : microseconds / 1000000);
     }
     else
     {
@@ -306,10 +306,10 @@ Date Date::fromDbStringLocal(const std::string &datetime)
                     {
                         seconds[1].resize(6);
                     }
-                    else if (seconds[1].length() < 6)
-                    {
-                        seconds[1].append(6 - seconds[1].length(), '0');
-                    }
+//                    else if (seconds[1].length() < 6)
+//                    {
+//                        seconds[1].append(6 - seconds[1].length(), '0');
+//                    }
                     microSecond = std::stol(seconds[1]);
                 }
             }
@@ -341,7 +341,7 @@ std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr,
     char decimals[12] = {0};
     int microseconds =
         static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
-    snprintf(decimals, sizeof(decimals), ".%06d", microseconds);
+    snprintf(decimals, sizeof(decimals), ".%d", microseconds / 1000000 < 1 ? microseconds : microseconds / 1000000);
     return std::string(buf) + decimals;
 }
 Date::Date(unsigned int year,
