@@ -59,7 +59,7 @@ int main()
                 if (conn->connected())
                 {
                     LOG_DEBUG << i << " connected!";
-                    std::string tmp = std::to_string(i) + " client!!";
+                    std::string tmp = std::to_string(i) + " client!!\n";
                     conn->send(tmp);
                 }
                 else

@@ -21,6 +21,7 @@
 #include <trantor/utils/Logger.h>
 #include <trantor/utils/NonCopyable.h>
 #include <trantor/utils/TimingWheel.h>
+#include <trantor/net/Pipeline.h>
 #include <csignal>
 #include <memory>
 #include <set>
@@ -28,6 +29,7 @@
 
 namespace trantor
 {
+
 class Acceptor;
 /**
  * @brief This class represents a TCP server.
@@ -128,6 +130,16 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     void setRecvMessageCallback(RecvMessageCallback &&cb)
     {
         recvMessageCallback_ = std::move(cb);
+    }
+
+    /**
+     * @brief Set the auto unpack setting.
+     *
+     * @param unpack setting.
+     */
+    void setPipeline(std::unique_ptr<Pipeline> pipelinePtr)
+    {
+        pipelinePtr_ = std::move(pipelinePtr);
     }
 
     /**
@@ -304,6 +316,8 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     bool started_{false};
     TLSPolicyPtr policyPtr_{nullptr};
     SSLContextPtr sslContextPtr_{nullptr};
+
+    std::unique_ptr<Pipeline> pipelinePtr_{nullptr};
 };
 
 }  // namespace trantor
