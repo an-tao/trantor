@@ -207,7 +207,7 @@ class TRANTOR_EXPORT MsgBuffer
     void appendInt32(const uint32_t i);
 
     /**
-     * @brief Appaend a unsigned int64 value to the end of the buffer.
+     * @brief Append a unsigned int64 value to the end of the buffer.
      *
      * @param l
      */

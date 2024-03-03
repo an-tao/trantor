@@ -172,7 +172,7 @@ inline std::string fromNativePath(const std::wstring &strPath)
 }
 
 /**
- * @brief Check if the name supplied by the SSL Cert matchs a FQDN
+ * @brief Check if the name supplied by the SSL Cert matches a FQDN
  * @param certName The name supplied by the SSL Cert
  * @param hostName The FQDN to match
  *
@@ -243,7 +243,7 @@ inline Hash256 sha3(const std::string &str)
 /**
  * @brief Compute the BLAKE2b hash of the given data
  * @note When in doubt, use SHA3 or BLAKE2b. Both are safe and SHA3 is faster if
- * you are using OpenSSL and it has SHA3 in hardware mode. Owtherwise BLAKE2b is
+ * you are using OpenSSL and it has SHA3 in hardware mode. Otherwise BLAKE2b is
  * faster in software.
  */
 TRANTOR_EXPORT Hash256 blake2b(const void *data, size_t len);
@@ -255,7 +255,7 @@ inline Hash256 blake2b(const std::string &str)
 /**
  * @brief hex encode the given data
  * @note When in doubt, use SHA3 or BLAKE2b. Both are safe and SHA3 is faster if
- * you are using OpenSSL and it has SHA3 in hardware mode. Owtherwise BLAKE2b is
+ * you are using OpenSSL and it has SHA3 in hardware mode. Otherwise BLAKE2b is
  * faster in software.
  */
 TRANTOR_EXPORT std::string toHexString(const void *data, size_t len);
@@ -280,7 +280,7 @@ inline std::string toHexString(const Hash256 &hash)
  * @param size Size of the buffer
  * @return true if successful, false otherwise
  *
- * @note This function really sholdn't fail, but it's possible that
+ * @note This function really shouldn't fail, but it's possible that
  *
  *   - OpenSSL can't access /dev/urandom
  *   - Compiled with glibc that supports getentropy() but the kernel doesn't

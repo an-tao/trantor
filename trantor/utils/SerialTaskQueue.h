@@ -58,7 +58,7 @@ class TRANTOR_EXPORT SerialTaskQueue : public TaskQueue
     SerialTaskQueue() = delete;
 
     /**
-     * @brief Construct a new serail task queue instance.
+     * @brief Construct a new serial task queue instance.
      *
      * @param name
      */
@@ -72,7 +72,7 @@ class TRANTOR_EXPORT SerialTaskQueue : public TaskQueue
      * @return true
      * @return false
      */
-    bool isRuningTask()
+    bool isRunningTask()
     {
         return loopThread_.getLoop()
                    ? loopThread_.getLoop()->isCallingFunctions()

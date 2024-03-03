@@ -36,7 +36,7 @@ class TaskQueue : public NonCopyable
     };
 
     /**
-     * @brief Run a task in the queue sychronously. This means that the task is
+     * @brief Run a task in the queue synchronously. This means that the task is
      * executed before the method returns.
      *
      * @param task
