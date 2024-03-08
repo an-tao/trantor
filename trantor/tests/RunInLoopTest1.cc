@@ -3,6 +3,7 @@
 //
 
 #include <trantor/net/EventLoop.h>
+#include <trantor/utils/Logger.h>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -13,6 +14,7 @@
 using namespace std::chrono_literals;
 int main()
 {
+    trantor::Logger::setLogLevel(trantor::Logger::LogLevel::kTrace);
     trantor::EventLoop loop;
     std::thread thread([&loop]() {
         std::this_thread::sleep_for(3s);
