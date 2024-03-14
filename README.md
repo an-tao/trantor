@@ -43,7 +43,7 @@ Trantor provides some building options, you can enable or disable them by settin
 | BUILD_DOC | Build Doxygen documentation |  OFF | 
 | BUILD_DEPENDENCIES | Fetch and build dependencies, this allow you use latest or change dependencies version, if you don't want to use system package manager provided | OFF | 
 | TRANTOR_USE_SPDLOG | Allow using the spdlog logging library | ON | 
-| TRANTOR_USE_C-ARES | Allow using C-ARES |  OFF |
+| TRANTOR_USE_C-ARES | Allow using C-ARES |  ON |
 | TRANTOR_TLS_PROVIDER | TLS provider for trantor. Valid options are 'none', 'openssl', 'botan-3', 'auto'.   | auto  | 
 
 > With option `BUILD_DEPENDENCIES` on, the related dependencies source will download and build automatically based on the options settings, this make develop more easily in `Windows`.

@@ -14,7 +14,7 @@ option(BUILD_TESTING "Build tests" OFF)
 option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_DEPENDENCIES "Fetch and build dependencies" OFF)
 option(TRANTOR_USE_SPDLOG "Allow using the spdlog logging library" ON)
-option(TRANTOR_USE_C-ARES "Allow using C-ARES" OFF)
+option(TRANTOR_USE_C-ARES "Allow using C-ARES" ON)
 set(TRANTOR_TLS_PROVIDER
     "auto"
     CACHE STRING "TLS(Transport Layer Security) provider for trantor. Valid options are
