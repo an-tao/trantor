@@ -64,8 +64,8 @@ if(BUILD_DEPENDENCIES)
 
   # spdlog
   if(TRANTOR_USE_SPDLOG)
-    FetchContent_Declare(fmt URL "https://github.com/fmtlib/fmt/archive/refs/tags/10.2.1.tar.gz")
-    FetchContent_Declare(spdlog URL "https://github.com/gabime/spdlog/archive/refs/tags/v1.13.0.tar.gz")
+    FetchContent_Declare(fmt URL "https://github.com/fmtlib/fmt/archive/refs/heads/master.zip")
+    FetchContent_Declare(spdlog URL "https://github.com/gabime/spdlog/archive/refs/heads/v1.x.zip")
     FetchContent_MakeAvailable(fmt spdlog)
 
     # Set build output path, this is mainly for Windows, to solve the test/unittests running 0x000135 problems
@@ -75,7 +75,7 @@ if(BUILD_DEPENDENCIES)
 
   # c-ares
   if(TRANTOR_USE_C-ARES)
-    FetchContent_Declare(c-ares URL "https://github.com/c-ares/c-ares/archive/refs/tags/cares-1_25_0.tar.gz")
+    FetchContent_Declare(c-ares URL "https://github.com/c-ares/c-ares/archive/refs/heads/main.zip")
     FetchContent_MakeAvailable(c-ares)
 
     # Set build output path, this is mainly for Windows, to solve the test/unittests running 0x000135 problems
@@ -87,7 +87,7 @@ if(BUILD_DEPENDENCIES)
     # openssl build need perl
     find_package(Perl REQUIRED)
 
-    FetchContent_Declare(OpenSSL URL "https://github.com/openssl/openssl/archive/refs/tags/openssl-3.2.0.tar.gz")
+    FetchContent_Declare(OpenSSL URL "https://github.com/openssl/openssl/archive/refs/heads/master.zip")
     FetchContent_MakeAvailable(OpenSSL)
 
     # Set OPENSSL_ROOT_DIR, to let find_package could search from the build directory
@@ -130,7 +130,7 @@ if(BUILD_DEPENDENCIES)
     # botan build need python
     find_package(PythonInterp REQUIRED)
 
-    FetchContent_Declare(Botan URL "https://github.com/randombit/botan/archive/refs/tags/3.2.0.tar.gz")
+    FetchContent_Declare(Botan URL "https://github.com/randombit/botan/archive/refs/heads/master.zip")
     FetchContent_MakeAvailable(Botan)
 
     set(BOTAN_ROOT_DIR
