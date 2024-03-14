@@ -1,7 +1,9 @@
 .idea
-build
-cmake-build-debug
 .vscode
 .vs
-CMakeSettings.json
 .cache
+build
+cmake-build-debug
+CMakeSettings.json
+CMakeUserPresets.json
+vcpkg_installled
