@@ -7,18 +7,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: '${{matrix.link}}-${{matrix.build-type}}-${{matrix.tls-provider}}'
+  ###############################################################################################################
+  fetch-content-build:
+    name: "${{matrix.link}}-${{matrix.build-type}}-TLS:${{matrix.tls-provider}}-fetch"
     runs-on: windows-latest
+    env:
+      shared: ${{matrix.link == 'SHARED' && 'ON' || 'OFF'}}
     strategy:
       fail-fast: false
       matrix:
-        link: [ 'STATIC', 'SHARED' ]
-        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-        build-type: ['Debug', 'Release']
-        # TODO: conan botan is v2, v2 support is removed
-        # tls-provider: ['', 'openssl', 'botan']
-        tls-provider: ['', 'openssl']
+        link: ["STATIC", "SHARED"]
+        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, MinSizeRel, etc.)
+        build-type: ["Debug", "Release"]
+        # Support (none, openssl, botan-3, auto)
+        tls-provider: ["none", "openssl", "botan-3"]
 
     steps:
       - name: Checkout Trantor source code
@@ -26,37 +28,248 @@ jobs:
         with:
           submodules: false
 
-      - name: Create build directory
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: |
-          mkdir build
+      # This step let nmake/ninja could work
+      - name: Setup MSVC-DEV-CMD
+        uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install conan packages
-        shell: bash
-        working-directory: ./build
-        run: |
-          pip install conan
-          conan profile detect --force
-          conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc" --settings=compiler.version=193 
+      - uses: actions/cache@v4
+        id: cmake-fetch-content-cache
+        with:
+          path: D:/a/trantor/_deps
+          key: ${{ runner.os }}-cmake-fetch-content-${{matrix.build-type}}-${{matrix.tls-provider}}-${{ hashFiles('cmake/BuildDependencies.cmake') }}
 
-      - name: Create Build Environment & Configure Cmake
-        shell: bash
-        working-directory: ./build
-        # -DBUILD_TESTING=ON Removed, 
-        # Due to unittest by GTest in windows runner will comes out 'error MSB3073'
+      - name: Configure Cmake [ cmake-fetch-content | SPDLOG OFF | C-ARES OFF ]
+        # passing "-DFETCHCONTENT_BASE_DIR=D:/a/trantor/_deps" to keep cache when delete "build" folder
         run: |
-          [[ ${{ matrix.link }} == "SHARED" ]] && shared="ON" || shared="OFF"
-          cmake .. -G "Visual Studio 17 2022" -T host=x64 -A x64 \
-          -DTRANTOR_USE_TLS=${{matrix.tls-provider}} \
-          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
-          -DBUILD_SHARED_LIBS=$shared \
-          -DCMAKE_INSTALL_PREFIX=../install \
-          -DUSE_SPDLOG=ON \
-          -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
+          cmake -B build -S . `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} `
+          -DBUILD_DEPENDENCIES=ON `
+          -DTRANTOR_USE_SPDLOG=OFF `
+          -DTRANTOR_USE_C-ARES=OFF `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=ON `
+          -DFETCHCONTENT_BASE_DIR=D:/a/trantor/_deps `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
 
       - name: Build
         working-directory: ./build
-        shell: bash
         # multi config build using --config to switch Release|Debug
         run: |
-          cmake --build . --config ${{matrix.build-type}} --parallel
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest
+
+      - name: Configure Cmake [ cmake-fetch-content | SPDLOG ON | C-ARES ON ]
+        # passing "-DFETCHCONTENT_BASE_DIR=D:/a/trantor/_deps" to keep cache when delete "build" folder
+        run: |
+          cmake -B build -S . `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} `
+          -DBUILD_DEPENDENCIES=ON `
+          -DTRANTOR_USE_SPDLOG=ON `
+          -DTRANTOR_USE_C-ARES=ON `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=ON `
+          -DFETCHCONTENT_BASE_DIR=D:/a/trantor/_deps `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
+
+      - name: Build
+        working-directory: ./build
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest
+
+  ###############################################################################################################
+  vcpkg-build:
+    name: "${{matrix.link}}-${{matrix.build-type}}-TLS:${{matrix.tls-provider}}-vcpkg"
+    runs-on: windows-latest
+    env:
+      shared: ${{matrix.link == 'SHARED' && 'ON' || 'OFF'}}
+    strategy:
+      fail-fast: false
+      matrix:
+        link: ["STATIC", "SHARED"]
+        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, MinSizeRel, etc.)
+        build-type: ["Debug", "Release"]
+        # Support (none, openssl, botan-3, auto)
+        tls-provider: ["none", "openssl", "botan-3"]
+
+    steps:
+      - name: Checkout Trantor source code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      # This step let nmake/ninja could work
+      - name: Setup MSVC-DEV-CMD
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - uses: actions/cache@v4
+        id: vcpkg-cache
+        with:
+          path: |
+            ~/AppData/Local/vcpkg/archives
+            c:/vcpkg/downloads
+            c:/vcpkg/buildtrees
+            c:/vcpkg/packages
+            d:/a/trantor/trantor/vcpkg-installed
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+
+      - name: Install vcpkg packages
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        run: |
+          pwsh ./deps.windows.vcpkg.ps1
+
+      - name: Configure Cmake [ vcpkg | SPDLOG OFF | C-ARES OFF ]
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake -B build -S . `
+          -DCMAKE_TOOLCHAIN_FILE="c:/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DBUILD_DEPENDENCIES=OFF `
+          -DTRANTOR_USE_SPDLOG=OFF `
+          -DTRANTOR_USE_C-ARES=OFF `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=ON `
+          -DCMAKE_POLICY_DEFAULT_CMP0091=NEW `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
+
+      - name: Build
+        working-directory: ./build
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest
+
+      - name: Configure Cmake [ vcpkg | SPDLOG ON | C-ARES ON ]
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake -B build -S . `
+          -DCMAKE_TOOLCHAIN_FILE="c:/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DBUILD_DEPENDENCIES=OFF `
+          -DTRANTOR_USE_SPDLOG=ON `
+          -DTRANTOR_USE_C-ARES=ON `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=ON `
+          -DCMAKE_POLICY_DEFAULT_CMP0091=NEW `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
+
+      - name: Build
+        working-directory: ./build
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest
+
+  ###############################################################################################################
+  conan-build:
+    name: "${{matrix.link}}-${{matrix.build-type}}-TLS:${{matrix.tls-provider}}-conan"
+    runs-on: windows-latest
+    env:
+      shared: ${{matrix.link == 'SHARED' && 'ON' || 'OFF'}}
+    strategy:
+      fail-fast: false
+      matrix:
+        link: ["STATIC", "SHARED"]
+        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, MinSizeRel, etc.)
+        build-type: ["Debug", "Release"]
+        # Support (none, openssl, botan-3, auto)
+        tls-provider: ["none", "openssl"]
+
+    steps:
+      - name: Checkout Trantor source code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      # This step let nmake/ninja could work
+      - name: Setup MSVC-DEV-CMD
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - uses: actions/cache@v4
+        id: conan-cache
+        with:
+          path: |
+            ~\AppData\Local\pip\Cache
+            ~\.conan2
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
+
+      - name: Install conan packages
+        run: |
+          pwsh deps.windows.conan.ps1
+
+      - name: Configure Cmake [ conan | SPDLOG OFF | C-ARES OFF ]
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake -B build -S . `
+          -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DBUILD_DEPENDENCIES=OFF `
+          -DTRANTOR_USE_SPDLOG=OFF `
+          -DTRANTOR_USE_C-ARES=OFF `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=ON `
+          -DCMAKE_POLICY_DEFAULT_CMP0091=NEW `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
+
+      - name: Build
+        working-directory: ./build
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest
+
+      - name: Clean build folder
+        run: |
+          Remove-Item -Recurse -Force build
+
+      - name: Install conan packages
+        run: |
+          pwsh deps.windows.conan.ps1
+
+      - name: Configure Cmake [ conan | SPDLOG ON | C-ARES ON ]
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake -B build -S . `
+          -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DBUILD_DEPENDENCIES=OFF `
+          -DTRANTOR_USE_SPDLOG=ON `
+          -DTRANTOR_USE_C-ARES=ON `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=ON `
+          -DCMAKE_POLICY_DEFAULT_CMP0091=NEW `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
+
+      - name: Build
+        working-directory: ./build
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest
