@@ -23,7 +23,8 @@ if (!(Get-Command vcpkg -ErrorAction SilentlyContinue)) {
 } else {
 cd $current_path
 # update baseline
-# vcpkg x-update-baseline --add-initial-baseline 
+# --add-initial-baseline 
+vcpkg x-update-baseline 
 vcpkg install
 
 Write-Host -ForegroundColor:Green "Now, you can use CMake by -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake"
