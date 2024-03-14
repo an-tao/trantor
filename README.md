@@ -32,6 +32,18 @@ cmake -B build -H.
 cd build 
 make -j
 ```
+#### Building options
+
+Trantor provides some building options, you can enable or disable them by setting the corresponding variables to `ON` or `OFF` in the cmake command line, cmake file etc...
+
+| Option name | Description | Default value |
+| :--- | :--- | :--- |
+| BUILD_SHARED_LIBS | Build Trantor as a shared lib |  OFF | 
+| BUILD_TESTING | Build tests |  OFF | 
+| BUILD_DOC | Build Doxygen documentation |  OFF |
+| TRANTOR_USE_SPDLOG | Allow using the spdlog logging library | ON | 
+| TRANTOR_USE_C-ARES | Allow using C-ARES |  ON |
+| TRANTOR_TLS_PROVIDER | TLS provider for trantor. Valid options are 'none', 'openssl', 'botan-3', 'auto'.   | auto  | 
 
 ## Licensing
 Trantor - A non-blocking I/O based TCP network library, using C++14. 

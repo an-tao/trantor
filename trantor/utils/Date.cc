@@ -142,8 +142,8 @@ std::string Date::toFormattedString(bool showMicroseconds) const
     }
     return buf;
 }
-std::string Date::toCustomedFormattedString(const std::string &fmtStr,
-                                            bool showMicroseconds) const
+std::string Date::toCustomizedFormattedString(const std::string &fmtStr,
+                                              bool showMicroseconds) const
 {
     char buf[256] = {0};
     time_t seconds =
@@ -163,9 +163,9 @@ std::string Date::toCustomedFormattedString(const std::string &fmtStr,
     snprintf(decimals, sizeof(decimals), ".%06d", microseconds);
     return std::string(buf) + decimals;
 }
-void Date::toCustomedFormattedString(const std::string &fmtStr,
-                                     char *str,
-                                     size_t len) const
+void Date::toCustomizedFormattedString(const std::string &fmtStr,
+                                       char *str,
+                                       size_t len) const
 {
     // not safe
     time_t seconds =
@@ -323,8 +323,8 @@ Date Date::fromDbString(const std::string &datetime)
         static_cast<double>(timezoneOffset()));
 }
 
-std::string Date::toCustomedFormattedStringLocal(const std::string &fmtStr,
-                                                 bool showMicroseconds) const
+std::string Date::toCustomizedFormattedStringLocal(const std::string &fmtStr,
+                                                   bool showMicroseconds) const
 {
     char buf[256] = {0};
     time_t seconds =

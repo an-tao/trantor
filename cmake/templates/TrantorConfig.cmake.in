@@ -1,3 +1,4 @@
+#[[
 # - Config file for the Trantor package
 # It defines the following variables
 #  TRANTOR_INCLUDE_DIRS - include directories for Trantor
@@ -5,6 +6,7 @@
 #  Trantor_FOUND
 # This module defines the following IMPORTED target:
 # Trantor::Trantor
+#]]
 
 @PACKAGE_INIT@
 

@@ -203,7 +203,7 @@ class TRANTOR_EXPORT Date
     std::string toFormattedString(bool showMicroseconds) const;
 
     /**
-     * @brief Generate a UTC time string formated by the @p fmtStr
+     * @brief Generate a UTC time string formatted by the @p fmtStr
      * @param fmtStr is the format string for the function strftime()
      * @param showMicroseconds whether the microseconds are returned.
      * @note Examples:
@@ -212,12 +212,13 @@ class TRANTOR_EXPORT Date
      *  - "2018-01-01 10:10:25:102414" if the @p fmtStr is "%Y-%m-%d %H:%M:%S"
      *    and the @p showMicroseconds is true
      */
-    std::string toCustomedFormattedString(const std::string &fmtStr,
-                                          bool showMicroseconds = false) const;
+    std::string toCustomizedFormattedString(
+        const std::string &fmtStr,
+        bool showMicroseconds = false) const;
 
     /**
      * @brief Generate a local time zone string, the format of the string is
-     * same as the mothed toFormattedString
+     * same as the method toFormattedString
      *
      * @param showMicroseconds
      * @return std::string
@@ -225,13 +226,13 @@ class TRANTOR_EXPORT Date
     std::string toFormattedStringLocal(bool showMicroseconds) const;
 
     /**
-     * @brief Generate a local time zone string formated by the @p fmtStr
+     * @brief Generate a local time zone string formatted by the @p fmtStr
      *
      * @param fmtStr
      * @param showMicroseconds
      * @return std::string
      */
-    std::string toCustomedFormattedStringLocal(
+    std::string toCustomizedFormattedStringLocal(
         const std::string &fmtStr,
         bool showMicroseconds = false) const;
 
@@ -268,9 +269,9 @@ class TRANTOR_EXPORT Date
      * @param str The string buffer for the generated time string.
      * @param len The length of the string buffer.
      */
-    void toCustomedFormattedString(const std::string &fmtStr,
-                                   char *str,
-                                   size_t len) const;  // UTC
+    void toCustomizedFormattedString(const std::string &fmtStr,
+                                     char *str,
+                                     size_t len) const;  // UTC
 
     /**
      * @brief Return true if the time point is in a same second as another.

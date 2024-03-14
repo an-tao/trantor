@@ -20,7 +20,7 @@
 namespace trantor
 {
 SerialTaskQueue::SerialTaskQueue(const std::string &name)
-    : queueName_(name.empty() ? "SerailTaskQueue" : name),
+    : queueName_(name.empty() ? "SerialTaskQueue" : name),
       loopThread_(queueName_)
 {
     loopThread_.run();
