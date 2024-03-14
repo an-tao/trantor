@@ -12,7 +12,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 option(BUILD_SHARED_LIBS "Build Trantor as a shared lib" OFF)
 option(BUILD_TESTING "Build tests" OFF)
 option(BUILD_DOC "Build Doxygen documentation" OFF)
-option(BUILD_DEPENDENCIES "Fetch and build dependencies" OFF)
 option(TRANTOR_USE_SPDLOG "Allow using the spdlog logging library" ON)
 option(TRANTOR_USE_C-ARES "Allow using C-ARES" ON)
 set(TRANTOR_TLS_PROVIDER
@@ -149,7 +148,6 @@ set(PUBLIC_UTILS_HEADERS
 
 # Build Dependencies
 include(cmake/SetInstallDirs.cmake)
-include(cmake/BuildDependencies.cmake)
 
 # Set options
 include(cmake/SetCAres.cmake)
