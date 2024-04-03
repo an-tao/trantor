@@ -16,7 +16,9 @@ jobs:
         link: [ 'STATIC', 'SHARED' ]
         # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
         build-type: ['Debug', 'Release']
-        tls-provider: ['', 'openssl', 'botan']
+        # Botan needs std::ranges but clang on macOS doesn't support it yet
+        #tls-provider: ['', 'openssl', 'botan']
+        tls-provider: ['', 'openssl']
 
     steps:
     - name: Install dependencies

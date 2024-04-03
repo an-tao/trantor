@@ -15,8 +15,9 @@
 
 extern "C"
 {
-    struct hostent;
+    struct ares_addrinfo;
     struct ares_channeldata;
+    struct ares_addrinfo_hints;
     using ares_channel = struct ares_channeldata*;
 }
 namespace trantor
@@ -157,7 +158,7 @@ class AresResolver : public Resolver,
     void onRead(int sockfd);
     void onTimer();
     void onQueryResult(int status,
-                       struct hostent* result,
+                       struct ares_addrinfo* result,
                        const std::string& hostname,
                        const ResolverResultsCallback& callback);
     void onSockCreate(int sockfd, int type);
@@ -166,7 +167,7 @@ class AresResolver : public Resolver,
     static void ares_hostcallback_(void* data,
                                    int status,
                                    int timeouts,
-                                   struct hostent* hostent);
+                                   struct ares_addrinfo* hostent);
 #ifdef _WIN32
     static int ares_sock_createcallback_(SOCKET sockfd, int type, void* data);
 #else
@@ -184,6 +185,7 @@ class AresResolver : public Resolver,
     {
         LibraryInitializer();
         ~LibraryInitializer();
+        ares_addrinfo_hints* hints_;
     };
     static LibraryInitializer libraryInitializer_;
 };
