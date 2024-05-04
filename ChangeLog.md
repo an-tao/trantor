@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.18] - 2024-05-04
+
+### Fixed
+
+- Fix data type conflict.
+
+- Fix build on latest c-ares.
+
 ## [1.5.17] - 2024-02-09
 
 ### Changed
@@ -636,7 +644,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.17...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.18...HEAD
+
+[1.5.18]: https://github.com/an-tao/trantor/compare/v1.5.17...v1.5.18
 
 [1.5.17]: https://github.com/an-tao/trantor/compare/v1.5.16...v1.5.17
 
