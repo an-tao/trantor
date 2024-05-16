@@ -269,7 +269,7 @@ void AsyncFileLogger::LoggerFile::switchLog(bool openNewOne)
         // NOTE: Remember to update initFilenameQueue() if name format changes
         std::string newName =
             filePath_ + fileBaseName_ + "." +
-            creationDate_.toCustomedFormattedString("%y%m%d-%H%M%S") +
+            creationDate_.toCustomizedFormattedString("%y%m%d-%H%M%S") +
             std::string(seq) + fileExtName_;
 #if !defined(_WIN32) || defined(__MINGW32__)
         rename(fileFullName_.c_str(), newName.c_str());
