@@ -14,20 +14,18 @@ jobs:
       fail-fast: false
 
     steps:
-    - name: Checkout Trantor source code
-      uses: actions/checkout@v2
-      with:
-        submodules: true
-        fetch-depth: 0
+      - name: Checkout Trantor source code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
 
-    - name: (Linux) Install dependencies
-      run: |
-        # Installing packages might fail as the github image becomes outdated
-        sudo apt update
-        sudo apt install dos2unix clang-format
+      - name: (Linux) Install dependencies
+        run: |
+          # Installing packages might fail as the github image becomes outdated
+          sudo apt update
+          sudo apt install dos2unix clang-format
+          pip install cmake-format
 
-    - name: Lint
-      if: matrix.os == 'ubuntu-20.04'
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      shell: bash
-      run: ./format.sh && git diff --exit-code
+      - name: Lint
+        run: ./format.sh && git diff --exit-code

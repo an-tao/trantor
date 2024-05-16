@@ -48,7 +48,8 @@ set(targets_list
     logger_macro_test
     delayed_ssl_server_test
     delayed_ssl_client_test
-    tcp_asyncstream_server_test)
+    tcp_asyncstream_server_test
+)
 
 if(HAVE_SPDLOG)
   add_executable(spdlogger_test SpdLoggerTest.cc)
