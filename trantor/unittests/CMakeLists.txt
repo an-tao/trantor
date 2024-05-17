@@ -13,7 +13,8 @@ set(UNITTEST_TARGETS
     split_string_unittest
     string_encoding_unittest
     ssl_name_verify_unittest
-    hash_unittest)
+    hash_unittest
+)
 set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_EXTENSIONS OFF)
