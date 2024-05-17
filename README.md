@@ -1,9 +1,8 @@
 # TRANTOR
-
-[![Build Ubuntu gcc](https://github.com/an-tao/trantor/actions/workflows/ubuntu-gcc.yml/badge.svg)](https://github.com/an-tao/trantor/actions)
-[![Build Macos clang](https://github.com/an-tao/trantor/actions/workflows/macos-clang.yml/badge.svg)](https://github.com/an-tao/trantor/actions)
-[![Build RockyLinux gcc](https://github.com/an-tao/trantor/actions/workflows/rockylinux-gcc.yml/badge.svg)](https://github.com/an-tao/trantor/actions)
-[![Build Windows msvc](https://github.com/an-tao/trantor/actions/workflows/windows-msvc.yml/badge.svg)](https://github.com/an-tao/trantor/actions)
+[![Build Ubuntu gcc](../../actions/workflows/ubuntu-gcc.yml/badge.svg)](../../actions/workflows/ubuntu-gcc.yml/badge.svg)
+[![Build Macos clang](../../actions/workflows/macos-clang.yml/badge.svg)](../../actions/workflows/macos-clang.yml/badge.svg)
+[![Build RockyLinux gcc](../../actions/workflows/rockylinux-gcc.yml/badge.svg)](../../actions/workflows/rockylinux-gcc.yml/badge.svg)
+[![Build Windows msvc](../../actions/workflows/windows-msvc.yml/badge.svg)](../../actions/workflows/windows-msvc.yml/badge.svg)
 
 ## Overview
 A non-blocking I/O cross-platform TCP network library, using C++14.  
