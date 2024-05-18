@@ -202,6 +202,25 @@ class TRANTOR_EXPORT Date
      */
     std::string toFormattedString(bool showMicroseconds) const;
 
+    /* clang-format off */
+    /**
+     * @brief Generate a UTC time string formatted by the @p fmtStr
+     * @param fmtStr is the format string for the function strftime()
+     * @param showMicroseconds whether the microseconds are returned.
+     * @note Examples:
+     *  - "2018-01-01 10:10:25" if the @p fmtStr is "%Y-%m-%d %H:%M:%S" and the
+     *    @p showMicroseconds is false
+     *  - "2018-01-01 10:10:25:102414" if the @p fmtStr is "%Y-%m-%d %H:%M:%S"
+     *    and the @p showMicroseconds is true
+     * @deprecated Replaced by toCustomFormattedString
+     */
+    [[deprecated("Replaced by toCustomFormattedString")]] 
+    std::string toCustomedFormattedString(const std::string &fmtStr,
+                                          bool showMicroseconds = false) const
+    {
+        return toCustomFormattedString(fmtStr, showMicroseconds);
+    };
+    /* clang-format on */
     /**
      * @brief Generate a UTC time string formatted by the @p fmtStr
      * @param fmtStr is the format string for the function strftime()
@@ -212,10 +231,8 @@ class TRANTOR_EXPORT Date
      *  - "2018-01-01 10:10:25:102414" if the @p fmtStr is "%Y-%m-%d %H:%M:%S"
      *    and the @p showMicroseconds is true
      */
-    std::string toCustomizedFormattedString(
-        const std::string &fmtStr,
-        bool showMicroseconds = false) const;
-
+    std::string toCustomFormattedString(const std::string &fmtStr,
+                                        bool showMicroseconds = false) const;
     /**
      * @brief Generate a local time zone string, the format of the string is
      * same as the method toFormattedString
@@ -225,6 +242,22 @@ class TRANTOR_EXPORT Date
      */
     std::string toFormattedStringLocal(bool showMicroseconds) const;
 
+    /* clang-format off */
+    /**
+     * @brief Generate a local time zone string formatted by the @p fmtStr
+     *
+     * @param fmtStr
+     * @param showMicroseconds
+     * @return std::string
+     * @deprecated Replaced by toCustomFormattedString
+     */
+    [[deprecated("Replaced by toCustomFormattedStringLocal")]]
+    std::string toCustomedFormattedStringLocal(const std::string &fmtStr,
+                                               bool showMicroseconds = false) const
+    {
+        return toCustomFormattedStringLocal(fmtStr, showMicroseconds);
+    }
+    /* clang-format on */
     /**
      * @brief Generate a local time zone string formatted by the @p fmtStr
      *
@@ -232,7 +265,7 @@ class TRANTOR_EXPORT Date
      * @param showMicroseconds
      * @return std::string
      */
-    std::string toCustomizedFormattedStringLocal(
+    std::string toCustomFormattedStringLocal(
         const std::string &fmtStr,
         bool showMicroseconds = false) const;
 
@@ -262,6 +295,24 @@ class TRANTOR_EXPORT Date
      */
     static Date fromDbString(const std::string &datetime);
 
+    /* clang-format off */
+    /**
+     * @brief Generate a UTC time string.
+     *
+     * @param fmtStr The format string.
+     * @param str The string buffer for the generated time string.
+     * @param len The length of the string buffer.
+     * @deprecated Replaced by toCustomFormattedString
+     */
+    [[deprecated("Replaced by toCustomFormattedString")]]
+    void toCustomedFormattedString(const std::string &fmtStr,
+                                   char *str,
+                                   size_t len) const
+    {
+        toCustomFormattedString(fmtStr, str, len);
+    }
+    /* clang-format on */
+
     /**
      * @brief Generate a UTC time string.
      *
@@ -269,9 +320,9 @@ class TRANTOR_EXPORT Date
      * @param str The string buffer for the generated time string.
      * @param len The length of the string buffer.
      */
-    void toCustomizedFormattedString(const std::string &fmtStr,
-                                     char *str,
-                                     size_t len) const;  // UTC
+    void toCustomFormattedString(const std::string &fmtStr,
+                                 char *str,
+                                 size_t len) const;  // UTC
 
     /**
      * @brief Return true if the time point is in a same second as another.
