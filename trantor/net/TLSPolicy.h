@@ -67,7 +67,7 @@ struct TRANTOR_EXPORT TLSPolicy final
 
     /**
      * @brief enables the use of the old TLS protocol (old meaning < TLS 1.2).
-     * TLS providres may not support old protocols even if this option is set
+     * TLS providers may not support old protocols even if this option is set
      */
     TLSPolicy &setUseOldTLS(bool useOldTLS)
     {
@@ -79,7 +79,7 @@ struct TRANTOR_EXPORT TLSPolicy final
      * @brief set the list of protocols to be used for ALPN.
      *
      * @note for servers, it selects matching protocol against the client's
-     * list. And the first matching protocol supplide in the parameter will be
+     * list. And the first matching protocol supplied in the parameter will be
      * selected. If no matching protocol is found, the connection will be
      * closed.
      *

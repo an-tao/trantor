@@ -58,7 +58,7 @@ class TRANTOR_EXPORT SerialTaskQueue : public TaskQueue
     SerialTaskQueue() = delete;
 
     /**
-     * @brief Construct a new serail task queue instance.
+     * @brief Construct a new serial task queue instance.
      *
      * @param name
      */
@@ -66,13 +66,28 @@ class TRANTOR_EXPORT SerialTaskQueue : public TaskQueue
 
     virtual ~SerialTaskQueue();
 
+    /* clang-format off */
+    /**
+     * @brief Check whether a task is running in the queue.
+     *
+     * @return true
+     * @return false
+     * @deprecated Use isRunningTask instead
+     */
+    [[deprecated("Use isRunningTask instead")]]
+    bool isRuningTask()
+    {
+        return isRunningTask();
+    }
+    /* clang-format on */
+
     /**
      * @brief Check whether a task is running in the queue.
      *
      * @return true
      * @return false
      */
-    bool isRuningTask()
+    bool isRunningTask()
     {
         return loopThread_.getLoop()
                    ? loopThread_.getLoop()->isCallingFunctions()
