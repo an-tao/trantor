@@ -1,3 +1,8 @@
+#include "trantor/net/TcpConnection.h"
+#include "trantor/net/inner/TLSProvider.h"
+#include "trantor/utils/Logger.h"
+#include "trantor/utils/Utilities.h"
+
 #include <array>
 #include <fstream>
 #include <limits>
@@ -8,10 +13,6 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
-#include <trantor/net/TcpConnection.h>
-#include <trantor/net/inner/TLSProvider.h>
-#include <trantor/utils/Logger.h>
-#include <trantor/utils/Utilities.h>
 #include <unordered_map>
 
 using namespace trantor;
