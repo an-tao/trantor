@@ -17,9 +17,9 @@
 using namespace trantor;
 
 TimingWheel::TimingWheel(trantor::EventLoop *loop,
-                         size_t maxTimeout,
-                         float ticksInterval,
-                         size_t bucketsNumPerWheel)
+                         size_t              maxTimeout,
+                         float               ticksInterval,
+                         size_t              bucketsNumPerWheel)
     : loop_(loop),
       ticksInterval_(ticksInterval),
       bucketsNumPerWheel_(bucketsNumPerWheel)
@@ -28,8 +28,8 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
     assert(ticksInterval > 0);
     assert(bucketsNumPerWheel_ > 1);
     size_t maxTickNum = static_cast<size_t>(maxTimeout / ticksInterval);
-    auto ticksNum = bucketsNumPerWheel;
-    wheelsNum_ = 1;
+    auto   ticksNum   = bucketsNumPerWheel;
+    wheelsNum_        = 1;
     while (maxTickNum > ticksNum)
     {
         ++wheelsNum_;
@@ -42,7 +42,7 @@ TimingWheel::TimingWheel(trantor::EventLoop *loop,
     }
     timerId_ = loop_->runEvery(ticksInterval_, [this]() {
         ++ticksCounter_;
-        size_t t = ticksCounter_;
+        size_t t   = ticksCounter_;
         size_t pow = 1;
         for (size_t i = 0; i < wheelsNum_; ++i)
         {
@@ -85,8 +85,9 @@ void TimingWheel::insertEntry(size_t delay, EntryPtr entryPtr)
     }
     else
     {
-        loop_->runInLoop(
-            [this, delay, entryPtr]() { insertEntryInloop(delay, entryPtr); });
+        loop_->runInLoop([this, delay, entryPtr]() {
+            insertEntryInloop(delay, entryPtr);
+        });
     }
 }
 
@@ -94,7 +95,7 @@ void TimingWheel::insertEntryInloop(size_t delay, EntryPtr entryPtr)
 {
     loop_->assertInLoopThread();
 
-    delay = static_cast<size_t>(delay / ticksInterval_ + 1);
+    delay    = static_cast<size_t>(delay / ticksInterval_ + 1);
     size_t t = ticksCounter_;
     for (size_t i = 0; i < wheelsNum_; ++i)
     {
@@ -121,6 +122,6 @@ void TimingWheel::insertEntryInloop(size_t delay, EntryPtr entryPtr)
             wheels_[i][bucketsNumPerWheel_ - 1].insert(entryPtr);
         }
         delay = (delay + (t % bucketsNumPerWheel_) - 1) / bucketsNumPerWheel_;
-        t = t / bucketsNumPerWheel_;
+        t     = t / bucketsNumPerWheel_;
     }
 }

@@ -1,10 +1,10 @@
-#include <trantor/utils/Utilities.h>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <trantor/utils/Utilities.h>
 using namespace trantor;
 
-const std::string utf8Path("C:/Temp/\xE4\xB8\xAD\xE6\x96\x87");
-const std::string utf8AltPath("C:\\Temp\\\xE4\xB8\xAD\xE6\x96\x87");
+const std::string  utf8Path("C:/Temp/\xE4\xB8\xAD\xE6\x96\x87");
+const std::string  utf8AltPath("C:\\Temp\\\xE4\xB8\xAD\xE6\x96\x87");
 const std::wstring widePath(L"C:/Temp/\u4E2D\u6587");
 const std::wstring windowsPath(L"C:\\Temp\\\u4E2D\u6587");
 #ifdef _WIN32

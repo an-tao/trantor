@@ -12,8 +12,8 @@
  *
  */
 
-#include <trantor/utils/SerialTaskQueue.h>
 #include <trantor/utils/Logger.h>
+#include <trantor/utils/SerialTaskQueue.h>
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif

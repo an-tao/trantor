@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include <trantor/exports.h>
 #include <string>
+#include <trantor/exports.h>
 
 namespace trantor
 {
@@ -208,7 +208,7 @@ struct Hash256
  * @note don't use MD5 for new applications. It's here only for compatibility
  */
 TRANTOR_EXPORT Hash128 md5(const void *data, size_t len);
-inline Hash128 md5(const std::string &str)
+inline Hash128         md5(const std::string &str)
 {
     return md5(str.data(), str.size());
 }
@@ -217,7 +217,7 @@ inline Hash128 md5(const std::string &str)
  * @brief Compute the SHA1 hash of the given data
  */
 TRANTOR_EXPORT Hash160 sha1(const void *data, size_t len);
-inline Hash160 sha1(const std::string &str)
+inline Hash160         sha1(const std::string &str)
 {
     return sha1(str.data(), str.size());
 }
@@ -226,7 +226,7 @@ inline Hash160 sha1(const std::string &str)
  * @brief Compute the SHA256 hash of the given data
  */
 TRANTOR_EXPORT Hash256 sha256(const void *data, size_t len);
-inline Hash256 sha256(const std::string &str)
+inline Hash256         sha256(const std::string &str)
 {
     return sha256(str.data(), str.size());
 }
@@ -235,7 +235,7 @@ inline Hash256 sha256(const std::string &str)
  * @brief Compute the SHA3 hash of the given data
  */
 TRANTOR_EXPORT Hash256 sha3(const void *data, size_t len);
-inline Hash256 sha3(const std::string &str)
+inline Hash256         sha3(const std::string &str)
 {
     return sha3(str.data(), str.size());
 }
@@ -247,7 +247,7 @@ inline Hash256 sha3(const std::string &str)
  * faster in software.
  */
 TRANTOR_EXPORT Hash256 blake2b(const void *data, size_t len);
-inline Hash256 blake2b(const std::string &str)
+inline Hash256         blake2b(const std::string &str)
 {
     return blake2b(str.data(), str.size());
 }
@@ -259,7 +259,7 @@ inline Hash256 blake2b(const std::string &str)
  * faster in software.
  */
 TRANTOR_EXPORT std::string toHexString(const void *data, size_t len);
-inline std::string toHexString(const Hash128 &hash)
+inline std::string         toHexString(const Hash128 &hash)
 {
     return toHexString(hash.bytes, sizeof(hash.bytes));
 }

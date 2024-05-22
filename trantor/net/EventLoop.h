@@ -16,19 +16,19 @@
 // Author: Tao An
 
 #pragma once
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/Date.h>
-#include <trantor/utils/LockFreeQueue.h>
-#include <trantor/exports.h>
-#include <thread>
+#include <atomic>
+#include <chrono>
+#include <functional>
+#include <limits>
 #include <memory>
-#include <vector>
 #include <mutex>
 #include <queue>
-#include <functional>
-#include <chrono>
-#include <limits>
-#include <atomic>
+#include <thread>
+#include <trantor/exports.h>
+#include <trantor/utils/Date.h>
+#include <trantor/utils/LockFreeQueue.h>
+#include <trantor/utils/NonCopyable.h>
+#include <vector>
 
 namespace trantor
 {
@@ -36,8 +36,8 @@ class Poller;
 class TimerQueue;
 class Channel;
 using ChannelList = std::vector<Channel *>;
-using Func = std::function<void()>;
-using TimerId = uint64_t;
+using Func        = std::function<void()>;
+using TimerId     = uint64_t;
 enum
 {
     InvalidTimerId = 0
@@ -205,7 +205,7 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
        @endcode
      */
     TimerId runEvery(const std::chrono::duration<double> &interval,
-                     const Func &cb)
+                     const Func                          &cb)
     {
         return runEvery(interval.count(), cb);
     }
@@ -296,28 +296,28 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
     void runOnQuit(const Func &cb);
 
   private:
-    void abortNotInLoopThread();
-    void wakeup();
-    void wakeupRead();
-    std::atomic<bool> looping_;
-    std::thread::id threadId_;
-    std::atomic<bool> quit_;
-    std::unique_ptr<Poller> poller_;
+    void                        abortNotInLoopThread();
+    void                        wakeup();
+    void                        wakeupRead();
+    std::atomic<bool>           looping_;
+    std::thread::id             threadId_;
+    std::atomic<bool>           quit_;
+    std::unique_ptr<Poller>     poller_;
 
-    ChannelList activeChannels_;
-    Channel *currentActiveChannel_;
+    ChannelList                 activeChannels_;
+    Channel                    *currentActiveChannel_;
 
-    bool eventHandling_;
-    MpscQueue<Func> funcs_;
+    bool                        eventHandling_;
+    MpscQueue<Func>             funcs_;
     std::unique_ptr<TimerQueue> timerQueue_;
-    MpscQueue<Func> funcsOnQuit_;
-    bool callingFuncs_{false};
+    MpscQueue<Func>             funcsOnQuit_;
+    bool                        callingFuncs_{false};
 #ifdef __linux__
-    int wakeupFd_;
+    int                      wakeupFd_;
     std::unique_ptr<Channel> wakeupChannelPtr_;
 #elif defined _WIN32
 #else
-    int wakeupFd_[2];
+    int                      wakeupFd_[2];
     std::unique_ptr<Channel> wakeupChannelPtr_;
 #endif
 

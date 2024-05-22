@@ -1,8 +1,8 @@
+#include <algorithm>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <trantor/net/inner/BufferNode.h>
 #include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <algorithm>
 
 namespace trantor
 {
@@ -105,7 +105,7 @@ class FileBufferNode : public BufferNode
             }
         }
         data = msgBufferPtr_->peek();
-        len = msgBufferPtr_->readableBytes();
+        len  = msgBufferPtr_->readableBytes();
     }
     void retrieve(size_t len) override
     {
@@ -136,14 +136,14 @@ class FileBufferNode : public BufferNode
     }
 
   private:
-    int sendFd_{-1};
-    long long fileBytesToSend_{0};
+    int                        sendFd_{-1};
+    long long                  fileBytesToSend_{0};
     std::unique_ptr<MsgBuffer> msgBufferPtr_;
 };
 
 BufferNodePtr BufferNode::newFileBufferNode(const char *fileName,
-                                            long long offset,
-                                            long long length)
+                                            long long   offset,
+                                            long long   length)
 {
     return std::make_shared<FileBufferNode>(fileName, offset, length);
 }

@@ -13,20 +13,21 @@
 *********************************************************************/
 
 /*************************** HEADER FILES ***************************/
-#include <stdlib.h>
-#include <memory.h>
 #include "sha256.h"
 
+#include <memory.h>
+#include <stdlib.h>
+
 /****************************** MACROS ******************************/
-#define ROTLEFT(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
+#define ROTLEFT(a, b)  (((a) << (b)) | ((a) >> (32 - (b))))
 #define ROTRIGHT(a, b) (((a) >> (b)) | ((a) << (32 - (b))))
 
-#define CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
-#define MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define EP0(x) (ROTRIGHT(x, 2) ^ ROTRIGHT(x, 13) ^ ROTRIGHT(x, 22))
-#define EP1(x) (ROTRIGHT(x, 6) ^ ROTRIGHT(x, 11) ^ ROTRIGHT(x, 25))
-#define SIG0(x) (ROTRIGHT(x, 7) ^ ROTRIGHT(x, 18) ^ ((x) >> 3))
-#define SIG1(x) (ROTRIGHT(x, 17) ^ ROTRIGHT(x, 19) ^ ((x) >> 10))
+#define CH(x, y, z)    (((x) & (y)) ^ (~(x) & (z)))
+#define MAJ(x, y, z)   (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define EP0(x)         (ROTRIGHT(x, 2) ^ ROTRIGHT(x, 13) ^ ROTRIGHT(x, 22))
+#define EP1(x)         (ROTRIGHT(x, 6) ^ ROTRIGHT(x, 11) ^ ROTRIGHT(x, 25))
+#define SIG0(x)        (ROTRIGHT(x, 7) ^ ROTRIGHT(x, 18) ^ ((x) >> 3))
+#define SIG1(x)        (ROTRIGHT(x, 17) ^ ROTRIGHT(x, 19) ^ ((x) >> 10))
 
 /**************************** VARIABLES *****************************/
 static const uint32_t k[64] = {
@@ -66,14 +67,14 @@ void trantor_sha256_transform(SHA256_CTX *ctx, const uint8_t data[])
     {
         t1 = h + EP1(e) + CH(e, f, g) + k[i] + m[i];
         t2 = EP0(a) + MAJ(a, b, c);
-        h = g;
-        g = f;
-        f = e;
-        e = d + t1;
-        d = c;
-        c = b;
-        b = a;
-        a = t1 + t2;
+        h  = g;
+        g  = f;
+        f  = e;
+        e  = d + t1;
+        d  = c;
+        c  = b;
+        b  = a;
+        a  = t1 + t2;
     }
 
     ctx->state[0] += a;
@@ -88,8 +89,8 @@ void trantor_sha256_transform(SHA256_CTX *ctx, const uint8_t data[])
 
 void trantor_sha256_init(SHA256_CTX *ctx)
 {
-    ctx->datalen = 0;
-    ctx->bitlen = 0;
+    ctx->datalen  = 0;
+    ctx->bitlen   = 0;
     ctx->state[0] = 0x6a09e667;
     ctx->state[1] = 0xbb67ae85;
     ctx->state[2] = 0x3c6ef372;
@@ -111,8 +112,8 @@ void trantor_sha256_update(SHA256_CTX *ctx, const uint8_t data[], size_t len)
         if (ctx->datalen == 64)
         {
             trantor_sha256_transform(ctx, ctx->data);
-            ctx->bitlen += 512;
-            ctx->datalen = 0;
+            ctx->bitlen  += 512;
+            ctx->datalen  = 0;
         }
     }
 }
@@ -140,15 +141,15 @@ void trantor_sha256_final(SHA256_CTX *ctx, uint8_t hash[])
     }
 
     // Append to the padding the total message's length in bits and transform.
-    ctx->bitlen += ctx->datalen * 8;
-    ctx->data[63] = (uint8_t)ctx->bitlen;
-    ctx->data[62] = (uint8_t)(ctx->bitlen >> 8);
-    ctx->data[61] = (uint8_t)(ctx->bitlen >> 16);
-    ctx->data[60] = (uint8_t)(ctx->bitlen >> 24);
-    ctx->data[59] = (uint8_t)(ctx->bitlen >> 32);
-    ctx->data[58] = (uint8_t)(ctx->bitlen >> 40);
-    ctx->data[57] = (uint8_t)(ctx->bitlen >> 48);
-    ctx->data[56] = (uint8_t)(ctx->bitlen >> 56);
+    ctx->bitlen   += ctx->datalen * 8;
+    ctx->data[63]  = (uint8_t)ctx->bitlen;
+    ctx->data[62]  = (uint8_t)(ctx->bitlen >> 8);
+    ctx->data[61]  = (uint8_t)(ctx->bitlen >> 16);
+    ctx->data[60]  = (uint8_t)(ctx->bitlen >> 24);
+    ctx->data[59]  = (uint8_t)(ctx->bitlen >> 32);
+    ctx->data[58]  = (uint8_t)(ctx->bitlen >> 40);
+    ctx->data[57]  = (uint8_t)(ctx->bitlen >> 48);
+    ctx->data[56]  = (uint8_t)(ctx->bitlen >> 56);
     trantor_sha256_transform(ctx, ctx->data);
 
     // Since this implementation uses little endian byte ordering and SHA uses
@@ -156,9 +157,9 @@ void trantor_sha256_final(SHA256_CTX *ctx, uint8_t hash[])
     // output hash.
     for (i = 0; i < 4; ++i)
     {
-        hash[i] = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
-        hash[i + 4] = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
-        hash[i + 8] = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
+        hash[i]      = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
+        hash[i + 4]  = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
+        hash[i + 8]  = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
         hash[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
         hash[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
         hash[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;

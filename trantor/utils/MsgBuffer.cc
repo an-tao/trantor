@@ -12,18 +12,18 @@
  *
  */
 
-#include <trantor/utils/MsgBuffer.h>
-#include <trantor/utils/Funcs.h>
 #include <string.h>
+#include <trantor/utils/Funcs.h>
+#include <trantor/utils/MsgBuffer.h>
 #ifndef _WIN32
-#include <sys/uio.h>
 #include <netinet/in.h>
+#include <sys/uio.h>
 #else
 #include <WindowsSupport.h>
 #include <winsock2.h>
 #endif
-#include <errno.h>
 #include <assert.h>
+#include <errno.h>
 
 using namespace trantor;
 namespace trantor
@@ -147,15 +147,15 @@ void MsgBuffer::retrieveAll()
 }
 ssize_t MsgBuffer::readFd(int fd, int *retErrno)
 {
-    char extBuffer[8192];
+    char         extBuffer[8192];
     struct iovec vec[2];
-    size_t writable = writableBytes();
-    vec[0].iov_base = begin() + tail_;
-    vec[0].iov_len = static_cast<int>(writable);
-    vec[1].iov_base = extBuffer;
-    vec[1].iov_len = sizeof(extBuffer);
-    const int iovcnt = (writable < sizeof extBuffer) ? 2 : 1;
-    ssize_t n = ::readv(fd, vec, iovcnt);
+    size_t       writable = writableBytes();
+    vec[0].iov_base       = begin() + tail_;
+    vec[0].iov_len        = static_cast<int>(writable);
+    vec[1].iov_base       = extBuffer;
+    vec[1].iov_len        = sizeof(extBuffer);
+    const int iovcnt      = (writable < sizeof extBuffer) ? 2 : 1;
+    ssize_t   n           = ::readv(fd, vec, iovcnt);
     if (n < 0)
     {
         *retErrno = errno;

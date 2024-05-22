@@ -15,17 +15,18 @@
 
 // Author: Tao An
 
-#include <trantor/net/EventLoop.h>
-#include <trantor/utils/Logger.h>
-
+#include "Channel.h"
 #include "Poller.h"
 #include "TimerQueue.h"
-#include "Channel.h"
 
-#include <thread>
 #include <assert.h>
+#include <thread>
+#include <trantor/net/EventLoop.h>
+#include <trantor/utils/Logger.h>
 #ifdef _WIN32
+/* clang-format off */
 #include <windows.h>
+/* clang-format on */
 #include <io.h>
 #include <synchapi.h>
 #ifndef _SSIZE_T_DEFINED
@@ -43,8 +44,8 @@ using ssize_t = long long;
 #include <unistd.h>
 #endif
 #include <algorithm>
-#include <signal.h>
 #include <fcntl.h>
+#include <signal.h>
 
 namespace trantor
 {
@@ -98,7 +99,9 @@ EventLoop::EventLoop()
     wakeupChannelPtr_->setReadCallback(std::bind(&EventLoop::wakeupRead, this));
     wakeupChannelPtr_->enableReading();
 #else
-    poller_->setEventCallback([](uint64_t event) { assert(event == 1); });
+    poller_->setEventCallback([](uint64_t event) {
+        assert(event == 1);
+    });
 #endif
 }
 #ifdef __linux__
@@ -184,9 +187,7 @@ namespace
 template <typename F>
 struct ScopeExit
 {
-    ScopeExit(F &&f) : f_(std::forward<F>(f))
-    {
-    }
+    ScopeExit(F &&f) : f_(std::forward<F>(f)) {}
     ~ScopeExit()
     {
         f_();
@@ -212,8 +213,9 @@ void EventLoop::loop()
     try
     {  // Scope where the loop flag is set
 
-        auto loopFlagCleaner = makeScopeExit(
-            [this]() { looping_.store(false, std::memory_order_release); });
+        auto loopFlagCleaner = makeScopeExit([this]() {
+            looping_.store(false, std::memory_order_release);
+        });
         while (!quit_.load(std::memory_order_acquire))
         {
             activeChannels_.clear();
@@ -234,7 +236,7 @@ void EventLoop::loop()
                 currentActiveChannel_->handleEvent();
             }
             currentActiveChannel_ = nullptr;
-            eventHandling_ = false;
+            eventHandling_        = false;
             // std::cout << "looping" << endl;
             doRunInLoopFuncs();
         }
@@ -339,8 +341,9 @@ void EventLoop::doRunInLoopFuncs()
     callingFuncs_ = true;
     {
         // Assure the flag is cleared even if func throws
-        auto callingFlagCleaner =
-            makeScopeExit([this]() { callingFuncs_ = false; });
+        auto callingFlagCleaner = makeScopeExit([this]() {
+            callingFuncs_ = false;
+        });
         // the destructor for the Func may itself insert a new entry into the
         // queue
         // TODO: The following is exception-unsafe. If one  of the funcs throws,
@@ -405,9 +408,9 @@ void EventLoop::moveToCurrentThread()
         exit(-1);
     }
     *threadLocalLoopPtr_ = nullptr;
-    t_loopInThisThread = this;
-    threadLocalLoopPtr_ = &t_loopInThisThread;
-    threadId_ = std::this_thread::get_id();
+    t_loopInThisThread   = this;
+    threadLocalLoopPtr_  = &t_loopInThisThread;
+    threadId_            = std::this_thread::get_id();
 }
 
 void EventLoop::runOnQuit(Func &&cb)

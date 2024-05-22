@@ -12,14 +12,14 @@
  *
  */
 
+#include <assert.h>
 #include <trantor/utils/ConcurrentTaskQueue.h>
 #include <trantor/utils/Logger.h>
-#include <assert.h>
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
 using namespace trantor;
-ConcurrentTaskQueue::ConcurrentTaskQueue(size_t threadNum,
+ConcurrentTaskQueue::ConcurrentTaskQueue(size_t             threadNum,
                                          const std::string &name)
     : queueCount_(threadNum), queueName_(name), stop_(false)
 {

@@ -1,17 +1,17 @@
+#include <atomic>
+#include <chrono>
+#include <iostream>
+#include <stdio.h>
+#include <thread>
+#include <time.h>
 #include <trantor/utils/ConcurrentTaskQueue.h>
 #include <trantor/utils/Logger.h>
-#include <iostream>
-#include <atomic>
-#include <thread>
-#include <chrono>
-#include <time.h>
-#include <stdio.h>
 using namespace std::chrono_literals;
 
 int main()
 {
     trantor::ConcurrentTaskQueue queue(5, "concurrT");
-    std::atomic_int sum;
+    std::atomic_int              sum;
     sum = 0;
     for (int i = 0; i < 4; ++i)
     {

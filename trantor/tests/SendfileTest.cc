@@ -1,11 +1,11 @@
+#include <fcntl.h>
+#include <iostream>
+#include <string>
+#include <sys/stat.h>
+#include <thread>
+#include <trantor/net/EventLoopThread.h>
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
-#include <trantor/net/EventLoopThread.h>
-#include <string>
-#include <iostream>
-#include <thread>
-#include <sys/stat.h>
-#include <fcntl.h>
 #ifndef _WIN32
 #include <unistd.h>
 #endif

@@ -1,20 +1,21 @@
 #include "KQueue.h"
+
 #include "Channel.h"
 #ifdef USE_KQUEUE
-#include <trantor/utils/Logger.h>
-#include <sys/types.h>
+#include <poll.h>
 #include <sys/event.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <trantor/utils/Logger.h>
 #include <unistd.h>
-#include <poll.h>
 #endif
 namespace trantor
 {
 #ifdef USE_KQUEUE
 namespace
 {
-const int kNew = -1;
-const int kAdded = 1;
+const int kNew     = -1;
+const int kAdded   = 1;
 const int kDeleted = 2;
 }  // namespace
 
@@ -46,16 +47,16 @@ void KQueue::resetAfterFork()
 void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
 {
     struct timespec timeout;
-    timeout.tv_sec = timeoutMs / 1000;
+    timeout.tv_sec  = timeoutMs / 1000;
     timeout.tv_nsec = (timeoutMs % 1000) * 1000000;
 
-    int numEvents = kevent(kqfd_,
+    int numEvents   = kevent(kqfd_,
                            NULL,
                            0,
                            events_.data(),
                            static_cast<int>(events_.size()),
                            &timeout);
-    int savedErrno = errno;
+    int savedErrno  = errno;
     // Timestamp now(Timestamp::now());
     if (numEvents > 0)
     {
@@ -82,7 +83,7 @@ void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
     return;
 }
 
-void KQueue::fillActiveChannels(int numEvents,
+void KQueue::fillActiveChannels(int          numEvents,
                                 ChannelList *activeChannels) const
 {
     assert(static_cast<size_t>(numEvents) <= events_.size());
@@ -171,15 +172,15 @@ void KQueue::removeChannel(Channel *channel)
 void KQueue::update(Channel *channel)
 {
     struct kevent ev[2];
-    int n = 0;
-    auto events = channel->events();
-    int oldEvents = 0;
+    int           n         = 0;
+    auto          events    = channel->events();
+    int           oldEvents = 0;
     if (channels_.find(channel->fd()) != channels_.end())
     {
         oldEvents = channels_[channel->fd()].first;
     }
 
-    auto fd = channel->fd();
+    auto fd       = channel->fd();
     channels_[fd] = {events, channel};
 
     if ((events & Channel::kReadEvent) && (!(oldEvents & Channel::kReadEvent)))
@@ -232,20 +233,10 @@ KQueue::KQueue(EventLoop *loop) : Poller(loop)
 {
     assert(false);
 }
-KQueue::~KQueue()
-{
-}
-void KQueue::poll(int, ChannelList *)
-{
-}
-void KQueue::updateChannel(Channel *)
-{
-}
-void KQueue::removeChannel(Channel *)
-{
-}
-void KQueue::resetAfterFork()
-{
-}
+KQueue::~KQueue() {}
+void KQueue::poll(int, ChannelList *) {}
+void KQueue::updateChannel(Channel *) {}
+void KQueue::removeChannel(Channel *) {}
+void KQueue::resetAfterFork() {}
 #endif
 }  // namespace trantor

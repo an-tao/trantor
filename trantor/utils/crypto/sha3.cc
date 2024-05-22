@@ -27,7 +27,7 @@ void trantor_sha3_keccakf(uint64_t st[25])
                                   15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1};
 
     // variables
-    int i, j, r;
+    int      i, j, r;
     uint64_t t, bc[5];
 
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
@@ -36,7 +36,7 @@ void trantor_sha3_keccakf(uint64_t st[25])
     // endianess conversion. this is redundant on little-endian targets
     for (i = 0; i < 25; i++)
     {
-        v = (uint8_t *)&st[i];
+        v     = (uint8_t *)&st[i];
         st[i] = ((uint64_t)v[0]) | (((uint64_t)v[1]) << 8) |
                 (((uint64_t)v[2]) << 16) | (((uint64_t)v[3]) << 24) |
                 (((uint64_t)v[4]) << 32) | (((uint64_t)v[5]) << 40) |
@@ -62,10 +62,10 @@ void trantor_sha3_keccakf(uint64_t st[25])
         t = st[1];
         for (i = 0; i < 24; i++)
         {
-            j = keccakf_piln[i];
+            j     = keccakf_piln[i];
             bc[0] = st[j];
             st[j] = ROTL64(t, keccakf_rotc[i]);
-            t = bc[0];
+            t     = bc[0];
         }
 
         //  Chi
@@ -85,8 +85,8 @@ void trantor_sha3_keccakf(uint64_t st[25])
     // endianess conversion. this is redundant on little-endian targets
     for (i = 0; i < 25; i++)
     {
-        v = (uint8_t *)&st[i];
-        t = st[i];
+        v    = (uint8_t *)&st[i];
+        t    = st[i];
         v[0] = t & 0xFF;
         v[1] = (t >> 8) & 0xFF;
         v[2] = (t >> 16) & 0xFF;
@@ -108,8 +108,8 @@ int trantor_sha3_init(sha3_ctx_t *c, int mdlen)
     for (i = 0; i < 25; i++)
         c->st.q[i] = 0;
     c->mdlen = mdlen;
-    c->rsiz = 200 - 2 * mdlen;
-    c->pt = 0;
+    c->rsiz  = 200 - 2 * mdlen;
+    c->pt    = 0;
 
     return 1;
 }
@@ -119,7 +119,7 @@ int trantor_sha3_init(sha3_ctx_t *c, int mdlen)
 int trantor_sha3_update(sha3_ctx_t *c, const void *data, size_t len)
 {
     size_t i;
-    int j;
+    int    j;
 
     j = c->pt;
     for (i = 0; i < len; i++)
@@ -142,7 +142,7 @@ int trantor_sha3_final(void *md, sha3_ctx_t *c)
 {
     int i;
 
-    c->st.b[c->pt] ^= 0x06;
+    c->st.b[c->pt]       ^= 0x06;
     c->st.b[c->rsiz - 1] ^= 0x80;
     trantor_sha3_keccakf(c->st.q);
 
@@ -171,7 +171,7 @@ void *trantor_sha3(const void *in, size_t inlen, void *md, int mdlen)
 
 void trantor_shake_xof(sha3_ctx_t *c)
 {
-    c->st.b[c->pt] ^= 0x1F;
+    c->st.b[c->pt]       ^= 0x1F;
     c->st.b[c->rsiz - 1] ^= 0x80;
     trantor_sha3_keccakf(c->st.q);
     c->pt = 0;
@@ -180,7 +180,7 @@ void trantor_shake_xof(sha3_ctx_t *c)
 void trantor_shake_out(sha3_ctx_t *c, void *out, size_t len)
 {
     size_t i;
-    int j;
+    int    j;
 
     j = c->pt;
     for (i = 0; i < len; i++)

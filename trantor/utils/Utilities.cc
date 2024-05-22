@@ -14,34 +14,35 @@
 
 #include "Utilities.h"
 #ifdef _WIN32
-#include <windows.h>
-#include <ntsecapi.h>
 #include <algorithm>
+#include <ntsecapi.h>
+#include <windows.h>
 #else  // _WIN32
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 #if __cplusplus < 201103L || __cplusplus >= 201703L
-#include <stdlib.h>
 #include <locale.h>
+#include <stdlib.h>
 #else  // __cplusplus
-#include <locale>
 #include <codecvt>
+#include <locale>
 #endif  // __cplusplus
 #endif  // _WIN32
 
 #if defined(USE_OPENSSL)
-#include <openssl/rand.h>
 #include <limits>
+#include <openssl/rand.h>
 #elif defined(USE_BOTAN)
 #include <botan/auto_rng.h>
 #else
+#include "crypto/blake2.h"
 #include "crypto/md5.h"
 #include "crypto/sha1.h"
 #include "crypto/sha256.h"
 #include "crypto/sha3.h"
-#include "crypto/blake2.h"
-#include <fstream>
+
 #include <chrono>
+#include <fstream>
 #include <random>
 #endif
 
@@ -161,8 +162,14 @@ std::string toUtf8(const std::wstring &wstr)
 
     std::string strTo;
 #ifdef _WIN32
-    int nSizeNeeded = ::WideCharToMultiByte(
-        CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+    int nSizeNeeded = ::WideCharToMultiByte(CP_UTF8,
+                                            0,
+                                            &wstr[0],
+                                            (int)wstr.size(),
+                                            NULL,
+                                            0,
+                                            NULL,
+                                            NULL);
     strTo.resize(nSizeNeeded, 0);
     ::WideCharToMultiByte(CP_UTF8,
                           0,
@@ -189,8 +196,12 @@ std::wstring fromUtf8(const std::string &str)
     int nSizeNeeded =
         ::MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
     wstrTo.resize(nSizeNeeded, 0);
-    ::MultiByteToWideChar(
-        CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], nSizeNeeded);
+    ::MultiByteToWideChar(CP_UTF8,
+                          0,
+                          &str[0],
+                          (int)str.size(),
+                          &wstrTo[0],
+                          nSizeNeeded);
 #elif __cplusplus < 201103L || __cplusplus >= 201703L
     wstrTo = utf8Toutf16(str);
 #else  // c++11 to c++14
@@ -235,7 +246,7 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
         return certName == hostname;
     }
 
-    size_t firstDot = certName.find('.');
+    size_t firstDot     = certName.find('.');
     size_t hostFirstDot = hostname.find('.');
     size_t pos, len, hostPos, hostLen;
 
@@ -343,7 +354,7 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
 }
 
 #define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
+#define TOSTRING(x)  STRINGIFY(x)
 
 std::string tlsBackend()
 {
@@ -405,8 +416,8 @@ std::string toHexString(const void *data, size_t len)
     for (size_t i = 0; i < len; i++)
     {
         unsigned char c = ((const unsigned char *)data)[i];
-        str[i * 2] = "0123456789ABCDEF"[c >> 4];
-        str[i * 2 + 1] = "0123456789ABCDEF"[c & 0xf];
+        str[i * 2]      = "0123456789ABCDEF"[c >> 4];
+        str[i * 2 + 1]  = "0123456789ABCDEF"[c & 0xf];
     }
     return str;
 }
@@ -432,7 +443,8 @@ static bool systemRandomBytes(void *ptr, size_t size)
 #elif defined(__unix__) || defined(__HAIKU__)
     // fallback to /dev/urandom for other/old UNIX
     thread_local std::unique_ptr<FILE, std::function<void(FILE *)> > fptr(
-        fopen("/dev/urandom", "rb"), [](FILE *ptr) {
+        fopen("/dev/urandom", "rb"),
+        [](FILE *ptr) {
             if (ptr != nullptr)
                 fclose(ptr);
         });
@@ -450,9 +462,9 @@ static bool systemRandomBytes(void *ptr, size_t size)
 
 struct RngState
 {
-    Hash256 secret;
-    Hash256 prev;
-    int64_t time;
+    Hash256  secret;
+    Hash256  prev;
+    int64_t  time;
     uint64_t counter = 0;
 };
 
@@ -482,9 +494,9 @@ bool secureRandomBytes(void *data, size_t len)
     static_assert(sizeof(RngState) < 128,
                   "RngState must be less then BLAKE2b's chunk size");
 
-    thread_local int useCount = 0;
+    thread_local int      useCount = 0;
     thread_local RngState state;
-    static const int64_t shiftAmount = []() {
+    static const int64_t  shiftAmount = []() {
         int64_t shift = 0;
         if (!systemRandomBytes(&shift, sizeof(shift)))
         {
@@ -541,9 +553,9 @@ bool secureRandomBytes(void *data, size_t len)
     // `now` lives on the stack, so address in each call _may_ be different.
     // This code works on both 32-bit and 64-bit systems. As well as big-endian
     // and little-endian systems.
-    void *stack_ptr = &now;
+    void     *stack_ptr   = &now;
     uint32_t *stack_ptr32 = (uint32_t *)&stack_ptr;
-    uint32_t garbage = *stack_ptr32;
+    uint32_t  garbage     = *stack_ptr32;
     static_assert(sizeof(void *) >= sizeof(uint32_t), "pointer size too small");
     for (size_t i = 1; i < sizeof(void *) / sizeof(uint32_t); i++)
         garbage ^= stack_ptr32[i];

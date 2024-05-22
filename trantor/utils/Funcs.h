@@ -14,13 +14,13 @@
 
 #pragma once
 #include <algorithm>
-#include <vector>
 #include <cstdint>
+#include <vector>
 namespace trantor
 {
 inline uint64_t hton64(uint64_t n)
 {
-    static const int one = 1;
+    static const int  one = 1;
     static const char sig = *(char *)&one;
     if (sig == 0)
         return n;  // for big endian machine just return the input
@@ -39,8 +39,8 @@ inline std::vector<std::string> splitString(const std::string &s,
     if (delimiter.empty())
         return std::vector<std::string>{};
     std::vector<std::string> v;
-    size_t last = 0;
-    size_t next = 0;
+    size_t                   last = 0;
+    size_t                   next = 0;
     while ((next = s.find(delimiter, last)) != std::string::npos)
     {
         if (next > last || acceptEmptyString)

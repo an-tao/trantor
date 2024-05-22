@@ -11,37 +11,38 @@ order.
 *********************************************************************/
 
 /*************************** HEADER FILES ***************************/
-#include <stdlib.h>
-#include <memory.h>
 #include "md5.h"
+
+#include <memory.h>
+#include <stdlib.h>
 
 /****************************** MACROS ******************************/
 #define ROTLEFT(a, b) ((a << b) | (a >> (32 - b)))
 
-#define F(x, y, z) ((x & y) | (~x & z))
-#define G(x, y, z) ((x & z) | (y & ~z))
-#define H(x, y, z) (x ^ y ^ z)
-#define I(x, y, z) (y ^ (x | ~z))
+#define F(x, y, z)    ((x & y) | (~x & z))
+#define G(x, y, z)    ((x & z) | (y & ~z))
+#define H(x, y, z)    (x ^ y ^ z)
+#define I(x, y, z)    (y ^ (x | ~z))
 
 #define FF(a, b, c, d, m, s, t)  \
     {                            \
         a += F(b, c, d) + m + t; \
-        a = b + ROTLEFT(a, s);   \
+        a  = b + ROTLEFT(a, s);  \
     }
 #define GG(a, b, c, d, m, s, t)  \
     {                            \
         a += G(b, c, d) + m + t; \
-        a = b + ROTLEFT(a, s);   \
+        a  = b + ROTLEFT(a, s);  \
     }
 #define HH(a, b, c, d, m, s, t)  \
     {                            \
         a += H(b, c, d) + m + t; \
-        a = b + ROTLEFT(a, s);   \
+        a  = b + ROTLEFT(a, s);  \
     }
 #define II(a, b, c, d, m, s, t)  \
     {                            \
         a += I(b, c, d) + m + t; \
-        a = b + ROTLEFT(a, s);   \
+        a  = b + ROTLEFT(a, s);  \
     }
 
 /*********************** FUNCTION DEFINITIONS ***********************/
@@ -137,8 +138,8 @@ void trantor_md5_transform(MD5_CTX *ctx, const uint8_t data[])
 
 void trantor_md5_init(MD5_CTX *ctx)
 {
-    ctx->datalen = 0;
-    ctx->bitlen = 0;
+    ctx->datalen  = 0;
+    ctx->bitlen   = 0;
     ctx->state[0] = 0x67452301;
     ctx->state[1] = 0xEFCDAB89;
     ctx->state[2] = 0x98BADCFE;
@@ -156,8 +157,8 @@ void trantor_md5_update(MD5_CTX *ctx, const uint8_t data[], size_t len)
         if (ctx->datalen == 64)
         {
             trantor_md5_transform(ctx, ctx->data);
-            ctx->bitlen += 512;
-            ctx->datalen = 0;
+            ctx->bitlen  += 512;
+            ctx->datalen  = 0;
         }
     }
 }
@@ -185,15 +186,15 @@ void trantor_md5_final(MD5_CTX *ctx, uint8_t hash[])
     }
 
     // Append to the padding the total message's length in bits and transform.
-    ctx->bitlen += ctx->datalen * 8;
-    ctx->data[56] = (uint8_t)ctx->bitlen;
-    ctx->data[57] = (uint8_t)(ctx->bitlen >> 8);
-    ctx->data[58] = (uint8_t)(ctx->bitlen >> 16);
-    ctx->data[59] = (uint8_t)(ctx->bitlen >> 24);
-    ctx->data[60] = (uint8_t)(ctx->bitlen >> 32);
-    ctx->data[61] = (uint8_t)(ctx->bitlen >> 40);
-    ctx->data[62] = (uint8_t)(ctx->bitlen >> 48);
-    ctx->data[63] = (uint8_t)(ctx->bitlen >> 56);
+    ctx->bitlen   += ctx->datalen * 8;
+    ctx->data[56]  = (uint8_t)ctx->bitlen;
+    ctx->data[57]  = (uint8_t)(ctx->bitlen >> 8);
+    ctx->data[58]  = (uint8_t)(ctx->bitlen >> 16);
+    ctx->data[59]  = (uint8_t)(ctx->bitlen >> 24);
+    ctx->data[60]  = (uint8_t)(ctx->bitlen >> 32);
+    ctx->data[61]  = (uint8_t)(ctx->bitlen >> 40);
+    ctx->data[62]  = (uint8_t)(ctx->bitlen >> 48);
+    ctx->data[63]  = (uint8_t)(ctx->bitlen >> 56);
     trantor_md5_transform(ctx, ctx->data);
 
     // Since this implementation uses little endian byte ordering and MD uses
@@ -201,9 +202,9 @@ void trantor_md5_final(MD5_CTX *ctx, uint8_t hash[])
     // output hash.
     for (i = 0; i < 4; ++i)
     {
-        hash[i] = (ctx->state[0] >> (i * 8)) & 0x000000ff;
-        hash[i + 4] = (ctx->state[1] >> (i * 8)) & 0x000000ff;
-        hash[i + 8] = (ctx->state[2] >> (i * 8)) & 0x000000ff;
+        hash[i]      = (ctx->state[0] >> (i * 8)) & 0x000000ff;
+        hash[i + 4]  = (ctx->state[1] >> (i * 8)) & 0x000000ff;
+        hash[i + 8]  = (ctx->state[2] >> (i * 8)) & 0x000000ff;
         hash[i + 12] = (ctx->state[3] >> (i * 8)) & 0x000000ff;
     }
 }

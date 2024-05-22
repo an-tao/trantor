@@ -19,10 +19,10 @@ using namespace trantor;
 #define O_CLOEXEC O_NOINHERIT
 #endif
 
-Acceptor::Acceptor(EventLoop *loop,
+Acceptor::Acceptor(EventLoop         *loop,
                    const InetAddress &addr,
-                   bool reUseAddr,
-                   bool reUsePort)
+                   bool               reUseAddr,
+                   bool               reUsePort)
 
     :
 #ifndef _WIN32
@@ -63,7 +63,7 @@ void Acceptor::listen()
 void Acceptor::readCallback()
 {
     InetAddress peer;
-    int newsock = sock_.accept(&peer);
+    int         newsock = sock_.accept(&peer);
     if (newsock >= 0)
     {
         if (afterAcceptSetSockOptCallback_)

@@ -14,8 +14,9 @@
 
 #pragma once
 #include "../Poller.h"
-#include <trantor/utils/NonCopyable.h>
+
 #include <trantor/net/EventLoop.h>
+#include <trantor/utils/NonCopyable.h>
 
 #if (defined(__unix__) && !defined(__linux__)) || \
     (defined(__APPLE__) && defined(__MACH__))
@@ -42,8 +43,8 @@ class KQueue : public Poller
   private:
 #ifdef USE_KQUEUE
     static const int kInitEventListSize = 16;
-    int kqfd_;
-    EventList events_;
+    int              kqfd_;
+    EventList        events_;
     using ChannelMap = std::unordered_map<int, std::pair<int, Channel *>>;
     ChannelMap channels_;
 

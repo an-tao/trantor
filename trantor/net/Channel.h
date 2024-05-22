@@ -14,12 +14,12 @@
 
 #pragma once
 
+#include <assert.h>
+#include <functional>
+#include <memory>
+#include <trantor/exports.h>
 #include <trantor/utils/Logger.h>
 #include <trantor/utils/NonCopyable.h>
-#include <trantor/exports.h>
-#include <functional>
-#include <assert.h>
-#include <memory>
 namespace trantor
 {
 class EventLoop;
@@ -268,7 +268,7 @@ class TRANTOR_EXPORT Channel : NonCopyable
      */
     void tie(const std::shared_ptr<void> &obj)
     {
-        tie_ = obj;
+        tie_  = obj;
         tied_ = true;
     }
 
@@ -284,7 +284,7 @@ class TRANTOR_EXPORT Channel : NonCopyable
     void update();
     void handleEvent();
     void handleEventSafely();
-    int setRevents(int revt)
+    int  setRevents(int revt)
     {
         // LOG_TRACE<<"revents="<<revt;
         revents_ = revt;
@@ -298,18 +298,18 @@ class TRANTOR_EXPORT Channel : NonCopyable
     {
         index_ = index;
     };
-    EventLoop *loop_;
-    const int fd_;
-    int events_;
-    int revents_;
-    int index_;
-    bool addedToLoop_{false};
-    EventCallback readCallback_;
-    EventCallback writeCallback_;
-    EventCallback errorCallback_;
-    EventCallback closeCallback_;
-    EventCallback eventCallback_;
+    EventLoop          *loop_;
+    const int           fd_;
+    int                 events_;
+    int                 revents_;
+    int                 index_;
+    bool                addedToLoop_{false};
+    EventCallback       readCallback_;
+    EventCallback       writeCallback_;
+    EventCallback       errorCallback_;
+    EventCallback       closeCallback_;
+    EventCallback       eventCallback_;
     std::weak_ptr<void> tie_;
-    bool tied_;
+    bool                tied_;
 };
 }  // namespace trantor

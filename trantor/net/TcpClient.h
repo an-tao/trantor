@@ -17,15 +17,15 @@
 // Author: Tao An
 
 #pragma once
+#include <atomic>
+#include <functional>
+#include <signal.h>
+#include <thread>
+#include <trantor/exports.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/net/TcpConnection.h>
 #include <trantor/utils/Logger.h>
-#include <trantor/exports.h>
-#include <functional>
-#include <thread>
-#include <atomic>
-#include <signal.h>
 namespace trantor
 {
 class Connector;
@@ -45,7 +45,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
      * @param serverAddr The address of the server.
      * @param nameArg The name of the client.
      */
-    TcpClient(EventLoop *loop,
+    TcpClient(EventLoop         *loop,
               const InetAddress &serverAddr,
               const std::string &nameArg);
     ~TcpClient();
@@ -214,20 +214,20 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
      * 2020. And it's a good practice to only use TLS 1.2 and above.
      */
     [[deprecated("Use enableSSL(TLSPolicyPtr policy) instead")]] void enableSSL(
-        bool useOldTLS = false,
-        bool validateCert = true,
-        std::string hostname = "",
+        bool        useOldTLS    = false,
+        bool        validateCert = true,
+        std::string hostname     = "",
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
             {},
         const std::string &certPath = "",
-        const std::string &keyPath = "",
-        const std::string &caPath = "");
+        const std::string &keyPath  = "",
+        const std::string &caPath   = "");
     /**
      * @brief Enable SSL encryption.
      */
     void enableSSL(TLSPolicyPtr policy)
     {
-        tlsPolicyPtr_ = std::move(policy);
+        tlsPolicyPtr_  = std::move(policy);
         sslContextPtr_ = newSSLContext(*tlsPolicyPtr_, false);
     }
 
@@ -235,24 +235,24 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     /// Not thread safe, but in loop
     void newConnection(int sockfd);
     /// Not thread safe, but in loop
-    void removeConnection(const TcpConnectionPtr &conn);
+    void                    removeConnection(const TcpConnectionPtr &conn);
 
-    EventLoop *loop_;
-    ConnectorPtr connector_;  // avoid revealing Connector
-    const std::string name_;
-    ConnectionCallback connectionCallback_;
+    EventLoop              *loop_;
+    ConnectorPtr            connector_;  // avoid revealing Connector
+    const std::string       name_;
+    ConnectionCallback      connectionCallback_;
     ConnectionErrorCallback connectionErrorCallback_;
-    RecvMessageCallback messageCallback_;
-    WriteCompleteCallback writeCompleteCallback_;
-    SSLErrorCallback sslErrorCallback_;
-    std::atomic_bool retry_;    // atomic
-    std::atomic_bool connect_;  // atomic
+    RecvMessageCallback     messageCallback_;
+    WriteCompleteCallback   writeCompleteCallback_;
+    SSLErrorCallback        sslErrorCallback_;
+    std::atomic_bool        retry_;    // atomic
+    std::atomic_bool        connect_;  // atomic
     // always in loop thread
     mutable std::mutex mutex_;
-    TcpConnectionPtr connection_;  // @GuardedBy mutex_
-    TLSPolicyPtr tlsPolicyPtr_;
-    SSLContextPtr sslContextPtr_;
-    bool validateCert_{false};
+    TcpConnectionPtr   connection_;  // @GuardedBy mutex_
+    TLSPolicyPtr       tlsPolicyPtr_;
+    SSLContextPtr      sslContextPtr_;
+    bool               validateCert_{false};
 
 #ifndef _WIN32
     class IgnoreSigPipe

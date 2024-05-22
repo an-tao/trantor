@@ -1,8 +1,8 @@
-#include <trantor/utils/Logger.h>
-#include <trantor/utils/AsyncFileLogger.h>
-#include <thread>
 #include <chrono>
 #include <stdlib.h>
+#include <thread>
+#include <trantor/utils/AsyncFileLogger.h>
+#include <trantor/utils/Logger.h>
 
 using namespace std::chrono_literals;
 int main()
@@ -14,7 +14,9 @@ int main()
         [&](const char *msg, const uint64_t len) {
             asyncFileLogger.output(msg, len);
         },
-        [&]() { asyncFileLogger.flush(); });
+        [&]() {
+            asyncFileLogger.flush();
+        });
     asyncFileLogger.setFileSizeLimit(100000000);
     int i = 0;
     while (i < 1000000)

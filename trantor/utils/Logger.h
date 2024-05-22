@@ -14,13 +14,13 @@
 
 #pragma once
 
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/Date.h>
-#include <trantor/utils/LogStream.h>
-#include <trantor/exports.h>
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <trantor/exports.h>
+#include <trantor/utils/Date.h>
+#include <trantor/utils/LogStream.h>
+#include <trantor/utils/NonCopyable.h>
 #include <vector>
 namespace spdlog
 {
@@ -68,7 +68,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
 #endif
             if (slash)
             {
-                data_ = slash + 1;
+                data_  = slash + 1;
                 size_ -= static_cast<int>(data_ - arr);
             }
         }
@@ -93,7 +93,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         }
 
         const char *data_;
-        int size_;
+        int         size_;
     };
     Logger(SourceFile file, int line);
     Logger(SourceFile file, int line, LogLevel level);
@@ -123,18 +123,18 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      */
     static void setOutputFunction(
         std::function<void(const char *msg, const uint64_t len)> outputFunc,
-        std::function<void()> flushFunc,
-        int index = -1)
+        std::function<void()>                                    flushFunc,
+        int                                                      index = -1)
     {
         if (index < 0)
         {
             outputFunc_() = outputFunc;
-            flushFunc_() = flushFunc;
+            flushFunc_()  = flushFunc;
         }
         else
         {
             outputFunc_(index) = outputFunc;
-            flushFunc_(index) = flushFunc;
+            flushFunc_(index)  = flushFunc;
         }
     }
 
@@ -189,7 +189,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
      * @remarks If provided, it is not registered with the spdlog logger
      *          registry, it's up to you to register/drop it.
      */
-    static void enableSpdLog(int index,
+    static void enableSpdLog(int                             index,
                              std::shared_ptr<spdlog::logger> logger = {});
     /**
      * @brief Enable logging with spdlog for the default channel.
@@ -272,7 +272,7 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     {
         fflush(stdout);
     }
-    void formatTime();
+    void         formatTime();
     static bool &displayLocalTime_()
     {
         static bool showLocalTime = false;
@@ -288,8 +288,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
 #endif
         return logLevel;
     }
-    static std::function<void(const char *msg, const uint64_t len)>
-        &outputFunc_()
+    static std::function<void(const char *msg, const uint64_t len)> &
+    outputFunc_()
     {
         static std::function<void(const char *msg, const uint64_t len)>
             outputFunc = Logger::defaultOutputFunction;
@@ -300,8 +300,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         static std::function<void()> flushFunc = Logger::defaultFlushFunction;
         return flushFunc;
     }
-    static std::function<void(const char *msg, const uint64_t len)>
-        &outputFunc_(size_t index)
+    static std::function<void(const char *msg, const uint64_t len)> &
+    outputFunc_(size_t index)
     {
         static std::vector<
             std::function<void(const char *msg, const uint64_t len)>>
@@ -330,12 +330,12 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         return flushFuncs[index];
     }
     friend class RawLogger;
-    LogStream logStream_;
-    Date date_{Date::now()};
-    SourceFile sourceFile_;
-    int fileLine_;
-    LogLevel level_;
-    int index_{-1};
+    LogStream   logStream_;
+    Date        date_{Date::now()};
+    SourceFile  sourceFile_;
+    int         fileLine_;
+    LogLevel    level_;
+    int         index_{-1};
     const char *func_{nullptr};
     std::size_t spdLogMessageOffset_{0};
 };
@@ -355,7 +355,7 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
 
   private:
     LogStream logStream_;
-    int index_{-1};
+    int       index_{-1};
 };
 #ifdef NDEBUG
 #define LOG_TRACE                                                          \
@@ -439,7 +439,7 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
     trantor::Logger(true).setIndex(index).stream()
 // LOG_COMPACT_... end block
 
-#define LOG_RAW trantor::RawLogger().stream()
+#define LOG_RAW           trantor::RawLogger().stream()
 #define LOG_RAW_TO(index) trantor::RawLogger().setIndex(index).stream()
 
 #define LOG_TRACE_IF(cond)                                                  \

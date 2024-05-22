@@ -1,12 +1,11 @@
 #pragma once
 
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/MsgBuffer.h>
-#include <trantor/utils/Logger.h>
-#include <trantor/net/callbacks.h>
-#include <trantor/net/TcpConnection.h>
-
 #include <memory>
+#include <trantor/net/TcpConnection.h>
+#include <trantor/net/callbacks.h>
+#include <trantor/utils/Logger.h>
+#include <trantor/utils/MsgBuffer.h>
+#include <trantor/utils/NonCopyable.h>
 
 namespace trantor
 {
@@ -19,14 +18,14 @@ struct TLSProvider
           loop_(conn_->getLoop())
     {
     }
-    virtual ~TLSProvider() = default;
-    using WriteCallback = ssize_t (*)(TcpConnection*,
+    virtual ~TLSProvider()  = default;
+    using WriteCallback     = ssize_t (*)(TcpConnection*,
                                       const void* data,
-                                      size_t len);
-    using ErrorCallback = void (*)(TcpConnection*, SSLError err);
+                                      size_t      len);
+    using ErrorCallback     = void (*)(TcpConnection*, SSLError err);
     using HandshakeCallback = void (*)(TcpConnection*);
-    using MessageCallback = void (*)(TcpConnection*, MsgBuffer* buffer);
-    using CloseCallback = void (*)(TcpConnection*);
+    using MessageCallback   = void (*)(TcpConnection*, MsgBuffer* buffer);
+    using CloseCallback     = void (*)(TcpConnection*);
 
     /**
      * @brief Sends data to the TLSProvider to process handshake and decrypt
@@ -44,11 +43,11 @@ struct TLSProvider
     /**
      * @brief Close the TLS connection
      */
-    virtual void close() = 0;
+    virtual void close()           = 0;
 
     virtual void startEncryption() = 0;
 
-    bool sendBufferedData()
+    bool         sendBufferedData()
     {
         if (writeBuffer_.readableBytes() == 0)
             return true;
@@ -151,23 +150,23 @@ struct TLSProvider
         sniName_ = std::move(name);
     }
 
-    WriteCallback writeCallback_ = nullptr;
-    ErrorCallback errorCallback_ = nullptr;
-    HandshakeCallback handshakeCallback_ = nullptr;
-    MessageCallback messageCallback_ = nullptr;
-    CloseCallback closeCallback_ = nullptr;
-    TcpConnection* conn_ = nullptr;
-    const TLSPolicyPtr policyPtr_;
+    WriteCallback       writeCallback_     = nullptr;
+    ErrorCallback       errorCallback_     = nullptr;
+    HandshakeCallback   handshakeCallback_ = nullptr;
+    MessageCallback     messageCallback_   = nullptr;
+    CloseCallback       closeCallback_     = nullptr;
+    TcpConnection*      conn_              = nullptr;
+    const TLSPolicyPtr  policyPtr_;
     const SSLContextPtr contextPtr_;
-    MsgBuffer recvBuffer_;
-    EventLoop* loop_ = nullptr;
-    CertificatePtr peerCertificate_;
-    std::string applicationProtocol_;
-    std::string sniName_;
-    MsgBuffer writeBuffer_;
+    MsgBuffer           recvBuffer_;
+    EventLoop*          loop_ = nullptr;
+    CertificatePtr      peerCertificate_;
+    std::string         applicationProtocol_;
+    std::string         sniName_;
+    MsgBuffer           writeBuffer_;
 };
 
 std::shared_ptr<TLSProvider> newTLSProvider(TcpConnection* conn,
-                                            TLSPolicyPtr policy,
-                                            SSLContextPtr ctx);
+                                            TLSPolicyPtr   policy,
+                                            SSLContextPtr  ctx);
 }  // namespace trantor

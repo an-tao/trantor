@@ -6,8 +6,8 @@
 // Author: Tao An
 
 #pragma once
-#include <trantor/exports.h>
 #include <memory>
+#include <trantor/exports.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 
@@ -32,8 +32,8 @@ class TRANTOR_EXPORT Resolver
      * @param timeout The timeout in seconds for DNS.
      * @return std::shared_ptr<Resolver>
      */
-    static std::shared_ptr<Resolver> newResolver(EventLoop* loop = nullptr,
-                                                 size_t timeout = 60);
+    static std::shared_ptr<Resolver> newResolver(EventLoop* loop    = nullptr,
+                                                 size_t     timeout = 60);
 
     /**
      * @brief Resolve an address asynchronously.
@@ -42,7 +42,7 @@ class TRANTOR_EXPORT Resolver
      * @param callback
      */
     virtual void resolve(const std::string& hostname,
-                         const Callback& callback) = 0;
+                         const Callback&    callback) = 0;
 
     /**
      * @brief Resolve an address array asynchronously.
@@ -50,12 +50,10 @@ class TRANTOR_EXPORT Resolver
      * @param hostname
      * @param callback
      */
-    virtual void resolve(const std::string& hostname,
+    virtual void resolve(const std::string&             hostname,
                          const ResolverResultsCallback& callback) = 0;
 
-    virtual ~Resolver()
-    {
-    }
+    virtual ~Resolver() {}
 
     /**
      * @brief Check whether the c-ares library is used.

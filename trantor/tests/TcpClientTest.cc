@@ -1,14 +1,14 @@
+#include <atomic>
+#include <iostream>
+#include <string>
+#include <trantor/net/EventLoopThread.h>
 #include <trantor/net/TcpClient.h>
 #include <trantor/utils/Logger.h>
-#include <trantor/net/EventLoopThread.h>
-#include <string>
-#include <iostream>
-#include <atomic>
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #else
-#include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <sys/socket.h>
 #endif
 
 using namespace trantor;
@@ -24,7 +24,7 @@ int main()
     InetAddress serverAddr("127.0.0.1", 8888);
 #endif
     std::shared_ptr<trantor::TcpClient> client[10];
-    std::atomic_int connCount;
+    std::atomic_int                     connCount;
     connCount = 10;
     for (int i = 0; i < 10; ++i)
     {

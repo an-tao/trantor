@@ -14,14 +14,14 @@
 
 // taken from muduo lib
 
-#include <trantor/utils/LogStream.h>
 #include <algorithm>
-#include <limits>
 #include <assert.h>
-#include <string.h>
+#include <iostream>
+#include <limits>
 #include <stdint.h>
 #include <stdio.h>
-#include <iostream>
+#include <string.h>
+#include <trantor/utils/LogStream.h>
 
 using namespace trantor;
 using namespace trantor::detail;
@@ -30,23 +30,23 @@ namespace trantor
 {
 namespace detail
 {
-const char digits[] = "9876543210123456789";
-const char *zero = digits + 9;
+const char  digits[]    = "9876543210123456789";
+const char *zero        = digits + 9;
 
-const char digitsHex[] = "0123456789ABCDEF";
+const char  digitsHex[] = "0123456789ABCDEF";
 
 // Efficient Integer to String Conversions, by Matthew Wilson.
 template <typename T>
 size_t convert(char buf[], T value)
 {
-    T i = value;
+    T     i = value;
     char *p = buf;
 
     do
     {
-        int lsd = static_cast<int>(i % 10);
-        i /= 10;
-        *p++ = zero[lsd];
+        int lsd  = static_cast<int>(i % 10);
+        i       /= 10;
+        *p++     = zero[lsd];
     } while (i != 0);
 
     if (value < 0)
@@ -62,13 +62,13 @@ size_t convert(char buf[], T value)
 size_t convertHex(char buf[], uintptr_t value)
 {
     uintptr_t i = value;
-    char *p = buf;
+    char     *p = buf;
 
     do
     {
-        int lsd = static_cast<int>(i % 16);
-        i /= 16;
-        *p++ = digitsHex[lsd];
+        int lsd  = static_cast<int>(i % 16);
+        i       /= 16;
+        *p++     = digitsHex[lsd];
     } while (i != 0);
 
     *p = '\0';
@@ -173,16 +173,16 @@ LogStream &LogStream::operator<<(const unsigned long long &v)
 
 LogStream &LogStream::operator<<(const void *p)
 {
-    uintptr_t v = reinterpret_cast<uintptr_t>(p);
+    uintptr_t            v = reinterpret_cast<uintptr_t>(p);
     constexpr static int kMaxNumericSize =
         std::numeric_limits<uintptr_t>::digits / 4 + 4;
     if (exBuffer_.empty())
     {
         if (buffer_.avail() >= kMaxNumericSize)
         {
-            char *buf = buffer_.current();
-            buf[0] = '0';
-            buf[1] = 'x';
+            char *buf  = buffer_.current();
+            buf[0]     = '0';
+            buf[1]     = 'x';
             size_t len = convertHex(buf + 2, v);
             buffer_.add(len + 2);
             return *this;
@@ -194,9 +194,9 @@ LogStream &LogStream::operator<<(const void *p)
     }
     auto oldLen = exBuffer_.length();
     exBuffer_.resize(oldLen + kMaxNumericSize);
-    char *buf = &exBuffer_[oldLen];
-    buf[0] = '0';
-    buf[1] = 'x';
+    char *buf  = &exBuffer_[oldLen];
+    buf[0]     = '0';
+    buf[1]     = 'x';
     size_t len = convertHex(buf + 2, v);
     exBuffer_.resize(oldLen + len + 2);
     return *this;

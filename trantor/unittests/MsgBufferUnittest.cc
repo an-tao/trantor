@@ -1,7 +1,7 @@
-#include <trantor/utils/MsgBuffer.h>
 #include <gtest/gtest.h>
-#include <string>
 #include <iostream>
+#include <string>
+#include <trantor/utils/MsgBuffer.h>
 using namespace trantor;
 TEST(MsgBufferTest, readableTest)
 {
@@ -50,23 +50,23 @@ TEST(MsgBufferTest, addInFrontTest)
 
 TEST(MsgBuffer, MoveContrustor)
 {
-    MsgBuffer buf1(100);
-    const char *bufptr1 = buf1.peek();
-    MsgBuffer buffnew1 = std::move(buf1);
+    MsgBuffer   buf1(100);
+    const char *bufptr1  = buf1.peek();
+    MsgBuffer   buffnew1 = std::move(buf1);
     EXPECT_EQ(bufptr1, buffnew1.peek());
 
-    MsgBuffer buf2(100);
+    MsgBuffer   buf2(100);
     const char *bufptr2 = buf2.peek();
-    MsgBuffer buffnew2(std::move(buf2));
+    MsgBuffer   buffnew2(std::move(buf2));
     EXPECT_EQ(bufptr2, buffnew2.peek());
 }
 
 TEST(Msgbuffer, MoveAssignmentOperator)
 {
-    MsgBuffer buf(100);
-    const char *bufptr = buf.peek();
-    size_t writable = buf.writableBytes();
-    MsgBuffer buffnew(1000);
+    MsgBuffer   buf(100);
+    const char *bufptr   = buf.peek();
+    size_t      writable = buf.writableBytes();
+    MsgBuffer   buffnew(1000);
     buffnew = std::move(buf);
     EXPECT_EQ(bufptr, buffnew.peek());
     EXPECT_EQ(writable, buffnew.writableBytes());

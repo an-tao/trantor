@@ -1,7 +1,7 @@
-#include <trantor/utils/SerialTaskQueue.h>
-#include <iostream>
 #include <atomic>
 #include <future>
+#include <iostream>
+#include <trantor/utils/SerialTaskQueue.h>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -10,8 +10,8 @@ int main()
 {
     std::atomic<uint64_t> counter;
     counter = 0;
-    std::promise<int> pro;
-    auto ft = pro.get_future();
+    std::promise<int>        pro;
+    auto                     ft = pro.get_future();
     trantor::SerialTaskQueue queue("");
     queue.runTaskInQueue([&counter, &pro, &queue]() {
         for (int i = 0; i < 10000; ++i)

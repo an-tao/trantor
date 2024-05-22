@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include <trantor/utils/NonCopyable.h>
+#include <string>
 #include <trantor/net/InetAddress.h>
 #include <trantor/utils/Logger.h>
-#include <string>
+#include <trantor/utils/NonCopyable.h>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -49,11 +49,14 @@ class Socket : NonCopyable
 
     static int getSocketError(int sockfd)
     {
-        int optval;
+        int       optval;
         socklen_t optlen = static_cast<socklen_t>(sizeof optval);
 #ifdef _WIN32
-        if (::getsockopt(
-                sockfd, SOL_SOCKET, SO_ERROR, (char *)&optval, &optlen) < 0)
+        if (::getsockopt(sockfd,
+                         SOL_SOCKET,
+                         SO_ERROR,
+                         (char *)&optval,
+                         &optlen) < 0)
 #else
         if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
 #endif
@@ -82,18 +85,16 @@ class Socket : NonCopyable
 
     static bool isSelfConnect(int sockfd);
 
-    explicit Socket(int sockfd) : sockFd_(sockfd)
-    {
-    }
+    explicit Socket(int sockfd) : sockFd_(sockfd) {}
     ~Socket();
     /// abort if address in use
     void bindAddress(const InetAddress &localaddr);
     /// abort if address in use
     void listen();
-    int accept(InetAddress *peeraddr);
+    int  accept(InetAddress *peeraddr);
     void closeWrite();
-    int read(char *buffer, uint64_t len);
-    int fd()
+    int  read(char *buffer, uint64_t len);
+    int  fd()
     {
         return sockFd_;
     }
@@ -119,7 +120,7 @@ class Socket : NonCopyable
     /// Enable/disable SO_KEEPALIVE
     ///
     void setKeepAlive(bool on);
-    int getSocketError();
+    int  getSocketError();
 
   protected:
     int sockFd_;
@@ -131,22 +132,22 @@ class Socket : NonCopyable
 #ifdef _WIN32
         // TODO how to set FD_CLOEXEC on windows? is it necessary?
         u_long arg = 1;
-        auto ret = ioctlsocket(sockfd, (long)FIONBIO, &arg);
+        auto   ret = ioctlsocket(sockfd, (long)FIONBIO, &arg);
         if (ret)
         {
             LOG_ERROR << "ioctlsocket error";
         }
 #else
         // non-block
-        int flags = ::fcntl(sockfd, F_GETFL, 0);
-        flags |= O_NONBLOCK;
-        int ret = ::fcntl(sockfd, F_SETFL, flags);
+        int flags  = ::fcntl(sockfd, F_GETFL, 0);
+        flags     |= O_NONBLOCK;
+        int ret    = ::fcntl(sockfd, F_SETFL, flags);
         // TODO check
 
         // close-on-exec
-        flags = ::fcntl(sockfd, F_GETFD, 0);
+        flags  = ::fcntl(sockfd, F_GETFD, 0);
         flags |= FD_CLOEXEC;
-        ret = ::fcntl(sockfd, F_SETFD, flags);
+        ret    = ::fcntl(sockfd, F_SETFD, flags);
         // TODO check
 
         (void)ret;

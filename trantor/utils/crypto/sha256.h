@@ -17,7 +17,7 @@
 
 typedef struct
 {
-    uint8_t data[64];
+    uint8_t  data[64];
     uint32_t datalen;
     uint64_t bitlen;
     uint32_t state[8];

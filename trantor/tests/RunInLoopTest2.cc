@@ -1,7 +1,7 @@
-#include <trantor/net/EventLoopThread.h>
-#include <iostream>
 #include <atomic>
 #include <future>
+#include <iostream>
+#include <trantor/net/EventLoopThread.h>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -10,11 +10,11 @@ int main()
 {
     std::atomic<uint64_t> counter;
     counter = 0;
-    std::promise<int> pro;
-    auto ft = pro.get_future();
+    std::promise<int>        pro;
+    auto                     ft = pro.get_future();
     trantor::EventLoopThread loopThread;
 
-    auto loop = loopThread.getLoop();
+    auto                     loop = loopThread.getLoop();
     loop->runInLoop([&counter, &pro, loop]() {
         for (int i = 0; i < 10000; ++i)
         {

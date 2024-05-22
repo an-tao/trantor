@@ -1,7 +1,7 @@
-#include <trantor/net/InetAddress.h>
 #include <gtest/gtest.h>
-#include <string>
 #include <iostream>
+#include <string>
+#include <trantor/net/InetAddress.h>
 using namespace trantor;
 TEST(InetAddress, innerIpTest)
 {

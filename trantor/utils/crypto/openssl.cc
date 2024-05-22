@@ -1,19 +1,18 @@
-#include <trantor/utils/Utilities.h>
-
 #include <openssl/evp.h>
+#include <trantor/utils/Utilities.h>
 
 #if OPENSSL_VERSION_MAJOR < 3
 #include <openssl/md5.h>
 #include <openssl/sha.h>
 #endif
 
-#include "sha3.h"
 #include "sha3.cc"
+#include "sha3.h"
 
 // Some OpenSSL installations does not come with BLAKE2b-256
 // We use our own implementation in such case
-#include "blake2.h"
 #include "blake2.cc"
+#include "blake2.h"
 
 namespace trantor
 {
@@ -23,8 +22,8 @@ Hash128 md5(const void* data, size_t len)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
     Hash128 hash;
-    auto md5 = EVP_MD_fetch(nullptr, "MD5", nullptr);
-    auto ctx = EVP_MD_CTX_new();
+    auto    md5 = EVP_MD_fetch(nullptr, "MD5", nullptr);
+    auto    ctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, md5, nullptr);
     EVP_DigestUpdate(ctx, data, len);
     EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
@@ -45,8 +44,8 @@ Hash160 sha1(const void* data, size_t len)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
     Hash160 hash;
-    auto sha1 = EVP_MD_fetch(nullptr, "SHA1", nullptr);
-    auto ctx = EVP_MD_CTX_new();
+    auto    sha1 = EVP_MD_fetch(nullptr, "SHA1", nullptr);
+    auto    ctx  = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, sha1, nullptr);
     EVP_DigestUpdate(ctx, data, len);
     EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
@@ -67,8 +66,8 @@ Hash256 sha256(const void* data, size_t len)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
     Hash256 hash;
-    auto sha256 = EVP_MD_fetch(nullptr, "SHA256", nullptr);
-    auto ctx = EVP_MD_CTX_new();
+    auto    sha256 = EVP_MD_fetch(nullptr, "SHA256", nullptr);
+    auto    ctx    = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, sha256, nullptr);
     EVP_DigestUpdate(ctx, data, len);
     EVP_DigestFinal_ex(ctx, (unsigned char*)&hash, nullptr);
@@ -76,7 +75,7 @@ Hash256 sha256(const void* data, size_t len)
     EVP_MD_free(sha256);
     return hash;
 #else
-    Hash256 hash;
+    Hash256    hash;
     SHA256_CTX ctx;
     SHA256_Init(&ctx);
     SHA256_Update(&ctx, data, len);

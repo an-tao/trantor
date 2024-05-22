@@ -34,8 +34,8 @@ A million repetitions of "a"
 #include <endian.h>
 #else
 #define LITTLE_ENDIAN 1234 /* least-significant byte first (vax, pc) */
-#define BIG_ENDIAN 4321    /* most-significant byte first (IBM, net) */
-#define PDP_ENDIAN 3412    /* LSB first in word, MSW first in long (pdp)*/
+#define BIG_ENDIAN    4321 /* most-significant byte first (IBM, net) */
+#define PDP_ENDIAN    3412 /* LSB first in word, MSW first in long (pdp)*/
 
 #if defined(vax) || defined(ns32000) || defined(sun386) ||                  \
     defined(__i386__) || defined(MIPSEL) || defined(_MIPSEL) ||             \
@@ -97,19 +97,19 @@ A million repetitions of "a"
 /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
 #define R0(v, w, x, y, z, i)                                     \
     z += ((w & (x ^ y)) ^ y) + blk0(i) + 0x5A827999 + rol(v, 5); \
-    w = rol(w, 30);
+    w  = rol(w, 30);
 #define R1(v, w, x, y, z, i)                                    \
     z += ((w & (x ^ y)) ^ y) + blk(i) + 0x5A827999 + rol(v, 5); \
-    w = rol(w, 30);
+    w  = rol(w, 30);
 #define R2(v, w, x, y, z, i)                            \
     z += (w ^ x ^ y) + blk(i) + 0x6ED9EBA1 + rol(v, 5); \
-    w = rol(w, 30);
+    w  = rol(w, 30);
 #define R3(v, w, x, y, z, i)                                          \
     z += (((w | x) & y) | (w & x)) + blk(i) + 0x8F1BBCDC + rol(v, 5); \
-    w = rol(w, 30);
+    w  = rol(w, 30);
 #define R4(v, w, x, y, z, i)                            \
     z += (w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5); \
-    w = rol(w, 30);
+    w  = rol(w, 30);
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
@@ -119,7 +119,7 @@ void trantor_sha1_transform(uint32_t state[5], const unsigned char buffer[64])
     typedef union
     {
         unsigned char c[64];
-        uint32_t l[16];
+        uint32_t      l[16];
     } CHAR64LONG16;
 #ifdef SHA1HANDSOFF
     CHAR64LONG16 block[1]; /* use array to appear as a pointer */
@@ -247,9 +247,9 @@ void trantor_sha1_init(SHA1_CTX* context)
 
 /* Run your data through this. */
 
-void trantor_sha1_update(SHA1_CTX* context,
+void trantor_sha1_update(SHA1_CTX*            context,
                          const unsigned char* data,
-                         size_t len)
+                         size_t               len)
 {
     size_t i;
     size_t j;
@@ -258,7 +258,7 @@ void trantor_sha1_update(SHA1_CTX* context,
     if ((context->count[0] += len << 3) < j)
         context->count[1]++;
     context->count[1] += (len >> 29);
-    j = (j >> 3) & 63;
+    j                  = (j >> 3) & 63;
     if ((j + len) > 63)
     {
         memcpy(&context->buffer[j], data, (i = 64 - j));
@@ -278,7 +278,7 @@ void trantor_sha1_update(SHA1_CTX* context,
 
 void trantor_sha1_final(unsigned char digest[20], SHA1_CTX* context)
 {
-    unsigned i;
+    unsigned      i;
     unsigned char finalcount[8];
     unsigned char c;
 

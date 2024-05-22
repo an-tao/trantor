@@ -14,25 +14,25 @@
 
 #pragma once
 
-#include <trantor/net/EventLoop.h>
-#include <trantor/utils/Logger.h>
-#include <trantor/exports.h>
+#include <assert.h>
+#include <atomic>
+#include <deque>
 #include <map>
 #include <mutex>
-#include <deque>
-#include <vector>
 #include <set>
+#include <trantor/exports.h>
+#include <trantor/net/EventLoop.h>
+#include <trantor/utils/Logger.h>
 #include <unordered_map>
 #include <unordered_set>
-#include <atomic>
-#include <assert.h>
+#include <vector>
 
 #define TIMING_BUCKET_NUM_PER_WHEEL 100
-#define TIMING_TICK_INTERVAL 1.0
+#define TIMING_TICK_INTERVAL        1.0
 
 namespace trantor
 {
-using EntryPtr = std::shared_ptr<void>;
+using EntryPtr    = std::shared_ptr<void>;
 
 using EntryBucket = std::unordered_set<EntryPtr>;
 using BucketQueue = std::deque<EntryBucket>;
@@ -48,9 +48,7 @@ class TRANTOR_EXPORT TimingWheel
     class CallbackEntry
     {
       public:
-        CallbackEntry(std::function<void()> cb) : cb_(std::move(cb))
-        {
-        }
+        CallbackEntry(std::function<void()> cb) : cb_(std::move(cb)) {}
         ~CallbackEntry()
         {
             cb_();
@@ -75,13 +73,13 @@ class TRANTOR_EXPORT TimingWheel
      * can work with a timeout up to 200^4 seconds, about 50 years;
      */
     TimingWheel(trantor::EventLoop *loop,
-                size_t maxTimeout,
-                float ticksInterval = TIMING_TICK_INTERVAL,
+                size_t              maxTimeout,
+                float               ticksInterval = TIMING_TICK_INTERVAL,
                 size_t bucketsNumPerWheel = TIMING_BUCKET_NUM_PER_WHEEL);
 
-    void insertEntry(size_t delay, EntryPtr entryPtr);
+    void       insertEntry(size_t delay, EntryPtr entryPtr);
 
-    void insertEntryInloop(size_t delay, EntryPtr entryPtr);
+    void       insertEntryInloop(size_t delay, EntryPtr entryPtr);
 
     EventLoop *getLoop()
     {
@@ -93,13 +91,13 @@ class TRANTOR_EXPORT TimingWheel
   private:
     std::vector<BucketQueue> wheels_;
 
-    std::atomic<size_t> ticksCounter_{0};
+    std::atomic<size_t>      ticksCounter_{0};
 
-    trantor::TimerId timerId_;
-    trantor::EventLoop *loop_;
+    trantor::TimerId         timerId_;
+    trantor::EventLoop      *loop_;
 
-    float ticksInterval_;
-    size_t wheelsNum_;
-    size_t bucketsNumPerWheel_;
+    float                    ticksInterval_;
+    size_t                   wheelsNum_;
+    size_t                   bucketsNumPerWheel_;
 };
 }  // namespace trantor

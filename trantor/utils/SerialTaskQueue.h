@@ -15,12 +15,13 @@
 #pragma once
 
 #include "TaskQueue.h"
-#include <trantor/net/EventLoopThread.h>
-#include <trantor/exports.h>
-#include <string>
-#include <queue>
-#include <mutex>
+
 #include <atomic>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <trantor/exports.h>
+#include <trantor/net/EventLoopThread.h>
 namespace trantor
 {
 /**
@@ -90,8 +91,8 @@ class TRANTOR_EXPORT SerialTaskQueue : public TaskQueue
     bool isRunningTask()
     {
         return loopThread_.getLoop()
-                   ? loopThread_.getLoop()->isCallingFunctions()
-                   : false;
+                 ? loopThread_.getLoop()->isCallingFunctions()
+                 : false;
     }
 
     /**
@@ -108,8 +109,8 @@ class TRANTOR_EXPORT SerialTaskQueue : public TaskQueue
     void stop();
 
   protected:
-    std::string queueName_;
+    std::string     queueName_;
     EventLoopThread loopThread_;
-    bool stop_{false};
+    bool            stop_{false};
 };
 }  // namespace trantor

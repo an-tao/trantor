@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include <trantor/utils/NonCopyable.h>
 #include <memory>
+#include <trantor/utils/NonCopyable.h>
 
 namespace trantor
 {
@@ -38,7 +38,7 @@ class TRANTOR_EXPORT AsyncStream : public NonCopyable
      * @return false if the connection is closed.
      */
     virtual bool send(const char *data, size_t len) = 0;
-    bool send(const std::string &data)
+    bool         send(const std::string &data)
     {
         return send(data.data(), data.length());
     }

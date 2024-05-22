@@ -9,7 +9,7 @@ class MemBufferNode : public BufferNode
     void getData(const char *&data, size_t &len) override
     {
         data = buffer_.peek();
-        len = buffer_.readableBytes();
+        len  = buffer_.readableBytes();
     }
     void retrieve(size_t len) override
     {

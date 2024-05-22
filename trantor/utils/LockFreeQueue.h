@@ -13,11 +13,11 @@
  */
 
 #pragma once
-#include <trantor/utils/NonCopyable.h>
-#include <atomic>
-#include <type_traits>
-#include <memory>
 #include <assert.h>
+#include <atomic>
+#include <memory>
+#include <trantor/utils/NonCopyable.h>
+#include <type_traits>
 namespace trantor
 {
 /**
@@ -97,13 +97,9 @@ class MpscQueue : public NonCopyable
     struct BufferNode
     {
         BufferNode() = default;
-        BufferNode(const T &data) : dataPtr_(new T(data))
-        {
-        }
-        BufferNode(T &&data) : dataPtr_(new T(std::move(data)))
-        {
-        }
-        T *dataPtr_;
+        BufferNode(const T &data) : dataPtr_(new T(data)) {}
+        BufferNode(T &&data) : dataPtr_(new T(std::move(data))) {}
+        T                        *dataPtr_;
         std::atomic<BufferNode *> next_{nullptr};
     };
 

@@ -20,12 +20,12 @@
 
 using namespace trantor;
 EventLoopThread::EventLoopThread(const std::string &threadName)
-    : loop_(nullptr),
-      loopThreadName_(threadName),
-      thread_([this]() { loopFuncs(); })
+    : loop_(nullptr), loopThreadName_(threadName), thread_([this]() {
+          loopFuncs();
+      })
 {
     auto f = promiseForLoopPointer_.get_future();
-    loop_ = f.get();
+    loop_  = f.get();
 }
 
 EventLoopThread::~EventLoopThread()
@@ -58,7 +58,9 @@ void EventLoopThread::loopFuncs()
 #endif
     thread_local static std::shared_ptr<EventLoop> loop =
         std::make_shared<EventLoop>();
-    loop->queueInLoop([this]() { promiseForLoop_.set_value(1); });
+    loop->queueInLoop([this]() {
+        promiseForLoop_.set_value(1);
+    });
     promiseForLoopPointer_.set_value(loop);
     auto f = promiseForRun_.get_future();
     (void)f.get();

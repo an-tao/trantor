@@ -15,12 +15,13 @@
 #pragma once
 
 #include "../Poller.h"
-#include <trantor/utils/NonCopyable.h>
+
 #include <trantor/net/EventLoop.h>
+#include <trantor/utils/NonCopyable.h>
 
 #if defined __linux__ || defined _WIN32
-#include <memory>
 #include <map>
+#include <memory>
 using EventList = std::vector<struct epoll_event>;
 #endif
 namespace trantor
@@ -47,13 +48,13 @@ class EpollPoller : public Poller
 #if defined __linux__ || defined _WIN32
     static const int kInitEventListSize = 16;
 #ifdef _WIN32
-    void *epollfd_;
+    void         *epollfd_;
     EventCallback eventCallback_{[](uint64_t event) {}};
 #else
     int epollfd_;
 #endif
     EventList events_;
-    void update(int operation, Channel *channel);
+    void      update(int operation, Channel *channel);
 #ifndef NDEBUG
     using ChannelMap = std::map<int, Channel *>;
     ChannelMap channels_;

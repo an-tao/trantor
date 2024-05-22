@@ -16,17 +16,17 @@
 #ifdef _WIN32
 #include <stdio.h>
 #endif
-#include <trantor/utils/MsgBuffer.h>
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/Logger.h>
 #include <functional>
 #include <memory>
 #include <string>
+#include <trantor/utils/Logger.h>
+#include <trantor/utils/MsgBuffer.h>
+#include <trantor/utils/NonCopyable.h>
 
 namespace trantor
 {
 class BufferNode;
-using BufferNodePtr = std::shared_ptr<BufferNode>;
+using BufferNodePtr  = std::shared_ptr<BufferNode>;
 using StreamCallback = std::function<std::size_t(char *, std::size_t)>;
 class BufferNode : public NonCopyable
 {
@@ -45,9 +45,9 @@ class BufferNode : public NonCopyable
     {
         LOG_FATAL << "Not a memory buffer node";
     }
-    virtual void retrieve(size_t len) = 0;
+    virtual void      retrieve(size_t len)   = 0;
     virtual long long remainingBytes() const = 0;
-    virtual int getFd() const
+    virtual int       getFd() const
     {
         LOG_FATAL << "Not a file buffer node";
         return -1;
@@ -70,12 +70,12 @@ class BufferNode : public NonCopyable
     static BufferNodePtr newStreamBufferNode(StreamCallback &&cb);
 #ifdef _WIN32
     static BufferNodePtr newFileBufferNode(const wchar_t *fileName,
-                                           long long offset,
-                                           long long length);
+                                           long long      offset,
+                                           long long      length);
 #else
     static BufferNodePtr newFileBufferNode(const char *fileName,
-                                           long long offset,
-                                           long long length);
+                                           long long   offset,
+                                           long long   length);
 #endif
     static BufferNodePtr newAsyncStreamBufferNode();
 

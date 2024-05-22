@@ -1,8 +1,8 @@
-#include <trantor/utils/SerialTaskQueue.h>
-#include <trantor/utils/Logger.h>
 #include <iostream>
-#include <thread>
 #include <stdio.h>
+#include <thread>
+#include <trantor/utils/Logger.h>
+#include <trantor/utils/SerialTaskQueue.h>
 
 using namespace std::chrono_literals;
 int main()

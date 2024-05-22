@@ -14,11 +14,11 @@
 
 #pragma once
 
-#include <trantor/net/EventLoopThread.h>
-#include <trantor/exports.h>
-#include <vector>
-#include <memory>
 #include <atomic>
+#include <memory>
+#include <trantor/exports.h>
+#include <trantor/net/EventLoopThread.h>
+#include <vector>
 
 namespace trantor
 {
@@ -37,7 +37,7 @@ class TRANTOR_EXPORT EventLoopThreadPool : NonCopyable
      * @param threadNum The number of threads
      * @param name The name of the EventLoopThreadPool object.
      */
-    EventLoopThreadPool(size_t threadNum,
+    EventLoopThreadPool(size_t             threadNum,
                         const std::string &name = "EventLoopThreadPool");
 
     /**
@@ -88,6 +88,6 @@ class TRANTOR_EXPORT EventLoopThreadPool : NonCopyable
 
   private:
     std::vector<std::shared_ptr<EventLoopThread>> loopThreadVector_;
-    std::atomic<size_t> loopIndex_{0};
+    std::atomic<size_t>                           loopIndex_{0};
 };
 }  // namespace trantor

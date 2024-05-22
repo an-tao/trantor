@@ -13,10 +13,10 @@
  */
 #include "PollPoller.h"
 
-#include <trantor/utils/Logger.h>
 #include "trantor/net/Channel.h"
 
 #include <assert.h>
+#include <trantor/utils/Logger.h>
 
 using namespace trantor;
 
@@ -34,14 +34,12 @@ PollPoller::PollPoller(EventLoop* loop) : Poller(loop)
     });
 }
 
-PollPoller::~PollPoller()
-{
-}
+PollPoller::~PollPoller() {}
 
 void PollPoller::poll(int timeoutMs, ChannelList* activeChannels)
 {
     // XXX pollfds_ shouldn't change
-    int numEvents = ::poll(pollfds_.data(), pollfds_.size(), timeoutMs);
+    int numEvents  = ::poll(pollfds_.data(), pollfds_.size(), timeoutMs);
     int savedErrno = errno;
     if (numEvents > 0)
     {
@@ -62,7 +60,7 @@ void PollPoller::poll(int timeoutMs, ChannelList* activeChannels)
     }
 }
 
-void PollPoller::fillActiveChannels(int numEvents,
+void PollPoller::fillActiveChannels(int          numEvents,
                                     ChannelList* activeChannels) const
 {
     int processedEvents = 0;
@@ -98,8 +96,8 @@ void PollPoller::updateChannel(Channel* channel)
         // a new one, add to pollfds_
         assert(channels_.find(channel->fd()) == channels_.end());
         pollfd pfd;
-        pfd.fd = channel->fd();
-        pfd.events = static_cast<short>(channel->events());
+        pfd.fd      = channel->fd();
+        pfd.events  = static_cast<short>(channel->events());
         pfd.revents = 0;
         pollfds_.push_back(pfd);
         int idx = static_cast<int>(pollfds_.size()) - 1;
@@ -115,8 +113,8 @@ void PollPoller::updateChannel(Channel* channel)
         assert(0 <= idx && idx < static_cast<int>(pollfds_.size()));
         pollfd& pfd = pollfds_[idx];
         assert(pfd.fd == channel->fd() || pfd.fd == -channel->fd() - 1);
-        pfd.fd = channel->fd();
-        pfd.events = static_cast<short>(channel->events());
+        pfd.fd      = channel->fd();
+        pfd.events  = static_cast<short>(channel->events());
         pfd.revents = 0;
         if (channel->isNoneEvent())
         {
@@ -162,16 +160,8 @@ PollPoller::PollPoller(EventLoop *loop) : Poller(loop)
 {
     assert(false);
 }
-PollPoller::~PollPoller()
-{
-}
-void PollPoller::poll(int, ChannelList *)
-{
-}
-void PollPoller::updateChannel(Channel *)
-{
-}
-void PollPoller::removeChannel(Channel *)
-{
-}
+PollPoller::~PollPoller() {}
+void PollPoller::poll(int, ChannelList *) {}
+void PollPoller::updateChannel(Channel *) {}
+void PollPoller::removeChannel(Channel *) {}
 #endif

@@ -14,12 +14,13 @@
 
 #pragma once
 
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/net/callbacks.h>
 #include "Timer.h"
-#include <queue>
-#include <memory>
+
 #include <atomic>
+#include <memory>
+#include <queue>
+#include <trantor/net/callbacks.h>
+#include <trantor/utils/NonCopyable.h>
 #include <unordered_set>
 namespace trantor
 {
@@ -41,31 +42,31 @@ class TimerQueue : NonCopyable
     explicit TimerQueue(EventLoop *loop);
     ~TimerQueue();
     TimerId addTimer(const TimerCallback &cb,
-                     const TimePoint &when,
+                     const TimePoint     &when,
+                     const TimeInterval  &interval);
+    TimerId addTimer(TimerCallback     &&cb,
+                     const TimePoint    &when,
                      const TimeInterval &interval);
-    TimerId addTimer(TimerCallback &&cb,
-                     const TimePoint &when,
-                     const TimeInterval &interval);
-    void addTimerInLoop(const TimerPtr &timer);
-    void invalidateTimer(TimerId id);
+    void    addTimerInLoop(const TimerPtr &timer);
+    void    invalidateTimer(TimerId id);
 #ifdef __linux__
     void reset();
 #else
     int64_t getTimeout() const;
-    void processTimers();
+    void    processTimers();
 #endif
   protected:
     EventLoop *loop_;
 #ifdef __linux__
-    int timerfd_;
+    int                      timerfd_;
     std::shared_ptr<Channel> timerfdChannelPtr_;
-    void handleRead();
+    void                     handleRead();
 #endif
     std::priority_queue<TimerPtr, std::vector<TimerPtr>, TimerPtrComparer>
-        timers_;
+                          timers_;
 
-    bool callingExpiredTimers_;
-    bool insert(const TimerPtr &timePtr);
+    bool                  callingExpiredTimers_;
+    bool                  insert(const TimerPtr &timePtr);
     std::vector<TimerPtr> getExpired();
     void reset(const std::vector<TimerPtr> &expired, const TimePoint &now);
     std::vector<TimerPtr> getExpired(const TimePoint &now);

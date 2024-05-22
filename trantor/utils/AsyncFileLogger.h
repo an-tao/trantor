@@ -14,20 +14,20 @@
 
 #pragma once
 
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/Date.h>
-#include <trantor/exports.h>
-#include <thread>
-#include <mutex>
-#include <string>
 #include <condition_variable>
-#include <sstream>
 #include <memory>
+#include <mutex>
 #include <queue>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <trantor/exports.h>
+#include <trantor/utils/Date.h>
+#include <trantor/utils/NonCopyable.h>
 
 namespace trantor
 {
-using StringPtr = std::shared_ptr<std::string>;
+using StringPtr      = std::shared_ptr<std::string>;
 using StringPtrQueue = std::queue<StringPtr>;
 
 /**
@@ -101,7 +101,7 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
      */
     void setFileName(const std::string &baseName,
                      const std::string &extName = ".log",
-                     const std::string &path = "./")
+                     const std::string &path    = "./")
     {
         fileBaseName_ = baseName;
         extName[0] == '.' ? fileExtName_ = extName
@@ -116,20 +116,20 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
     AsyncFileLogger();
 
   protected:
-    std::mutex mutex_;
-    std::condition_variable cond_;
-    StringPtr logBufferPtr_;
-    StringPtr nextBufferPtr_;
-    StringPtrQueue writeBuffers_;
-    StringPtrQueue tmpBuffers_;
-    void writeLogToFile(const StringPtr buf);
+    std::mutex                   mutex_;
+    std::condition_variable      cond_;
+    StringPtr                    logBufferPtr_;
+    StringPtr                    nextBufferPtr_;
+    StringPtrQueue               writeBuffers_;
+    StringPtrQueue               tmpBuffers_;
+    void                         writeLogToFile(const StringPtr buf);
     std::unique_ptr<std::thread> threadPtr_;
-    bool stopFlag_{false};
-    void logThreadFunc();
-    std::string filePath_{"./"};
-    std::string fileBaseName_{"trantor"};
-    std::string fileExtName_{".log"};
-    uint64_t sizeLimit_{20 * 1024 * 1024};
+    bool                         stopFlag_{false};
+    void                         logThreadFunc();
+    std::string                  filePath_{"./"};
+    std::string                  fileBaseName_{"trantor"};
+    std::string                  fileExtName_{".log"};
+    uint64_t                     sizeLimit_{20 * 1024 * 1024};
     bool switchOnLimitOnly_{false};  // by default false, will generate new
                                      // file name on each destroy.
     size_t maxFiles_{0};
@@ -140,12 +140,12 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         LoggerFile(const std::string &filePath,
                    const std::string &fileBaseName,
                    const std::string &fileExtName,
-                   bool switchOnLimitOnly = false,
-                   size_t maxFiles = 0);
+                   bool               switchOnLimitOnly = false,
+                   size_t             maxFiles          = 0);
         ~LoggerFile();
-        void writeLog(const StringPtr buf);
-        void open();
-        void switchLog(bool openNewOne);
+        void     writeLog(const StringPtr buf);
+        void     open();
+        void     switchLog(bool openNewOne);
         uint64_t getLength();
         explicit operator bool() const
         {
@@ -154,15 +154,15 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
         void flush();
 
       protected:
-        void initFilenameQueue();
-        void deleteOldFiles();
+        void            initFilenameQueue();
+        void            deleteOldFiles();
 
-        FILE *fp_{nullptr};
-        Date creationDate_;
-        std::string fileFullName_;
-        std::string filePath_;
-        std::string fileBaseName_;
-        std::string fileExtName_;
+        FILE           *fp_{nullptr};
+        Date            creationDate_;
+        std::string     fileFullName_;
+        std::string     filePath_;
+        std::string     fileBaseName_;
+        std::string     fileExtName_;
         static uint64_t fileSeq_;
         bool switchOnLimitOnly_{false};  // by default false, will generate new
                                          // file name on each destroy
@@ -173,8 +173,8 @@ class TRANTOR_EXPORT AsyncFileLogger : NonCopyable
     };
     std::unique_ptr<LoggerFile> loggerFilePtr_;
 
-    uint64_t lostCounter_{0};
-    void swapBuffer();
+    uint64_t                    lostCounter_{0};
+    void                        swapBuffer();
 };
 
 }  // namespace trantor

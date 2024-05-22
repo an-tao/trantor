@@ -9,22 +9,19 @@
 
 // Taken from muduo and modified by an tao
 
-#include <trantor/net/TcpClient.h>
-#include <trantor/net/inner/TLSProvider.h>
-
-#include <trantor/utils/Logger.h>
 #include "Connector.h"
+#include "Socket.h"
 #include "inner/TcpConnectionImpl.h"
-#include <trantor/net/EventLoop.h>
 
-#include <functional>
 #include <algorithm>
 #include <atomic>
+#include <functional>
 #include <memory>
-
-#include "Socket.h"
-
 #include <stdio.h>  // snprintf
+#include <trantor/net/EventLoop.h>
+#include <trantor/net/TcpClient.h>
+#include <trantor/net/inner/TLSProvider.h>
+#include <trantor/utils/Logger.h>
 
 using namespace trantor;
 using namespace std::placeholders;
@@ -55,7 +52,7 @@ static void defaultMessageCallback(const TcpConnectionPtr &, MsgBuffer *buf)
 
 }  // namespace trantor
 
-TcpClient::TcpClient(EventLoop *loop,
+TcpClient::TcpClient(EventLoop         *loop,
                      const InetAddress &serverAddr,
                      const std::string &nameArg)
     : loop_(loop),
@@ -84,8 +81,9 @@ TcpClient::~TcpClient()
         std::atomic_load_explicit(&connection_, std::memory_order_relaxed);
     loop_->runInLoop([conn = std::move(conn)]() {
         conn->setCloseCallback([](const TcpConnectionPtr &connPtr) mutable {
-            connPtr->getLoop()->queueInLoop(
-                [connPtr] { connPtr->connectDestroyed(); });
+            connPtr->getLoop()->queueInLoop([connPtr] {
+                connPtr->connectDestroyed();
+            });
         });
     });
     connection_->forceClose();
@@ -158,8 +156,12 @@ void TcpClient::newConnection(int sockfd)
     if (tlsPolicyPtr_)
     {
         assert(sslContextPtr_);
-        conn = std::make_shared<TcpConnectionImpl>(
-            loop_, sockfd, localAddr, peerAddr, tlsPolicyPtr_, sslContextPtr_);
+        conn = std::make_shared<TcpConnectionImpl>(loop_,
+                                                   sockfd,
+                                                   localAddr,
+                                                   peerAddr,
+                                                   tlsPolicyPtr_,
+                                                   sslContextPtr_);
     }
     else
     {
@@ -184,7 +186,9 @@ void TcpClient::newConnection(int sockfd)
             {
                 LOG_TRACE << "TcpClient::removeConnection was skipped because "
                              "TcpClient instanced already freed";
-                c->getLoop()->queueInLoop([c] { c->connectDestroyed(); });
+                c->getLoop()->queueInLoop([c] {
+                    c->connectDestroyed();
+                });
             }
         });
     conn->setCloseCallback(std::move(closeCb));
@@ -211,7 +215,9 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
         connection_.reset();
     }
 
-    loop_->queueInLoop([conn]() { conn->connectDestroyed(); });
+    loop_->queueInLoop([conn]() {
+        conn->connectDestroyed();
+    });
     if (retry_ && connect_)
     {
         LOG_TRACE << "TcpClient::connect[" << name_ << "] - Reconnecting to "
@@ -221,20 +227,22 @@ void TcpClient::removeConnection(const TcpConnectionPtr &conn)
 }
 
 void TcpClient::enableSSL(
-    bool useOldTLS,
-    bool validateCert,
-    std::string hostname,
+    bool                                                    useOldTLS,
+    bool                                                    validateCert,
+    std::string                                             hostname,
     const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
-    const std::string &certPath,
-    const std::string &keyPath,
-    const std::string &caPath)
+    const std::string                                      &certPath,
+    const std::string                                      &keyPath,
+    const std::string                                      &caPath)
 {
     if (!hostname.empty())
     {
         std::transform(hostname.begin(),
                        hostname.end(),
                        hostname.begin(),
-                       [](unsigned char c) { return tolower(c); });
+                       [](unsigned char c) {
+                           return tolower(c);
+                       });
     }
 
     tlsPolicyPtr_ = TLSPolicy::defaultClientPolicy();

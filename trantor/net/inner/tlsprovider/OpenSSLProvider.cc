@@ -1,20 +1,18 @@
-#include <trantor/utils/Logger.h>
-#include <trantor/utils/Utilities.h>
-#include <trantor/net/TcpConnection.h>
-#include <trantor/net/inner/TLSProvider.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include <openssl/x509v3.h>
-
+#include <array>
 #include <fstream>
+#include <limits>
+#include <list>
 #include <memory>
 #include <mutex>
-#include <list>
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
+#include <trantor/net/TcpConnection.h>
+#include <trantor/net/inner/TLSProvider.h>
+#include <trantor/utils/Logger.h>
+#include <trantor/utils/Utilities.h>
 #include <unordered_map>
-#include <array>
-#include <limits>
 
 using namespace trantor;
 
@@ -76,7 +74,7 @@ inline bool verifyCommonName(X509 *cert, const std::string &hostname)
     if (subjectName != nullptr)
     {
         std::array<char, BUFSIZ> name;
-        auto length = X509_NAME_get_text_by_NID(subjectName,
+        auto                     length = X509_NAME_get_text_by_NID(subjectName,
                                                 NID_commonName,
                                                 name.data(),
                                                 (int)name.size());
@@ -93,7 +91,7 @@ inline bool verifyCommonName(X509 *cert, const std::string &hostname)
 
 inline bool verifyAltName(X509 *cert, const std::string &hostname)
 {
-    bool good = false;
+    bool good     = false;
     auto altNames = static_cast<const struct stack_st_GENERAL_NAME *>(
         X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
 
@@ -125,11 +123,11 @@ inline bool verifyAltName(X509 *cert, const std::string &hostname)
     return good;
 }
 
-static bool validatePeerCertificate(SSL *ssl,
-                                    X509 *cert,
+static bool validatePeerCertificate(SSL               *ssl,
+                                    X509              *cert,
                                     const std::string &hostname,
-                                    bool allowBrokenChain,
-                                    bool isServer)
+                                    bool               allowBrokenChain,
+                                    bool               isServer)
 {
     assert(ssl != nullptr);
     assert(cert != nullptr);
@@ -163,12 +161,12 @@ static bool validatePeerCertificate(SSL *ssl,
     return true;
 }
 
-static int serverSelectProtocol(SSL *ssl,
+static int serverSelectProtocol(SSL                  *ssl,
                                 const unsigned char **out,
-                                unsigned char *outlen,
-                                const unsigned char *in,
-                                unsigned int inlen,
-                                void *arg)
+                                unsigned char        *outlen,
+                                const unsigned char  *in,
+                                unsigned int          inlen,
+                                void                 *arg)
 {
     (void)ssl;
     auto protocols = static_cast<std::vector<std::string> *>(arg);
@@ -190,7 +188,7 @@ static int serverSelectProtocol(SSL *ssl,
             if (protocol.size() == len &&
                 memcmp(cur, protocol.data(), len) == 0)
             {
-                *out = cur;
+                *out    = cur;
                 *outlen = len;
                 LOG_TRACE << "Selected protocol: " << protocol;
                 return SSL_TLSEXT_ERR_OK;
@@ -208,9 +206,9 @@ namespace trantor
 struct SSLContext
 {
     SSLContext(
-        bool useOldTLS,
+        bool                                                    useOldTLS,
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
-        bool server)
+        bool                                                    server)
         : isServer(server)
     {
         // Ungodly amount of preprocessor macros to support older versions of
@@ -289,9 +287,9 @@ struct OpenSSLCertificate : public Certificate
     }
     virtual std::string sha1Fingerprint() const override
     {
-        std::string sha1;
+        std::string   sha1;
         unsigned char md[EVP_MAX_MD_SIZE];
-        unsigned int n = 0;
+        unsigned int  n = 0;
         if (X509_digest(cert_, EVP_sha1(), md, &n))
         {
             sha1.resize(n * 3);
@@ -311,9 +309,9 @@ struct OpenSSLCertificate : public Certificate
 
     virtual std::string sha256Fingerprint() const override
     {
-        std::string sha256;
+        std::string   sha256;
         unsigned char md[EVP_MAX_MD_SIZE];
-        unsigned int n = 0;
+        unsigned int  n = 0;
         if (X509_digest(cert_, EVP_sha256(), md, &n))
         {
             sha256.resize(n * 3);
@@ -334,12 +332,12 @@ struct OpenSSLCertificate : public Certificate
     virtual std::string pem() const override
     {
         std::string pem;
-        BIO *bio = BIO_new(BIO_s_mem());
+        BIO        *bio = BIO_new(BIO_s_mem());
         if (bio)
         {
             PEM_write_bio_X509(bio, cert_);
             char *data = nullptr;
-            long len = BIO_get_mem_data(bio, &data);
+            long  len  = BIO_get_mem_data(bio, &data);
             if (len > 0)
             {
                 pem.assign(data, len);
@@ -366,9 +364,9 @@ class SessionManager
     struct SessionData
     {
         SSL_SESSION *session = nullptr;
-        std::string key;
-        TimerId timerId = 0;
-        EventLoop *loop = nullptr;
+        std::string  key;
+        TimerId      timerId = 0;
+        EventLoop   *loop    = nullptr;
     };
 
   public:
@@ -381,15 +379,15 @@ class SessionManager
     }
 
     void store(const std::string &hostname,
-               InetAddress peerAddr,
-               SSL_SESSION *session,
-               EventLoop *loop)
+               InetAddress        peerAddr,
+               SSL_SESSION       *session,
+               EventLoop         *loop)
     {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            auto key = toKey(hostname, peerAddr);
-            auto it = sessionMap_.find(key);
+            auto                        key = toKey(hostname, peerAddr);
+            auto                        it  = sessionMap_.find(key);
             if (it != sessionMap_.end())
             {
                 SSL_SESSION_free(it->second->session);
@@ -401,7 +399,7 @@ class SessionManager
             SSL_SESSION_up_ref(session);
             TimerId tid = loop->runAfter(sessionTimeout_, [this, key]() {
                 std::lock_guard<std::mutex> lock(mutex_);
-                auto it = sessionMap_.find(key);
+                auto                        it = sessionMap_.find(key);
                 if (it != sessionMap_.end())
                 {
                     SSL_SESSION_free(it->second->session);
@@ -425,8 +423,8 @@ class SessionManager
     SSL_SESSION *get(const std::string &hostname, InetAddress peerAddr)
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        auto key = toKey(hostname, peerAddr);
-        auto it = sessionMap_.find(key);
+        auto                        key = toKey(hostname, peerAddr);
+        auto                        it  = sessionMap_.find(key);
         if (it != sessionMap_.end())
         {
             return it->second->session;
@@ -457,10 +455,10 @@ class SessionManager
         return hostname + peerAddr.toIpPort();
     }
 
-    std::mutex mutex_;
-    int maxSessions_ = 150;
-    int mexExtendSize_ = 20;
-    int sessionTimeout_ = 3600;
+    std::mutex             mutex_;
+    int                    maxSessions_    = 150;
+    int                    mexExtendSize_  = 20;
+    int                    sessionTimeout_ = 3600;
     std::list<SessionData> sessions_;
     std::unordered_map<std::string, std::list<SessionData>::iterator>
         sessionMap_;
@@ -477,7 +475,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     {
         rbio_ = BIO_new(BIO_s_mem());
         wbio_ = BIO_new(BIO_s_mem());
-        ssl_ = SSL_new(contextPtr_->ctx());
+        ssl_  = SSL_new(contextPtr_->ctx());
         assert(ssl_);
         assert(rbio_);
         assert(wbio_);
@@ -581,7 +579,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         // Limit the size of the data we send in one go to avoid holding massive
         // buffers in memory.
         constexpr size_t maxSend = 64 * 1024;
-        size_t hasSent = 0;
+        size_t           hasSent = 0;
         while (hasSent < len && getBufferedData().readableBytes() == 0)
         {
             auto trunkLen = len - hasSent;
@@ -614,8 +612,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 if (sniName)
                     setSniName(sniName);
 
-                const unsigned char *alpn = nullptr;
-                unsigned int alpnlen = 0;
+                const unsigned char *alpn    = nullptr;
+                unsigned int         alpnlen = 0;
                 SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
                 if (alpn)
                     setApplicationProtocol(std::string((char *)alpn, alpnlen));
@@ -625,8 +623,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 setSniName(policyPtr_->getHostname());
                 if (policyPtr_->getAlpnProtocols().size() > 0)
                 {
-                    const unsigned char *alpn = nullptr;
-                    unsigned int alpnlen = 0;
+                    const unsigned char *alpn    = nullptr;
+                    unsigned int         alpnlen = 0;
                     SSL_get0_alpn_selected(ssl_, &alpn, &alpnlen);
                     if (alpn)
                     {
@@ -651,7 +649,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 #endif
             }
 
-            auto cert = SSL_get_peer_certificate(ssl_);
+            auto cert     = SSL_get_peer_certificate(ssl_);
             bool needCert = policyPtr_->getValidate();
             if (cert)
                 setPeerCertificate(std::make_shared<OpenSSLCertificate>(cert));
@@ -721,7 +719,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     void processApplicationData()
     {
-        constexpr size_t maxSingleRead = 128 * 1024;
+        constexpr size_t maxSingleRead    = 128 * 1024;
         constexpr size_t maxWritibleBytes = (std::numeric_limits<int>::max)();
         while (true)
         {
@@ -763,7 +761,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     ssize_t sendTLSData()
     {
         void *data = nullptr;
-        int len = BIO_get_mem_data(wbio_, &data);
+        int   len  = BIO_get_mem_data(wbio_, &data);
         if (len < 0 || data == nullptr)
             return -1;
         if (len == 0)
@@ -800,8 +798,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 };
 
 std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
-                                                     TLSPolicyPtr policy,
-                                                     SSLContextPtr ctx)
+                                                     TLSPolicyPtr   policy,
+                                                     SSLContextPtr  ctx)
 {
     return std::make_shared<OpenSSLProvider>(conn,
                                              std::move(policy),

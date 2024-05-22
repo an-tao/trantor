@@ -13,12 +13,14 @@
  */
 
 #include "TcpConnectionImpl.h"
-#include "Socket.h"
+
 #include "Channel.h"
+#include "Socket.h"
+
 #include <trantor/utils/Utilities.h>
 #ifdef __linux__
-#include <sys/sendfile.h>
 #include <poll.h>
+#include <sys/sendfile.h>
 #endif
 #include <sys/types.h>
 #ifndef _WIN32
@@ -63,12 +65,12 @@ static inline bool isEAGAIN()
     }
 }
 
-TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
-                                     int socketfd,
+TcpConnectionImpl::TcpConnectionImpl(EventLoop         *loop,
+                                     int                socketfd,
                                      const InetAddress &localAddr,
                                      const InetAddress &peerAddr,
-                                     TLSPolicyPtr policy,
-                                     SSLContextPtr ctx)
+                                     TLSPolicyPtr       policy,
+                                     SSLContextPtr      ctx)
     : loop_(loop),
       ioChannelPtr_(new Channel(loop, socketfd)),
       socketPtr_(new Socket(socketfd)),
@@ -77,10 +79,18 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 {
     LOG_TRACE << "new connection:" << peerAddr.toIpPort() << "->"
               << localAddr.toIpPort();
-    ioChannelPtr_->setReadCallback([this]() { readCallback(); });
-    ioChannelPtr_->setWriteCallback([this]() { writeCallback(); });
-    ioChannelPtr_->setCloseCallback([this]() { handleClose(); });
-    ioChannelPtr_->setErrorCallback([this]() { handleError(); });
+    ioChannelPtr_->setReadCallback([this]() {
+        readCallback();
+    });
+    ioChannelPtr_->setWriteCallback([this]() {
+        writeCallback();
+    });
+    ioChannelPtr_->setCloseCallback([this]() {
+        handleClose();
+    });
+    ioChannelPtr_->setErrorCallback([this]() {
+        handleError();
+    });
     socketPtr_->setKeepAlive(true);
     name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
 
@@ -129,9 +139,9 @@ void TcpConnectionImpl::readCallback()
 {
     // LOG_TRACE<<"read Callback";
     loop_->assertInLoopThread();
-    int ret = 0;
+    int     ret = 0;
 
-    ssize_t n = readBuffer_.readFd(socketPtr_->fd(), &ret);
+    ssize_t n   = readBuffer_.readFd(socketPtr_->fd(), &ret);
     // LOG_TRACE<<"read "<<n<<" bytes from socket";
     if (n == 0)
     {
@@ -192,7 +202,7 @@ void TcpConnectionImpl::extendLife()
         if (now < lastTimingWheelUpdateTime_.after(1.0))
             return;
         lastTimingWheelUpdateTime_ = now;
-        auto entry = kickoffEntry_.lock();
+        auto entry                 = kickoffEntry_.lock();
         if (entry)
         {
             auto timingWheelPtr = timingWheelWeakPtr_.lock();
@@ -549,8 +559,8 @@ void TcpConnectionImpl::send(MsgBuffer &&buffer)
     }
 }
 void TcpConnectionImpl::sendFile(const char *fileName,
-                                 long long offset,
-                                 long long length)
+                                 long long   offset,
+                                 long long   length)
 {
     assert(fileName);
 #ifdef _WIN32
@@ -569,8 +579,8 @@ void TcpConnectionImpl::sendFile(const char *fileName,
 }
 
 void TcpConnectionImpl::sendFile(const wchar_t *fileName,
-                                 long long offset,
-                                 long long length)
+                                 long long      offset,
+                                 long long      length)
 {
     assert(fileName);
 #ifndef _WIN32
@@ -606,7 +616,7 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
     else
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
-                            node = std::move(fileNode)]() mutable {
+                            node    = std::move(fileNode)]() mutable {
             if (thisPtr->writeBufferList_.empty())
             {
                 auto n = thisPtr->sendNodeInLoop(node);
@@ -695,8 +705,8 @@ ssize_t TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
 
     LOG_TRACE << "send node in loop";
     const char *data;
-    size_t len;
-    ssize_t hasSent = 0;
+    size_t      len;
+    ssize_t     hasSent = 0;
     while ((nodePtr->remainingBytes() > 0))
     {
         // get next chunk
@@ -778,8 +788,8 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 }
 
 std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
-                                                     TLSPolicyPtr policy,
-                                                     SSLContextPtr sslContext)
+                                                     TLSPolicyPtr   policy,
+                                                     SSLContextPtr  sslContext)
 {
     (void)conn;
     (void)policy;
@@ -789,8 +799,8 @@ std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
 #endif
 
 void TcpConnectionImpl::startEncryption(
-    TLSPolicyPtr policy,
-    bool isServer,
+    TLSPolicyPtr                                  policy,
+    bool                                          isServer,
     std::function<void(const TcpConnectionPtr &)> upgradeCallback)
 {
     if (tlsProviderPtr_ || upgradeCallback_)
@@ -835,8 +845,8 @@ void TcpConnectionImpl::onSslMessage(TcpConnection *self, MsgBuffer *buffer)
                                buffer);
 }
 ssize_t TcpConnectionImpl::onSslWrite(TcpConnection *self,
-                                      const void *data,
-                                      size_t len)
+                                      const void    *data,
+                                      size_t         len)
 {
     auto connPtr = (TcpConnectionImpl *)self;
     return connPtr->writeRaw((const char *)data, len);
@@ -928,7 +938,7 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
                 kickoffEntry_.reset();
             }
             idleTimeoutBackup_ = idleTimeout_;
-            idleTimeout_ = 0;
+            idleTimeout_       = 0;
         }
 
         writeBufferList_.push_back(asyncStreamNode);
@@ -937,7 +947,7 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
     {
         loop_->queueInLoop([this,
                             thisPtr = shared_from_this(),
-                            node = std::move(asyncStreamNode),
+                            node    = std::move(asyncStreamNode),
                             disableKickoff]() mutable {
             if (disableKickoff)
             {
@@ -948,7 +958,7 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
                     kickoffEntry_.reset();
                 }
                 idleTimeoutBackup_ = idleTimeout_;
-                idleTimeout_ = 0;
+                idleTimeout_       = 0;
             }
 
             if (thisPtr->writeBufferList_.empty() && node->remainingBytes() > 0)
@@ -966,8 +976,8 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
     return asyncStream;
 }
 void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
-                                            const char *data,
-                                            size_t len)
+                                            const char          *data,
+                                            size_t               len)
 {
     loop_->assertInLoopThread();
     if (data)
@@ -1008,8 +1018,8 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
             if (timingWheel)
             {
                 auto entry = std::make_shared<KickoffEntry>(shared_from_this());
-                kickoffEntry_ = entry;
-                idleTimeout_ = idleTimeoutBackup_;
+                kickoffEntry_      = entry;
+                idleTimeout_       = idleTimeoutBackup_;
                 idleTimeoutBackup_ = 0;
                 timingWheel->insertEntry(idleTimeout_, std::move(entry));
             }

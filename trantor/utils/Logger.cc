@@ -12,13 +12,13 @@
  *
  */
 
-#include <trantor/utils/Logger.h>
 #include <stdio.h>
 #include <thread>
+#include <trantor/utils/Logger.h>
 #ifdef __unix__
-#include <unistd.h>
-#include <sys/syscall.h>
 #include <sstream>
+#include <sys/syscall.h>
+#include <unistd.h>
 #elif defined __HAIKU__
 #include <sstream>
 #include <unistd.h>
@@ -26,9 +26,9 @@
 #include <sstream>
 #endif
 #ifdef TRANTOR_SPDLOG_SUPPORT
-#include <spdlog/spdlog.h>
 #include <map>
 #include <mutex>
+#include <spdlog/spdlog.h>
 #endif
 #if (__cplusplus >= 201703L) || \
     (defined(_MSVC_LANG) &&     \
@@ -62,7 +62,7 @@ class T
         assert(strlen(str) == len_);
     }
 
-    const char *str_;
+    const char    *str_;
     const unsigned len_;
 };
 
@@ -93,7 +93,7 @@ inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
 using namespace trantor;
 
 static thread_local uint64_t lastSecond_{0};
-static thread_local char lastTimeString_[32] = {0};
+static thread_local char     lastTimeString_[32] = {0};
 #ifdef __linux__
 static thread_local pid_t threadId_{0};
 #else
@@ -300,14 +300,14 @@ static std::string defaultSpdLoggerName(int index)
 static std::map<int, std::shared_ptr<spdlog::logger>> spdLoggers;
 // same sinks, but the format pattern is only "%v", for LOG_RAW[_TO]
 static std::map<int, std::shared_ptr<spdlog::logger>> rawSpdLoggers;
-static std::mutex spdLoggersMtx;
+static std::mutex                                     spdLoggersMtx;
 #endif  // TRANTOR_SPDLOG_SUPPORT
 
 std::shared_ptr<spdlog::logger> Logger::getDefaultSpdLogger(int index)
 {
 #ifdef TRANTOR_SPDLOG_SUPPORT
     auto loggerName = defaultSpdLoggerName(index);
-    auto logger = spdlog::get(loggerName);
+    auto logger     = spdlog::get(loggerName);
     if (logger)
         return logger;
     // Create a new spdlog logger with the same sinks as the current default
@@ -339,7 +339,7 @@ std::shared_ptr<spdlog::logger> Logger::getSpdLogger(int index)
 {
 #ifdef TRANTOR_SPDLOG_SUPPORT
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
-    auto it = spdLoggers.find((index < 0) ? -1 : index);
+    auto                        it = spdLoggers.find((index < 0) ? -1 : index);
     return (it == spdLoggers.end()) ? std::shared_ptr<spdlog::logger>()
                                     : it->second;
 #else
@@ -357,8 +357,8 @@ static std::shared_ptr<spdlog::logger> getRawSpdLogger(int index)
     if (index < -1)
         index = -1;
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
-    auto itMain = spdLoggers.find(index);
-    auto itRaw = rawSpdLoggers.find(index);
+    auto                        itMain = spdLoggers.find(index);
+    auto                        itRaw  = rawSpdLoggers.find(index);
     if (itMain == spdLoggers.end())
     {
         if (itRaw != rawSpdLoggers.end())
