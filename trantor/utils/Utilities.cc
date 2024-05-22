@@ -14,9 +14,11 @@
 
 #include "Utilities.h"
 #ifdef _WIN32
+/* clang-format off */
+#include <windows.h>
+/* clang-format on */
 #include <algorithm>
 #include <ntsecapi.h>
-#include <windows.h>
 #else  // _WIN32
 #include <string.h>
 #include <unistd.h>

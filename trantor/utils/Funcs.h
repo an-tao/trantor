@@ -15,6 +15,7 @@
 #pragma once
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <vector>
 namespace trantor
 {
