@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.19] - 2024-06-08
+
+### changed
+
+- show forked repository build status.
+
+- Add cmake-format.
+
+- Some spelling corrections.
+
 ## [1.5.18] - 2024-05-04
 
 ### Fixed
@@ -644,7 +654,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.18...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.19...HEAD
+
+[1.5.19]: https://github.com/an-tao/trantor/compare/v1.5.18...v1.5.19
 
 [1.5.18]: https://github.com/an-tao/trantor/compare/v1.5.17...v1.5.18
 
