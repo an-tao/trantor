@@ -41,7 +41,8 @@ A million repetitions of "a"
     defined(__i386__) || defined(MIPSEL) || defined(_MIPSEL) ||             \
     defined(BIT_ZERO_ON_RIGHT) || defined(__alpha__) || defined(__alpha) || \
     defined(__CYGWIN32__) || defined(_WIN64) || defined(_WIN32) ||          \
-    defined(__APPLE__)
+    defined(__arm64e__) || defined(__arm64__) || defined(__aarch64__) ||    \
+    defined(__riscv) || defined(_M_ARM64)
 #define BYTE_ORDER LITTLE_ENDIAN
 #endif
 
@@ -51,7 +52,7 @@ A million repetitions of "a"
     defined(apollo) || defined(__convex__) || defined(_CRAY) ||                \
     defined(__hppa) || defined(__hp9000) || defined(__hp9000s300) ||           \
     defined(__hp9000s700) || defined(BIT_ZERO_ON_LEFT) || defined(m68k) ||     \
-    defined(__sparc)
+    defined(__sparc) || defined(__s390__)
 #define BYTE_ORDER BIG_ENDIAN
 #endif
 #endif /* linux */
