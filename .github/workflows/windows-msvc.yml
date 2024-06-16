@@ -16,9 +16,7 @@ jobs:
         link: [ 'STATIC', 'SHARED' ]
         # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
         build-type: ['Debug', 'Release']
-        # TODO: conan botan is v2, v2 support is removed
-        # tls-provider: ['', 'openssl', 'botan']
-        tls-provider: ['', 'openssl']
+        tls-provider: ['', 'openssl', 'botan']
 
     steps:
       - name: Checkout Trantor source code
@@ -37,7 +35,7 @@ jobs:
         run: |
           pip install conan
           conan profile detect --force
-          conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc" --settings=compiler.version=193 
+          conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc" --options=tls_provider=${{matrix.tls-provider}} -s compiler.cppstd=20
 
       - name: Create Build Environment & Configure Cmake
         shell: bash
@@ -47,6 +45,7 @@ jobs:
         run: |
           [[ ${{ matrix.link }} == "SHARED" ]] && shared="ON" || shared="OFF"
           cmake .. -G "Visual Studio 17 2022" -T host=x64 -A x64 \
+          -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" \
           -DTRANTOR_USE_TLS=${{matrix.tls-provider}} \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DBUILD_SHARED_LIBS=$shared \

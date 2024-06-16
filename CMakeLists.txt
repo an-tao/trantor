@@ -294,6 +294,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_NAME Trantor)
 
+if(TRANTOR_TLS_PROVIDER STREQUAL "Botan")
+  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
+  if(CMAKE_CXX_COMPILER_ID MATCHES Clang OR CMAKE_CXX_COMPILER_ID STREQUAL GNU)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wno-deprecated)
+  endif()
+endif()
+
 if(BUILD_TESTING)
   add_subdirectory(trantor/tests)
   find_package(GTest)
@@ -383,7 +390,6 @@ install(
   FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TrantorConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/TrantorConfigVersion.cmake"
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/Findc-ares.cmake"
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/FindBotan.cmake"
   DESTINATION "${INSTALL_TRANTOR_CMAKE_DIR}"
   COMPONENT dev
 )
