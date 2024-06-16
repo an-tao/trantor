@@ -35,10 +35,7 @@ jobs:
         run: |
           pip install conan
           conan profile detect --force
-          conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc"
-          if [[ "${{ matrix.tls-provider }}" != "" ]]; then
-            conan install ${{matrix.tls-provider}} --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc"
-          fi
+          conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc" --options=tls_provider=${{matrix.tls-provider}}
 
       - name: Create Build Environment & Configure Cmake
         shell: bash
