@@ -30,8 +30,7 @@ class TrantorConan(ConanFile):
             self.requires("openssl/1.1.1t")
         elif self.options.tls_provider == "botan":
             self.requires("botan/3.4.0")
-        elif self.options.tls_provider == "none" or
-            self.options.tls_provider == "":
+        elif self.options.tls_provider == "none" or self.options.tls_provider == "":
             pass
     
     def build_requirements(self):
