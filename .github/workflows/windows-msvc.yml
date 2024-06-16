@@ -16,9 +16,7 @@ jobs:
         link: [ 'STATIC', 'SHARED' ]
         # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
         build-type: ['Debug', 'Release']
-        # TODO: conan botan is v2, v2 support is removed
-        # tls-provider: ['', 'openssl', 'botan']
-        tls-provider: ['', 'openssl']
+        tls-provider: ['', 'openssl', 'botan']
 
     steps:
       - name: Checkout Trantor source code
@@ -38,6 +36,9 @@ jobs:
           pip install conan
           conan profile detect --force
           conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc"
+          if [[ ${{ matrix.tls-provider }} != "" ]]; then
+            conan install ${{matrix.tls-provider}} --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc"
+          fi
 
       - name: Create Build Environment & Configure Cmake
         shell: bash

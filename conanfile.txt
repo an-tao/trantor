@@ -1,6 +1,5 @@
 [requires]
 gtest/1.10.0
-openssl/1.1.1t
 #c-ares/1.17.1
 spdlog/1.12.0
 
