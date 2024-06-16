@@ -52,7 +52,7 @@ A million repetitions of "a"
     defined(apollo) || defined(__convex__) || defined(_CRAY) ||                \
     defined(__hppa) || defined(__hp9000) || defined(__hp9000s300) ||           \
     defined(__hp9000s700) || defined(BIT_ZERO_ON_LEFT) || defined(m68k) ||     \
-    defined(__sparc) || defined(__s390__)
+    defined(__sparc) || defined(__s390__) || defined(__ppc__)
 #define BYTE_ORDER BIG_ENDIAN
 #endif
 #endif /* linux */
