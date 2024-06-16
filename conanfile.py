@@ -1,13 +1,13 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain
 
-class MyProjectConan(ConanFile):
-    name = "my_project"
-    version = "0.1"
+class TrantorConan(ConanFile):
+    name = "Trantor"
+    version = "0.1" # Don't care. Not publishing this
     
     # Define the options
     options = {
-        "tls_provider": ["openssl", "botan", 'none'. '']
+        "tls_provider": ["openssl", "botan", 'none', '']
     }
     
     # Set default option
