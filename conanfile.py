@@ -32,6 +32,3 @@ class TrantorConan(ConanFile):
             self.requires("botan/3.4.0")
         elif self.options.tls_provider == "none" or self.options.tls_provider == "":
             pass
-    
-    def build_requirements(self):
-        self.build_requires("cmake")  # Example: specify build requirements if needed
