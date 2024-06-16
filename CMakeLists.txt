@@ -199,6 +199,10 @@ if(TRANTOR_TLS_PROVIDER STREQUAL "None" AND (TRANTOR_USE_TLS STREQUAL "botan" OR
   if(Botan_FOUND)
     target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOTAN)
     target_link_libraries(${PROJECT_NAME} PRIVATE Botan::Botan)
+    if(CMAKE_CXX_COMPILER_ID MATCHES Clang|GNU)
+      # Trantor uses some features that are deprecated in C++20 but Botan3 uses them
+      target_compile_options(${PROJECT_NAME} PRIVATE -Wno-deprecated)
+    endif()
     set(TRANTOR_TLS_PROVIDER "Botan")
 
     set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/tlsprovider/BotanTLSProvider.cc
