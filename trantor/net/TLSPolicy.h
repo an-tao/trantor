@@ -1,8 +1,7 @@
 #pragma once
-#include <trantor/exports.h>
-
 #include <memory>
 #include <string>
+#include <trantor/exports.h>
 #include <utility>
 #include <vector>
 
@@ -206,15 +205,15 @@ struct TRANTOR_EXPORT TLSPolicy final
     }
 
   protected:
-    std::vector<std::pair<std::string, std::string>> sslConfCmds_ = {};
-    std::string hostname_ = "";
-    std::string certPath_ = "";
-    std::string keyPath_ = "";
-    std::string caPath_ = "";
-    std::vector<std::string> alpnProtocols_ = {};
-    bool useOldTLS_ = false;  // turn into specific version
-    bool validate_ = true;
-    bool allowBrokenChain_ = false;
+    std::vector<std::pair<std::string, std::string>> sslConfCmds_   = {};
+    std::string                                      hostname_      = "";
+    std::string                                      certPath_      = "";
+    std::string                                      keyPath_       = "";
+    std::string                                      caPath_        = "";
+    std::vector<std::string>                         alpnProtocols_ = {};
+    bool useOldTLS_          = false;  // turn into specific version
+    bool validate_           = true;
+    bool allowBrokenChain_   = false;
     bool useSystemCertStore_ = true;
 };
 using TLSPolicyPtr = std::shared_ptr<TLSPolicy>;

@@ -5,7 +5,7 @@ namespace trantor
 class AsyncBufferNode : public BufferNode
 {
   public:
-    AsyncBufferNode() = default;
+    AsyncBufferNode()           = default;
     ~AsyncBufferNode() override = default;
     bool isAsync() const override
     {
@@ -30,12 +30,12 @@ class AsyncBufferNode : public BufferNode
         if (msgBufferPtr_)
         {
             data = msgBufferPtr_->peek();
-            len = msgBufferPtr_->readableBytes();
+            len  = msgBufferPtr_->readableBytes();
         }
         else
         {
             data = nullptr;
-            len = 0;
+            len  = 0;
         }
     }
     void retrieve(size_t len) override

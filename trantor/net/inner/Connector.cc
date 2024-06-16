@@ -13,6 +13,7 @@
  */
 
 #include "Connector.h"
+
 #include "Channel.h"
 #include "Socket.h"
 
@@ -42,11 +43,11 @@ Connector::~Connector()
 void Connector::start()
 {
     connect_ = true;
-    loop_->runInLoop([this]() { startInLoop(); });
+    loop_->runInLoop([this]() {
+        startInLoop();
+    });
 }
-void Connector::restart()
-{
-}
+void Connector::restart() {}
 void Connector::stop()
 {
     status_ = Status::Disconnected;
@@ -78,11 +79,11 @@ void Connector::startInLoop()
 void Connector::connect()
 {
     socketHanded_ = false;
-    fd_ = Socket::createNonblockingSocketOrDie(serverAddr_.family());
+    fd_           = Socket::createNonblockingSocketOrDie(serverAddr_.family());
     if (sockOptCallback_)
         sockOptCallback_(fd_);
-    errno = 0;
-    int ret = Socket::connect(fd_, serverAddr_);
+    errno          = 0;
+    int ret        = Socket::connect(fd_, serverAddr_);
     int savedErrno = (ret == 0) ? 0 : errno;
     switch (savedErrno)
     {
@@ -175,7 +176,7 @@ void Connector::handleWrite()
     if (status_ == Status::Connecting)
     {
         int sockfd = removeAndResetChannel();
-        int err = Socket::getSocketError(sockfd);
+        int err    = Socket::getSocketError(sockfd);
         if (err)
         {
             LOG_WARN << "Connector::handleWrite - SO_ERROR = " << err << " "
@@ -249,9 +250,9 @@ void Connector::handleError()
     socketHanded_ = true;
     if (status_ == Status::Connecting)
     {
-        status_ = Status::Disconnected;
+        status_    = Status::Disconnected;
         int sockfd = removeAndResetChannel();
-        int err = Socket::getSocketError(sockfd);
+        int err    = Socket::getSocketError(sockfd);
         LOG_TRACE << "SO_ERROR = " << err << " " << strerror_tl(err);
         if (retry_)
         {

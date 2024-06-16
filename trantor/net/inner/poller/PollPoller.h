@@ -14,6 +14,7 @@
 #pragma once
 
 #include "../Poller.h"
+
 #include <vector>
 
 #if defined __unix__ || defined __HAIKU__
@@ -37,7 +38,7 @@ class PollPoller : public Poller
 
 #if defined __unix__ || defined __HAIKU__
     std::vector<struct pollfd> pollfds_;
-    std::map<int, Channel*> channels_;
+    std::map<int, Channel*>    channels_;
 #endif
 };
 

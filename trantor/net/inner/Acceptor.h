@@ -14,12 +14,13 @@
 
 #pragma once
 
-#include <trantor/net/EventLoop.h>
-#include <trantor/utils/NonCopyable.h>
-#include "Socket.h"
-#include <trantor/net/InetAddress.h>
 #include "Channel.h"
+#include "Socket.h"
+
 #include <functional>
+#include <trantor/net/EventLoop.h>
+#include <trantor/net/InetAddress.h>
+#include <trantor/utils/NonCopyable.h>
 
 namespace trantor
 {
@@ -28,10 +29,10 @@ using AcceptorSockOptCallback = std::function<void(int)>;
 class Acceptor : NonCopyable
 {
   public:
-    Acceptor(EventLoop *loop,
+    Acceptor(EventLoop         *loop,
              const InetAddress &addr,
-             bool reUseAddr = true,
-             bool reUsePort = true);
+             bool               reUseAddr = true,
+             bool               reUsePort = true);
     ~Acceptor();
     const InetAddress &addr() const
     {
@@ -57,12 +58,12 @@ class Acceptor : NonCopyable
 #ifndef _WIN32
     int idleFd_;
 #endif
-    Socket sock_;
-    InetAddress addr_;
-    EventLoop *loop_;
-    NewConnectionCallback newConnectionCallback_;
-    Channel acceptChannel_;
-    void readCallback();
+    Socket                  sock_;
+    InetAddress             addr_;
+    EventLoop              *loop_;
+    NewConnectionCallback   newConnectionCallback_;
+    Channel                 acceptChannel_;
+    void                    readCallback();
     AcceptorSockOptCallback beforeListenSetSockOptCallback_;
     AcceptorSockOptCallback afterAcceptSetSockOptCallback_;
 };

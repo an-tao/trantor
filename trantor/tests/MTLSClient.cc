@@ -49,12 +49,12 @@
  *
  * **/
 
+#include <atomic>
+#include <iostream>
+#include <string>
+#include <trantor/net/EventLoopThread.h>
 #include <trantor/net/TcpClient.h>
 #include <trantor/utils/Logger.h>
-#include <trantor/net/EventLoopThread.h>
-#include <string>
-#include <iostream>
-#include <atomic>
 using namespace trantor;
 #define USE_IPV6 0
 int main()
@@ -68,7 +68,7 @@ int main()
     InetAddress serverAddr("127.0.0.1", 8888);
 #endif
     std::shared_ptr<trantor::TcpClient> client[10];
-    std::atomic_int connCount;
+    std::atomic_int                     connCount;
     connCount = 1;
     for (int i = 0; i < connCount; ++i)
     {

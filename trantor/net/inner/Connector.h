@@ -14,11 +14,11 @@
 
 #pragma once
 
+#include <atomic>
+#include <memory>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
 #include <trantor/utils/Logger.h>
-#include <atomic>
-#include <memory>
 
 namespace trantor
 {
@@ -26,9 +26,9 @@ class Connector : public NonCopyable,
                   public std::enable_shared_from_this<Connector>
 {
   public:
-    using NewConnectionCallback = std::function<void(int sockfd)>;
+    using NewConnectionCallback   = std::function<void(int sockfd)>;
     using ConnectionErrorCallback = std::function<void()>;
-    using SockOptCallback = std::function<void(int sockfd)>;
+    using SockOptCallback         = std::function<void(int sockfd)>;
     Connector(EventLoop *loop, const InetAddress &addr, bool retry = true);
     Connector(EventLoop *loop, InetAddress &&addr, bool retry = true);
     ~Connector();
@@ -65,38 +65,38 @@ class Connector : public NonCopyable,
     void stop();
 
   private:
-    NewConnectionCallback newConnectionCallback_;
+    NewConnectionCallback   newConnectionCallback_;
     ConnectionErrorCallback errorCallback_;
-    SockOptCallback sockOptCallback_;
+    SockOptCallback         sockOptCallback_;
     enum class Status
     {
         Disconnected,
         Connecting,
         Connected
     };
-    static constexpr int kMaxRetryDelayMs = 30 * 1000;
-    static constexpr int kInitRetryDelayMs = 500;
+    static constexpr int     kMaxRetryDelayMs  = 30 * 1000;
+    static constexpr int     kInitRetryDelayMs = 500;
     std::shared_ptr<Channel> channelPtr_;
-    EventLoop *loop_;
-    InetAddress serverAddr_;
+    EventLoop               *loop_;
+    InetAddress              serverAddr_;
 
-    std::atomic_bool connect_{false};
-    std::atomic<Status> status_{Status::Disconnected};
+    std::atomic_bool         connect_{false};
+    std::atomic<Status>      status_{Status::Disconnected};
 
-    int retryInterval_{kInitRetryDelayMs};
-    int maxRetryInterval_{kMaxRetryDelayMs};
+    int                      retryInterval_{kInitRetryDelayMs};
+    int                      maxRetryInterval_{kMaxRetryDelayMs};
 
-    bool retry_;
-    bool socketHanded_{false};
-    int fd_{-1};
+    bool                     retry_;
+    bool                     socketHanded_{false};
+    int                      fd_{-1};
 
-    void startInLoop();
-    void connect();
-    void connecting(int sockfd);
-    int removeAndResetChannel();
-    void handleWrite();
-    void handleError();
-    void retry(int sockfd);
+    void                     startInLoop();
+    void                     connect();
+    void                     connecting(int sockfd);
+    int                      removeAndResetChannel();
+    void                     handleWrite();
+    void                     handleError();
+    void                     retry(int sockfd);
 };
 
 }  // namespace trantor

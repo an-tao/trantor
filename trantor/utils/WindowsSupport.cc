@@ -32,7 +32,7 @@ int readv(int fd, const struct iovec *vector, int count)
     int i;
     for (i = 0; i < count; i++)
     {
-        int n = vector[i].iov_len;
+        int n  = vector[i].iov_len;
         int rc = win32_read_socket(fd, vector[i].iov_base, n);
         if (rc == n)
         {

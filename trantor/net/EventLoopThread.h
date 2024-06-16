@@ -14,14 +14,14 @@
 
 #pragma once
 
-#include <trantor/net/EventLoop.h>
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/exports.h>
-#include <mutex>
-#include <thread>
-#include <memory>
 #include <condition_variable>
 #include <future>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <trantor/exports.h>
+#include <trantor/net/EventLoop.h>
+#include <trantor/utils/NonCopyable.h>
 
 namespace trantor
 {
@@ -60,16 +60,16 @@ class TRANTOR_EXPORT EventLoopThread : NonCopyable
 
   private:
     // With C++20, use std::atomic<std::shared_ptr<EventLoop>>
-    std::shared_ptr<EventLoop> loop_;
-    std::mutex loopMutex_;
+    std::shared_ptr<EventLoop>               loop_;
+    std::mutex                               loopMutex_;
 
-    std::string loopThreadName_;
-    void loopFuncs();
+    std::string                              loopThreadName_;
+    void                                     loopFuncs();
     std::promise<std::shared_ptr<EventLoop>> promiseForLoopPointer_;
-    std::promise<int> promiseForRun_;
-    std::promise<int> promiseForLoop_;
-    std::once_flag once_;
-    std::thread thread_;
+    std::promise<int>                        promiseForRun_;
+    std::promise<int>                        promiseForLoop_;
+    std::once_flag                           once_;
+    std::thread                              thread_;
 };
 
 }  // namespace trantor

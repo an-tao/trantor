@@ -14,9 +14,9 @@
 
 #pragma once
 
-#include <trantor/exports.h>
 #include <stdint.h>
 #include <string>
+#include <trantor/exports.h>
 
 #define MICRO_SECONDS_PRE_SEC 1000000LL
 
@@ -29,14 +29,14 @@ namespace trantor
 class TRANTOR_EXPORT Date
 {
   public:
-    Date() : microSecondsSinceEpoch_(0){};
+    Date() : microSecondsSinceEpoch_(0) {};
 
     /**
      * @brief Construct a new Date instance.
      *
      * @param microSec The microseconds from 1970-01-01 00:00:00.
      */
-    explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
+    explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec) {};
 
     /**
      * @brief Construct a new Date instance.
@@ -52,9 +52,9 @@ class TRANTOR_EXPORT Date
     Date(unsigned int year,
          unsigned int month,
          unsigned int day,
-         unsigned int hour = 0,
-         unsigned int minute = 0,
-         unsigned int second = 0,
+         unsigned int hour        = 0,
+         unsigned int minute      = 0,
+         unsigned int second      = 0,
          unsigned int microSecond = 0);
 
     /**
@@ -110,7 +110,7 @@ class TRANTOR_EXPORT Date
      */
     const Date roundDay() const;
 
-    ~Date(){};
+    ~Date() {};
 
     /**
      * @brief Return true if the time point is equal to another.
@@ -267,7 +267,7 @@ class TRANTOR_EXPORT Date
      */
     std::string toCustomFormattedStringLocal(
         const std::string &fmtStr,
-        bool showMicroseconds = false) const;
+        bool               showMicroseconds = false) const;
 
     /**
      * @brief Generate a local time zone string for database.
@@ -321,8 +321,8 @@ class TRANTOR_EXPORT Date
      * @param len The length of the string buffer.
      */
     void toCustomFormattedString(const std::string &fmtStr,
-                                 char *str,
-                                 size_t len) const;  // UTC
+                                 char              *str,
+                                 size_t             len) const;  // UTC
 
     /**
      * @brief Return true if the time point is in a same second as another.

@@ -15,12 +15,11 @@
 #pragma once
 
 // Taken from muduo lib and modified. Classes in this file are used internally.
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/exports.h>
-
 #include <assert.h>
 #include <string.h>  // memcpy
 #include <string>
+#include <trantor/exports.h>
+#include <trantor/utils/NonCopyable.h>
 
 namespace trantor
 {
@@ -88,7 +87,7 @@ class TRANTOR_EXPORT FixedBuffer : NonCopyable
 
     // for used by GDB
     const char *debugString();
-    void setCookie(void (*cookie)())
+    void        setCookie(void (*cookie)())
     {
         cookie_ = cookie;
     }
@@ -110,7 +109,7 @@ class TRANTOR_EXPORT FixedBuffer : NonCopyable
     static void cookieEnd();
 
     void (*cookie_)();
-    char data_[SIZE];
+    char  data_[SIZE];
     char *cur_;
 };
 
@@ -242,9 +241,9 @@ class TRANTOR_EXPORT LogStream : NonCopyable
 
   private:
     template <typename T>
-    void formatInteger(T);
+    void        formatInteger(T);
 
-    Buffer buffer_;
+    Buffer      buffer_;
     std::string exBuffer_;
 };
 
@@ -265,7 +264,7 @@ class TRANTOR_EXPORT Fmt  // : boost::noncopyable
 
   private:
     char buf_[48];
-    int length_;
+    int  length_;
 };
 
 inline LogStream &operator<<(LogStream &s, const Fmt &fmt)

@@ -1,39 +1,38 @@
-#include <trantor/net/inner/TLSProvider.h>
-#include <trantor/net/Certificate.h>
-#include <trantor/net/TcpConnection.h>
-#include <trantor/net/callbacks.h>
-#include <trantor/utils/Logger.h>
-
-#include <botan/tls_server.h>
-#include <botan/tls_client.h>
-#include <botan/tls_callbacks.h>
-#include <botan/tls_policy.h>
 #include <botan/auto_rng.h>
 #include <botan/certstor.h>
+#include <botan/certstor_flatfile.h>
 #include <botan/certstor_system.h>
 #include <botan/data_src.h>
 #include <botan/pkcs8.h>
-#include <botan/tls_exceptn.h>
 #include <botan/pkix_types.h>
-#include <botan/certstor_flatfile.h>
-#include <botan/x509path.h>
+#include <botan/tls_callbacks.h>
+#include <botan/tls_client.h>
+#include <botan/tls_exceptn.h>
+#include <botan/tls_policy.h>
+#include <botan/tls_server.h>
 #include <botan/tls_session_manager_memory.h>
+#include <botan/x509path.h>
 #include <memory>
+#include <trantor/net/Certificate.h>
+#include <trantor/net/TcpConnection.h>
+#include <trantor/net/callbacks.h>
+#include <trantor/net/inner/TLSProvider.h>
+#include <trantor/utils/Logger.h>
 
 using namespace trantor;
 using namespace std::placeholders;
 
-static std::once_flag sessionManagerInitFlag;
+static std::once_flag                         sessionManagerInitFlag;
 static std::shared_ptr<Botan::AutoSeeded_RNG> sessionManagerRng;
 static std::shared_ptr<Botan::TLS::Session_Manager_In_Memory> sessionManager;
-static thread_local std::shared_ptr<Botan::AutoSeeded_RNG> rng;
-static std::unique_ptr<Botan::System_Certificate_Store> systemCertStore;
+static thread_local std::shared_ptr<Botan::AutoSeeded_RNG>    rng;
+static std::unique_ptr<Botan::System_Certificate_Store>       systemCertStore;
 static std::once_flag systemCertStoreInitFlag;
 
 using namespace trantor;
 
 static std::string join(const std::vector<std::string> &vec,
-                        const std::string &delim)
+                        const std::string              &delim)
 {
     std::string ret;
     for (auto const &str : vec)
@@ -49,8 +48,8 @@ class Credentials : public Botan::Credentials_Manager
 {
   public:
     Credentials(std::shared_ptr<Botan::Private_Key> key,
-                Botan::X509_Certificate *cert,
-                Botan::Certificate_Store *certStore)
+                Botan::X509_Certificate            *cert,
+                Botan::Certificate_Store           *certStore)
         : certStore_(certStore), cert_(cert), key_(key)
     {
     }
@@ -66,11 +65,11 @@ class Credentials : public Botan::Credentials_Manager
     }
 
     std::vector<Botan::X509_Certificate> find_cert_chain(
-        const std::vector<std::string> &cert_key_types,
+        const std::vector<std::string>                &cert_key_types,
         const std::vector<Botan::AlgorithmIdentifier> &cert_signature_schemes,
-        const std::vector<Botan::X509_DN> &acceptable_CAs,
-        const std::string &type,
-        const std::string &context) override
+        const std::vector<Botan::X509_DN>             &acceptable_CAs,
+        const std::string                             &type,
+        const std::string                             &context) override
     {
         (void)type;
         (void)context;
@@ -90,24 +89,22 @@ class Credentials : public Botan::Credentials_Manager
 
     std::shared_ptr<Botan::Private_Key> private_key_for(
         const Botan::X509_Certificate &cert,
-        const std::string &type,
-        const std::string &context) override
+        const std::string             &type,
+        const std::string             &context) override
     {
         (void)cert;
         (void)type;
         (void)context;
         return key_;
     }
-    Botan::Certificate_Store *certStore_ = nullptr;
-    Botan::X509_Certificate *cert_ = nullptr;
-    std::shared_ptr<Botan::Private_Key> key_ = nullptr;
+    Botan::Certificate_Store           *certStore_ = nullptr;
+    Botan::X509_Certificate            *cert_      = nullptr;
+    std::shared_ptr<Botan::Private_Key> key_       = nullptr;
 };
 
 struct BotanCertificate : public Certificate
 {
-    BotanCertificate(const Botan::X509_Certificate &cert) : cert_(cert)
-    {
-    }
+    BotanCertificate(const Botan::X509_Certificate &cert) : cert_(cert) {}
 
     virtual std::string sha1Fingerprint() const override
     {
@@ -130,11 +127,11 @@ namespace trantor
 {
 struct SSLContext
 {
-    std::shared_ptr<Botan::Private_Key> key;
-    std::unique_ptr<Botan::X509_Certificate> cert;
+    std::shared_ptr<Botan::Private_Key>       key;
+    std::unique_ptr<Botan::X509_Certificate>  cert;
     std::shared_ptr<Botan::Certificate_Store> certStore;
-    bool isServer = false;
-    bool requireClientCert = false;
+    bool                                      isServer          = false;
+    bool                                      requireClientCert = false;
 };
 }  // namespace trantor
 
@@ -161,8 +158,8 @@ struct BotanTLSProvider : public TLSProvider,
 {
   public:
     BotanTLSProvider(TcpConnection *conn,
-                     TLSPolicyPtr policy,
-                     SSLContextPtr ctx)
+                     TLSPolicyPtr   policy,
+                     SSLContextPtr  ctx)
         : TLSProvider(conn, std::move(policy), std::move(ctx))
     {
         validationPolicy_ = std::make_shared<TrantorPolicy>();
@@ -225,7 +222,7 @@ struct BotanTLSProvider : public TLSProvider,
         // Limit the size of the data we send in one go to avoid holding massive
         // buffers in memory.
         constexpr size_t maxSend = 64 * 1024;
-        size_t hasSent = 0;
+        size_t           hasSent = 0;
         while (hasSent < size && getBufferedData().readableBytes() == 0)
         {
             auto trunkLen = size - hasSent;
@@ -319,14 +316,16 @@ struct BotanTLSProvider : public TLSProvider,
     {
         if (!errorCallback_)
             return;
-        loop_->queueInLoop([this, err]() { errorCallback_(conn_, err); });
+        loop_->queueInLoop([this, err]() {
+            errorCallback_(conn_, err);
+        });
     }
 
     virtual ~BotanTLSProvider() override = default;
 
     void tls_emit_data(std::span<const uint8_t> data) override
     {
-        auto n = writeCallback_(conn_, data.data(), data.size_bytes());
+        auto n         = writeCallback_(conn_, data.data(), data.size_bytes());
         lastWriteSize_ = n;
 
         // store the unsent data and send it later
@@ -338,7 +337,7 @@ struct BotanTLSProvider : public TLSProvider,
                             data.size_bytes() - n);
     }
 
-    void tls_record_received(uint64_t seq_no,
+    void tls_record_received(uint64_t                 seq_no,
                              std::span<const uint8_t> data) override
     {
         (void)seq_no;
@@ -394,17 +393,21 @@ struct BotanTLSProvider : public TLSProvider,
     }
 
     void tls_verify_cert_chain(
-        const std::vector<Botan::X509_Certificate> &certs,
+        const std::vector<Botan::X509_Certificate>              &certs,
         const std::vector<std::optional<Botan::OCSP::Response>> &ocsp,
-        const std::vector<Botan::Certificate_Store *> &trusted_roots,
-        Botan::Usage_Type usage,
-        std::string_view hostname,
+        const std::vector<Botan::Certificate_Store *>           &trusted_roots,
+        Botan::Usage_Type                                        usage,
+        std::string_view                                         hostname,
         const Botan::TLS::Policy &policy) override
     {
         setSniName(std::string(hostname));
         if (policyPtr_->getValidate() && !policyPtr_->getAllowBrokenChain())
-            Botan::TLS::Callbacks::tls_verify_cert_chain(
-                certs, ocsp, trusted_roots, usage, hostname, policy);
+            Botan::TLS::Callbacks::tls_verify_cert_chain(certs,
+                                                         ocsp,
+                                                         trusted_roots,
+                                                         usage,
+                                                         hostname,
+                                                         policy);
         else if (policyPtr_->getValidate())
         {
             if (certs.size() == 0)
@@ -414,13 +417,16 @@ struct BotanTLSProvider : public TLSProvider,
             // handle self-signed certificate
             std::vector<Botan::X509_Certificate> selfSigned = {certs[0]};
 
-            Botan::Path_Validation_Restrictions restrictions(
+            Botan::Path_Validation_Restrictions  restrictions(
                 false,  // require revocation
                 validationPolicy_->minimum_signature_strength());
 
-            auto now = std::chrono::system_clock::now();
-            const auto status = Botan::PKIX::check_chain(
-                selfSigned, now, hostname, usage, restrictions);
+            auto       now    = std::chrono::system_clock::now();
+            const auto status = Botan::PKIX::check_chain(selfSigned,
+                                                         now,
+                                                         hostname,
+                                                         usage,
+                                                         restrictions);
 
             const auto result = Botan::PKIX::overall_status(status);
 
@@ -435,16 +441,16 @@ struct BotanTLSProvider : public TLSProvider,
             setPeerCertificate(std::make_shared<BotanCertificate>(certs[0]));
     }
 
-    std::shared_ptr<TrantorPolicy> validationPolicy_;
+    std::shared_ptr<TrantorPolicy>              validationPolicy_;
     std::shared_ptr<Botan::Credentials_Manager> credsPtr_;
-    std::unique_ptr<Botan::TLS::Channel> channel_;
-    bool tlsConnected_ = false;
-    ssize_t lastWriteSize_ = 0;
+    std::unique_ptr<Botan::TLS::Channel>        channel_;
+    bool                                        tlsConnected_  = false;
+    ssize_t                                     lastWriteSize_ = 0;
 };
 
 std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
-                                                     TLSPolicyPtr policy,
-                                                     SSLContextPtr ctx)
+                                                     TLSPolicyPtr   policy,
+                                                     SSLContextPtr  ctx)
 {
     return std::make_shared<BotanTLSProvider>(conn,
                                               std::move(policy),
@@ -453,7 +459,7 @@ std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
 
 SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
 {
-    auto ctx = std::make_shared<SSLContext>();
+    auto ctx      = std::make_shared<SSLContext>();
     ctx->isServer = server;
     if (!policy.getKeyPath().empty())
     {

@@ -1,11 +1,11 @@
+#include <fcntl.h>
+#include <iostream>
+#include <string>
+#include <sys/stat.h>
+#include <thread>
+#include <trantor/net/EventLoopThread.h>
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
-#include <trantor/net/EventLoopThread.h>
-#include <string>
-#include <iostream>
-#include <thread>
-#include <sys/stat.h>
-#include <fcntl.h>
 #ifndef _WIN32
 #include <unistd.h>
 #else
@@ -68,8 +68,11 @@ int main(int argc, char *argv[])
                 {
                     int fd;
 #ifdef _WIN32
-                    _sopen_s(
-                        &fd, argv[1], _O_BINARY | _O_RDONLY, _SH_DENYNO, 0);
+                    _sopen_s(&fd,
+                             argv[1],
+                             _O_BINARY | _O_RDONLY,
+                             _SH_DENYNO,
+                             0);
 #else
                     fd = open(argv[1], O_RDONLY);
 #endif
@@ -119,9 +122,9 @@ int main(int argc, char *argv[])
 }
 
 std::size_t fileCallback(const std::string &strFile,
-                         int nFd,
-                         char *pBuffer,
-                         std::size_t nBuffSize)
+                         int                nFd,
+                         char              *pBuffer,
+                         std::size_t        nBuffSize)
 {
     if (nFd < 0)
         return 0;

@@ -6,10 +6,9 @@
 
 // Author: Shuo Chen (chenshuo at chenshuo dot com)
 
-#include <trantor/net/InetAddress.h>
-
-#include <trantor/utils/Logger.h>
 #include <cstring>
+#include <trantor/net/InetAddress.h>
+#include <trantor/utils/Logger.h>
 // #include <muduo/net/Endian.h>
 
 #ifdef _WIN32
@@ -17,19 +16,19 @@ struct in6_addr_uint
 {
     union
     {
-        u_char Byte[16];
-        u_short Word[8];
+        u_char   Byte[16];
+        u_short  Word[8];
         uint32_t __s6_addr32[4];
     } uext;
 };
 #else
-#include <strings.h>  // memset
-#include <netinet/tcp.h>
 #include <netdb.h>
+#include <netinet/tcp.h>
+#include <strings.h>  // memset
 #endif
 
 // INADDR_ANY use (type)value casting.
-static const in_addr_t kInaddrAny = INADDR_ANY;
+static const in_addr_t kInaddrAny      = INADDR_ANY;
 static const in_addr_t kInaddrLoopback = INADDR_LOOPBACK;
 
 //     /* Structure describing an Internet socket address.  */
@@ -70,17 +69,17 @@ InetAddress::InetAddress(uint16_t port, bool loopbackOnly, bool ipv6)
     {
         memset(&addr6_, 0, sizeof(addr6_));
         addr6_.sin6_family = AF_INET6;
-        in6_addr ip = loopbackOnly ? in6addr_loopback : in6addr_any;
-        addr6_.sin6_addr = ip;
-        addr6_.sin6_port = htons(port);
+        in6_addr ip        = loopbackOnly ? in6addr_loopback : in6addr_any;
+        addr6_.sin6_addr   = ip;
+        addr6_.sin6_port   = htons(port);
     }
     else
     {
         memset(&addr_, 0, sizeof(addr_));
-        addr_.sin_family = AF_INET;
-        in_addr_t ip = loopbackOnly ? kInaddrLoopback : kInaddrAny;
+        addr_.sin_family      = AF_INET;
+        in_addr_t ip          = loopbackOnly ? kInaddrLoopback : kInaddrAny;
         addr_.sin_addr.s_addr = htonl(ip);
-        addr_.sin_port = htons(port);
+        addr_.sin_port        = htons(port);
     }
     isUnspecified_ = false;
 }
@@ -92,7 +91,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
     {
         memset(&addr6_, 0, sizeof(addr6_));
         addr6_.sin6_family = AF_INET6;
-        addr6_.sin6_port = htons(port);
+        addr6_.sin6_port   = htons(port);
         if (::inet_pton(AF_INET6, ip.c_str(), &addr6_.sin6_addr) <= 0)
         {
             return;
@@ -102,7 +101,7 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
     {
         memset(&addr_, 0, sizeof(addr_));
         addr_.sin_family = AF_INET;
-        addr_.sin_port = htons(port);
+        addr_.sin_port   = htons(port);
         if (::inet_pton(AF_INET, ip.c_str(), &addr_.sin_addr) <= 0)
         {
             return;
@@ -113,14 +112,14 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
 
 std::string InetAddress::toIpPort() const
 {
-    char buf[64] = "";
-    uint16_t port = ntohs(addr_.sin_port);
+    char     buf[64] = "";
+    uint16_t port    = ntohs(addr_.sin_port);
     snprintf(buf, sizeof(buf), ":%u", port);
     return toIp() + std::string(buf);
 }
 std::string InetAddress::toIpPortNetEndian() const
 {
-    std::string buf;
+    std::string           buf;
     static constexpr auto bytes = sizeof(addr_.sin_port);
     buf.resize(bytes);
 #if defined _WIN32

@@ -12,20 +12,21 @@
  *
  */
 
-#include <trantor/net/TcpServer.h>
-#include <trantor/utils/Logger.h>
-#include <functional>
-#include <vector>
 #include "Acceptor.h"
 #include "inner/TcpConnectionImpl.h"
+
+#include <functional>
+#include <trantor/net/TcpServer.h>
+#include <trantor/utils/Logger.h>
+#include <vector>
 using namespace trantor;
 using namespace std::placeholders;
 
-TcpServer::TcpServer(EventLoop *loop,
+TcpServer::TcpServer(EventLoop         *loop,
                      const InetAddress &address,
-                     std::string name,
-                     bool reUseAddr,
-                     bool reUsePort)
+                     std::string        name,
+                     bool               reUseAddr,
+                     bool               reUsePort)
     : loop_(loop),
       acceptorPtr_(new Acceptor(loop, address, reUseAddr, reUsePort)),
       serverName_(std::move(name)),
@@ -38,7 +39,9 @@ TcpServer::TcpServer(EventLoop *loop,
       numIoLoops_(1)
 {
     acceptorPtr_->setNewConnectionCallback(
-        [this](int fd, const InetAddress &peer) { newConnection(fd, peer); });
+        [this](int fd, const InetAddress &peer) {
+            newConnection(fd, peer);
+        });
 }
 
 TcpServer::~TcpServer()
@@ -82,7 +85,10 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     else
     {
         newPtr = std::make_shared<TcpConnectionImpl>(
-            ioLoop, sockfd, InetAddress(Socket::getLocalAddr(sockfd)), peer);
+            ioLoop,
+            sockfd,
+            InetAddress(Socket::getLocalAddr(sockfd)),
+            peer);
     }
 
     if (idleTimeout_ > 0)
@@ -153,7 +159,7 @@ void TcpServer::stop()
     else
     {
         std::promise<void> pro;
-        auto f = pro.get_future();
+        auto               f = pro.get_future();
         loop_->queueInLoop([this, &pro]() {
             acceptorPtr_.reset();
             std::vector<TcpConnectionPtr> connPtrs;
@@ -174,7 +180,7 @@ void TcpServer::stop()
     for (auto &iter : timingWheelMap_)
     {
         std::promise<void> pro;
-        auto f = pro.get_future();
+        auto               f = pro.get_future();
         iter.second->getLoop()->runInLoop([&iter, &pro]() mutable {
             iter.second.reset();
             pro.set_value();
@@ -193,8 +199,9 @@ void TcpServer::handleCloseInLoop(const TcpConnectionPtr &connectionPtr)
     // may be in loop_'s current active channels, waiting to be processed.
     // If `connectDestroyed()` is called here, we will be using an wild pointer
     // later.
-    connLoop->queueInLoop(
-        [connectionPtr]() { connectionPtr->connectDestroyed(); });
+    connLoop->queueInLoop([connectionPtr]() {
+        connectionPtr->connectDestroyed();
+    });
 }
 void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
 {
@@ -205,8 +212,9 @@ void TcpServer::connectionClosed(const TcpConnectionPtr &connectionPtr)
     }
     else
     {
-        loop_->queueInLoop(
-            [this, connectionPtr]() { handleCloseInLoop(connectionPtr); });
+        loop_->queueInLoop([this, connectionPtr]() {
+            handleCloseInLoop(connectionPtr);
+        });
     }
 }
 
@@ -221,11 +229,11 @@ const trantor::InetAddress &TcpServer::address() const
 }
 
 void TcpServer::enableSSL(
-    const std::string &certPath,
-    const std::string &keyPath,
-    bool useOldTLS,
+    const std::string                                      &certPath,
+    const std::string                                      &keyPath,
+    bool                                                    useOldTLS,
     const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
-    const std::string &caPath)
+    const std::string                                      &caPath)
 {
     policyPtr_ = TLSPolicy::defaultServerPolicy(certPath, keyPath);
     policyPtr_->setUseOldTLS(useOldTLS)

@@ -1,6 +1,9 @@
-#include <trantor/net/inner/BufferNode.h>
+/* clang-format off */
 #include <windows.h>
+/* clang-format on */
 #include <fileapi.h>
+#include <trantor/net/inner/BufferNode.h>
+
 #if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 #define UWP 1
 #else
@@ -16,8 +19,11 @@ class FileBufferNode : public BufferNode
     FileBufferNode(const wchar_t *fileName, long long offset, long long length)
     {
 #if UWP
-        sendHandle_ = CreateFile2(
-            fileName, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr);
+        sendHandle_ = CreateFile2(fileName,
+                                  GENERIC_READ,
+                                  FILE_SHARE_READ,
+                                  OPEN_EXISTING,
+                                  nullptr);
 
 #else
         sendHandle_ = CreateFileW(fileName,
@@ -40,7 +46,7 @@ class FileBufferNode : public BufferNode
             LOG_SYSERR << fileName << " stat error";
             CloseHandle(sendHandle_);
             sendHandle_ = INVALID_HANDLE_VALUE;
-            isDone_ = true;
+            isDone_     = true;
             return;
         }
 
@@ -53,7 +59,7 @@ class FileBufferNode : public BufferNode
                           << " bytes and the length is " << length << " bytes";
                 CloseHandle(sendHandle_);
                 sendHandle_ = INVALID_HANDLE_VALUE;
-                isDone_ = true;
+                isDone_     = true;
                 return;
             }
             fileBytesToSend_ = fileSize.QuadPart - offset;
@@ -67,7 +73,7 @@ class FileBufferNode : public BufferNode
                           << " bytes and the length is " << length << " bytes";
                 CloseHandle(sendHandle_);
                 sendHandle_ = INVALID_HANDLE_VALUE;
-                isDone_ = true;
+                isDone_     = true;
                 return;
             }
 
@@ -80,7 +86,7 @@ class FileBufferNode : public BufferNode
             LOG_SYSERR << fileName << " seek error";
             CloseHandle(sendHandle_);
             sendHandle_ = INVALID_HANDLE_VALUE;
-            isDone_ = true;
+            isDone_     = true;
             return;
         }
         msgBufferPtr_ = std::make_unique<MsgBuffer>(
@@ -125,7 +131,7 @@ class FileBufferNode : public BufferNode
             }
         }
         data = msgBufferPtr_->peek();
-        len = msgBufferPtr_->readableBytes();
+        len  = msgBufferPtr_->readableBytes();
     }
     void retrieve(size_t len) override
     {
@@ -158,13 +164,13 @@ class FileBufferNode : public BufferNode
     }
 
   private:
-    HANDLE sendHandle_{INVALID_HANDLE_VALUE};
-    long long fileBytesToSend_{0};
+    HANDLE                     sendHandle_{INVALID_HANDLE_VALUE};
+    long long                  fileBytesToSend_{0};
     std::unique_ptr<MsgBuffer> msgBufferPtr_;
 };
 BufferNodePtr BufferNode::newFileBufferNode(const wchar_t *fileName,
-                                            long long offset,
-                                            long long length)
+                                            long long      offset,
+                                            long long      length)
 {
     return std::make_shared<FileBufferNode>(fileName, offset, length);
 }
