@@ -35,7 +35,7 @@ jobs:
         run: |
           pip install conan
           conan profile detect --force
-          conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc" --options=tls_provider=${{matrix.tls-provider}} -s cppstd=20
+          conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc" --options=tls_provider=${{matrix.tls-provider}} -s compiler.cppstd=20
 
       - name: Create Build Environment & Configure Cmake
         shell: bash
