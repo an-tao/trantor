@@ -280,7 +280,7 @@ if(WIN32)
   if(OpenSSL_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE crypt32 secur32)
   endif(OpenSSL_FOUND)
-else(WIN32)
+elseif(NOT ANDROID)
   target_link_libraries(${PROJECT_NAME} PRIVATE pthread $<$<PLATFORM_ID:SunOS>:socket>)
 endif(WIN32)
 
