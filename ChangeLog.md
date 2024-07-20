@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.20] - 2024-07-20
+
+### Changed
+
+- Add byte order detection for internal SHA1 implementation for OSX, POWER, RISC-V and s390.
+
+### Fixed
+
+- Fix Windows CI build fail by using the latest MSVC.
+
+- Fix the Botan TLS provider build on Linux.
+
+- Fix "pthread not found" build error when using Android NDK.
+
 ## [1.5.19] - 2024-06-08
 
 ### changed
@@ -654,7 +668,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.19...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.20...HEAD
+
+[1.5.20]: https://github.com/an-tao/trantor/compare/v1.5.19...v1.5.20
 
 [1.5.19]: https://github.com/an-tao/trantor/compare/v1.5.18...v1.5.19
 
