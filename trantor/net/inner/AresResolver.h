@@ -6,12 +6,12 @@
 // Author: Tao An
 
 #pragma once
-#include <trantor/net/Resolver.h>
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/net/EventLoopThread.h>
 #include <map>
 #include <memory>
 #include <string.h>
+#include <trantor/net/EventLoopThread.h>
+#include <trantor/net/Resolver.h>
+#include <trantor/utils/NonCopyable.h>
 
 extern "C"
 {
@@ -31,20 +31,20 @@ class AresResolver : public Resolver,
     ~AresResolver();
 
     virtual void resolve(const std::string& hostname,
-                         const Callback& cb) override
+                         const Callback&    cb) override
     {
-        bool cached = false;
+        bool        cached = false;
         InetAddress inet;
         {
             std::lock_guard<std::mutex> lock(globalMutex());
-            auto iter = globalCache().find(hostname);
+            auto                        iter = globalCache().find(hostname);
             if (iter != globalCache().end())
             {
                 auto& cachedAddr = iter->second;
                 if (timeout_ == 0 ||
                     cachedAddr.second.after(timeout_) > trantor::Date::date())
                 {
-                    inet = (*cachedAddr.first)[0];
+                    inet   = (*cachedAddr.first)[0];
                     cached = true;
                 }
             }
@@ -73,13 +73,13 @@ class AresResolver : public Resolver,
         }
     }
 
-    virtual void resolve(const std::string& hostname,
+    virtual void resolve(const std::string&             hostname,
                          const ResolverResultsCallback& cb) override
     {
         std::shared_ptr<std::vector<trantor::InetAddress>> inets_ptr{nullptr};
         {
             std::lock_guard<std::mutex> lock(globalMutex());
-            auto iter = globalCache().find(hostname);
+            auto                        iter = globalCache().find(hostname);
             if (iter != globalCache().end())
             {
                 auto& cachedAddr = iter->second;
@@ -110,23 +110,23 @@ class AresResolver : public Resolver,
   private:
     struct QueryData
     {
-        AresResolver* owner_;
+        AresResolver*           owner_;
         ResolverResultsCallback callback_;
-        std::string hostname_;
-        QueryData(AresResolver* o,
+        std::string             hostname_;
+        QueryData(AresResolver*                  o,
                   const ResolverResultsCallback& cb,
-                  const std::string& hostname)
+                  const std::string&             hostname)
             : owner_(o), callback_(cb), hostname_(hostname)
         {
         }
     };
-    void resolveInLoop(const std::string& hostname,
-                       const ResolverResultsCallback& cb);
-    void init();
-    trantor::EventLoop* loop_;
+    void                  resolveInLoop(const std::string&             hostname,
+                                        const ResolverResultsCallback& cb);
+    void                  init();
+    trantor::EventLoop*   loop_;
     std::shared_ptr<bool> loopValid_;
-    ares_channel ctx_{nullptr};
-    bool timerActive_{false};
+    ares_channel          ctx_{nullptr};
+    bool                  timerActive_{false};
     using ChannelList = std::map<int, std::unique_ptr<trantor::Channel>>;
     ChannelList channels_;
     static std::unordered_map<
@@ -155,19 +155,19 @@ class AresResolver : public Resolver,
     }
     const size_t timeout_{60};
 
-    void onRead(int sockfd);
-    void onTimer();
-    void onQueryResult(int status,
-                       struct ares_addrinfo* result,
-                       const std::string& hostname,
-                       const ResolverResultsCallback& callback);
-    void onSockCreate(int sockfd, int type);
-    void onSockStateChange(int sockfd, bool read, bool write);
+    void         onRead(int sockfd);
+    void         onTimer();
+    void         onQueryResult(int                            status,
+                               struct ares_addrinfo*          result,
+                               const std::string&             hostname,
+                               const ResolverResultsCallback& callback);
+    void         onSockCreate(int sockfd, int type);
+    void         onSockStateChange(int sockfd, bool read, bool write);
 
-    static void ares_hostcallback_(void* data,
-                                   int status,
-                                   int timeouts,
-                                   struct ares_addrinfo* hostent);
+    static void  ares_hostcallback_(void*                 data,
+                                    int                   status,
+                                    int                   timeouts,
+                                    struct ares_addrinfo* hostent);
 #ifdef _WIN32
     static int ares_sock_createcallback_(SOCKET sockfd, int type, void* data);
 #else

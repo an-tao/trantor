@@ -1,9 +1,9 @@
+#include <atomic>
+#include <iostream>
+#include <string>
+#include <trantor/net/EventLoopThread.h>
 #include <trantor/net/TcpClient.h>
 #include <trantor/utils/Logger.h>
-#include <trantor/net/EventLoopThread.h>
-#include <string>
-#include <iostream>
-#include <atomic>
 using namespace trantor;
 #define USE_IPV6 0
 int main()
@@ -17,7 +17,7 @@ int main()
     InetAddress serverAddr("127.0.0.1", 8888);
 #endif
     std::shared_ptr<trantor::TcpClient> client[10];
-    std::atomic_int connCount;
+    std::atomic_int                     connCount;
     connCount = 1;
     for (int i = 0; i < 1; ++i)
     {
@@ -37,27 +37,29 @@ int main()
                         loop.quit();
                 }
             });
-        client[i]->setMessageCallback([](const TcpConnectionPtr &conn,
-                                         MsgBuffer *buf) {
-            auto msg = std::string(buf->peek(), buf->readableBytes());
+        client[i]->setMessageCallback(
+            [](const TcpConnectionPtr &conn, MsgBuffer *buf) {
+                auto msg = std::string(buf->peek(), buf->readableBytes());
 
-            LOG_INFO << msg;
-            if (msg == "hello")
-            {
-                buf->retrieveAll();
-                auto policy = TLSPolicy::defaultClientPolicy();
-                policy->setValidate(false);
-                conn->startEncryption(
-                    policy, false, [](const TcpConnectionPtr &encryptedConn) {
-                        LOG_INFO << "SSL established";
-                        encryptedConn->send("Hello");
-                    });
-            }
-            if (conn->isSSLConnection())
-            {
-                buf->retrieveAll();
-            }
-        });
+                LOG_INFO << msg;
+                if (msg == "hello")
+                {
+                    buf->retrieveAll();
+                    auto policy = TLSPolicy::defaultClientPolicy();
+                    policy->setValidate(false);
+                    conn->startEncryption(
+                        policy,
+                        false,
+                        [](const TcpConnectionPtr &encryptedConn) {
+                            LOG_INFO << "SSL established";
+                            encryptedConn->send("Hello");
+                        });
+                }
+                if (conn->isSSLConnection())
+                {
+                    buf->retrieveAll();
+                }
+            });
         client[i]->connect();
     }
     loop.loop();

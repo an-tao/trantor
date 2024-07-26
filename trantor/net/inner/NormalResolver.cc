@@ -1,13 +1,14 @@
 #include "NormalResolver.h"
+
 #include <trantor/utils/Logger.h>
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #else
-#include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <strings.h>  // memset
+#include <sys/socket.h>
 #endif
 
 using namespace trantor;
@@ -22,11 +23,11 @@ bool Resolver::isCAresUsed()
     return false;
 }
 void NormalResolver::resolve(const std::string &hostname,
-                             const Callback &callback)
+                             const Callback    &callback)
 {
     {
         std::lock_guard<std::mutex> guard(globalMutex());
-        auto iter = globalCache().find(hostname);
+        auto                        iter = globalCache().find(hostname);
         if (iter != globalCache().end())
         {
             auto &cachedAddr = iter->second;
@@ -58,9 +59,9 @@ void NormalResolver::resolve(const std::string &hostname,
             }
             struct addrinfo hints, *res = nullptr;
             memset(&hints, 0, sizeof(hints));
-            hints.ai_family = PF_UNSPEC;
+            hints.ai_family   = PF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
-            hints.ai_flags = AI_PASSIVE;
+            hints.ai_flags    = AI_PASSIVE;
             auto error = getaddrinfo(hostname.data(), nullptr, &hints, &res);
             if (error != 0 || res == nullptr)
             {
@@ -91,8 +92,8 @@ void NormalResolver::resolve(const std::string &hostname,
             callback(inet);
             {
                 std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
-                auto &addrItem = thisPtr->globalCache()[hostname];
-                addrItem.first = inet;
+                auto &addrItem  = thisPtr->globalCache()[hostname];
+                addrItem.first  = inet;
                 addrItem.second = trantor::Date::date();
             }
             return;

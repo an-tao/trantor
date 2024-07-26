@@ -20,51 +20,52 @@ static const uint64_t blake2b_IV[8] = {0x6a09e667f3bcc908ULL,
  * Table of permutations
  */
 static const uint8_t blake2b_sigma[12][16] = {
-    {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-    {14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3},
-    {11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4},
-    {7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8},
-    {9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13},
-    {2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9},
-    {12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11},
-    {13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10},
-    {6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5},
-    {10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0},
-    {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-    {14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3}};
+    { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15},
+    {14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3},
+    {11,  8, 12,  0,  5,  2, 15, 13, 10, 14,  3,  6,  7,  1,  9,  4},
+    { 7,  9,  3,  1, 13, 12, 11, 14,  2,  6,  5, 10,  4,  0, 15,  8},
+    { 9,  0,  5,  7,  2,  4, 10, 15, 14,  1, 11, 12,  6,  8,  3, 13},
+    { 2, 12,  6, 10,  0, 11,  8,  3,  4, 13,  7,  5, 15, 14,  1,  9},
+    {12,  5,  1, 15, 14, 13,  4, 10,  0,  7,  6,  3,  9,  2,  8, 11},
+    {13, 11,  7, 14, 12,  1,  3,  9,  5,  0, 15,  4,  8,  6,  2, 10},
+    { 6, 15, 14,  9, 11,  3,  0,  8, 12,  2, 13,  7,  1,  4, 10,  5},
+    {10,  2,  8,  4,  7,  6,  1,  5, 15, 11,  9, 14,  3, 12, 13,  0},
+    { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15},
+    {14, 10,  4,  8,  9, 15, 13,  6,  1, 12,  0,  2, 11,  7,  5,  3}
+};
 
 enum blake2b_constant
 {
-    BLAKE2B_BLOCKBYTES = 128,
-    BLAKE2B_OUTBYTES = 64,
-    BLAKE2B_KEYBYTES = 64,
-    BLAKE2B_SALTBYTES = 16,
+    BLAKE2B_BLOCKBYTES    = 128,
+    BLAKE2B_OUTBYTES      = 64,
+    BLAKE2B_KEYBYTES      = 64,
+    BLAKE2B_SALTBYTES     = 16,
     BLAKE2B_PERSONALBYTES = 16
 };
 
 typedef struct blake2b_param
 {
-    uint8_t digest_length;                   /* 1 */
-    uint8_t key_length;                      /* 2 */
-    uint8_t fanout;                          /* 3 */
-    uint8_t depth;                           /* 4 */
-    uint32_t leaf_length;                    /* 8 */
-    uint64_t node_offset;                    /* 16 */
-    uint8_t node_depth;                      /* 17 */
-    uint8_t inner_length;                    /* 18 */
-    uint8_t reserved[14];                    /* 32 */
-    uint8_t salt[BLAKE2B_SALTBYTES];         /* 48 */
-    uint8_t personal[BLAKE2B_PERSONALBYTES]; /* 64 */
+    uint8_t  digest_length;                   /* 1 */
+    uint8_t  key_length;                      /* 2 */
+    uint8_t  fanout;                          /* 3 */
+    uint8_t  depth;                           /* 4 */
+    uint32_t leaf_length;                     /* 8 */
+    uint64_t node_offset;                     /* 16 */
+    uint8_t  node_depth;                      /* 17 */
+    uint8_t  inner_length;                    /* 18 */
+    uint8_t  reserved[14];                    /* 32 */
+    uint8_t  salt[BLAKE2B_SALTBYTES];         /* 48 */
+    uint8_t  personal[BLAKE2B_PERSONALBYTES]; /* 64 */
 } blake2b_param;
 
 typedef struct blake2b_state
 {
-    uint64_t h[8];                   /* chained state */
-    uint64_t t[2];                   /* total number of bytes */
-    uint64_t f[2];                   /* last block flag */
-    uint8_t buf[BLAKE2B_BLOCKBYTES]; /* input buffer */
-    size_t buflen;                   /* size of buffer */
-    size_t outlen;                   /* digest size */
+    uint64_t h[8];                    /* chained state */
+    uint64_t t[2];                    /* total number of bytes */
+    uint64_t f[2];                    /* last block flag */
+    uint8_t  buf[BLAKE2B_BLOCKBYTES]; /* input buffer */
+    size_t   buflen;                  /* size of buffer */
+    size_t   outlen;                  /* digest size */
 } blake2b_state;
 
 /**
@@ -108,14 +109,14 @@ static void store64(uint8_t* dst, uint64_t w)
 #else
     uint8_t* p = dst;
 
-    p[0] = (uint8_t)(w >> 0);
-    p[1] = (uint8_t)(w >> 8);
-    p[2] = (uint8_t)(w >> 16);
-    p[3] = (uint8_t)(w >> 24);
-    p[4] = (uint8_t)(w >> 32);
-    p[5] = (uint8_t)(w >> 40);
-    p[6] = (uint8_t)(w >> 48);
-    p[7] = (uint8_t)(w >> 56);
+    p[0]       = (uint8_t)(w >> 0);
+    p[1]       = (uint8_t)(w >> 8);
+    p[2]       = (uint8_t)(w >> 16);
+    p[3]       = (uint8_t)(w >> 24);
+    p[4]       = (uint8_t)(w >> 32);
+    p[5]       = (uint8_t)(w >> 40);
+    p[6]       = (uint8_t)(w >> 48);
+    p[7]       = (uint8_t)(w >> 56);
 #endif
 }
 
@@ -161,7 +162,7 @@ static void trantor_blake2b_increment_counter(blake2b_state* state,
  */
 static void F(blake2b_state* state, const uint8_t block[BLAKE2B_BLOCKBYTES])
 {
-    size_t i, j;
+    size_t   i, j;
     uint64_t v[16], m[16], s[16];
 
     for (i = 0; i < 16; ++i)
@@ -171,7 +172,7 @@ static void F(blake2b_state* state, const uint8_t block[BLAKE2B_BLOCKBYTES])
 
     for (i = 0; i < 8; ++i)
     {
-        v[i] = state->h[i];
+        v[i]     = state->h[i];
         v[i + 8] = blake2b_IV[i];
     }
 
@@ -209,27 +210,27 @@ static void F(blake2b_state* state, const uint8_t block[BLAKE2B_BLOCKBYTES])
  * @param[in]  input_buffer  the input buffer
  * @param[in]  inlen         the input length
  */
-void trantor_blake2b_update(blake2b_state* state,
+void trantor_blake2b_update(blake2b_state*       state,
                             const unsigned char* input_buffer,
-                            size_t inlen)
+                            size_t               inlen)
 {
-    const unsigned char* in = input_buffer;
-    size_t left = state->buflen;
-    size_t fill = BLAKE2B_BLOCKBYTES - left;
+    const unsigned char* in   = input_buffer;
+    size_t               left = state->buflen;
+    size_t               fill = BLAKE2B_BLOCKBYTES - left;
     if (inlen > fill)
     {
         state->buflen = 0;
         memcpy(state->buf + left, in, fill);
         trantor_blake2b_increment_counter(state, BLAKE2B_BLOCKBYTES);
         F(state, state->buf);
-        in += fill;
+        in    += fill;
         inlen -= fill;
 
         while (inlen > BLAKE2B_BLOCKBYTES)
         {
             trantor_blake2b_increment_counter(state, BLAKE2B_BLOCKBYTES);
             F(state, in);
-            in += BLAKE2B_BLOCKBYTES;
+            in    += BLAKE2B_BLOCKBYTES;
             inlen -= BLAKE2B_BLOCKBYTES;
         }
     }
@@ -244,15 +245,15 @@ void trantor_blake2b_update(blake2b_state* state,
  * @param[in]  outlen  the hash output length
  */
 void trantor_blake2b_init(blake2b_state* state,
-                          size_t outlen,
-                          const void* key,
-                          size_t keylen)
+                          size_t         outlen,
+                          const void*    key,
+                          size_t         keylen)
 {
     blake2b_param P;
     memset(&P, 0, sizeof(P));
     const uint8_t* p;
-    size_t i;
-    uint64_t dest;
+    size_t         i;
+    uint64_t       dest;
 
     P.digest_length = (uint8_t)outlen;
     if (keylen > 0)
@@ -260,10 +261,10 @@ void trantor_blake2b_init(blake2b_state* state,
         P.key_length = (uint8_t)keylen;
     }
     P.fanout = 1;
-    P.depth = 1;
+    P.depth  = 1;
 
-    dest = 0;
-    p = (const uint8_t*)(&P);
+    dest     = 0;
+    p        = (const uint8_t*)(&P);
     for (i = 0; i < 8; ++i)
     {
         state->h[i] = blake2b_IV[i];
@@ -296,7 +297,7 @@ void trantor_blake2b_final(blake2b_state* state, void* out, size_t outlen)
 {
     (void)(outlen);
     uint8_t buffer[BLAKE2B_OUTBYTES] = {0};
-    size_t i;
+    size_t  i;
 
     trantor_blake2b_increment_counter(state, state->buflen);
 
@@ -327,12 +328,12 @@ void trantor_blake2b_final(blake2b_state* state, void* out, size_t outlen)
  * @param[in]  key     the key
  * @param[in]  keylen  the key length
  */
-void trantor_blake2b(void* output,
-                     size_t outlen,
+void trantor_blake2b(void*       output,
+                     size_t      outlen,
                      const void* input,
-                     size_t inlen,
+                     size_t      inlen,
                      const void* key,
-                     size_t keylen)
+                     size_t      keylen)
 {
     blake2b_state state;
     memset(&state, 0, sizeof(state));

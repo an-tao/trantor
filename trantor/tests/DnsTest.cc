@@ -1,5 +1,5 @@
-#include <trantor/net/Resolver.h>
 #include <iostream>
+#include <trantor/net/Resolver.h>
 void dns(const std::shared_ptr<trantor::Resolver> &resolver)
 {
     auto now = trantor::Date::now();
@@ -50,8 +50,10 @@ void dns(const std::shared_ptr<trantor::Resolver> &resolver)
 int main()
 {
     trantor::EventLoop loop;
-    auto resolver = trantor::Resolver::newResolver(&loop);
+    auto               resolver = trantor::Resolver::newResolver(&loop);
     dns(resolver);
-    loop.runAfter(1.0, [resolver]() { dns(resolver); });
+    loop.runAfter(1.0, [resolver]() {
+        dns(resolver);
+    });
     loop.loop();
 }

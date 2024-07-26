@@ -14,13 +14,13 @@
 
 #pragma once
 
-#include <trantor/utils/TaskQueue.h>
-#include <trantor/exports.h>
 #include <list>
 #include <memory>
-#include <vector>
 #include <queue>
 #include <string>
+#include <trantor/exports.h>
+#include <trantor/utils/TaskQueue.h>
+#include <vector>
 
 namespace trantor
 {
@@ -74,16 +74,16 @@ class TRANTOR_EXPORT ConcurrentTaskQueue : public TaskQueue
     ~ConcurrentTaskQueue();
 
   private:
-    size_t queueCount_;
-    std::string queueName_;
+    size_t                            queueCount_;
+    std::string                       queueName_;
 
     std::queue<std::function<void()>> taskQueue_;
-    std::vector<std::thread> threads_;
+    std::vector<std::thread>          threads_;
 
-    std::mutex taskMutex_;
-    std::condition_variable taskCond_;
-    std::atomic_bool stop_;
-    void queueFunc(int queueNum);
+    std::mutex                        taskMutex_;
+    std::condition_variable           taskCond_;
+    std::atomic_bool                  stop_;
+    void                              queueFunc(int queueNum);
 };
 
 }  // namespace trantor

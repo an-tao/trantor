@@ -20,22 +20,22 @@
 #ifndef MUDUO_NET_INETADDRESS_H
 #define MUDUO_NET_INETADDRESS_H
 
-#include <trantor/utils/Date.h>
 #include <trantor/exports.h>
+#include <trantor/utils/Date.h>
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
 using sa_family_t = unsigned short;
-using in_addr_t = uint32_t;
-using uint16_t = unsigned short;
+using in_addr_t   = uint32_t;
+using uint16_t    = unsigned short;
 #else
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #endif
+#include <mutex>
 #include <string>
 #include <unordered_map>
-#include <mutex>
 namespace trantor
 {
 /**
@@ -53,9 +53,9 @@ class TRANTOR_EXPORT InetAddress
      * @param loopbackOnly
      * @param ipv6
      */
-    InetAddress(uint16_t port = 0,
-                bool loopbackOnly = false,
-                bool ipv6 = false);
+    InetAddress(uint16_t port         = 0,
+                bool     loopbackOnly = false,
+                bool     ipv6         = false);
 
     /**
      * @brief Constructs an endpoint with given ip and port.
@@ -178,8 +178,8 @@ class TRANTOR_EXPORT InetAddress
      */
     void setSockAddrInet6(const struct sockaddr_in6 &addr6)
     {
-        addr6_ = addr6;
-        isIpV6_ = (addr6_.sin6_family == AF_INET6);
+        addr6_         = addr6;
+        isIpV6_        = (addr6_.sin6_family == AF_INET6);
         isUnspecified_ = false;
     }
 
@@ -229,7 +229,7 @@ class TRANTOR_EXPORT InetAddress
   private:
     union
     {
-        struct sockaddr_in addr_;
+        struct sockaddr_in  addr_;
         struct sockaddr_in6 addr6_;
     };
     bool isIpV6_{false};

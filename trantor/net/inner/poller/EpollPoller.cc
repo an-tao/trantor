@@ -12,22 +12,25 @@
  *
  */
 
-#include <trantor/utils/Logger.h>
-#include "Channel.h"
 #include "EpollPoller.h"
+
+#include "Channel.h"
+
+#include <trantor/utils/Logger.h>
 #ifdef __linux__
+#include <assert.h>
+#include <iostream>
 #include <poll.h>
+#include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
-#include <assert.h>
-#include <strings.h>
-#include <iostream>
 #elif defined _WIN32
 #include "Wepoll.h"
+
 #include <assert.h>
+#include <fcntl.h>
 #include <iostream>
 #include <winsock2.h>
-#include <fcntl.h>
 #define EPOLL_CLOEXEC _O_NOINHERIT
 #endif
 namespace trantor
@@ -45,8 +48,8 @@ static_assert(EPOLLHUP == POLLHUP, "EPOLLHUP != POLLHUP");
 
 namespace
 {
-const int kNew = -1;
-const int kAdded = 1;
+const int kNew     = -1;
+const int kAdded   = 1;
 const int kDeleted = 2;
 }  // namespace
 
@@ -77,7 +80,7 @@ void EpollPoller::postEvent(uint64_t event)
 #endif
 void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
 {
-    int numEvents = ::epoll_wait(epollfd_,
+    int numEvents  = ::epoll_wait(epollfd_,
                                  &*events_.begin(),
                                  static_cast<int>(events_.size()),
                                  timeoutMs);
@@ -107,7 +110,7 @@ void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
     }
     return;
 }
-void EpollPoller::fillActiveChannels(int numEvents,
+void EpollPoller::fillActiveChannels(int          numEvents,
                                      ChannelList *activeChannels) const
 {
     assert(static_cast<size_t>(numEvents) <= events_.size());
@@ -122,7 +125,7 @@ void EpollPoller::fillActiveChannels(int numEvents,
 #endif
         Channel *channel = static_cast<Channel *>(events_[i].data.ptr);
 #ifndef NDEBUG
-        int fd = channel->fd();
+        int                        fd = channel->fd();
         ChannelMap::const_iterator it = channels_.find(fd);
         assert(it != channels_.end());
         assert(it->second == channel);
@@ -204,9 +207,9 @@ void EpollPoller::update(int operation, Channel *channel)
 {
     struct epoll_event event;
     memset(&event, 0, sizeof(event));
-    event.events = channel->events();
+    event.events   = channel->events();
     event.data.ptr = channel;
-    int fd = channel->fd();
+    int fd         = channel->fd();
     if (::epoll_ctl(epollfd_, operation, fd, &event) < 0)
     {
         if (operation == EPOLL_CTL_DEL)
@@ -226,18 +229,10 @@ EpollPoller::EpollPoller(EventLoop *loop) : Poller(loop)
 {
     assert(false);
 }
-EpollPoller::~EpollPoller()
-{
-}
-void EpollPoller::poll(int, ChannelList *)
-{
-}
-void EpollPoller::updateChannel(Channel *)
-{
-}
-void EpollPoller::removeChannel(Channel *)
-{
-}
+EpollPoller::~EpollPoller() {}
+void EpollPoller::poll(int, ChannelList *) {}
+void EpollPoller::updateChannel(Channel *) {}
+void EpollPoller::removeChannel(Channel *) {}
 
 #endif
 }  // namespace trantor

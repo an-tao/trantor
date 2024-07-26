@@ -12,15 +12,16 @@
  *
  */
 
-#include <trantor/net/EventLoop.h>
-
 #include "TimerQueue.h"
+
 #include "Channel.h"
+
+#include <trantor/net/EventLoop.h>
 #ifdef __linux__
 #include <sys/timerfd.h>
 #endif
-#include <string.h>
 #include <iostream>
+#include <string.h>
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -47,7 +48,7 @@ static struct timespec howMuchTimeFromNow(const TimePoint &when)
         microSeconds = 100;
     }
     struct timespec ts;
-    ts.tv_sec = static_cast<time_t>(microSeconds / 1000000);
+    ts.tv_sec  = static_cast<time_t>(microSeconds / 1000000);
     ts.tv_nsec = static_cast<long>((microSeconds % 1000000) * 1000);
     return ts;
 }
@@ -59,7 +60,7 @@ static void resetTimerfd(int timerfd, const TimePoint &expiration)
     memset(&newValue, 0, sizeof(newValue));
     memset(&oldValue, 0, sizeof(oldValue));
     newValue.it_value = howMuchTimeFromNow(expiration);
-    int ret = ::timerfd_settime(timerfd, 0, &newValue, &oldValue);
+    int ret           = ::timerfd_settime(timerfd, 0, &newValue, &oldValue);
     if (ret)
     {
         // LOG_SYSERR << "timerfd_settime()";
@@ -68,7 +69,7 @@ static void resetTimerfd(int timerfd, const TimePoint &expiration)
 static void readTimerfd(int timerfd, const TimePoint &)
 {
     uint64_t howmany;
-    ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
+    ssize_t  n = ::read(timerfd, &howmany, sizeof howmany);
     if (n != sizeof howmany)
     {
         LOG_ERROR << "TimerQueue::handleRead() reads " << n
@@ -84,7 +85,7 @@ void TimerQueue::handleRead()
 
     std::vector<TimerPtr> expired = getExpired(now);
 
-    callingExpiredTimers_ = true;
+    callingExpiredTimers_         = true;
     // cancelingTimers_.clear();
     // safe to callback outside critical section
     for (auto const &timerPtr : expired)
@@ -113,11 +114,11 @@ static int64_t howMuchTimeFromNow(const TimePoint &when)
 void TimerQueue::processTimers()
 {
     loop_->assertInLoopThread();
-    const auto now = std::chrono::steady_clock::now();
+    const auto            now     = std::chrono::steady_clock::now();
 
     std::vector<TimerPtr> expired = getExpired(now);
 
-    callingExpiredTimers_ = true;
+    callingExpiredTimers_         = true;
     // cancelingTimers_.clear();
     // safe to callback outside critical section
     for (auto const &timerPtr : expired)
@@ -156,7 +157,7 @@ void TimerQueue::reset()
         timerfdChannelPtr_->disableAll();
         timerfdChannelPtr_->remove();
         close(timerfd_);
-        timerfd_ = createTimerfd();
+        timerfd_           = createTimerfd();
         timerfdChannelPtr_ = std::make_shared<Channel>(loop_, timerfd_);
         timerfdChannelPtr_->setReadCallback(
             std::bind(&TimerQueue::handleRead, this));
@@ -174,7 +175,7 @@ TimerQueue::~TimerQueue()
 {
 #ifdef __linux__
     auto chlPtr = timerfdChannelPtr_;
-    auto fd = timerfd_;
+    auto fd     = timerfd_;
     loop_->runInLoop([chlPtr, fd]() {
         chlPtr->disableAll();
         chlPtr->remove();
@@ -184,23 +185,27 @@ TimerQueue::~TimerQueue()
 }
 
 TimerId TimerQueue::addTimer(const TimerCallback &cb,
-                             const TimePoint &when,
-                             const TimeInterval &interval)
+                             const TimePoint     &when,
+                             const TimeInterval  &interval)
 {
     std::shared_ptr<Timer> timerPtr =
         std::make_shared<Timer>(cb, when, interval);
 
-    loop_->runInLoop([this, timerPtr]() { addTimerInLoop(timerPtr); });
+    loop_->runInLoop([this, timerPtr]() {
+        addTimerInLoop(timerPtr);
+    });
     return timerPtr->id();
 }
-TimerId TimerQueue::addTimer(TimerCallback &&cb,
-                             const TimePoint &when,
+TimerId TimerQueue::addTimer(TimerCallback     &&cb,
+                             const TimePoint    &when,
                              const TimeInterval &interval)
 {
     std::shared_ptr<Timer> timerPtr =
         std::make_shared<Timer>(std::move(cb), when, interval);
 
-    loop_->runInLoop([this, timerPtr]() { addTimerInLoop(timerPtr); });
+    loop_->runInLoop([this, timerPtr]() {
+        addTimerInLoop(timerPtr);
+    });
     return timerPtr->id();
 }
 void TimerQueue::addTimerInLoop(const TimerPtr &timer)
@@ -218,7 +223,9 @@ void TimerQueue::addTimerInLoop(const TimerPtr &timer)
 
 void TimerQueue::invalidateTimer(TimerId id)
 {
-    loop_->runInLoop([this, id]() { timerIdSet_.erase(id); });
+    loop_->runInLoop([this, id]() {
+        timerIdSet_.erase(id);
+    });
 }
 
 bool TimerQueue::insert(const TimerPtr &timerPtr)
@@ -265,7 +272,7 @@ std::vector<TimerPtr> TimerQueue::getExpired(const TimePoint &now)
     return expired;
 }
 void TimerQueue::reset(const std::vector<TimerPtr> &expired,
-                       const TimePoint &now)
+                       const TimePoint             &now)
 {
     loop_->assertInLoopThread();
     for (auto const &timerPtr : expired)

@@ -1,6 +1,6 @@
-#include <trantor/utils/Utilities.h>
-#include <trantor/utils/Logger.h>
 #include <stdlib.h>
+#include <trantor/utils/Logger.h>
+#include <trantor/utils/Utilities.h>
 
 int main()
 {
@@ -8,20 +8,20 @@ int main()
     LOG_DEBUG << "PathConversion utils test!";
 
 #ifdef _WIN32
-    std::string utf8PathStandard("C:/Temp/\xE4\xB8\xAD\xE6\x96\x87");
-    std::string utf8PathAlt("C:\\Temp\\\xE4\xB8\xAD\xE6\x96\x87");
+    std::string  utf8PathStandard("C:/Temp/\xE4\xB8\xAD\xE6\x96\x87");
+    std::string  utf8PathAlt("C:\\Temp\\\xE4\xB8\xAD\xE6\x96\x87");
     std::wstring widePathStandard(L"C:\\Temp\\\u4E2D\u6587");
     std::wstring widePathAlt(L"C:/Temp/\u4E2D\u6587");
-    std::string utf8WidePathStandard{utf8PathAlt};
-    std::string utf8WidePathAlt{utf8PathStandard};
+    std::string  utf8WidePathStandard{utf8PathAlt};
+    std::string  utf8WidePathAlt{utf8PathStandard};
 #else   // _WIN32
     std::string utf8PathStandard("/tmp/\xE4\xB8\xAD\xE6\x96\x87");
     std::string utf8PathAlt(
         "\\tmp\\\xE4\xB8\xAD\xE6\x96\x87");  // Invalid, won't be changed
     std::wstring widePathStandard(L"/tmp/\u4E2D\u6587");
     std::wstring widePathAlt(L"\\tmp\\\u4E2D\u6587");
-    std::string utf8WidePathStandard{utf8PathStandard};
-    std::string utf8WidePathAlt{utf8PathAlt};
+    std::string  utf8WidePathStandard{utf8PathStandard};
+    std::string  utf8WidePathAlt{utf8PathAlt};
 #endif  // _WIN32
 
     // 1. Check from/to UTF-8

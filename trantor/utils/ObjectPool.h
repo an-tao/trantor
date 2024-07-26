@@ -14,11 +14,11 @@
 
 #pragma once
 
-#include <trantor/utils/NonCopyable.h>
-#include <vector>
 #include <memory>
-#include <type_traits>
 #include <mutex>
+#include <trantor/utils/NonCopyable.h>
+#include <type_traits>
+#include <vector>
 
 namespace trantor
 {
@@ -71,6 +71,6 @@ class ObjectPool : public NonCopyable,
 
   private:
     std::vector<T *> objs_;
-    std::mutex mtx_;
+    std::mutex       mtx_;
 };
 }  // namespace trantor

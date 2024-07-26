@@ -13,15 +13,15 @@
  */
 
 #pragma once
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/exports.h>
-#include <vector>
-#include <string>
 #include <algorithm>
-#include <stdio.h>
 #include <assert.h>
-#include <string.h>
 #include <cstdint>
+#include <stdio.h>
+#include <string.h>
+#include <string>
+#include <trantor/exports.h>
+#include <trantor/utils/NonCopyable.h>
+#include <vector>
 #if defined(_WIN32) && !defined(_SSIZE_T_DEFINED)
 using ssize_t = std::intptr_t;
 #endif
@@ -29,7 +29,7 @@ using ssize_t = std::intptr_t;
 namespace trantor
 {
 static constexpr size_t kBufferDefaultLength{2048};
-static constexpr char CRLF[]{"\r\n"};
+static constexpr char   CRLF[]{"\r\n"};
 
 /**
  * @brief This class represents a memory buffer used for sending and receiving
@@ -347,11 +347,11 @@ class TRANTOR_EXPORT MsgBuffer
     }
 
   private:
-    size_t head_;
-    size_t initCap_;
+    size_t            head_;
+    size_t            initCap_;
     std::vector<char> buffer_;
-    size_t tail_;
-    const char *begin() const
+    size_t            tail_;
+    const char       *begin() const
     {
         return &buffer_[0];
     }

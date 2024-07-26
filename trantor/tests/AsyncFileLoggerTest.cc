@@ -1,7 +1,7 @@
-#include <trantor/utils/Logger.h>
-#include <trantor/utils/AsyncFileLogger.h>
 #include <stdlib.h>
 #include <thread>
+#include <trantor/utils/AsyncFileLogger.h>
+#include <trantor/utils/Logger.h>
 int main()
 {
     trantor::AsyncFileLogger asyncFileLogger;
@@ -11,7 +11,9 @@ int main()
         [&](const char *msg, const uint64_t len) {
             asyncFileLogger.output(msg, len);
         },
-        [&]() { asyncFileLogger.flush(); });
+        [&]() {
+            asyncFileLogger.flush();
+        });
     asyncFileLogger.setFileSizeLimit(100000000);
     //    LOG_DEBUG<<"debug log!"<<1;
     //    LOG_TRACE<<"trace log!"<<2;

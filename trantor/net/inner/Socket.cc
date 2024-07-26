@@ -12,15 +12,16 @@
  *
  */
 
-#include <trantor/utils/Logger.h>
 #include "Socket.h"
+
 #include <assert.h>
 #include <sys/types.h>
+#include <trantor/utils/Logger.h>
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #else
-#include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <sys/socket.h>
 #endif
 
 using namespace trantor;
@@ -28,7 +29,7 @@ using namespace trantor;
 bool Socket::isSelfConnect(int sockfd)
 {
     struct sockaddr_in6 localaddr = getLocalAddr(sockfd);
-    struct sockaddr_in6 peeraddr = getPeerAddr(sockfd);
+    struct sockaddr_in6 peeraddr  = getPeerAddr(sockfd);
     if (localaddr.sin6_family == AF_INET)
     {
         const struct sockaddr_in *laddr4 =

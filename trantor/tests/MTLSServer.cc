@@ -45,11 +45,11 @@
  *
  * **/
 
+#include <iostream>
+#include <string>
+#include <trantor/net/EventLoopThread.h>
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
-#include <trantor/net/EventLoopThread.h>
-#include <string>
-#include <iostream>
 using namespace trantor;
 #define USE_IPV6 0
 int main()

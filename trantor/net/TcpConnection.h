@@ -13,18 +13,18 @@
  */
 
 #pragma once
+#include <functional>
+#include <memory>
+#include <string>
 #include <trantor/exports.h>
+#include <trantor/net/AsyncStream.h>
+#include <trantor/net/Certificate.h>
 #include <trantor/net/EventLoop.h>
 #include <trantor/net/InetAddress.h>
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/MsgBuffer.h>
-#include <trantor/net/callbacks.h>
-#include <trantor/net/Certificate.h>
 #include <trantor/net/TLSPolicy.h>
-#include <trantor/net/AsyncStream.h>
-#include <memory>
-#include <functional>
-#include <string>
+#include <trantor/net/callbacks.h>
+#include <trantor/utils/MsgBuffer.h>
+#include <trantor/utils/NonCopyable.h>
 
 namespace trantor
 {
@@ -45,7 +45,7 @@ class TRANTOR_EXPORT TcpConnection
     friend class TcpClient;
 
     TcpConnection() = default;
-    virtual ~TcpConnection(){};
+    virtual ~TcpConnection() {};
 
     /**
      * @brief Send some data to the peer.
@@ -53,14 +53,14 @@ class TRANTOR_EXPORT TcpConnection
      * @param msg
      * @param len
      */
-    virtual void send(const char *msg, size_t len) = 0;
-    virtual void send(const void *msg, size_t len) = 0;
-    virtual void send(const std::string &msg) = 0;
-    virtual void send(std::string &&msg) = 0;
-    virtual void send(const MsgBuffer &buffer) = 0;
-    virtual void send(MsgBuffer &&buffer) = 0;
+    virtual void send(const char *msg, size_t len)                = 0;
+    virtual void send(const void *msg, size_t len)                = 0;
+    virtual void send(const std::string &msg)                     = 0;
+    virtual void send(std::string &&msg)                          = 0;
+    virtual void send(const MsgBuffer &buffer)                    = 0;
+    virtual void send(MsgBuffer &&buffer)                         = 0;
     virtual void send(const std::shared_ptr<std::string> &msgPtr) = 0;
-    virtual void send(const std::shared_ptr<MsgBuffer> &msgPtr) = 0;
+    virtual void send(const std::shared_ptr<MsgBuffer> &msgPtr)   = 0;
 
     /**
      * @brief Send a file to the peer.
@@ -70,8 +70,8 @@ class TRANTOR_EXPORT TcpConnection
      * @param length
      */
     virtual void sendFile(const char *fileName,
-                          long long offset = 0,
-                          long long length = 0) = 0;
+                          long long   offset = 0,
+                          long long   length = 0) = 0;
     /**
      * @brief Send a file to the peer.
      *
@@ -80,8 +80,8 @@ class TRANTOR_EXPORT TcpConnection
      * @param length
      */
     virtual void sendFile(const wchar_t *fileName,
-                          long long offset = 0,
-                          long long length = 0) = 0;
+                          long long      offset = 0,
+                          long long      length = 0) = 0;
     /**
      * @brief Send a stream to the peer.
      *
@@ -290,7 +290,7 @@ class TRANTOR_EXPORT TcpConnection
      * @note This method is only available for non-SSL connections.
      */
     virtual void startEncryption(TLSPolicyPtr policy,
-                                 bool isServer,
+                                 bool         isServer,
                                  std::function<void(const TcpConnectionPtr &)>
                                      upgradeCallback = nullptr) = 0;
     /**
@@ -300,9 +300,9 @@ class TRANTOR_EXPORT TcpConnection
     [[deprecated("Use startEncryption(TLSPolicyPtr) instead")]] void
     startClientEncryption(
         std::function<void(const TcpConnectionPtr &)> &&callback,
-        bool useOldTLS = false,
-        bool validateCert = true,
-        const std::string &hostname = "",
+        bool                                            useOldTLS    = false,
+        bool                                            validateCert = true,
+        const std::string                              &hostname     = "",
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds =
             {})
     {
@@ -362,25 +362,25 @@ class TRANTOR_EXPORT TcpConnection
 
     // TODO: These should be internal APIs
     virtual void connectEstablished() = 0;
-    virtual void connectDestroyed() = 0;
+    virtual void connectDestroyed()   = 0;
     virtual void enableKickingOff(
-        size_t timeout,
+        size_t                              timeout,
         const std::shared_ptr<TimingWheel> &timingWheel) = 0;
 
   protected:
     // callbacks
-    RecvMessageCallback recvMsgCallback_;
-    ConnectionCallback connectionCallback_;
-    CloseCallback closeCallback_;
+    RecvMessageCallback   recvMsgCallback_;
+    ConnectionCallback    connectionCallback_;
+    CloseCallback         closeCallback_;
     WriteCompleteCallback writeCompleteCallback_;
     HighWaterMarkCallback highWaterMarkCallback_;
-    SSLErrorCallback sslErrorCallback_;
-    TLSPolicy tlsPolicy_;
+    SSLErrorCallback      sslErrorCallback_;
+    TLSPolicy             tlsPolicy_;
 
   private:
     std::shared_ptr<void> contextPtr_;
 };
 TRANTOR_EXPORT SSLContextPtr newSSLContext(const TLSPolicy &policy,
-                                           bool server);
+                                           bool             server);
 
 }  // namespace trantor

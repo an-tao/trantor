@@ -15,26 +15,26 @@
 #include <trantor/utils/AsyncFileLogger.h>
 #include <trantor/utils/Utilities.h>
 #if !defined(_WIN32) || defined(__MINGW32__)
-#include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
 #else
 #include <windows.h>
 #endif
-#include <string.h>
 #include <algorithm>
-#include <iostream>
-#include <functional>
 #include <chrono>
+#include <functional>
+#include <iostream>
+#include <string.h>
 
 namespace trantor
 {
 static constexpr std::chrono::seconds kLogFlushTimeout{1};
-static constexpr size_t kMemBufferSize{4 * 1024 * 1024};
-extern const char *strerror_tl(int savedErrno);
+static constexpr size_t               kMemBufferSize{4 * 1024 * 1024};
+extern const char                    *strerror_tl(int savedErrno);
 }  // namespace trantor
 
 using namespace trantor;
@@ -64,7 +64,7 @@ AsyncFileLogger::~AsyncFileLogger()
         }
         while (!writeBuffers_.empty())
         {
-            StringPtr tmpPtr = (StringPtr &&) writeBuffers_.front();
+            StringPtr tmpPtr = (StringPtr &&)writeBuffers_.front();
             writeBuffers_.pop();
             writeLogToFile(tmpPtr);
         }
@@ -162,7 +162,7 @@ void AsyncFileLogger::logThreadFunc()
 
         while (!tmpBuffers_.empty())
         {
-            StringPtr tmpPtr = (StringPtr &&) tmpBuffers_.front();
+            StringPtr tmpPtr = (StringPtr &&)tmpBuffers_.front();
             tmpBuffers_.pop();
             writeLogToFile(tmpPtr);
             tmpPtr->clear();
@@ -185,8 +185,8 @@ void AsyncFileLogger::startLogging()
 AsyncFileLogger::LoggerFile::LoggerFile(const std::string &filePath,
                                         const std::string &fileBaseName,
                                         const std::string &fileExtName,
-                                        bool switchOnLimitOnly,
-                                        size_t maxFiles)
+                                        bool               switchOnLimitOnly,
+                                        size_t             maxFiles)
     : creationDate_(Date::date()),
       filePath_(filePath),
       fileBaseName_(fileBaseName),
@@ -223,7 +223,7 @@ void AsyncFileLogger::LoggerFile::open()
 }
 
 uint64_t AsyncFileLogger::LoggerFile::fileSeq_{0};
-void AsyncFileLogger::LoggerFile::writeLog(const StringPtr buf)
+void     AsyncFileLogger::LoggerFile::writeLog(const StringPtr buf)
 {
     if (fp_)
     {
@@ -310,9 +310,9 @@ void AsyncFileLogger::LoggerFile::initFilenameQueue()
 
     // walk through the directory and file all files
 #if !defined(_WIN32) || defined(__MINGW32__)
-    DIR *dp;
+    DIR           *dp;
     struct dirent *dirp;
-    struct stat st;
+    struct stat    st;
 
     if ((dp = opendir(filePath_.c_str())) == nullptr)
     {
@@ -383,7 +383,7 @@ void AsyncFileLogger::LoggerFile::deleteOldFiles()
 #else
         // Convert UTF-8 file to UCS-2
         auto wName{utils::toNativePath(filename)};
-        int r = _wremove(wName.c_str());
+        int  r = _wremove(wName.c_str());
 #endif
         if (r != 0)
         {

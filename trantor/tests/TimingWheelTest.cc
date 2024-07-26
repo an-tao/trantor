@@ -1,22 +1,20 @@
-#include <trantor/utils/TimingWheel.h>
-#include <trantor/utils/Logger.h>
 #include <memory>
+#include <trantor/utils/Logger.h>
+#include <trantor/utils/TimingWheel.h>
 class MyClass
 {
   public:
     MyClass();
-    MyClass(MyClass &&) = default;
-    MyClass(const MyClass &) = default;
-    MyClass &operator=(MyClass &&) = default;
+    MyClass(MyClass &&)                 = default;
+    MyClass(const MyClass &)            = default;
+    MyClass &operator=(MyClass &&)      = default;
     MyClass &operator=(const MyClass &) = default;
     ~MyClass();
 
   private:
 };
 
-MyClass::MyClass()
-{
-}
+MyClass::MyClass() {}
 
 MyClass::~MyClass()
 {
@@ -26,9 +24,9 @@ MyClass::~MyClass()
 int main()
 {
     LOG_DEBUG << "start";
-    trantor::EventLoop loop;
+    trantor::EventLoop     loop;
     std::weak_ptr<MyClass> weakEntry;
-    trantor::TimingWheel wheel(&loop, 75, 0.1, 100);
+    trantor::TimingWheel   wheel(&loop, 75, 0.1, 100);
     {
         auto entry = std::shared_ptr<MyClass>(new MyClass);
 

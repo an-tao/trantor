@@ -14,7 +14,7 @@
 
 #include <trantor/net/EventLoopThreadPool.h>
 using namespace trantor;
-EventLoopThreadPool::EventLoopThreadPool(size_t threadNum,
+EventLoopThreadPool::EventLoopThreadPool(size_t             threadNum,
                                          const std::string &name)
     : loopIndex_(0)
 {
@@ -47,7 +47,7 @@ EventLoop *EventLoopThreadPool::getNextLoop()
 {
     if (loopThreadVector_.size() > 0)
     {
-        size_t index = loopIndex_.fetch_add(1, std::memory_order_relaxed);
+        size_t     index = loopIndex_.fetch_add(1, std::memory_order_relaxed);
         EventLoop *loop =
             loopThreadVector_[index % loopThreadVector_.size()]->getLoop();
         return loop;

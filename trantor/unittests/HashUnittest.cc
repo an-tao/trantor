@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
-
-#include <trantor/utils/Utilities.h>
-
-#include <string>
 #include <iostream>
+#include <string>
+#include <trantor/utils/Utilities.h>
 using namespace trantor;
 using namespace trantor::utils;
 

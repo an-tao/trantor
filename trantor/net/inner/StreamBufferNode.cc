@@ -30,7 +30,7 @@ class StreamBufferNode : public BufferNode
             }
         }
         data = msgBuffer_.peek();
-        len = msgBuffer_.readableBytes();
+        len  = msgBuffer_.readableBytes();
     }
     void retrieve(size_t len) override
     {

@@ -24,8 +24,10 @@ jobs:
         run: |
           # Installing packages might fail as the github image becomes outdated
           sudo apt update
-          sudo apt install dos2unix clang-format
+          sudo apt install dos2unix
           pip install cmake-format
+          # Default clang-format version is too old, some new clang-format options are not supported. Install newest stable llvm version
+          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh) && apt install -y clang-format-\$LLVM_VERSION && ln -snf /usr/bin/clang-format-\$LLVM_VERSION /usr/bin/clang-format"
 
       - name: Lint
         run: ./format.sh && git diff --exit-code

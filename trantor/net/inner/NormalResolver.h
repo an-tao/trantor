@@ -6,12 +6,12 @@
 // Author: Tao An
 
 #pragma once
-#include <trantor/net/Resolver.h>
-#include <trantor/utils/NonCopyable.h>
-#include <trantor/utils/ConcurrentTaskQueue.h>
 #include <memory>
-#include <vector>
 #include <thread>
+#include <trantor/net/Resolver.h>
+#include <trantor/utils/ConcurrentTaskQueue.h>
+#include <trantor/utils/NonCopyable.h>
+#include <vector>
 
 namespace trantor
 {
@@ -22,8 +22,8 @@ class NormalResolver : public Resolver,
 {
   public:
     virtual void resolve(const std::string& hostname,
-                         const Callback& callback) override;
-    virtual void resolve(const std::string& hostname,
+                         const Callback&    callback) override;
+    virtual void resolve(const std::string&             hostname,
                          const ResolverResultsCallback& callback) override
     {
         resolve(hostname, [callback](const trantor::InetAddress& inet) {
@@ -34,9 +34,7 @@ class NormalResolver : public Resolver,
         : timeout_(timeout), resolveBuffer_(kResolveBufferLength)
     {
     }
-    virtual ~NormalResolver()
-    {
-    }
+    virtual ~NormalResolver() {}
 
   private:
     static std::unordered_map<std::string,
@@ -63,7 +61,7 @@ class NormalResolver : public Resolver,
             "Dns Queue");
         return queue;
     }
-    const size_t timeout_;
+    const size_t      timeout_;
     std::vector<char> resolveBuffer_;
 };
 }  // namespace trantor
