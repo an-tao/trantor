@@ -387,7 +387,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
     loop_->assertInLoopThread();
     if (status_ != ConnStatus::Connected)
     {
-        LOG_WARN << "Connection is not connected,give up sending";
+        LOG_DEBUG << "Connection is not connected,give up sending";
         return;
     }
     ssize_t sendLen = 0;
