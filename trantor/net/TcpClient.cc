@@ -113,6 +113,9 @@ void TcpClient::connect()
             ptr->connectionErrorCallback_();
         }
     });
+    if (socketErrorCallback_)
+        connector_->setSockErrorCallback(socketErrorCallback_);
+
     connect_ = true;
     connector_->start();
 }
