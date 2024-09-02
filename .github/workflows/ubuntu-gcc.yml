@@ -7,75 +7,105 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: '${{matrix.link}}-${{matrix.build-type}}-${{matrix.tls-provider}}'
+  build-opt-off:
+    name: "${{matrix.link}}-${{matrix.build-type}}-opt-off"
     runs-on: ubuntu-latest
+    env:
+      shared: ${{matrix.link == 'SHARED' && 'ON' || 'OFF'}}
     strategy:
       fail-fast: false
       matrix:
-        link: [ 'STATIC', 'SHARED' ]
-        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-        build-type: ['Debug', 'Release']
-        # TODO: ubuntu botan is v2, v2 support is removed
-        # tls-provider: ['', 'openssl', 'botan']
-        tls-provider: ['', 'openssl']
+        link: ["STATIC", "SHARED"]
+        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, MinSizeRel, etc.)
+        build-type: ["Debug", "Release"]
+        # Support (none, openssl, botan-3, auto)
+        tls-provider: ["none"]
 
     steps:
-    - name: Install dependencies
-      run: |
-        # Installing packages might fail as the github image becomes outdated
-        sudo apt update
-        sudo apt install libspdlog-dev libfmt-dev
+      - name: Install dependencies
+        run: |
+          sudo apt install libgtest-dev -y
 
-    - name: Install dependencies - OpenSSL
-      if: matrix.tls-provider == 'openssl'
-      run: |
-        sudo apt install openssl libssl-dev
-        
-    - name: Install gtest
-      run: |
-        wget https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz
-        tar xf v1.13.0.tar.gz
-        cd googletest-1.13.0
-        cmake .       
-        make -j && sudo make install
+      - name: Checkout Trantor source code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
 
-    - name: Checkout Trantor source code
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-        fetch-depth: 0
+      - name: Configure Cmake
+        run: |
+          cmake -B build -S . \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DBUILD_SHARED_LIBS=$shared \
+          -DFETCH_BUILD_MISSING_DEPS=OFF \
+          -DTRANTOR_USE_SPDLOG=OFF \
+          -DTRANTOR_USE_C-ARES=OFF \
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} \
+          -DBUILD_TESTING=ON
 
-    - name: Create build directory
-      run: |
-        mkdir build
+      - name: Build
+        working-directory: ./build
+        run: |
+          make -j4
 
-    - name: Create Build Environment & Configure Cmake
-      shell: bash
-      working-directory: ./build
-      if: ${{matrix.link}} == "SHARED" 
-      run: |
-        [[ ${{ matrix.link }} == "SHARED" ]] && shared="ON" || shared="OFF"
-        cmake .. \
-        -DTRANTOR_USE_TLS=${{matrix.tls-provider}} \
-        -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
-        -DBUILD_SHARED_LIBS=$shared \
-        -DCMAKE_INSTALL_PREFIX=../install \
-        -DUSE_SPDLOG=ON \
-        -DBUILD_TESTING=ON  
+      - name: Test
+        working-directory: ./build
+        run: |
+          make test
 
-    - name: Build
-      shell: bash
-      working-directory: ./build
-      # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: |
-        sudo make && sudo make install
+  build-opt-on:
+    name: "${{matrix.link}}-${{matrix.build-type}}-TLS:${{matrix.tls-provider}}"
+    runs-on: ubuntu-latest
+    env:
+      shared: ${{matrix.link == 'SHARED' && 'ON' || 'OFF'}}
+    strategy:
+      fail-fast: false
+      matrix:
+        link: ["STATIC", "SHARED"]
+        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, MinSizeRel, etc.)
+        build-type: ["Debug", "Release"]
+        # Support (none, openssl, botan-3, auto), ubuntu apt provide botan2
+        tls-provider: ["openssl", "botan-3"]
 
-    - name: Test
-      working-directory: ./build
-      shell: bash
-      # Execute tests defined by the CMake configuration.  
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: |
-        make test
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt install libgtest-dev libspdlog-dev libc-ares-dev -y
 
+      - name: Allow '/usr/local' to install deps
+        run: |
+          sudo chmod -R 0777 /usr/local
+
+      - uses: actions/cache@v4
+        id: ubuntu-cache
+        with:
+          path: |
+            /usr/local/Botan
+          key: ubuntu-${{matrix.build-type}}-${{matrix.tls-provider}}
+
+      - name: Checkout Trantor source code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Configure Cmake
+        run: |
+          cmake -B build -S . \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DBUILD_SHARED_LIBS=$shared \
+          -DFETCH_BUILD_MISSING_DEPS=ON \
+          -DTRANTOR_USE_SPDLOG=ON \
+          -DTRANTOR_USE_C-ARES=ON \
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} \
+          -DBUILD_TESTING=ON
+
+      - name: Build
+        working-directory: ./build
+        run: |
+          make -j4
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          make test
