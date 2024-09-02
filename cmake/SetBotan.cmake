@@ -67,7 +67,6 @@ macro(set_botan)
   endif()
   if(TARGET Botan::Botan)
     target_link_libraries(${PROJECT_NAME} PRIVATE Botan::Botan)
-    target_compile_features(Botan::Botan INTERFACE cxx_std_20)
   endif()
 
   list(

@@ -23,6 +23,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
   # /MTd")
 endif()
 
+# Clang
+if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
+  # add -fexperimental-library for clang, to use c20 ranges
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexperimental-library")
+endif()
+
 # Clang|GNU not windows
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang|GNU)
   if(NOT

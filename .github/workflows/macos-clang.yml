@@ -68,7 +68,7 @@ jobs:
         build-type: ["Debug", "Release"]
         # Botan needs std::ranges but clang on macOS doesn't support it yet
         # Support (none, openssl, botan-3, auto)
-        tls-provider: ["openssl"]
+        tls-provider: ["openssl", "botan-3"]
 
     steps:
       - name: Install dependencies
