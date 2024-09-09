@@ -7,18 +7,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: '${{matrix.link}}-${{matrix.build-type}}-${{matrix.tls-provider}}'
+  build-opt-off:
+    name: "${{matrix.link}}-${{matrix.build-type}}-opt-off"
     runs-on: windows-latest
+    env:
+      shared: ${{matrix.link == 'SHARED' && 'ON' || 'OFF'}}
     strategy:
       fail-fast: false
       matrix:
-        link: [ 'STATIC', 'SHARED' ]
-        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-        build-type: ['Debug', 'Release']
-        # TODO: conan botan is v2, v2 support is removed
-        # tls-provider: ['', 'openssl', 'botan']
-        tls-provider: ['', 'openssl']
+        link: ["STATIC", "SHARED"]
+        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, MinSizeRel, etc.)
+        build-type: ["Debug", "Release"]
+        # Support (none, openssl, botan-3, botan-2, auto)
+        tls-provider: ["none"]
 
     steps:
       - name: Checkout Trantor source code
@@ -26,37 +27,146 @@ jobs:
         with:
           submodules: false
 
-      - name: Create build directory
-        working-directory: ${{env.GITHUB_WORKSPACE}}
+      - name: Configure Cmake
         run: |
-          mkdir build
-
-      - name: Install conan packages
-        shell: bash
-        working-directory: ./build
-        run: |
-          pip install conan
-          conan profile detect --force
-          conan install .. --output-folder=. --build=missing --settings=build_type=${{matrix.build-type}} --settings=compiler="msvc"
-
-      - name: Create Build Environment & Configure Cmake
-        shell: bash
-        working-directory: ./build
-        # -DBUILD_TESTING=ON Removed, 
-        # Due to unittest by GTest in windows runner will comes out 'error MSB3073'
-        run: |
-          [[ ${{ matrix.link }} == "SHARED" ]] && shared="ON" || shared="OFF"
-          cmake .. -G "Visual Studio 17 2022" -T host=x64 -A x64 \
-          -DTRANTOR_USE_TLS=${{matrix.tls-provider}} \
-          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
-          -DBUILD_SHARED_LIBS=$shared \
-          -DCMAKE_INSTALL_PREFIX=../install \
-          -DUSE_SPDLOG=ON \
-          -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
+          cmake -B build -S . `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DFETCH_BUILD_MISSING_DEPS=ON `
+          -DTRANTOR_USE_SPDLOG=OFF `
+          -DTRANTOR_USE_C-ARES=OFF `
+          -DBUILD_TESTING=ON `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
 
       - name: Build
         working-directory: ./build
-        shell: bash
         # multi config build using --config to switch Release|Debug
         run: |
-          cmake --build . --config ${{matrix.build-type}} --parallel
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest -C ${{matrix.build-type}}
+
+  build-opt-on-conan:
+    name: "${{matrix.link}}-${{matrix.build-type}}-conan-TLS:${{matrix.tls-provider}}"
+    runs-on: windows-latest
+    env:
+      shared: ${{matrix.link == 'SHARED' && 'ON' || 'OFF'}}
+    strategy:
+      fail-fast: false
+      matrix:
+        link: ["STATIC", "SHARED"]
+        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, MinSizeRel, etc.)
+        build-type: ["Debug", "Release"]
+        # Support (none, openssl, botan-3, auto)
+        tls-provider: ["openssl", "botan-3"]
+
+    steps:
+      - name: Checkout Trantor source code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: actions/cache@v4
+        id: conan-cache
+        with:
+          path: |
+            C:\\Users\\runneradmin\\.conan2
+          key: windows-conan-${{matrix.build-type}}-${{ hashFiles('conanfile.txt') }}
+
+      - name: Install conan packages
+        run: |
+          pip install conan
+          conan profile detect --force
+          cmake -B build -S . `
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} `
+          -DFETCH_BUILD_MISSING_DEPS=OFF `
+          -DTRANTOR_USE_SPDLOG=ON `
+          -DTRANTOR_USE_C-ARES=ON `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=ON `
+          -DUPDATE_CONAN_FILE=ON `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
+
+      - name: Configure Cmake
+        run: |
+          cmake -B build -S . --fresh `
+          -DCMAKE_TOOLCHAIN_FILE="./build/conan_toolchain.cmake" `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DFETCH_BUILD_MISSING_DEPS=OFF `
+          -DTRANTOR_USE_SPDLOG=ON `
+          -DTRANTOR_USE_C-ARES=ON `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=OFF `
+          -DCMAKE_POLICY_DEFAULT_CMP0091=NEW `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
+
+      - name: Build
+        working-directory: ./build
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest -C ${{matrix.build-type}}
+
+  build-opt-on-fetch:
+    name: "${{matrix.link}}-${{matrix.build-type}}-fetch-TLS:${{matrix.tls-provider}}"
+    runs-on: windows-latest
+    env:
+      shared: ${{matrix.link == 'SHARED' && 'ON' || 'OFF'}}
+    strategy:
+      fail-fast: false
+      matrix:
+        link: ["STATIC", "SHARED"]
+        # Customize the CMake build type here (Release, Debug, RelWithDebInfo, MinSizeRel, etc.)
+        build-type: ["Debug", "Release"]
+        # Support (none, openssl, botan-3, auto)
+        tls-provider: ["openssl", "botan-3"]
+
+    steps:
+      - name: Checkout Trantor source code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      # This step let nmake/ninja could work
+      - name: Setup MSVC-DEV-CMD        
+        uses: seanmiddleditch/gha-setup-vsdevenv@master
+
+      - uses: actions/cache@v4
+        id: cmake-fetch-content-cache
+        with:
+          path: |
+            C:/Botan
+            C:/OpenSSL
+            C:/c-ares
+          key: windows-fetch-${{matrix.build-type}}-${{matrix.tls-provider}}
+
+      - name: Configure Cmake
+        # passing "-DFETCHCONTENT_BASE_DIR=D:/a/trantor/_deps" to keep cache
+        run: |
+          cmake -B build -S . `
+          -DBUILD_SHARED_LIBS=$shared `
+          -DFETCH_BUILD_MISSING_DEPS=ON `
+          -DTRANTOR_USE_SPDLOG=ON `
+          -DTRANTOR_USE_C-ARES=ON `
+          -DTRANTOR_TLS_PROVIDER=${{matrix.tls-provider}} `
+          -DBUILD_TESTING=OFF `
+          -DFETCHCONTENT_BASE_DIR=D:/a/trantor/_deps `
+          -G "Visual Studio 17 2022" -T host=x64 -A x64
+
+      - name: Build
+        working-directory: ./build
+        # multi config build using --config to switch Release|Debug
+        run: |
+          cmake --build . --config ${{matrix.build-type}} --target ALL_BUILD
+
+      - name: Test
+        working-directory: ./build
+        run: |
+          ctest -C ${{matrix.build-type}}
