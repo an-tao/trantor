@@ -260,6 +260,26 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
         sslContextPtr_ = newSSLContext(*policyPtr_, true);
     }
 
+    /**
+     * @brief Reload the SSL context.
+     * @note Call this function when the certificate or private key is updated. 
+     * The server will reload the SSL context and use the new certificate and private key.
+     * new connections will use the new SSL context.
+     */
+    void reloadSSL(){
+        if (loop_->isInLoopThread()){
+            if (policyPtr_) {
+                sslContextPtr_ = newSSLContext(*policyPtr_, true);
+            }
+        } else {
+            loop_->runInLoop([this]() {
+                if (policyPtr_) {
+                    sslContextPtr_ = newSSLContext(*policyPtr_, true);
+                }
+            });
+        }
+    }
+
   private:
     void handleCloseInLoop(const TcpConnectionPtr &connectionPtr);
     void newConnection(int fd, const InetAddress &peer);
