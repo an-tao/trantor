@@ -239,15 +239,15 @@ void TcpServer::reloadSSL()
 {
     if (loop_->isInLoopThread())
     {
-        if (policyPtr_) 
+        if (policyPtr_)
         {
             sslContextPtr_ = newSSLContext(*policyPtr_, true);
         }
-    } 
-    else 
+    }
+    else
     {
         loop_->queueInLoop([this]() {
-            if (policyPtr_) 
+            if (policyPtr_)
             {
                 sslContextPtr_ = newSSLContext(*policyPtr_, true);
             }

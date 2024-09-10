@@ -262,9 +262,9 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
 
     /**
      * @brief Reload the SSL context.
-     * @note Call this function when the certificate or private key is updated. 
-     * The server will reload the SSL context and use the new certificate and private key.
-     * new connections will use the new SSL context.
+     * @note Call this function when the certificate or private key is updated.
+     * The server will reload the SSL context and use the new certificate and
+     * private key. new connections will use the new SSL context.
      */
     void reloadSSL();
 
