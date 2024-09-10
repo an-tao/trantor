@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.21] - 2024-09-10
+
+### API changes list
+
+- Add a method to reload the SSL certificate and private key on the fly.
+
+### Changed
+
+- Keep log level consistency.
+
 ## [1.5.20] - 2024-07-20
 
 ### Changed
@@ -668,7 +678,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.20...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.21...HEAD
+
+[1.5.21]: https://github.com/an-tao/trantor/compare/v1.5.20...v1.5.21
 
 [1.5.20]: https://github.com/an-tao/trantor/compare/v1.5.19...v1.5.20
 
