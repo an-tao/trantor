@@ -234,3 +234,23 @@ void TcpServer::enableSSL(
         .setValidate(caPath.empty() ? false : true);
     sslContextPtr_ = newSSLContext(*policyPtr_, true);
 }
+
+void TcpServer::reloadSSL()
+{
+    if (loop_->isInLoopThread())
+    {
+        if (policyPtr_)
+        {
+            sslContextPtr_ = newSSLContext(*policyPtr_, true);
+        }
+    }
+    else
+    {
+        loop_->queueInLoop([this]() {
+            if (policyPtr_)
+            {
+                sslContextPtr_ = newSSLContext(*policyPtr_, true);
+            }
+        });
+    }
+}
