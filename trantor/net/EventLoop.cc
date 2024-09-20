@@ -138,7 +138,6 @@ EventLoop::~EventLoop()
 #endif
     }
 
-    t_loopInThisThread = nullptr;
 #ifdef __linux__
     close(wakeupFd_);
 #elif defined _WIN32
@@ -256,7 +255,7 @@ void EventLoop::loop()
     {
         f();
     }
-
+    t_loopInThisThread = nullptr;
     // Throw the exception from the end
     if (loopException)
     {
