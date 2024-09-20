@@ -288,8 +288,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
 #endif
         return logLevel;
     }
-    static std::function<void(const char *msg, const uint64_t len)>
-        &outputFunc_()
+    static std::function<void(const char *msg, const uint64_t len)> &
+    outputFunc_()
     {
         static std::function<void(const char *msg, const uint64_t len)>
             outputFunc = Logger::defaultOutputFunction;
@@ -300,8 +300,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         static std::function<void()> flushFunc = Logger::defaultFlushFunction;
         return flushFunc;
     }
-    static std::function<void(const char *msg, const uint64_t len)>
-        &outputFunc_(size_t index)
+    static std::function<void(const char *msg, const uint64_t len)> &
+    outputFunc_(size_t index)
     {
         static std::vector<
             std::function<void(const char *msg, const uint64_t len)>>
