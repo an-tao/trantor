@@ -218,6 +218,7 @@ void AresResolver::onQueryResult(int status,
         addrItem.first = inets_ptr;
         addrItem.second = trantor::Date::date();
     }
+    ares_freeaddrinfo(result);
     callback(*inets_ptr);
 }
 
