@@ -202,6 +202,7 @@ void AresResolver::onQueryResult(int status,
                 // TODO: Handle unknown family?
             }
         }
+        ares_freeaddrinfo(result);
     }
     if (inets_ptr->empty())
     {
@@ -218,7 +219,6 @@ void AresResolver::onQueryResult(int status,
         addrItem.first = inets_ptr;
         addrItem.second = trantor::Date::date();
     }
-    ares_freeaddrinfo(result);
     callback(*inets_ptr);
 }
 
