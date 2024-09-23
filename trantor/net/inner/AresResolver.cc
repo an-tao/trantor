@@ -202,6 +202,7 @@ void AresResolver::onQueryResult(int status,
                 // TODO: Handle unknown family?
             }
         }
+        ares_freeaddrinfo(result);
     }
     if (inets_ptr->empty())
     {
