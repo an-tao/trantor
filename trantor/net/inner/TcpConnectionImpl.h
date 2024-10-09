@@ -249,6 +249,7 @@ class TcpConnectionImpl : public TcpConnection,
     ssize_t writeRaw(const char *buffer, size_t length);
     // -1: error, 0: EAGAIN, >0: bytes sent
     ssize_t writeInLoop(const char *buffer, size_t length);
+    int sendBufSize_;
 #endif
     size_t highWaterMarkLen_{0};
     std::string name_;
