@@ -83,10 +83,12 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     ioChannelPtr_->setErrorCallback([this]() { handleError(); });
     socketPtr_->setKeepAlive(true);
     name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
+#ifdef _WIN32
     int size = sizeof(sendBufSize_);
     ::getsockopt(
         socketPtr_->fd(), SOL_SOCKET, SO_SNDBUF, (char *)&sendBufSize_, &size);
-    LOG_TRACE << "Send buffer size: " << sendBufSize_ << " bytes";
+    LOG_TRACE << "System sending buffer size: " << sendBufSize_ << " bytes";
+#endif
     if (policy != nullptr)
     {
         tlsProviderPtr_ =
