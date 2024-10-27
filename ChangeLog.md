@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.22] - 2024-10-27
+
+### Fixed
+
+- Fix a bug in the dtor of EventLoop.
+
+- Free leaked memory in ares resolver.
+
 ## [1.5.21] - 2024-09-10
 
 ### API changes list
@@ -678,7 +686,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.21...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.22...HEAD
+
+[1.5.22]: https://github.com/an-tao/trantor/compare/v1.5.21...v1.5.22
 
 [1.5.21]: https://github.com/an-tao/trantor/compare/v1.5.20...v1.5.21
 
