@@ -69,6 +69,31 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     void stop();
 
     /**
+     * @brief Start UserInput thread
+     *
+     */
+    void startUserInput(const TcpConnectionPtr &conn);
+
+    /**
+     * @brief UserInput thread for chat
+     *
+     */
+    void UserInput(const TcpConnectionPtr &conn) const;
+
+    /**
+     * @brief struct for user information
+     *
+     */
+    struct User
+    {
+        User(const std::string &user) :
+            username(user) {}
+        User() :
+              username("anonymous") {}
+        std::string username;
+    } m_user;
+
+    /**
      * @brief Get the TCP connection to the server.
      *
      * @return TcpConnectionPtr
@@ -231,6 +256,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
         sslContextPtr_ = newSSLContext(*tlsPolicyPtr_, false);
     }
 
+    TcpConnectionPtr connection_;  // @GuardedBy mutex_
   private:
     /// Not thread safe, but in loop
     void newConnection(int sockfd);
@@ -249,7 +275,6 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     std::atomic_bool connect_;  // atomic
     // always in loop thread
     mutable std::mutex mutex_;
-    TcpConnectionPtr connection_;  // @GuardedBy mutex_
     TLSPolicyPtr tlsPolicyPtr_;
     SSLContextPtr sslContextPtr_;
     bool validateCert_{false};

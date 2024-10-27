@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 project(trantor)
 
+set(CMAKE_CXX_STANDARD                  17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS                OFF)
+
 option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_C-ARES "Build C-ARES" ON)
 option(BUILD_TESTING "Build tests" OFF)
@@ -37,6 +41,10 @@ set(INSTALL_TRANTOR_CMAKE_DIR
     CACHE PATH "Installation directory for cmake files"
 )
 
+add_executable(server src/TcpServerTest.cc)
+target_link_libraries(server ${PROJECT_NAME})
+add_executable(client src/TcpClientTest.cc)
+target_link_libraries(client ${PROJECT_NAME})
 add_library(${PROJECT_NAME})
 if(BUILD_SHARED_LIBS)
   list(

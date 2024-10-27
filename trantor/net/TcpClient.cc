@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <atomic>
 #include <memory>
+#include <thread>
 
 #include "Socket.h"
 
@@ -136,6 +137,26 @@ void TcpClient::stop()
     connector_->stop();
 }
 
+void TcpClient::startUserInput(const TcpConnectionPtr &conn)
+{
+    std::thread inputThread([conn]()
+    {
+        TcpClient::User u1;
+        std::string userInput;
+        while(userInput != "/quit")
+        {
+            std::cout << u1.username << ": ";
+            std::getline(std::cin, userInput);
+            if(!userInput.empty())
+            {
+                conn->send(userInput);
+            }
+        }
+        this->disconnect();
+    });
+    inputThread.detach();
+}
+
 void TcpClient::setSockOptCallback(SockOptCallback &&cb)
 {
     connector_->setSockOptCallback(std::move(cb));
@@ -198,6 +219,7 @@ void TcpClient::newConnection(int sockfd)
             self->sslErrorCallback_(err);
     });
     conn->connectEstablished();
+    startUserInput(connection_);
 }
 
 void TcpClient::removeConnection(const TcpConnectionPtr &conn)
