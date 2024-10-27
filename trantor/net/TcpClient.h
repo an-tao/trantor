@@ -78,7 +78,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
      * @brief UserInput thread for chat
      *
      */
-    void UserInput(const TcpConnectionPtr &conn) const;
+    void UserInput(const TcpConnectionPtr &conn);
 
     /**
      * @brief struct for user information
@@ -257,6 +257,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     }
 
     TcpConnectionPtr connection_;  // @GuardedBy mutex_
+    std::thread t1;
   private:
     /// Not thread safe, but in loop
     void newConnection(int sockfd);
