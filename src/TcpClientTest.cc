@@ -53,12 +53,14 @@ int main()
 #endif
     });
     client->setConnectionCallback(
-            [&loop, &connCount](const TcpConnectionPtr &conn) {
+            [&client, &loop, &connCount](const TcpConnectionPtr &conn) {
             if (conn->connected())
             {
-            LOG_DEBUG << " connected!";
-            std::string tmp = " client!!";
+            //LOG_DEBUG << " connected!";
+            std::string tmp = client->m_user.username;
+            tmp += " connected\n";
             conn->send(tmp);
+            client->startUserInput(conn);
             }
             else
             {
@@ -70,7 +72,8 @@ int main()
             });
     client->setMessageCallback(
             [](const TcpConnectionPtr &conn, MsgBuffer *buf) {
-            LOG_DEBUG << std::string(buf->peek(), buf->readableBytes());
+            // std::cout << std::string(buf->peek(), buf->readableBytes());
+            //LOG_DEBUG << std::string(buf->peek(), buf->readableBytes());
             buf->retrieveAll();
             // conn->shutdown();
             });

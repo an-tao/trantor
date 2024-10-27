@@ -5,6 +5,7 @@
 #include <iostream>
 using namespace trantor;
 #define USE_IPV6 0
+
 int main()
 {
     LOG_DEBUG << "test start";
@@ -24,17 +25,21 @@ int main()
         std::cout << "afterAcceptSockOptCallback:" << fd << std::endl;
     });
     server.setRecvMessageCallback(
-        [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
-            // LOG_DEBUG<<"recv callback!";
-            std::cout << std::string(buffer->peek(), buffer->readableBytes());
+        [&server](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
+            std::string input;
+            LOG_DEBUG<<"recv callback!";
+            input = std::string(buffer->peek(), buffer->readableBytes());
+            server.ParseInput(connectionPtr, input);
+            std::cout << input << std::endl;
             connectionPtr->send(buffer->peek(), buffer->readableBytes());
             buffer->retrieveAll();
             // connectionPtr->forceClose();
         });
-    server.setConnectionCallback([](const TcpConnectionPtr &connPtr) {
+    server.setConnectionCallback([&server](const TcpConnectionPtr &connPtr) {
         if (connPtr->connected())
         {
             LOG_DEBUG << "New connection";
+            server.AddUser(connPtr);
         }
         else if (connPtr->disconnected())
         {

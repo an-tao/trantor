@@ -22,6 +22,7 @@
 #include <atomic>
 #include <memory>
 #include <thread>
+#include <sstream>
 
 #include "Socket.h"
 
@@ -65,7 +66,9 @@ TcpClient::TcpClient(EventLoop *loop,
       connectionCallback_(defaultConnectionCallback),
       messageCallback_(defaultMessageCallback),
       retry_(false),
-      connect_(true)
+      connect_(true),
+      mutex_()
+
 {
     (void)validateCert_;
     LOG_TRACE << "TcpClient::TcpClient[" << name_ << "] - connector ";
@@ -137,53 +140,100 @@ void TcpClient::stop()
     connector_->stop();
 }
 
+void TcpClient::ChangeNick(std::string nick)
+{
+    if(!nick.empty())
+    {
+        this->m_user.username = nick;
+    }
+    else
+    {
+        std::cerr << "nick is null" << std::endl;
+    }
+}
+
+void TcpClient::ParseInput(std::string input)
+{
+
+    std::stringstream stream(input);
+    std::string token;
+
+    if(!input.empty())
+    {
+        stream >> token;
+
+        if (token == "/nick")
+        {
+            std::cout << "nick detected" << std::endl;
+            stream >> token;
+            ChangeNick(token);
+        }
+        else
+        {
+            //std::cout << token << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "ParseInput: input parameter is null" << std::endl;
+    }
+
+}
+
 void TcpClient::startUserInput(const TcpConnectionPtr &conn)
 {
-    //void (TcpClient::*func)(const TcpConnectionPtr &conn);
-    auto func = std::bind(&TcpClient::UserInput, this, std::placeholders::_1);
-    //func = std::bind(&TcpClient::UserInput, this, std::placeholders::_1);
+    auto func = std::bind(&TcpClient::UserInput, this, _1);
+    //t1 = std::thread(func);
 
     if(t1.joinable())
     {
         t1.join();
-    }
+    }        
     t1 = std::thread(func, conn);
-    //std::thread t1(func, conn);
-    /*
-    std::thread inputThread([conn]()
-    {
-        TcpClient::User u1;
-        std::string userInput;
-        while(userInput != "/quit")
-        {
-            std::cout << u1.username << ": ";
-            std::getline(std::cin, userInput);
-            if(!userInput.empty())
-            {
-                conn->send(userInput);
-            }
-        }
-        this->disconnect();
-    });
-    */
 }
 
 void TcpClient::UserInput(const TcpConnectionPtr &conn)
 {
-    TcpClient::User u1;
+    //TcpConnectionPtr conn = this->connection();
     std::string userInput;
+
+
+    //std::cerr << "getting connection\n" << std::endl;
+    //const TcpConnectionPtr conn = connection();
+    //std::lock_guard<std::mutex> lock(this->mutex_);
+
+    if(!conn || !conn->connected())
+    {
+        std::cerr << "ParseInput: conn is null or not connected" << std::endl;
+    }
+    else
+    {
+        std::cout << "ParseInput: conn is good" << std::endl;
+    }
+
     while(userInput != "/quit")
     {
-        std::cout << u1.username << ": ";
+        std::cout << this->m_user.username << ": ";
         std::getline(std::cin, userInput);
         if(!userInput.empty())
         {
-            conn->send(userInput);
+            ParseInput(userInput);
+            if(!conn || !conn->connected())
+            {
+                std::cerr << "UserInput: conn is null or not connected" << std::endl;
+            }
+            else
+            {
+                conn->send(userInput);
+            }
         }
     }
     this->disconnect();
-    this->t1.detach();
+    conn->shutdown();
+    std::exit(0);
+    //this->t1.detach();
 }
+
 void TcpClient::setSockOptCallback(SockOptCallback &&cb)
 {
     connector_->setSockOptCallback(std::move(cb));
@@ -246,7 +296,6 @@ void TcpClient::newConnection(int sockfd)
             self->sslErrorCallback_(err);
     });
     conn->connectEstablished();
-    startUserInput(connection_);
 }
 
 void TcpClient::removeConnection(const TcpConnectionPtr &conn)

@@ -26,6 +26,8 @@
 #include <set>
 #include <string>
 
+#define MAX_CONNECTIONS 10
+
 namespace trantor
 {
 class Acceptor;
@@ -64,6 +66,55 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      *
      */
     void stop();
+
+    /**
+     * @brief max connections
+     *
+     */
+
+    int m_max_conn;
+
+    /**
+     * @brief Struct for Users
+     *
+     */
+    struct User
+    {
+        User(const std::string &user) :
+            username(user) {}
+        User() :
+            tcp_ptr(nullptr),
+            username{"anon"}, 
+            connected(false) {}
+
+        TcpConnectionPtr tcp_ptr;
+        std::string username;
+        bool connected;
+    } m_user;
+
+    /**
+     * @brief Array to hold User info
+     *
+     */
+    std::array<User, MAX_CONNECTIONS> m_user_array;
+
+    /**
+     * @brief Add user
+     *
+     */
+    void AddUser(const TcpConnectionPtr &tcp);
+
+    /**
+     * @brief Change Nick
+     *
+     */
+    void ChangeNick(const TcpConnectionPtr &tcp, std::string& nick);
+
+    /**
+     * @brief Parse Input from the clients
+     *
+     */
+    void ParseInput(const TcpConnectionPtr &ptr, const std::string& input);
 
     /**
      * @brief Set the number of event loops in which the I/O of connections to

@@ -16,8 +16,10 @@
 #include <trantor/utils/Logger.h>
 #include <functional>
 #include <vector>
+#include <sstream>
 #include "Acceptor.h"
 #include "inner/TcpConnectionImpl.h"
+
 using namespace trantor;
 using namespace std::placeholders;
 
@@ -45,6 +47,65 @@ TcpServer::~TcpServer()
 {
     // loop_->assertInLoopThread();
     LOG_TRACE << "TcpServer::~TcpServer [" << serverName_ << "] destructing";
+}
+
+
+void TcpServer::AddUser(const TcpConnectionPtr &tcp)
+{
+    m_user_array[0].tcp_ptr = tcp; 
+    m_user_array[0].connected = true;
+}
+
+void TcpServer::ChangeNick(const TcpConnectionPtr &tcp, std::string& nick)
+{
+    for (std::size_t i = 0; i < m_user_array.size(); i++)
+    {
+        if (m_user_array[i].tcp_ptr == tcp)
+        {
+            if (m_user_array[i].username != nick)   
+            {
+                m_user_array[i].username = nick;
+                std::cout << "nick has been updated to " << nick << std::endl; 
+                break;
+            }
+            else
+            {
+                tcp->send("Cannot change your nick to the same nick");
+            }
+        }
+        else
+        {
+            std::cerr << "Cannot find user in the m_user_array" << std::endl;
+        }
+
+    }
+}
+
+void TcpServer::ParseInput(const TcpConnectionPtr &tcp, const std::string& input)
+{
+    std::string token;
+    std::stringstream stream(input);
+
+    if(!input.empty())
+    {
+        stream >> token;
+
+        if(token == "/nick")
+        {
+            std::cout << "token 1 = " << token << std::endl;
+            stream >> token;
+            std::cout << "token 2 = " << token << std::endl;
+            if(token != "/nick")
+            {
+               ChangeNick(tcp, token);
+            }
+        }
+    }
+    else
+    {
+        std::cerr << "ParseInput: input parameter is null" << std::endl;
+    }
+
 }
 
 void TcpServer::setBeforeListenSockOptCallback(SockOptCallback cb)
