@@ -56,6 +56,19 @@ void TcpServer::AddUser(const TcpConnectionPtr &tcp)
     m_user_array[0].connected = true;
 }
 
+TcpServer::User* TcpServer::FindUser(const TcpConnectionPtr &tcp)
+{
+    for (std::size_t i = 0; i < m_user_array.size(); i++)
+    {
+        if (m_user_array[i].tcp_ptr == tcp)
+        {
+            return &m_user_array[i];
+        }
+    }
+    std::cerr << "Could not find user" << std::endl;
+    return nullptr;
+}
+
 void TcpServer::ChangeNick(const TcpConnectionPtr &tcp, std::string& nick)
 {
     for (std::size_t i = 0; i < m_user_array.size(); i++)
@@ -81,10 +94,12 @@ void TcpServer::ChangeNick(const TcpConnectionPtr &tcp, std::string& nick)
     }
 }
 
-void TcpServer::ParseInput(const TcpConnectionPtr &tcp, const std::string& input)
+const std::string TcpServer::ParseInput(const TcpConnectionPtr &tcp, const std::string& input)
 {
     std::string token;
     std::stringstream stream(input);
+
+    User *user = FindUser(tcp);
 
     if(!input.empty())
     {
@@ -105,6 +120,9 @@ void TcpServer::ParseInput(const TcpConnectionPtr &tcp, const std::string& input
     {
         std::cerr << "ParseInput: input parameter is null" << std::endl;
     }
+
+    return user->username;
+
 
 }
 

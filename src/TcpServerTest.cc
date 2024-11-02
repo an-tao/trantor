@@ -27,10 +27,11 @@ int main()
     server.setRecvMessageCallback(
         [&server](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             std::string input;
+            std::string user;
             LOG_DEBUG<<"recv callback!";
             input = std::string(buffer->peek(), buffer->readableBytes());
-            server.ParseInput(connectionPtr, input);
-            std::cout << input << std::endl;
+            user = server.ParseInput(connectionPtr, input);
+            std::cout << user << ": " << input << std::endl;
             connectionPtr->send(buffer->peek(), buffer->readableBytes());
             buffer->retrieveAll();
             // connectionPtr->forceClose();

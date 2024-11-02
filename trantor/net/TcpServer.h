@@ -81,7 +81,10 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     struct User
     {
         User(const std::string &user) :
-            username(user) {}
+            tcp_ptr(nullptr),
+            username(user),
+            connected(false) {}
+            
         User() :
             tcp_ptr(nullptr),
             username{"anon"}, 
@@ -90,7 +93,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
         TcpConnectionPtr tcp_ptr;
         std::string username;
         bool connected;
-    } m_user;
+    } user;
 
     /**
      * @brief Array to hold User info
@@ -105,6 +108,12 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     void AddUser(const TcpConnectionPtr &tcp);
 
     /**
+     * @brief Find user in struct User
+     *
+     */
+    User* FindUser(const TcpConnectionPtr &tcp);
+
+    /**
      * @brief Change Nick
      *
      */
@@ -114,7 +123,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      * @brief Parse Input from the clients
      *
      */
-    void ParseInput(const TcpConnectionPtr &ptr, const std::string& input);
+    const std::string ParseInput(const TcpConnectionPtr &ptr, const std::string& input);
 
     /**
      * @brief Set the number of event loops in which the I/O of connections to
