@@ -25,6 +25,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <array>
 
 #define MAX_CONNECTIONS 10
 
@@ -84,16 +85,16 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
             tcp_ptr(nullptr),
             username(user),
             connected(false) {}
-            
+
         User() :
             tcp_ptr(nullptr),
-            username{"anon"}, 
+            username("anon"),
             connected(false) {}
 
         TcpConnectionPtr tcp_ptr;
         std::string username;
         bool connected;
-    } user;
+    };
 
     /**
      * @brief Array to hold User info
