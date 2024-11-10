@@ -49,6 +49,82 @@ TcpServer::~TcpServer()
     LOG_TRACE << "TcpServer::~TcpServer [" << serverName_ << "] destructing";
 }
 
+void TcpServer::kickUser(std::string user)
+{
+    std::cout << "checking to see if user is online" << std::endl;
+    for (size_t i = 0; i < this->m_user_array.size(); i++)
+    {
+        if (user == this->m_user_array[i].username)
+        {
+            this->connectionClosed(this->m_user_array[i].tcp_ptr);
+            std::cout << "Kicking user " << this->m_user_array[i].username <<
+                " off" << std::endl;
+            this->m_user_array[i].connected = false;
+            this->m_user_array[i].tcp_ptr = nullptr;
+        }
+    }
+}
+
+void TcpServer::parseCommand(std::string input)
+{
+    std::stringstream stream(input);
+    std::string token;
+
+    if (!input.empty())
+    {
+        stream >> token;
+
+        if (token == "/list")
+        {
+            std::cout << "Online Users" << std::endl;
+            for (size_t i = 0; i < this->m_user_array.size(); i++)
+            {
+                if (this->m_user_array[i].connected == true)
+                {
+                    std::cout << this->m_user_array[i].username << std::endl;
+                }
+            }
+        }
+        else if (token == "/kick")
+        {
+            stream >> token; 
+            if (token != "/kick")
+            {
+                std::cout << "Attempting to give " << token <<
+                    " the boot" << std::endl;
+                kickUser(token);
+            }
+
+        }
+    }
+} 
+
+void TcpServer::startCommand()
+{
+    auto func = std::bind(&TcpServer::Command, this);
+    if (c1.joinable())
+    {
+        c1.join();
+    }
+    c1 = std::thread(func);
+}
+
+void TcpServer::Command()
+{
+    std::string input;
+    std::cout << "Starting Server Command Shell" << std::endl;        
+    while (input != "/quit")
+    {
+        std::cout << "Command: ";
+        std::getline(std::cin, input);
+        if (!input.empty())
+        {
+            parseCommand(input);
+        }
+    }
+    std::cout << "Closing command shell" << std::endl;
+    std::exit(0);
+}
 
 void TcpServer::AddUser(const TcpConnectionPtr &tcp)
 {
@@ -62,7 +138,7 @@ void TcpServer::AddUser(const TcpConnectionPtr &tcp)
         }
     }
     std::cerr << "Max connections of " << this->m_max_conn <<
-        " has already been reached" < std::endl;
+        " has already been reached" << std::endl;
 }
 
 TcpServer::User* TcpServer::FindUser(const TcpConnectionPtr &tcp)

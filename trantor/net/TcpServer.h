@@ -103,6 +103,31 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
     std::array<User, m_max_conn> m_user_array;
 
     /**
+     * @brief Kick user off
+     *
+     */
+    void kickUser(std::string user);
+
+    /**
+     * @brief Parse input forth the command shell
+     *
+     */
+    void parseCommand(std::string input);
+
+    /**
+     * @brief Start the Command thread
+     *
+     */
+    void startCommand();
+    std::thread c1;
+
+    /**
+     * @brief Command Shell
+     *
+     */
+    void Command();
+
+    /**
      * @brief Add user
      *
      */

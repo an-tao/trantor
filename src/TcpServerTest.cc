@@ -24,6 +24,7 @@ int main()
     server.setAfterAcceptSockOptCallback([](int fd) {
         std::cout << "afterAcceptSockOptCallback:" << fd << std::endl;
     });
+    server.startCommand();
     server.setRecvMessageCallback(
         [&server](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
             std::string input;
