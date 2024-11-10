@@ -52,8 +52,17 @@ TcpServer::~TcpServer()
 
 void TcpServer::AddUser(const TcpConnectionPtr &tcp)
 {
-    m_user_array[0].tcp_ptr = tcp; 
-    m_user_array[0].connected = true;
+    for (size_t i = 0; i < this->m_max_conn; i++)
+    {
+        if (m_user_array[i].tcp_ptr == nullptr)
+        {
+            m_user_array[i].tcp_ptr = tcp; 
+            m_user_array[i].connected = true;
+            break;
+        }
+    }
+    std::cerr << "Max connections of " << this->m_max_conn <<
+        " has already been reached" < std::endl;
 }
 
 TcpServer::User* TcpServer::FindUser(const TcpConnectionPtr &tcp)
@@ -119,6 +128,7 @@ const std::string TcpServer::ParseInput(const TcpConnectionPtr &tcp, const std::
     else
     {
         std::cerr << "ParseInput: input parameter is null" << std::endl;
+        return nullptr; 
     }
 
     return user->username;

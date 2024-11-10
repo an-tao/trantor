@@ -73,7 +73,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      *
      */
 
-    int m_max_conn;
+    static const int m_max_conn = MAX_CONNECTIONS;
 
     /**
      * @brief Struct for Users
@@ -100,7 +100,7 @@ class TRANTOR_EXPORT TcpServer : NonCopyable
      * @brief Array to hold User info
      *
      */
-    std::array<User, MAX_CONNECTIONS> m_user_array;
+    std::array<User, m_max_conn> m_user_array;
 
     /**
      * @brief Add user

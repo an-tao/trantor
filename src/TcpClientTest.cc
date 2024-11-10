@@ -72,7 +72,7 @@ int main()
             });
     client->setMessageCallback(
             [](const TcpConnectionPtr &conn, MsgBuffer *buf) {
-            // std::cout << std::string(buf->peek(), buf->readableBytes());
+            std::cout << std::string(buf->peek(), buf->readableBytes());
             //LOG_DEBUG << std::string(buf->peek(), buf->readableBytes());
             buf->retrieveAll();
             // conn->shutdown();
