@@ -112,6 +112,25 @@ TEST(Date, DatabaseStringTest)
     auto epoch = dbDateGMT.microSecondsSinceEpoch();
     EXPECT_EQ(epoch, 0);
 }
+TEST(Date, TimezoneTest)
+{
+    std::string str0 = "2024-01-01 04:00:00.123";
+    std::string str1 = "2024-01-01 12:00:00.123 +08:00";
+    std::string str2 = "2024-01-01 11:00:00.123+0700";
+    std::string str3 = "2024-01-01 10:00:00.123 0600";
+    std::string str4 = "2024-01-01 03:00:00.123 -01:00";
+    std::string str5 = "2024-01-01 02:00:00.123-02:00";
+    std::string str6 = "2024-01-01 01:00:00.123 -0300";
+
+    auto date = trantor::Date::fromDbString(str0);
+    for (auto &s : {str1, str2, str3, str4, str5, str6})
+    {
+        auto dateTz = trantor::Date::parseDatetimeTz(s);
+        EXPECT_EQ(date.microSecondsSinceEpoch(),
+                  dateTz.microSecondsSinceEpoch());
+    }
+}
+
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
