@@ -45,7 +45,7 @@ class TRANTOR_EXPORT FixedBuffer : NonCopyable
 
     bool append(const char * /*restrict*/ buf, size_t len)
     {
-        if ((size_t)(avail()) > len)
+        if ((size_t)(avail()) > len && buf)
         {
             memcpy(cur_, buf, len);
             cur_ += len;
