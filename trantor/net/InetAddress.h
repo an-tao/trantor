@@ -219,7 +219,7 @@ class TRANTOR_EXPORT InetAddress
     }
 
     /**
-     * @brief Return true if the address is not initalized.
+     * @brief Return true if the address is not initialized.
      */
     inline bool isUnspecified() const
     {

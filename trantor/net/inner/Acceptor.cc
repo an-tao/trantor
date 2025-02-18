@@ -83,7 +83,7 @@ void Acceptor::readCallback()
     }
     else
     {
-        LOG_SYSERR << "Accpetor::readCallback";
+        LOG_SYSERR << "Acceptor::readCallback";
 // Read the section named "The special problem of
 // accept()ing when you can't" in libev's doc.
 // By Marc Lehmann, author of libev.

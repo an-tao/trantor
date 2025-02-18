@@ -902,7 +902,7 @@ int init(void)
         /* `InitOnceExecuteOnce()` itself is infallible, and it doesn't set any
          * error code when the once-callback returns FALSE. We return -1 here to
          * indicate that global initialization failed; the failing init function
-         * is resposible for setting `errno` and calling `SetLastError()`. */
+         * is responsible for setting `errno` and calling `SetLastError()`. */
         return -1;
 
     return 0;

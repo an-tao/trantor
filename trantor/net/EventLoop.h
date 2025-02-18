@@ -45,7 +45,7 @@ enum
 
 /**
  * @brief As the name implies, this class represents an event loop that runs in
- * a perticular thread. The event loop can handle network I/O events and timers
+ * a particular thread. The event loop can handle network I/O events and timers
  * in asynchronous mode.
  * @note An event loop object always belongs to a separate thread, and there is
  * one event loop object at most in a thread. We can call an event loop object

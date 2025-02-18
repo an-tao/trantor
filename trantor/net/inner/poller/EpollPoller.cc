@@ -53,7 +53,7 @@ const int kDeleted = 2;
 EpollPoller::EpollPoller(EventLoop *loop)
     : Poller(loop),
 #ifdef _WIN32
-      // wepoll does not suppor flags
+      // wepoll does not support flags
       epollfd_(::epoll_create1(0)),
 #else
       epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
@@ -85,7 +85,7 @@ void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
     // Timestamp now(Timestamp::now());
     if (numEvents > 0)
     {
-        // LOG_TRACE << numEvents << " events happended";
+        // LOG_TRACE << numEvents << " events happened";
         fillActiveChannels(numEvents, activeChannels);
         if (static_cast<size_t>(numEvents) == events_.size())
         {
@@ -94,7 +94,7 @@ void EpollPoller::poll(int timeoutMs, ChannelList *activeChannels)
     }
     else if (numEvents == 0)
     {
-        // std::cout << "nothing happended" << std::endl;
+        // std::cout << "nothing happened" << std::endl;
     }
     else
     {

@@ -59,7 +59,7 @@ void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
     // Timestamp now(Timestamp::now());
     if (numEvents > 0)
     {
-        // LOG_TRACE << numEvents << " events happended";
+        // LOG_TRACE << numEvents << " events happened";
         fillActiveChannels(numEvents, activeChannels);
         if (static_cast<size_t>(numEvents) == events_.size())
         {
@@ -68,7 +68,7 @@ void KQueue::poll(int timeoutMs, ChannelList *activeChannels)
     }
     else if (numEvents == 0)
     {
-        // std::cout << "nothing happended" << std::endl;
+        // std::cout << "nothing happened" << std::endl;
     }
     else
     {

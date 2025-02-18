@@ -30,7 +30,7 @@ PollPoller::PollPoller(EventLoop* loop) : Poller(loop)
 {
     std::call_once(warning_flag, []() {
         LOG_WARN << "Creating a PollPoller. This poller is slow and should "
-                    "only be used when no other pollers are avaliable";
+                    "only be used when no other pollers are available";
     });
 }
 

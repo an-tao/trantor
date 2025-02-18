@@ -487,6 +487,6 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
 
     if (policy.getUseOldTLS())
         LOG_WARN << "SSLPloicy have set useOldTLS to true. BUt Botan does not "
-                    "support TLS/SSL below TLS 1.2. Ignoreing this option.";
+                    "support TLS/SSL below TLS 1.2. Ignoring this option.";
     return ctx;
 }

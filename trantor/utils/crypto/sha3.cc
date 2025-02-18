@@ -33,7 +33,7 @@ void trantor_sha3_keccakf(uint64_t st[25])
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
     uint8_t *v;
 
-    // endianess conversion. this is redundant on little-endian targets
+    // endianness conversion. this is redundant on little-endian targets
     for (i = 0; i < 25; i++)
     {
         v = (uint8_t *)&st[i];
@@ -82,7 +82,7 @@ void trantor_sha3_keccakf(uint64_t st[25])
     }
 
 #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-    // endianess conversion. this is redundant on little-endian targets
+    // endianness conversion. this is redundant on little-endian targets
     for (i = 0; i < 25; i++)
     {
         v = (uint8_t *)&st[i];

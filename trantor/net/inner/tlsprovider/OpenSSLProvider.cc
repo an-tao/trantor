@@ -133,7 +133,7 @@ static bool validatePeerCertificate(SSL *ssl,
 {
     assert(ssl != nullptr);
     assert(cert != nullptr);
-    LOG_TRACE << "Validating peer cerificate";
+    LOG_TRACE << "Validating peer certificate";
 
     if (isServer)
     {
