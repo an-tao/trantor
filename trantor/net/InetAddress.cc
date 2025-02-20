@@ -207,7 +207,7 @@ static void byteToChars(std::string::iterator& dst, unsigned char byte)
 }
 
 static constexpr char stringInitBuffer[15]{};
-std::string iptos(unsigned inet_addr)
+static std::string iptos(unsigned inet_addr)
 {
     // Initialize with a static buffer to force the constructor of string to get fully inlined
     std::string out(stringInitBuffer, 15);
