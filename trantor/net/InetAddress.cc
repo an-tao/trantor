@@ -196,16 +196,40 @@ bool InetAddress::isLoopbackIp() const
     return false;
 }
 
+static void byteToChars(std::string::iterator &dst, unsigned char byte)
+{
+    *dst = byte / 100 + '0';
+    dst += byte >= 100;
+    *dst = byte % 100 / 10 + '0';
+    dst += byte >= 10;
+    *dst = byte % 10 + '0';
+    ++dst;
+}
+
+static std::string iptos(unsigned inet_addr)
+{
+    // Initialize with a static buffer to force the constructor of string to get
+    // fully inlined
+    constexpr char stringInitBuffer[15]{};
+    std::string out(stringInitBuffer, 15);
+    std::string::iterator dst = out.begin();
+    byteToChars(dst, inet_addr >> 0 & 0xff);
+    *(dst++) = '.';
+    byteToChars(dst, inet_addr >> 8 & 0xff);
+    *(dst++) = '.';
+    byteToChars(dst, inet_addr >> 16 & 0xff);
+    *(dst++) = '.';
+    byteToChars(dst, inet_addr >> 24 & 0xff);
+    out.erase(dst, out.end());
+    return out;
+}
+
 std::string InetAddress::toIp() const
 {
-    char buf[64];
+    char buf[INET6_ADDRSTRLEN]{};
     if (addr_.sin_family == AF_INET)
     {
-#if defined _WIN32
-        ::inet_ntop(AF_INET, (PVOID)&addr_.sin_addr, buf, sizeof(buf));
-#else
-        ::inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
-#endif
+        return iptos(addr_.sin_addr.s_addr);
     }
     else if (addr_.sin_family == AF_INET6)
     {
