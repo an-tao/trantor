@@ -196,7 +196,7 @@ bool InetAddress::isLoopbackIp() const
     return false;
 }
 
-static void byteToChars(std::string::iterator& dst, unsigned char byte)
+static void byteToChars(std::string::iterator &dst, unsigned char byte)
 {
     *dst = byte / 100 + '0';
     dst += byte >= 100;
@@ -208,7 +208,8 @@ static void byteToChars(std::string::iterator& dst, unsigned char byte)
 
 static std::string iptos(unsigned inet_addr)
 {
-    // Initialize with a static buffer to force the constructor of string to get fully inlined
+    // Initialize with a static buffer to force the constructor of string to get
+    // fully inlined
     constexpr char stringInitBuffer[15]{};
     std::string out(stringInitBuffer, 15);
     std::string::iterator dst = out.begin();
