@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.23] - 2025-02-20
+
+### Changed
+
+- Replace ipv4 inet_ntop with a handrolled function.
+
+### Fixed
+
+- Fix some typos.
+
 ## [1.5.22] - 2024-10-27
 
 ### Fixed
@@ -686,7 +696,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.22...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.23...HEAD
+
+[1.5.23]: https://github.com/an-tao/trantor/compare/v1.5.22...v1.5.23
 
 [1.5.22]: https://github.com/an-tao/trantor/compare/v1.5.21...v1.5.22
 
