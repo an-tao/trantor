@@ -206,10 +206,10 @@ static void byteToChars(std::string::iterator& dst, unsigned char byte)
     ++dst;
 }
 
-static constexpr char stringInitBuffer[15]{};
 static std::string iptos(unsigned inet_addr)
 {
     // Initialize with a static buffer to force the constructor of string to get fully inlined
+    constexpr char stringInitBuffer[15]{};
     std::string out(stringInitBuffer, 15);
     std::string::iterator dst = out.begin();
     byteToChars(dst, inet_addr >> 0 & 0xff);
