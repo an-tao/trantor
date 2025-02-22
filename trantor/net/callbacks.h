@@ -16,6 +16,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 namespace trantor
 {
 enum class SSLError
@@ -34,6 +35,7 @@ using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 using RecvMessageCallback =
     std::function<void(const TcpConnectionPtr &, MsgBuffer *)>;
 using ConnectionErrorCallback = std::function<void()>;
+using SocketErrorCallback = std::function<void(std::string)>;
 using ConnectionCallback = std::function<void(const TcpConnectionPtr &)>;
 using CloseCallback = std::function<void(const TcpConnectionPtr &)>;
 using WriteCompleteCallback = std::function<void(const TcpConnectionPtr &)>;
