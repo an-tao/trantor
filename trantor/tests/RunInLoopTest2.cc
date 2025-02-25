@@ -8,8 +8,8 @@
 
 int main()
 {
-    std::atomic<uint64_t> counter;
-    counter = 0;
+    // Local variable to be used within the loopThread
+    uint64_t counter = 0;
     std::promise<int> pro;
     auto ft = pro.get_future();
     trantor::EventLoopThread loopThread;
@@ -20,7 +20,7 @@ int main()
         {
             loop->queueInLoop([&counter, &pro]() {
                 ++counter;
-                if (counter.load() == 110000)
+                if (counter == 110000)
                     pro.set_value(1);
             });
         }
@@ -32,7 +32,7 @@ int main()
             {
                 loop->runInLoop([&counter, &pro]() {
                     ++counter;
-                    if (counter.load() == 110000)
+                    if (counter == 110000)
                         pro.set_value(1);
                 });
             }
@@ -40,5 +40,5 @@ int main()
     }
     loopThread.run();
     ft.get();
-    std::cout << "counter=" << counter.load() << std::endl;
+    std::cout << "counter=" << counter << std::endl;
 }
