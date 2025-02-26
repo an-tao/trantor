@@ -4,22 +4,31 @@
 # c-ares_FOUND - system has c-ares
 # C-ARES_INCLUDE_DIRS - The c-ares include directory
 # C-ARES_LIBRARIES - Link these to use c-ares
-# c-ares_lib - Imported Targets
+# c-ares - Imported Targets
 #
 # Copyright (c) 2020 antao <antao2002@gmail.com>
 #]]
 
-find_path(C-ARES_INCLUDE_DIRS ares.h)
-find_library(C-ARES_LIBRARIES NAMES cares)
+find_path(
+  C-ARES_INCLUDE_DIRS
+  NAMES ares.h
+  HINTS ${C-ARES_DIR}/include
+)
+find_library(
+  C-ARES_LIBRARIES
+  NAMES cares
+  HINTS ${C-ARES_DIR}/lib
+)
 if(C-ARES_INCLUDE_DIRS AND C-ARES_LIBRARIES)
-  add_library(c-ares_lib INTERFACE IMPORTED)
-  set_target_properties(
-    c-ares_lib
-    PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${C-ARES_INCLUDE_DIRS}" INTERFACE_LINK_LIBRARIES "${C-ARES_LIBRARIES}"
-  )
+  if(NOT TARGET c-ares::cares)
+    add_library(c-ares::cares INTERFACE IMPORTED)
+    set_target_properties(
+      c-ares::cares
+      PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${C-ARES_INCLUDE_DIRS}" INTERFACE_LINK_LIBRARIES "${C-ARES_LIBRARIES}"
+    )
+  endif()
 endif()
-
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   c-ares
