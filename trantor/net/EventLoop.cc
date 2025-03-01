@@ -45,6 +45,7 @@ using ssize_t = long long;
 #include <algorithm>
 #include <signal.h>
 #include <fcntl.h>
+#include <exception>
 
 namespace trantor
 {
