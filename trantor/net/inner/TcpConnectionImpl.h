@@ -202,10 +202,23 @@ class TcpConnectionImpl : public TcpConnection,
         idleTimeout_ = timeout;
         timingWheel->insertEntry(timeout, entry);
     }
+    size_t getBufferedDataLength() const override
+    {
+        loop_->assertInLoopThread();
+        size_t len = 0;
+        if (tlsProviderPtr_)
+        {
+            len += tlsProviderPtr_->getBufferedData().readableBytes();
+        }
+        for (auto &node : writeBufferList_)
+        {
+            len += node->remainingBytes();
+        }
+        return len;
+    }
 
   private:
     /// Internal use only.
-
     std::weak_ptr<KickoffEntry> kickoffEntry_;
     std::weak_ptr<TimingWheel> timingWheelWeakPtr_;
     size_t idleTimeout_{0};
@@ -213,6 +226,7 @@ class TcpConnectionImpl : public TcpConnection,
     Date lastTimingWheelUpdateTime_;
     void extendLife();
     void sendFile(BufferNodePtr &&fileNode);
+    void checkBufferedDataSize();
 
   protected:
     enum class ConnStatus
@@ -249,6 +263,7 @@ class TcpConnectionImpl : public TcpConnection,
     ssize_t writeRaw(const char *buffer, size_t length);
     // -1: error, 0: EAGAIN, >0: bytes sent
     ssize_t writeInLoop(const char *buffer, size_t length);
+    int sendBufSize_;
 #endif
     size_t highWaterMarkLen_{0};
     std::string name_;
