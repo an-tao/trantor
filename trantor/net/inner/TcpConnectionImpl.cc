@@ -634,6 +634,10 @@ void TcpConnectionImpl::sendStream(
                 writeBufferList_.push_back(std::move(node));
             return;
         }
+        else
+        {
+            writeBufferList_.push_back(std::move(node));
+        }
     }
     else
     {
