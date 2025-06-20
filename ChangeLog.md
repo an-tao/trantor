@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.24] - 2025-06-20
+
+### Changed
+
+- refactor: replace atomic counter with plain int in RunInLoopTest2.
+
+### Fixed
+- Fix compile errors in some case.
+
+- Fix a bug when sending streams.
+
 ## [1.5.23] - 2025-02-20
 
 ### Changed
@@ -696,7 +707,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.23...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.24...HEAD
+
+[1.5.24]: https://github.com/an-tao/trantor/compare/v1.5.23...v1.5.24
 
 [1.5.23]: https://github.com/an-tao/trantor/compare/v1.5.22...v1.5.23
 
