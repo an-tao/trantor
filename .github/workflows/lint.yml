@@ -24,8 +24,7 @@ jobs:
         run: |
           # Installing packages might fail as the github image becomes outdated
           sudo apt update
-          sudo apt install dos2unix clang-format
-          pip install cmake-format
+          sudo apt install dos2unix clang-format cmake-format
 
       - name: Lint
         run: ./format.sh && git diff --exit-code
