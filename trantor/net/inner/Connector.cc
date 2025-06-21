@@ -11,6 +11,7 @@
  *
  *
  */
+#include <sstream>
 
 #include "Connector.h"
 #include "Channel.h"
@@ -78,7 +79,18 @@ void Connector::startInLoop()
 void Connector::connect()
 {
     socketHanded_ = false;
-    fd_ = Socket::createNonblockingSocketOrDie(serverAddr_.family());
+    bool flag = (socketErrorCallback_ ? false : true);
+    fd_ = Socket::createNonblockingSocketOrDie(serverAddr_.family(), flag);
+    if (fd_ < 0)
+    {
+        std::stringstream error;
+        if (errno != 0)
+        {
+            error << strerror_tl(errno) << " (errno=" << errno << ") ";
+        }
+        socketErrorCallback_(error.str());
+        return;
+    }
     if (sockOptCallback_)
         sockOptCallback_(fd_);
     errno = 0;
