@@ -19,6 +19,9 @@ set(TRANTOR_VERSION ${TRANTOR_MAJOR_VERSION}.${TRANTOR_MINOR_VERSION}.${TRANTOR_
 
 include(GNUInstallDirs)
 # Offer the user the choice of overriding the installation directories
+# 更加友好的支持qtcreator，使用install前缀
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/)
+
 set(INSTALL_BIN_DIR
     ${CMAKE_INSTALL_BINDIR}
     CACHE PATH "Installation directory for binaries"
