@@ -285,7 +285,8 @@ Date Date::fromDbStringLocal(const std::string &datetime)
                  second = {0}, microSecond = {0};
     std::vector<std::string> &&v = splitString(datetime, " ");
 
-    if(v.size()==0){
+    if (v.size() == 0)
+    {
         throw std::invalid_argument("Invalid date string: " + datetime);
     }
     const std::vector<std::string> date = splitString(v[0], "-");
@@ -312,7 +313,8 @@ Date Date::fromDbStringLocal(const std::string &datetime)
     if (v.size() == 2)
     {
         // Format YYYY-MM-DD HH:MM:SS[.UUUUUU] is given
-        try{
+        try
+        {
             year = std::stol(date[0]);
             month = std::stol(date[1]);
             day = std::stol(date[2]);
@@ -336,12 +338,14 @@ Date Date::fromDbStringLocal(const std::string &datetime)
                     microSecond = std::stol(seconds[1]);
                 }
             }
-        }catch(...){
+        }
+        catch (...)
+        {
             throw std::invalid_argument("Invalid date string: " + datetime);
         }
         return Date(year, month, day, hour, minute, second, microSecond);
     }
-    
+
     throw std::invalid_argument("Invalid date string: " + datetime);
 }
 

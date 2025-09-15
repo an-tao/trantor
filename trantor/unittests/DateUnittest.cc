@@ -110,7 +110,7 @@ TEST(Date, DatabaseStringTest)
     dbString = "1970-01-01";
     dbDateGMT = trantor::Date::fromDbString(dbString);
     auto epoch = dbDateGMT.microSecondsSinceEpoch();
-    EXPECT_EQ(epoch,0);
+    EXPECT_EQ(epoch, 0);
 }
 int main(int argc, char **argv)
 {
