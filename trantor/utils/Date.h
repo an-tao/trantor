@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <string>
 
-#define MICRO_SECONDS_PRE_SEC 1000000LL
+#define MICRO_SECONDS_PER_SEC 1000000LL
 
 namespace trantor
 {
@@ -183,7 +183,7 @@ class TRANTOR_EXPORT Date
      */
     int64_t secondsSinceEpoch() const
     {
-        return microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC;
+        return microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC;
     }
 
     /**
@@ -333,8 +333,8 @@ class TRANTOR_EXPORT Date
      */
     bool isSameSecond(const Date &date) const
     {
-        return microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC ==
-               date.microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC;
+        return microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC ==
+               date.microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC;
     }
 
     /**
