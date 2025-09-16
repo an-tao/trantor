@@ -21,7 +21,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <iostream>
 
 using namespace trantor;
 using namespace trantor::detail;
@@ -30,33 +29,32 @@ namespace trantor
 {
 namespace detail
 {
-const char digits[] = "9876543210123456789";
-const char *zero = digits + 9;
+constexpr char digits[] = "9876543210123456789";
+constexpr const char *const zero = digits + 9;
 
-const char digitsHex[] = "0123456789ABCDEF";
+constexpr const char digitsHex[] = "0123456789ABCDEF";
 
 // Efficient Integer to String Conversions, by Matthew Wilson.
 template <typename T>
-size_t convert(char buf[], T value)
+size_t convert(char *buf, T value)
 {
-    T i = value;
+    if (value < 0)
+    {
+        *buf++ = '-';
+    }
     char *p = buf;
 
     do
     {
-        int lsd = static_cast<int>(i % 10);
-        i /= 10;
+        int lsd = static_cast<int>(value % 10);
+        value /= 10;
         *p++ = zero[lsd];
-    } while (i != 0);
+    } while (value != 0);
 
-    if (value < 0)
-    {
-        *p++ = '-';
-    }
     *p = '\0';
     std::reverse(buf, p);
 
-    return p - buf;
+    return static_cast<size_t>(p - buf);
 }
 
 size_t convertHex(char buf[], uintptr_t value)
@@ -74,7 +72,7 @@ size_t convertHex(char buf[], uintptr_t value)
     *p = '\0';
     std::reverse(buf, p);
 
-    return p - buf;
+    return static_cast<size_t>(p - buf);
 }
 
 template class FixedBuffer<kSmallBuffer>;
@@ -211,7 +209,7 @@ LogStream &LogStream::operator<<(const double &v)
         if (buffer_.avail() >= kMaxNumericSize)
         {
             int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12g", v);
-            buffer_.add(len);
+            buffer_.add(static_cast<size_t>(len));
             return *this;
         }
         else
@@ -222,7 +220,7 @@ LogStream &LogStream::operator<<(const double &v)
     auto oldLen = exBuffer_.length();
     exBuffer_.resize(oldLen + kMaxNumericSize);
     int len = snprintf(&(exBuffer_[oldLen]), kMaxNumericSize, "%.12g", v);
-    exBuffer_.resize(oldLen + len);
+    exBuffer_.resize(oldLen + static_cast<size_t>(len));
     return *this;
 }
 
@@ -234,7 +232,7 @@ LogStream &LogStream::operator<<(const long double &v)
         if (buffer_.avail() >= kMaxNumericSize)
         {
             int len = snprintf(buffer_.current(), kMaxNumericSize, "%.12Lg", v);
-            buffer_.add(len);
+            buffer_.add(static_cast<size_t>(len));
             return *this;
         }
         else
@@ -245,15 +243,16 @@ LogStream &LogStream::operator<<(const long double &v)
     auto oldLen = exBuffer_.length();
     exBuffer_.resize(oldLen + kMaxNumericSize);
     int len = snprintf(&(exBuffer_[oldLen]), kMaxNumericSize, "%.12Lg", v);
-    exBuffer_.resize(oldLen + len);
+    exBuffer_.resize(oldLen + static_cast<size_t>(len));
     return *this;
 }
 
 template <typename T>
 Fmt::Fmt(const char *fmt, T val)
 {
-    length_ = snprintf(buf_, sizeof buf_, fmt, val);
-    assert(static_cast<size_t>(length_) < sizeof buf_);
+    length_ =
+        static_cast<decltype(length_)>(snprintf(buf_, sizeof(buf_), fmt, val));
+    assert(static_cast<size_t>(length_) < sizeof(buf_));
 }
 
 // Explicit instantiations

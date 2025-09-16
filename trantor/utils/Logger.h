@@ -133,8 +133,8 @@ class TRANTOR_EXPORT Logger : public NonCopyable
         }
         else
         {
-            outputFunc_(index) = outputFunc;
-            flushFunc_(index) = flushFunc;
+            outputFunc_(static_cast<size_t>(index)) = outputFunc;
+            flushFunc_(static_cast<size_t>(index)) = flushFunc;
         }
     }
 

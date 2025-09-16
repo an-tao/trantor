@@ -161,17 +161,23 @@ std::string toUtf8(const std::wstring &wstr)
 
     std::string strTo;
 #ifdef _WIN32
-    int nSizeNeeded = ::WideCharToMultiByte(
-        CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+    int nSizeNeeded = ::WideCharToMultiByte(CP_UTF8,
+                                            0,
+                                            &wstr[0],
+                                            static_cast<int>(wstr.size()),
+                                            nullptr,
+                                            0,
+                                            nullptr,
+                                            nullptr);
     strTo.resize(nSizeNeeded, 0);
     ::WideCharToMultiByte(CP_UTF8,
                           0,
                           &wstr[0],
-                          (int)wstr.size(),
+                          static_cast<int>(wstr.size()),
                           &strTo[0],
                           nSizeNeeded,
-                          NULL,
-                          NULL);
+                          nullptr,
+                          nullptr);
 #elif __cplusplus < 201103L || __cplusplus >= 201703L
     strTo = utf16Toutf8(wstr);
 #else  // c++11 to c++14
@@ -186,11 +192,15 @@ std::wstring fromUtf8(const std::string &str)
         return {};
     std::wstring wstrTo;
 #ifdef _WIN32
-    int nSizeNeeded =
-        ::MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    int nSizeNeeded = ::MultiByteToWideChar(
+        CP_UTF8, 0, &str[0], static_cast<int>(str.size()), nullptr, 0);
     wstrTo.resize(nSizeNeeded, 0);
-    ::MultiByteToWideChar(
-        CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], nSizeNeeded);
+    ::MultiByteToWideChar(CP_UTF8,
+                          0,
+                          &str[0],
+                          static_cast<int>(str.size()),
+                          &wstrTo[0],
+                          nSizeNeeded);
 #elif __cplusplus < 201103L || __cplusplus >= 201703L
     wstrTo = utf8Toutf16(str);
 #else  // c++11 to c++14
@@ -271,16 +281,16 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
     {
         // compare if `hostname` ends with `certName` but without the leftmost
         // should be fine as domain names can't be that long
-        intmax_t hostnameIdx = hostname.size() - 1;
-        intmax_t certNameIdx = certName.size() - 1;
+        intmax_t hostnameIdx = static_cast<intmax_t>(hostname.size()) - 1;
+        intmax_t certNameIdx = static_cast<intmax_t>(certName.size()) - 1;
         while (hostnameIdx >= 0 && certNameIdx != 0)
         {
             if (hostname[hostnameIdx] != certName[certNameIdx])
             {
                 return false;
             }
-            hostnameIdx--;
-            certNameIdx--;
+            --hostnameIdx;
+            --certNameIdx;
         }
         if (certNameIdx != 0)
         {
@@ -322,8 +332,8 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
                 return false;
             }
         }
-        intmax_t hostnameIdx = hostFirstDot - 1;
-        intmax_t certNameIdx = firstDot - 1;
+        intmax_t hostnameIdx = static_cast<intmax_t>(hostFirstDot) - 1;
+        intmax_t certNameIdx = static_cast<intmax_t>(firstDot) - 1;
         while (hostnameIdx >= 0 && certNameIdx >= 0 &&
                certName[certNameIdx] != '*')
         {
@@ -331,8 +341,8 @@ bool verifySslName(const std::string &certName, const std::string &hostname)
             {
                 return false;
             }
-            hostnameIdx--;
-            certNameIdx--;
+            --hostnameIdx;
+            --certNameIdx;
         }
         return true;
     }
@@ -357,9 +367,9 @@ Hash128 md5(const void *data, size_t len)
 {
     MD5_CTX ctx;
     trantor_md5_init(&ctx);
-    trantor_md5_update(&ctx, (const unsigned char *)data, len);
+    trantor_md5_update(&ctx, static_cast<const unsigned char *>(data), len);
     Hash128 hash;
-    trantor_md5_final(&ctx, (unsigned char *)&hash);
+    trantor_md5_final(&ctx, reinterpret_cast<unsigned char *>(&hash));
     return hash;
 }
 
@@ -367,9 +377,9 @@ Hash160 sha1(const void *data, size_t len)
 {
     SHA1_CTX ctx;
     trantor_sha1_init(&ctx);
-    trantor_sha1_update(&ctx, (const unsigned char *)data, len);
+    trantor_sha1_update(&ctx, static_cast<const unsigned char *>(data), len);
     Hash160 hash;
-    trantor_sha1_final((unsigned char *)&hash, &ctx);
+    trantor_sha1_final(reinterpret_cast<unsigned char *>(&hash), &ctx);
     return hash;
 }
 
@@ -377,23 +387,26 @@ Hash256 sha256(const void *data, size_t len)
 {
     SHA256_CTX ctx;
     trantor_sha256_init(&ctx);
-    trantor_sha256_update(&ctx, (const unsigned char *)data, len);
+    trantor_sha256_update(&ctx, static_cast<const unsigned char *>(data), len);
     Hash256 hash;
-    trantor_sha256_final(&ctx, (unsigned char *)&hash);
+    trantor_sha256_final(&ctx, reinterpret_cast<unsigned char *>(&hash));
     return hash;
 }
 
 Hash256 sha3(const void *data, size_t len)
 {
     Hash256 hash;
-    trantor_sha3((const unsigned char *)data, len, &hash, sizeof(hash));
+    trantor_sha3(static_cast<const unsigned char *>(data),
+                 len,
+                 &hash,
+                 sizeof(hash));
     return hash;
 }
 
 Hash256 blake2b(const void *data, size_t len)
 {
     Hash256 hash;
-    trantor_blake2b(&hash, sizeof(hash), data, len, NULL, 0);
+    trantor_blake2b(&hash, sizeof(hash), data, len, nullptr, 0);
     return hash;
 }
 #endif
@@ -404,7 +417,7 @@ std::string toHexString(const void *data, size_t len)
     str.resize(len * 2);
     for (size_t i = 0; i < len; i++)
     {
-        unsigned char c = ((const unsigned char *)data)[i];
+        auto c = static_cast<unsigned char *>(const_cast<void *>(data))[i];
         str[i * 2] = "0123456789ABCDEF"[c >> 4];
         str[i * 2 + 1] = "0123456789ABCDEF"[c & 0xf];
     }
@@ -526,7 +539,7 @@ bool secureRandomBytes(void *data, size_t len)
     uint32_t timeLo, timeHi;
     asm volatile("rdtimeh %0" : "=r"(timeHi));
     asm volatile("rdtime %0" : "=r"(timeLo));
-    state.time = (uint64_t)timeHi << 32 | timeLo;
+    state.time = (static_cast<uint64_t>(timeHi) << 32) | timeLo;
 #elif defined(__s390__)  // both s390 and s390x
     asm volatile("stck %0" : "=Q"(state.time));
 #else
@@ -542,7 +555,7 @@ bool secureRandomBytes(void *data, size_t len)
     // This code works on both 32-bit and 64-bit systems. As well as big-endian
     // and little-endian systems.
     void *stack_ptr = &now;
-    uint32_t *stack_ptr32 = (uint32_t *)&stack_ptr;
+    auto *stack_ptr32 = reinterpret_cast<uint32_t *>(&stack_ptr);
     uint32_t garbage = *stack_ptr32;
     static_assert(sizeof(void *) >= sizeof(uint32_t), "pointer size too small");
     for (size_t i = 1; i < sizeof(void *) / sizeof(uint32_t); i++)
@@ -556,16 +569,18 @@ bool secureRandomBytes(void *data, size_t len)
     for (size_t i = 0; i < len / sizeof(Hash256); i++)
     {
         auto hash = blake2b(&state, sizeof(state));
-        memcpy((char *)data + i * sizeof(hash), &hash, sizeof(hash));
+        std::memcpy(static_cast<char *>(data) + i * sizeof(hash),
+                    &hash,
+                    sizeof(hash));
         state.counter++;
         state.prev = hash;
     }
     if (len % sizeof(Hash256) != 0)
     {
         auto hash = blake2b(&state, sizeof(state));
-        memcpy((char *)data + len - len % sizeof(hash),
-               &hash,
-               len % sizeof(hash));
+        std::memcpy(static_cast<char *>(data) + len - len % sizeof(hash),
+                    &hash,
+                    len % sizeof(hash));
         state.counter++;
         state.prev = hash;
     }
