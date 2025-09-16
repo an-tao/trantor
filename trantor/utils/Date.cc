@@ -284,11 +284,36 @@ Date Date::fromDbStringLocal(const std::string &datetime)
     unsigned int year = {0}, month = {0}, day = {0}, hour = {0}, minute = {0},
                  second = {0}, microSecond = {0};
     std::vector<std::string> &&v = splitString(datetime, " ");
-    if (2 == v.size())
+
+    if (v.size() == 0)
     {
-        // date
-        std::vector<std::string> date = splitString(v[0], "-");
-        if (3 == date.size())
+        throw std::invalid_argument("Invalid date string: " + datetime);
+    }
+    const std::vector<std::string> date = splitString(v[0], "-");
+    if (date.size() != 3)
+    {
+        throw std::invalid_argument("Invalid date string: " + datetime);
+    }
+    if (v.size() == 1)
+    {
+        // Fromat YYYY-MM-DD is given
+        try
+        {
+            year = std::stol(date[0]);
+            month = std::stol(date[1]);
+            day = std::stol(date[2]);
+        }
+        catch (...)
+        {
+            throw std::invalid_argument("Invalid date string: " + datetime);
+        }
+        return Date(year, month, day, hour, minute, second, microSecond);
+    }
+
+    if (v.size() == 2)
+    {
+        // Format YYYY-MM-DD HH:MM:SS[.UUUUUU] is given
+        try
         {
             year = std::stol(date[0]);
             month = std::stol(date[1]);
@@ -314,9 +339,16 @@ Date Date::fromDbStringLocal(const std::string &datetime)
                 }
             }
         }
+        catch (...)
+        {
+            throw std::invalid_argument("Invalid date string: " + datetime);
+        }
+        return Date(year, month, day, hour, minute, second, microSecond);
     }
-    return trantor::Date(year, month, day, hour, minute, second, microSecond);
+
+    throw std::invalid_argument("Invalid date string: " + datetime);
 }
+
 Date Date::fromDbString(const std::string &datetime)
 {
     return fromDbStringLocal(datetime).after(
