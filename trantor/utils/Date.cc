@@ -55,29 +55,29 @@ const Date Date::date()
     struct timeval tv;
     gettimeofday(&tv, NULL);
     int64_t seconds = tv.tv_sec;
-    return Date(seconds * MICRO_SECONDS_PRE_SEC + tv.tv_usec);
+    return Date(seconds * MICRO_SECONDS_PER_SEC + tv.tv_usec);
 #else
     timeval tv;
     gettimeofday(&tv, NULL);
     int64_t seconds = tv.tv_sec;
-    return Date(seconds * MICRO_SECONDS_PRE_SEC + tv.tv_usec);
+    return Date(seconds * MICRO_SECONDS_PER_SEC + tv.tv_usec);
 #endif
 }
 const Date Date::after(double second) const
 {
     return Date(static_cast<int64_t>(microSecondsSinceEpoch_ +
-                                     second * MICRO_SECONDS_PRE_SEC));
+                                     second * MICRO_SECONDS_PER_SEC));
 }
 const Date Date::roundSecond() const
 {
     return Date(microSecondsSinceEpoch_ -
-                (microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC));
+                (microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC));
 }
 const Date Date::roundDay() const
 {
     struct tm t;
     time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
 #ifndef _WIN32
     localtime_r(&seconds, &t);
 #else
@@ -86,12 +86,12 @@ const Date Date::roundDay() const
     t.tm_hour = 0;
     t.tm_min = 0;
     t.tm_sec = 0;
-    return Date(mktime(&t) * MICRO_SECONDS_PRE_SEC);
+    return Date(mktime(&t) * MICRO_SECONDS_PER_SEC);
 }
 struct tm Date::tmStruct() const
 {
     time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
 #ifndef _WIN32
     gmtime_r(&seconds, &tm_time);
@@ -105,7 +105,7 @@ std::string Date::toFormattedString(bool showMicroseconds) const
     //  std::cout<<"toFormattedString"<<std::endl;
     char buf[128] = {0};
     time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
 #ifndef _WIN32
     gmtime_r(&seconds, &tm_time);
@@ -116,7 +116,7 @@ std::string Date::toFormattedString(bool showMicroseconds) const
     if (showMicroseconds)
     {
         int microseconds =
-            static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
+            static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC);
         snprintf(buf,
                  sizeof(buf),
                  "%4d%02d%02d %02d:%02d:%02d.%06d",
@@ -147,7 +147,7 @@ std::string Date::toCustomFormattedString(const std::string &fmtStr,
 {
     char buf[256] = {0};
     time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
 #ifndef _WIN32
     gmtime_r(&seconds, &tm_time);
@@ -159,7 +159,7 @@ std::string Date::toCustomFormattedString(const std::string &fmtStr,
         return std::string(buf);
     char decimals[12] = {0};
     int microseconds =
-        static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
+        static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC);
     snprintf(decimals, sizeof(decimals), ".%06d", microseconds);
     return std::string(buf) + decimals;
 }
@@ -169,7 +169,7 @@ void Date::toCustomFormattedString(const std::string &fmtStr,
 {
     // not safe
     time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
 #ifndef _WIN32
     gmtime_r(&seconds, &tm_time);
@@ -183,7 +183,7 @@ std::string Date::toFormattedStringLocal(bool showMicroseconds) const
     //  std::cout<<"toFormattedString"<<std::endl;
     char buf[128] = {0};
     time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
 #ifndef _WIN32
     localtime_r(&seconds, &tm_time);
@@ -194,7 +194,7 @@ std::string Date::toFormattedStringLocal(bool showMicroseconds) const
     if (showMicroseconds)
     {
         int microseconds =
-            static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
+            static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC);
         snprintf(buf,
                  sizeof(buf),
                  "%4d%02d%02d %02d:%02d:%02d.%06d",
@@ -224,7 +224,7 @@ std::string Date::toDbStringLocal() const
 {
     char buf[128] = {0};
     time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
 #ifndef _WIN32
     localtime_r(&seconds, &tm_time);
@@ -232,11 +232,11 @@ std::string Date::toDbStringLocal() const
     localtime_s(&tm_time, &seconds);
 #endif
     bool showMicroseconds =
-        (microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC != 0);
+        (microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC != 0);
     if (showMicroseconds)
     {
         int microseconds =
-            static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
+            static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC);
         snprintf(buf,
                  sizeof(buf),
                  "%4d-%02d-%02d %02d:%02d:%02d.%06d",
@@ -360,7 +360,7 @@ std::string Date::toCustomFormattedStringLocal(const std::string &fmtStr,
 {
     char buf[256] = {0};
     time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PRE_SEC);
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
 #ifndef _WIN32
     localtime_r(&seconds, &tm_time);
@@ -372,7 +372,7 @@ std::string Date::toCustomFormattedStringLocal(const std::string &fmtStr,
         return std::string(buf);
     char decimals[12] = {0};
     int microseconds =
-        static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PRE_SEC);
+        static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC);
     snprintf(decimals, sizeof(decimals), ".%06d", microseconds);
     return std::string(buf) + decimals;
 }
@@ -396,7 +396,7 @@ Date::Date(unsigned int year,
     tm.tm_sec = second;
     epoch = mktime(&tm);
     microSecondsSinceEpoch_ =
-        static_cast<int64_t>(epoch) * MICRO_SECONDS_PRE_SEC + microSecond;
+        static_cast<int64_t>(epoch) * MICRO_SECONDS_PER_SEC + microSecond;
 }
 
 }  // namespace trantor
