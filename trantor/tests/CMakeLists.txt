@@ -51,10 +51,10 @@ set(targets_list
     tcp_asyncstream_server_test
 )
 
-if(HAVE_SPDLOG)
+if(TRANTOR_USE_SPDLOG)
   add_executable(spdlogger_test SpdLoggerTest.cc)
   list(APPEND targets_list spdlogger_test)
-endif(HAVE_SPDLOG)
+endif()
 
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${targets_list} PROPERTY CXX_STANDARD_REQUIRED ON)
