@@ -293,6 +293,17 @@ class TRANTOR_EXPORT Date
      */
     static Date fromDbString(const std::string &datetime);
 
+    /**
+     * @brief Parse a datetime string
+     * Could be following format:
+     * - yyyy-mm-dd
+     * - yyyy-mm-dd HH:MM[:SS[.ffffff]]
+     * - yyyy-mm-dd HH:MM[:SS[.ffffff]][ ][+-]08
+     * - yyyy-mm-dd HH:MM[:SS[.ffffff]][ ][+-]08:00
+     * - yyyy-mm-dd HH:MM[:SS[.ffffff]][ ][+-]0800
+     */
+    static Date parseDatetimeTz(const std::string &datetime);
+
     /* clang-format off */
     /**
      * @brief Generate a UTC time string.
