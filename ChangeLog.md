@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.25] - 2025-10-29
+
+### Fixed
+
+- Fix Date::fromDbStringLocal() when YYYY-MM-DD is given.
+
+- Fix typo MICRO_SECONDS_PER_SEC.
+
 ## [1.5.24] - 2025-06-20
 
 ### Changed
@@ -11,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - refactor: replace atomic counter with plain int in RunInLoopTest2.
 
 ### Fixed
+
 - Fix compile errors in some case.
 
 - Fix a bug when sending streams.
@@ -707,7 +716,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.24...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.25...HEAD
+
+[1.5.25]: https://github.com/an-tao/trantor/compare/v1.5.24...v1.5.25
 
 [1.5.24]: https://github.com/an-tao/trantor/compare/v1.5.23...v1.5.24
 
