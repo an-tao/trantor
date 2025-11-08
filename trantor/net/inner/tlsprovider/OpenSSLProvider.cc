@@ -774,7 +774,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         {
             appendToWriteBuffer((char *)data + n, len - n);
         }
-        BIO_reset(wbio_);
+        (void)BIO_reset(wbio_);
         if (n < 0)
             return -1;
         return len;
