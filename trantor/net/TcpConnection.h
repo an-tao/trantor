@@ -359,7 +359,12 @@ class TRANTOR_EXPORT TcpConnection
     {
         sslErrorCallback_ = std::move(cb);
     }
-
+    /**
+     * @brief Get the data length in the sending buffer. The sending buffer is
+     * in the user memory space.
+     * @note This method should be called in the right event loop.
+     */
+    virtual size_t getBufferedDataLength() const = 0;
     // TODO: These should be internal APIs
     virtual void connectEstablished() = 0;
     virtual void connectDestroyed() = 0;
