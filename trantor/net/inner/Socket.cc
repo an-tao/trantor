@@ -121,7 +121,9 @@ int Socket::read(char *buffer, uint64_t len)
 
 struct sockaddr_in6 Socket::getLocalAddr(int sockfd)
 {
-    struct sockaddr_in6 localaddr{};
+    struct sockaddr_in6 localaddr
+    {
+    };
     socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
     if (::getsockname(sockfd,
                       static_cast<struct sockaddr *>((void *)(&localaddr)),
@@ -134,7 +136,9 @@ struct sockaddr_in6 Socket::getLocalAddr(int sockfd)
 
 struct sockaddr_in6 Socket::getPeerAddr(int sockfd)
 {
-    struct sockaddr_in6 peeraddr{};
+    struct sockaddr_in6 peeraddr
+    {
+    };
     socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
     if (::getpeername(sockfd,
                       static_cast<struct sockaddr *>((void *)(&peeraddr)),
