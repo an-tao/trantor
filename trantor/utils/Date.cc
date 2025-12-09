@@ -63,6 +63,13 @@ const Date Date::date()
     return Date(seconds * MICRO_SECONDS_PER_SEC + tv.tv_usec);
 #endif
 }
+
+int64_t Date::timezoneOffset()
+{
+    static int64_t offset = -Date(1970, 1, 1).secondsSinceEpoch();
+    return offset;
+}
+
 const Date Date::after(double second) const
 {
     return Date(static_cast<int64_t>(microSecondsSinceEpoch_ +
