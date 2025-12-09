@@ -362,6 +362,36 @@ Date Date::fromDbString(const std::string &datetime)
         static_cast<double>(timezoneOffset()));
 }
 
+int parseTzOffset(std::string &tz, int tzSign)
+{
+    if (tzSign == 0)
+    {
+        if (tz[0] == '-')
+        {
+            tz = tz.substr(1);
+            tzSign = -1;
+        }
+        else
+        {
+            tzSign = 1;
+        }
+    }
+
+    if (tz == "Z")
+    {
+        return 0;
+    }
+
+    auto tzParts = splitString(tz, ":");
+    if (tzParts.size() == 1 && tz.size() == 4)
+    {
+        tzParts = {tz.substr(0, 2), tz.substr(2)};  // 0800
+    }
+    int tzHour = std::stoi(tzParts[0]);
+    int tzMin = tzParts.size() > 1 ? std::stoi(tzParts[1]) : 0;
+    return tzSign * (tzHour * 3600 + tzMin * 60);
+}
+
 Date Date::parseDatetimeTz(const std::string &datetime)
 {
     unsigned int year = {0}, month = {0}, day = {0}, hour = {0}, minute = {0},
@@ -405,6 +435,12 @@ Date Date::parseDatetimeTz(const std::string &datetime)
             v.push_back(v[1].substr(pos + 1));
             v[1] = v[1].substr(0, pos);
         }
+        else if (!v[1].empty() && v[1].back() == 'Z')
+        {
+            v[1].pop_back();
+            tzSign = 1;
+            v.emplace_back("Z");
+        }
     }
 
     // parse time
@@ -434,35 +470,18 @@ Date Date::parseDatetimeTz(const std::string &datetime)
         }
     }
 
+    trantor::Date dt(year, month, day, hour, minute, second, microSecond);
+
     // timezone
     if (v.size() >= 3)
     {
-        std::string &tz = v[2];
-        if (tzSign == 0)
-        {
-            if (tz[0] == '-')
-            {
-                tz = tz.substr(1);
-                tzSign = -1;
-            }
-            else
-            {
-                tzSign = 1;
-            }
-        }
-
-        auto tzParts = splitString(tz, ":");
-        if (tzParts.size() == 1 && tz.size() == 4)
-        {
-            tzParts = {tz.substr(0, 2), tz.substr(2)};  // 0800
-        }
-        int tzHour = std::stoi(tzParts[0]);
-        int tzMin = tzParts.size() > 1 ? std::stoi(tzParts[1]) : 0;
-        tzOffset = tzSign * (tzHour * 3600 + tzMin * 60);
+        tzOffset = parseTzOffset(v[2], tzSign);
+        return dt.after(timezoneOffset() - tzOffset);
     }
-
-    return trantor::Date(year, month, day, hour, minute, second, microSecond)
-        .after(timezoneOffset() - tzOffset);
+    else
+    {
+        return dt;
+    }
 }
 
 std::string Date::toCustomFormattedStringLocal(const std::string &fmtStr,
