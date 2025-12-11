@@ -441,7 +441,7 @@ static bool systemRandomBytes(void *ptr, size_t size)
         LOG_FATAL << "Failed to open /dev/urandom for randomness";
         abort();
     }
-    if (fread(ptr, 1, size, fptr.get()) != size)
+    if (fread(ptr, 1, size, fptr.get()) == size)
         return true;
 #endif
     return false;
