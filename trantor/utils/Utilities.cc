@@ -441,7 +441,7 @@ static bool systemRandomBytes(void *ptr, size_t size)
         LOG_FATAL << "Failed to open /dev/urandom for randomness";
         abort();
     }
-    if (fread(ptr, 1, size, fptr.get()) != 0)
+    if (fread(ptr, 1, size, fptr.get()) == size)
         return true;
 #endif
     return false;
@@ -533,9 +533,9 @@ bool secureRandomBytes(void *data, size_t len)
     auto now = chrono::steady_clock::now();
     // the proposed algorithm uses the time in nanoseconds, but we don't have a
     // way to read it (yet) not C++ provided a standard way to do it. Falling
-    // back to milliseconds. This along with additional entropy is hopefully
+    // back to microseconds. This along with additional entropy is hopefully
     // good enough.
-    state.time = chrono::time_point_cast<chrono::milliseconds>(now)
+    state.time = chrono::time_point_cast<chrono::microseconds>(now)
                      .time_since_epoch()
                      .count();
     // `now` lives on the stack, so address in each call _may_ be different.
