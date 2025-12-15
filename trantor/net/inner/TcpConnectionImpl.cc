@@ -554,7 +554,7 @@ void TcpConnectionImpl::sendFile(const char *fileName,
 {
     assert(fileName);
 #ifdef _WIN32
-    sendFile(utils::toNativePath(fileName).c_str(), offset, length);
+    sendFile(utils::toWidePath(fileName).c_str(), offset, length);
 #else   // _WIN32
     auto fileNode = BufferNode::newFileBufferNode(fileName, offset, length);
 
