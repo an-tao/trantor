@@ -151,7 +151,7 @@ ssize_t MsgBuffer::readFd(int fd, int *retErrno)
     struct iovec vec[2];
     size_t writable = writableBytes();
     vec[0].iov_base = begin() + tail_;
-    vec[0].iov_len = static_cast<int>(writable);
+    vec[0].iov_len = writable;
     vec[1].iov_base = extBuffer;
     vec[1].iov_len = sizeof(extBuffer);
     const int iovcnt = (writable < sizeof extBuffer) ? 2 : 1;
@@ -162,12 +162,12 @@ ssize_t MsgBuffer::readFd(int fd, int *retErrno)
     }
     else if (static_cast<size_t>(n) <= writable)
     {
-        tail_ += n;
+        tail_ += static_cast<size_t>(n);
     }
     else
     {
         tail_ = buffer_.size();
-        append(extBuffer, n - writable);
+        append(extBuffer, static_cast<size_t>(n) - writable);
     }
     return n;
 }

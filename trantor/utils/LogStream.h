@@ -21,13 +21,20 @@
 #include <assert.h>
 #include <string.h>  // memcpy
 #include <string>
+#include <cstdint>
 
 namespace trantor
 {
 namespace detail
 {
+#if (__cplusplus >= 201703L)
+// Note: in C++17, static should be replaced by inline
+inline constexpr size_t kSmallBuffer{4000};
+inline constexpr size_t kLargeBuffer{4000 * 1000};
+#else
 static constexpr size_t kSmallBuffer{4000};
 static constexpr size_t kLargeBuffer{4000 * 1000};
+#endif
 
 template <int SIZE>
 class TRANTOR_EXPORT FixedBuffer : NonCopyable
@@ -38,6 +45,11 @@ class TRANTOR_EXPORT FixedBuffer : NonCopyable
         setCookie(cookieStart);
     }
 
+    FixedBuffer(const FixedBuffer &) = delete;
+    FixedBuffer &operator=(const FixedBuffer &) = delete;
+    FixedBuffer(FixedBuffer &&) = delete;
+    FixedBuffer &operator=(FixedBuffer &&) = delete;
+
     ~FixedBuffer()
     {
         setCookie(cookieEnd);
@@ -45,7 +57,7 @@ class TRANTOR_EXPORT FixedBuffer : NonCopyable
 
     bool append(const char * /*restrict*/ buf, size_t len)
     {
-        if ((size_t)(avail()) > len)
+        if (static_cast<size_t>(avail()) > len)
         {
             memcpy(cur_, buf, len);
             cur_ += len;
@@ -58,9 +70,9 @@ class TRANTOR_EXPORT FixedBuffer : NonCopyable
     {
         return data_;
     }
-    int length() const
+    size_t length() const
     {
-        return static_cast<int>(cur_ - data_);
+        return static_cast<size_t>(cur_ - data_);
     }
 
     // write to data_ directly
@@ -97,8 +109,6 @@ class TRANTOR_EXPORT FixedBuffer : NonCopyable
     {
         return std::string(data_, length());
     }
-    // StringPiece toStringPiece() const { return StringPiece(data_, length());
-    // }
 
   private:
     const char *end() const
@@ -154,8 +164,6 @@ class TRANTOR_EXPORT LogStream : NonCopyable
         return *this;
     }
 
-    // self& operator<<(signed char);
-    // self& operator<<(unsigned char);
     template <int N>
     self &operator<<(const char (&buf)[N])
     {
@@ -248,7 +256,7 @@ class TRANTOR_EXPORT LogStream : NonCopyable
     std::string exBuffer_;
 };
 
-class TRANTOR_EXPORT Fmt  // : boost::noncopyable
+class TRANTOR_EXPORT Fmt
 {
   public:
     template <typename T>
@@ -258,14 +266,14 @@ class TRANTOR_EXPORT Fmt  // : boost::noncopyable
     {
         return buf_;
     }
-    int length() const
+    uint8_t length() const
     {
         return length_;
     }
 
   private:
     char buf_[48];
-    int length_;
+    uint8_t length_;
 };
 
 inline LogStream &operator<<(LogStream &s, const Fmt &fmt)
