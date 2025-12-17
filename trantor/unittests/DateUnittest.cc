@@ -133,6 +133,10 @@ TEST(Date, TimezoneTest)
         EXPECT_EQ(date.microSecondsSinceEpoch(),
                   dateTz.microSecondsSinceEpoch());
     }
+
+    // time string without tz, should be parsed as local time
+    EXPECT_EQ(trantor::Date::fromDbString(str0).microSecondsSinceEpoch(),
+              trantor::Date::parseDatetimeTz(str0).microSecondsSinceEpoch());
 }
 
 int main(int argc, char **argv)
