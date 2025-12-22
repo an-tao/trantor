@@ -231,7 +231,7 @@ struct BotanTLSProvider : public TLSProvider,
             auto trunkLen = size - hasSent;
             if (trunkLen > maxSend)
                 trunkLen = maxSend;
-            channel_->send((const uint8_t *)ptr, size);
+            channel_->send((const uint8_t *)ptr + hasSent, trunkLen);
             // HACK: Botan doesn't provide a way to know how much raw data has
             // been written to the underlying transport. So we have to assume
             // that all data has been written. And cache the unwritten data in
