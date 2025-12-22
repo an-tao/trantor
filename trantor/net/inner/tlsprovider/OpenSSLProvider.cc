@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <array>
 #include <limits>
+#include "callbacks.h"
 
 using namespace trantor;
 
@@ -441,7 +442,7 @@ class SessionManager
         assert(mexExtendSize_ > 0);
         if (sessions_.size() < size_t(maxSessions_ + mexExtendSize_))
             return;
-        if (sessions_.size() > size_t(maxSessions_))
+        while (sessions_.size() > size_t(maxSessions_))
         {
             auto it = sessions_.end();
             it--;
@@ -513,9 +514,14 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     alpnList.push_back(ch);
                     alpnList.append(proto);
                 }
-                SSL_set_alpn_protos(ssl_,
-                                    (const unsigned char *)(alpnList.data()),
-                                    (unsigned int)alpnList.size());
+                if (SSL_set_alpn_protos(
+                        ssl_,
+                        (const unsigned char *)(alpnList.data()),
+                        (unsigned int)alpnList.size()) != 0)
+                {
+                    LOG_TRACE << "Failed to set ALPN";
+                    handleSSLError(SSLError::kSSLHandshakeError);
+                }
             }
 
             SSL_SESSION *cachedSession =
@@ -751,6 +757,13 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             else if (n <= 0)
             {
                 int err = SSL_get_error(ssl_, n);
+                if (err == SSL_ERROR_ZERO_RETURN)
+                {
+                    // Clean shutdown
+                    LOG_TRACE << "SSL connection closed cleanly";
+                    conn_->shutdown();
+                    return;
+                }
                 if (err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL)
                 {
                     handleSSLError(SSLError::kSSLProtocolError);
@@ -895,8 +908,8 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
     }
 
     // Disable weak ciphers. Weak hash and ciphers can die in a fire.
-    int status =
-        SSL_CTX_set_cipher_list(ctx->ctx(), "MEDIUM:HIGH:!aNULL!MD5:!RC4!3DES");
+    int status = SSL_CTX_set_cipher_list(ctx->ctx(),
+                                         "MEDIUM:HIGH:!aNULL:!MD5:!RC4:!3DES");
     if (status != 1)
         throw std::runtime_error("Failed to select secure ciphers");
 
