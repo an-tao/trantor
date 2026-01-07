@@ -26,10 +26,10 @@
 using ssize_t = std::intptr_t;
 #endif
 
+#define TRANTOR_BUFFER_DEFAULT_LENGTH 2048
+
 namespace trantor
 {
-static constexpr size_t kBufferDefaultLength{2048};
-static constexpr char CRLF[]{"\r\n"};
 
 /**
  * @brief This class represents a memory buffer used for sending and receiving
@@ -44,7 +44,7 @@ class TRANTOR_EXPORT MsgBuffer
      *
      * @param len The initial size of the buffer.
      */
-    explicit MsgBuffer(size_t len = kBufferDefaultLength);
+    explicit MsgBuffer(size_t len = TRANTOR_BUFFER_DEFAULT_LENGTH);
 
     /**
      * @brief Get the beginning of the buffer.
@@ -294,6 +294,7 @@ class TRANTOR_EXPORT MsgBuffer
      */
     const char *findCRLF() const
     {
+        constexpr char CRLF[]{"\r\n"};
         const char *crlf = std::search(peek(), beginWrite(), CRLF, CRLF + 2);
         return crlf == beginWrite() ? NULL : crlf;
     }
