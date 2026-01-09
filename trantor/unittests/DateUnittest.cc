@@ -1,6 +1,7 @@
 #include <trantor/utils/Date.h>
 #include <gtest/gtest.h>
 #include <string>
+#include <vector>
 #include <iostream>
 using namespace trantor;
 TEST(Date, constructorTest)
@@ -112,6 +113,32 @@ TEST(Date, DatabaseStringTest)
     auto epoch = dbDateGMT.microSecondsSinceEpoch();
     EXPECT_EQ(epoch, 0);
 }
+TEST(Date, TimezoneTest)
+{
+    std::string str0 = "2024-01-01 04:00:00.123";
+    std::vector<std::string> strs{"2024-01-01 12:00:00.123 +08:00",
+                                  "2024-01-01 11:00:00.123+0700",
+                                  "2024-01-01 10:00:00.123 0600",
+                                  "2024-01-01 03:00:00.123 -01:00",
+                                  "2024-01-01 02:00:00.123-02:00",
+                                  "2024-01-01 01:00:00.123 -0300",
+                                  "2024-01-01 12:00:00.123 08",
+                                  "2024-01-01 02:00:00.123-02",
+                                  "2024-01-01 14:00:00.123+10"};
+
+    auto date = trantor::Date::fromDbString(str0);
+    for (auto &s : strs)
+    {
+        auto dateTz = trantor::Date::parseDatetimeTz(s);
+        EXPECT_EQ(date.microSecondsSinceEpoch(),
+                  dateTz.microSecondsSinceEpoch());
+    }
+
+    // time string without tz, should be parsed as local time
+    EXPECT_EQ(trantor::Date::fromDbString(str0).microSecondsSinceEpoch(),
+              trantor::Date::parseDatetimeTz(str0).microSecondsSinceEpoch());
+}
+
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
