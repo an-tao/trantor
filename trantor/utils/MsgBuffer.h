@@ -284,7 +284,7 @@ class TRANTOR_EXPORT MsgBuffer
     {
         assert(peek() <= end);
         assert(end <= beginWrite());
-        retrieve(end - peek());
+        retrieve(static_cast<size_t>(end - peek()));
     }
 
     /**
