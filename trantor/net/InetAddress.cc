@@ -203,7 +203,6 @@ static std::string iptos(uint32_t addr_net)
     return buf;
 }
 
-
 std::string InetAddress::toIp() const
 {
     char buf[INET6_ADDRSTRLEN]{};
