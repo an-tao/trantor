@@ -196,16 +196,6 @@ bool InetAddress::isLoopbackIp() const
     return false;
 }
 
-static void byteToChars(std::string::iterator &dst, unsigned char byte)
-{
-    *dst = byte / 100 + '0';
-    dst += byte >= 100;
-    *dst = byte % 100 / 10 + '0';
-    dst += byte >= 10;
-    *dst = byte % 10 + '0';
-    ++dst;
-}
-
 static std::string iptos(uint32_t addr_net)
 {
     char buf[INET_ADDRSTRLEN];
