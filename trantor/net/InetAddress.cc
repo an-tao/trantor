@@ -206,23 +206,13 @@ static void byteToChars(std::string::iterator &dst, unsigned char byte)
     ++dst;
 }
 
-static std::string iptos(unsigned inet_addr)
+static std::string iptos(uint32_t addr_net)
 {
-    // Initialize with a static buffer to force the constructor of string to get
-    // fully inlined
-    constexpr char stringInitBuffer[15]{};
-    std::string out(stringInitBuffer, 15);
-    std::string::iterator dst = out.begin();
-    byteToChars(dst, inet_addr >> 0 & 0xff);
-    *(dst++) = '.';
-    byteToChars(dst, inet_addr >> 8 & 0xff);
-    *(dst++) = '.';
-    byteToChars(dst, inet_addr >> 16 & 0xff);
-    *(dst++) = '.';
-    byteToChars(dst, inet_addr >> 24 & 0xff);
-    out.erase(dst, out.end());
-    return out;
+    char buf[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &addr_net, buf, sizeof(buf));
+    return buf;
 }
+
 
 std::string InetAddress::toIp() const
 {
