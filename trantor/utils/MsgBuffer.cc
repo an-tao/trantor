@@ -53,7 +53,7 @@ void MsgBuffer::ensureWritableBytes(size_t len)
     if ((buffer_.size() * 2) > (kBufferOffset + readableBytes() + len))
         newLen = buffer_.size() * 2;
     else
-        newLen = kBufferOffset + readableBytes() + len;
+        newLen = readableBytes() + len;
     MsgBuffer newbuffer(newLen);
     newbuffer.append(*this);
     swap(newbuffer);
@@ -141,7 +141,7 @@ void MsgBuffer::retrieveAll()
 {
     if (buffer_.size() > (initCap_ * 2))
     {
-        buffer_.resize(initCap_);
+        buffer_.resize(initCap_ + kBufferOffset);
     }
     tail_ = head_ = kBufferOffset;
 }
