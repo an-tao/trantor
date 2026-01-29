@@ -45,7 +45,7 @@ class TRANTOR_EXPORT TcpConnection
     friend class TcpClient;
 
     TcpConnection() = default;
-    virtual ~TcpConnection(){};
+    virtual ~TcpConnection() {};
 
     /**
      * @brief Send some data to the peer.
@@ -366,6 +366,8 @@ class TRANTOR_EXPORT TcpConnection
     virtual void enableKickingOff(
         size_t timeout,
         const std::shared_ptr<TimingWheel> &timingWheel) = 0;
+
+    virtual void forwardToTLSBuffer(MsgBuffer *buffer) = 0;
 
   protected:
     // callbacks
