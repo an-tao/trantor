@@ -351,6 +351,10 @@ class TRANTOR_EXPORT TcpConnection
     {
         closeCallback_ = std::move(cb);
     }
+    CloseCallback getCloseCallback() const
+    {
+        return closeCallback_;
+    }
     void setSSLErrorCallback(const SSLErrorCallback &cb)
     {
         sslErrorCallback_ = cb;
