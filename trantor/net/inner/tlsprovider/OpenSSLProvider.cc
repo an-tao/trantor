@@ -671,7 +671,10 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                         cert,
                         policyPtr_->getHostname(),
                         policyPtr_->getAllowBrokenChain(),
-                        contextPtr_->isServer);
+                        !contextPtr_
+                             ->isServer);  // From the server's point of view,
+                                           // the client certificate is verified
+                                           // and vice versa
                     if (!valid)
                     {
                         LOG_TRACE
