@@ -85,7 +85,7 @@ inline LogStream &operator<<(LogStream &s, T v)
 
 inline LogStream &operator<<(LogStream &s, const Logger::SourceFile &v)
 {
-    s.append(v.data_, v.size_);
+    s.append(v.data_, static_cast<size_t>(v.size_));
     return s;
 }
 
@@ -444,7 +444,7 @@ RawLogger::~RawLogger()
     }
     else
     {
-        auto &oFunc = Logger::outputFunc_(index_);
+        auto &oFunc = Logger::outputFunc_(static_cast<size_t>(index_));
         if (!oFunc)
             return;
         oFunc(logStream_.bufferData(), logStream_.bufferLength());
