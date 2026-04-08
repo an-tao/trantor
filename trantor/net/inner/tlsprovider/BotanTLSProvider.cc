@@ -474,8 +474,6 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
             ctx->certStore =
                 std::make_shared<Botan::Flatfile_Certificate_Store>(
                     policy.getCaPath());
-            if (server)
-                ctx->requireClientCert = true;
         }
         else if (policy.getUseSystemCertStore())
         {
@@ -484,6 +482,8 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
             ctx->certStore = systemCertStore;
         }
     }
+    if (server && policy.getValidate() && !policy.getCaPath().empty())
+        ctx->requireClientCert = true;
 
     if (policy.getUseOldTLS())
         LOG_WARN << "SSLPloicy have set useOldTLS to true. BUt Botan does not "
