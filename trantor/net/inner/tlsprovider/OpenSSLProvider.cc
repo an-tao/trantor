@@ -8,12 +8,10 @@
 #include <openssl/bio.h>
 #include <openssl/x509v3.h>
 
-#include <fstream>
 #include <memory>
 #include <mutex>
 #include <list>
 #include <unordered_map>
-#include <array>
 #include <limits>
 #include "callbacks.h"
 
@@ -70,62 +68,6 @@ inline bool loadWindowsSystemCert(X509_STORE *store)
 }
 #endif
 
-inline bool verifyCommonName(X509 *cert, const std::string &hostname)
-{
-    X509_NAME *subjectName = X509_get_subject_name(cert);
-
-    if (subjectName != nullptr)
-    {
-        std::array<char, BUFSIZ> name;
-        auto length = X509_NAME_get_text_by_NID(subjectName,
-                                                NID_commonName,
-                                                name.data(),
-                                                (int)name.size());
-        if (length == -1)
-            return false;
-
-        return utils::verifySslName(std::string(name.begin(),
-                                                name.begin() + length),
-                                    hostname);
-    }
-
-    return false;
-}
-
-inline bool verifyAltName(X509 *cert, const std::string &hostname)
-{
-    bool good = false;
-    auto altNames = static_cast<const struct stack_st_GENERAL_NAME *>(
-        X509_get_ext_d2i(cert, NID_subject_alt_name, nullptr, nullptr));
-
-    if (altNames)
-    {
-        int numNames = sk_GENERAL_NAME_num(altNames);
-
-        for (int i = 0; i < numNames && !good; i++)
-        {
-            auto val = sk_GENERAL_NAME_value(altNames, i);
-            if (val->type != GEN_DNS)
-            {
-                LOG_WARN << "Name using IP addresses are not supported. Open "
-                            "an issue if you need that feature";
-                continue;
-            }
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-            auto name = (const char *)ASN1_STRING_get0_data(val->d.ia5);
-#else
-            auto name = (const char *)ASN1_STRING_data(val->d.ia5);
-#endif
-            auto name_len = (size_t)ASN1_STRING_length(val->d.ia5);
-            good = utils::verifySslName(std::string(name, name + name_len),
-                                        hostname);
-        }
-    }
-
-    GENERAL_NAMES_free((STACK_OF(GENERAL_NAME) *)altNames);
-    return good;
-}
-
 static bool validatePeerCertificate(SSL *ssl,
                                     X509 *cert,
                                     const std::string &hostname,
@@ -136,12 +78,19 @@ static bool validatePeerCertificate(SSL *ssl,
     assert(cert != nullptr);
     LOG_TRACE << "Validating peer certificate";
 
-    if (isServer)
+    if (!isServer)
     {
-        bool domainIsValid =
-            verifyCommonName(cert, hostname) || verifyAltName(cert, hostname);
-        if (!domainIsValid)
+        const int rc = X509_check_host(cert,
+                                       hostname.data(),
+                                       hostname.size(),
+                                       0,
+                                       nullptr);
+        if (rc != 1)
+        {
+            LOG_TRACE << "Peer certificate does not match hostname: "
+                      << hostname;
             return false;
+        }
     }
 
     auto result = SSL_get_verify_result(ssl);
@@ -423,16 +372,20 @@ class SessionManager
 #endif
     }
 
+    // Returns a session with an additional reference held by the caller.
+    // Caller must SSL_SESSION_free() when done. Required because the entry
+    // in sessionMap_ may be evicted/replaced/expired by another thread the
+    // moment we release the mutex, so the SessionManager's reference is not
+    // a stable ownership root for the returned pointer.
     SSL_SESSION *get(const std::string &hostname, InetAddress peerAddr)
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        auto key = toKey(hostname, peerAddr);
-        auto it = sessionMap_.find(key);
-        if (it != sessionMap_.end())
-        {
-            return it->second->session;
-        }
-        return nullptr;
+        auto it = sessionMap_.find(toKey(hostname, peerAddr));
+        if (it == sessionMap_.end())
+            return nullptr;
+        SSL_SESSION *s = it->second->session;
+        SSL_SESSION_up_ref(s);
+        return s;
     }
 
     void removeExcessSession()
@@ -529,7 +482,9 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                                    conn_->peerAddr());
             if (cachedSession)
             {
+                // SSL_set_session takes its own reference; release ours.
                 SSL_set_session(ssl_, cachedSession);
+                SSL_SESSION_free(cachedSession);
             }
             SSL_set_connect_state(ssl_);
         }

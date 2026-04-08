@@ -108,6 +108,7 @@ void Socket::closeWrite()
 #endif
     {
         LOG_SYSERR << "sockets::shutdownWrite";
+        abort();
     }
 }
 int Socket::read(char *buffer, uint64_t len)

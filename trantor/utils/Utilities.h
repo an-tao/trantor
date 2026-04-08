@@ -172,15 +172,6 @@ inline std::string fromNativePath(const std::wstring &strPath)
 }
 
 /**
- * @brief Check if the name supplied by the SSL Cert matches a FQDN
- * @param certName The name supplied by the SSL Cert
- * @param hostName The FQDN to match
- *
- * @return true if matches. false otherwise
- */
-bool verifySslName(const std::string &certName, const std::string &hostName);
-
-/**
  * @brief Returns the TLS backend used by trantor. Could be "None", "OpenSSL" or
  * "Botan"
  */
