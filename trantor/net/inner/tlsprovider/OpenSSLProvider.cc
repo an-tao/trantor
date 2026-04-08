@@ -80,11 +80,8 @@ static bool validatePeerCertificate(SSL *ssl,
 
     if (!isServer)
     {
-        const int rc = X509_check_host(cert,
-                                       hostname.data(),
-                                       hostname.size(),
-                                       0,
-                                       nullptr);
+        const int rc =
+            X509_check_host(cert, hostname.data(), hostname.size(), 0, nullptr);
         if (rc != 1)
         {
             LOG_TRACE << "Peer certificate does not match hostname: "
