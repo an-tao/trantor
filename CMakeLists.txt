@@ -5,8 +5,17 @@ option(BUILD_DOC "Build Doxygen documentation" OFF)
 option(BUILD_C-ARES "Build C-ARES" ON)
 option(BUILD_TESTING "Build tests" OFF)
 option(BUILD_SHARED_LIBS "Build trantor as a shared lib" OFF)
-option(TRANTOR_USE_TLS
-       "TLS provider for trantor. Valid options are 'openssl', 'botan' or '' (let the build scripr decide)" ""
+set(TRANTOR_USE_TLS
+    ""
+    CACHE STRING "TLS provider for trantor. Valid options are 'openssl', 'botan', 'none' or '' (auto-detect)"
+)
+set_property(
+  CACHE TRANTOR_USE_TLS
+  PROPERTY STRINGS
+           ""
+           openssl
+           botan
+           none
 )
 option(USE_SPDLOG "Allow using the spdlog logging library" OFF)
 
@@ -158,10 +167,6 @@ else(WIN32)
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/FileBufferNodeUnix.cc)
 endif(WIN32)
 
-# Somehow the default value of TRANTOR_USE_TLS is OFF
-if(TRANTOR_USE_TLS STREQUAL OFF)
-  set(TRANTOR_USE_TLS "")
-endif()
 set(VALID_TLS_PROVIDERS "openssl" "botan" "none")
 list(
   FIND
