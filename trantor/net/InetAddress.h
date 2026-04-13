@@ -32,12 +32,19 @@ using uint16_t = unsigned short;
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #endif
 #include <string>
 #include <unordered_map>
 #include <mutex>
 namespace trantor
 {
+
+/// Tag type used to select the Unix domain socket constructor.
+struct UnixDomainTag
+{
+};
+
 /**
  * @brief Wrapper of sockaddr_in. This is an POD interface class.
  *
@@ -65,6 +72,17 @@ class TRANTOR_EXPORT InetAddress
      * @param ipv6
      */
     InetAddress(const std::string &ip, uint16_t port, bool ipv6 = false);
+
+#ifndef _WIN32
+    /**
+     * @brief Constructs a Unix domain socket endpoint with the given path.
+     *
+     * @param unixPath The filesystem path for the Unix domain socket.
+     * @param tag Use trantor::UnixDomain to select this constructor.
+     * @note The path must be shorter than 108 characters (POSIX limit).
+     */
+    InetAddress(const std::string &unixPath, UnixDomainTag tag);
+#endif
 
     /**
      * @brief Constructs an endpoint with given struct `sockaddr_in`. Mostly
@@ -145,6 +163,26 @@ class TRANTOR_EXPORT InetAddress
         return isIpV6_;
     }
 
+#ifndef _WIN32
+    /**
+     * @brief Check if the endpoint is a Unix domain socket.
+     *
+     * @return true if Unix domain socket
+     * @return false otherwise
+     */
+    bool isUnixDomain() const
+    {
+        return isUnixDomain_;
+    }
+
+    /**
+     * @brief Return the Unix domain socket path.
+     *
+     * @return std::string The socket file path, empty if not a UDS.
+     */
+    std::string toUnixPath() const;
+#endif
+
     /**
      * @brief Return true if the endpoint is an intranet endpoint.
      *
@@ -168,6 +206,11 @@ class TRANTOR_EXPORT InetAddress
      */
     const struct sockaddr *getSockAddr() const
     {
+#ifndef _WIN32
+        if (isUnixDomain_)
+            return static_cast<const struct sockaddr *>(
+                (void *)(&addrUn_));
+#endif
         return static_cast<const struct sockaddr *>((void *)(&addr6_));
     }
 
@@ -181,6 +224,9 @@ class TRANTOR_EXPORT InetAddress
         addr6_ = addr6;
         isIpV6_ = (addr6_.sin6_family == AF_INET6);
         isUnspecified_ = false;
+#ifndef _WIN32
+        isUnixDomain_ = false;
+#endif
     }
 
     /**
@@ -226,14 +272,37 @@ class TRANTOR_EXPORT InetAddress
         return isUnspecified_;
     }
 
+    /**
+     * @brief Return the size of the sockaddr struct appropriate for this
+     * address type.
+     *
+     * @return socklen_t
+     */
+    socklen_t getSockAddrLen() const
+    {
+#ifndef _WIN32
+        if (isUnixDomain_)
+            return static_cast<socklen_t>(sizeof(struct sockaddr_un));
+#endif
+        if (isIpV6_)
+            return static_cast<socklen_t>(sizeof(struct sockaddr_in6));
+        return static_cast<socklen_t>(sizeof(struct sockaddr_in));
+    }
+
   private:
     union
     {
         struct sockaddr_in addr_;
         struct sockaddr_in6 addr6_;
+#ifndef _WIN32
+        struct sockaddr_un addrUn_;
+#endif
     };
     bool isIpV6_{false};
     bool isUnspecified_{true};
+#ifndef _WIN32
+    bool isUnixDomain_{false};
+#endif
 };
 
 }  // namespace trantor

@@ -30,12 +30,18 @@ class Socket : NonCopyable
   public:
     static int createNonblockingSocketOrDie(int family)
     {
+        // AF_UNIX must use protocol 0; IPPROTO_TCP is invalid for UDS
+        int protocol = IPPROTO_TCP;
+#ifndef _WIN32
+        if (family == AF_UNIX)
+            protocol = 0;
+#endif
 #ifdef __linux__
         int sock = ::socket(family,
                             SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
-                            IPPROTO_TCP);
+                            protocol);
 #else
-        int sock = static_cast<int>(::socket(family, SOCK_STREAM, IPPROTO_TCP));
+        int sock = static_cast<int>(::socket(family, SOCK_STREAM, protocol));
         setNonBlockAndCloseOnExec(sock);
 #endif
         if (sock < 0)
@@ -68,16 +74,9 @@ class Socket : NonCopyable
 
     static int connect(int sockfd, const InetAddress &addr)
     {
-        if (addr.isIpV6())
-            return ::connect(sockfd,
-                             addr.getSockAddr(),
-                             static_cast<socklen_t>(
-                                 sizeof(struct sockaddr_in6)));
-        else
-            return ::connect(sockfd,
-                             addr.getSockAddr(),
-                             static_cast<socklen_t>(
-                                 sizeof(struct sockaddr_in)));
+        return ::connect(sockfd,
+                         addr.getSockAddr(),
+                         addr.getSockAddrLen());
     }
 
     static bool isSelfConnect(int sockfd);
