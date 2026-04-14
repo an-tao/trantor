@@ -74,9 +74,7 @@ class Socket : NonCopyable
 
     static int connect(int sockfd, const InetAddress &addr)
     {
-        return ::connect(sockfd,
-                         addr.getSockAddr(),
-                         addr.getSockAddrLen());
+        return ::connect(sockfd, addr.getSockAddr(), addr.getSockAddrLen());
     }
 
     static bool isSelfConnect(int sockfd);

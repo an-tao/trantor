@@ -208,8 +208,7 @@ class TRANTOR_EXPORT InetAddress
     {
 #ifndef _WIN32
         if (isUnixDomain_)
-            return static_cast<const struct sockaddr *>(
-                (void *)(&addrUn_));
+            return static_cast<const struct sockaddr *>((void *)(&addrUn_));
 #endif
         return static_cast<const struct sockaddr *>((void *)(&addr6_));
     }

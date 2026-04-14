@@ -126,9 +126,11 @@ int Socket::accept(InetAddress *peeraddr)
         {
             auto *unAddr = reinterpret_cast<struct sockaddr_un *>(&addr);
             if (unAddr->sun_path[0] != '\0')
-                *peeraddr = InetAddress(std::string(unAddr->sun_path), UnixDomainTag{});
+                *peeraddr =
+                    InetAddress(std::string(unAddr->sun_path), UnixDomainTag{});
             else
-                *peeraddr = InetAddress(std::string("unix-peer"), UnixDomainTag{});
+                *peeraddr =
+                    InetAddress(std::string("unix-peer"), UnixDomainTag{});
         }
         else
 #endif

@@ -119,8 +119,8 @@ InetAddress::InetAddress(const std::string &unixPath, UnixDomainTag)
     addrUn_.sun_family = AF_UNIX;
     if (unixPath.size() >= sizeof(addrUn_.sun_path))
     {
-        LOG_FATAL << "Unix socket path too long: " << unixPath
-                  << " (max " << sizeof(addrUn_.sun_path) - 1 << " chars)";
+        LOG_FATAL << "Unix socket path too long: " << unixPath << " (max "
+                  << sizeof(addrUn_.sun_path) - 1 << " chars)";
         abort();
     }
     strncpy(addrUn_.sun_path, unixPath.c_str(), sizeof(addrUn_.sun_path) - 1);

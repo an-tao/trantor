@@ -83,17 +83,14 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     {
         assert(sslContextPtr_);
         newPtr = std::make_shared<TcpConnectionImpl>(
-            ioLoop,
-            sockfd,
-            localAddr,
-            peer,
-            policyPtr_,
-            sslContextPtr_);
+            ioLoop, sockfd, localAddr, peer, policyPtr_, sslContextPtr_);
     }
     else
     {
-        newPtr = std::make_shared<TcpConnectionImpl>(
-            ioLoop, sockfd, localAddr, peer);
+        newPtr = std::make_shared<TcpConnectionImpl>(ioLoop,
+                                                     sockfd,
+                                                     localAddr,
+                                                     peer);
     }
 
     if (idleTimeout_ > 0)
