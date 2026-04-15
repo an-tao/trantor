@@ -45,12 +45,18 @@ class StreamBufferNode : public BufferNode
     {
         if (isDone_)
             return 0;
+        if (msgBuffer_.readableBytes() > 0)
+            return static_cast<long long>(msgBuffer_.readableBytes());
         return 1;
     }
     ~StreamBufferNode() override
     {
         if (streamCallback_)
             streamCallback_(nullptr, 0);  // cleanup callback internals
+    }
+    bool available() const override
+    {
+        return !isDone_;
     }
 
   private:
