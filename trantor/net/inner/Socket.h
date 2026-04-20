@@ -28,7 +28,7 @@ namespace trantor
 class Socket : NonCopyable
 {
   public:
-    static int createNonblockingSocketOrDie(int family)
+    static int createNonblockingSocketOrDie(int family, bool flag = true)
     {
 #ifdef __linux__
         int sock = ::socket(family,
@@ -41,7 +41,8 @@ class Socket : NonCopyable
         if (sock < 0)
         {
             LOG_SYSERR << "sockets::createNonblockingOrDie";
-            exit(1);
+            if (flag)
+                exit(1);
         }
         LOG_TRACE << "sock=" << sock;
         return sock;
