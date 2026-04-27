@@ -371,6 +371,8 @@ class TRANTOR_EXPORT TcpConnection
         size_t timeout,
         const std::shared_ptr<TimingWheel> &timingWheel) = 0;
 
+    virtual void forwardToTLSBuffer(MsgBuffer *buffer) = 0;
+
   protected:
     // callbacks
     RecvMessageCallback recvMsgCallback_;

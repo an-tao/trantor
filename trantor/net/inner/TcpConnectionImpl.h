@@ -203,6 +203,12 @@ class TcpConnectionImpl : public TcpConnection,
         timingWheel->insertEntry(timeout, entry);
     }
 
+    void forwardToTLSBuffer(MsgBuffer *buffer) override
+    {
+        if (tlsProviderPtr_)
+            tlsProviderPtr_->recvData(buffer);
+    }
+
   private:
     /// Internal use only.
 
