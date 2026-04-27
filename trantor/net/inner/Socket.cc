@@ -21,6 +21,8 @@
 #else
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 using namespace trantor;
@@ -29,6 +31,10 @@ bool Socket::isSelfConnect(int sockfd)
 {
     struct sockaddr_in6 localaddr = getLocalAddr(sockfd);
     struct sockaddr_in6 peeraddr = getPeerAddr(sockfd);
+#ifndef _WIN32
+    if (localaddr.sin6_family == AF_UNIX)
+        return false;  // Self-connect not applicable to UDS
+#endif
     if (localaddr.sin6_family == AF_INET)
     {
         const struct sockaddr_in *laddr4 =
@@ -55,10 +61,28 @@ void Socket::bindAddress(const InetAddress &localaddr)
 {
     assert(sockFd_ > 0);
     int ret;
-    if (localaddr.isIpV6())
-        ret = ::bind(sockFd_, localaddr.getSockAddr(), sizeof(sockaddr_in6));
+#ifndef _WIN32
+    if (localaddr.isUnixDomain())
+    {
+        // Remove stale socket file before binding
+        ::unlink(localaddr.toUnixPath().c_str());
+        ret = ::bind(sockFd_,
+                     localaddr.getSockAddr(),
+                     localaddr.getSockAddrLen());
+        if (ret == 0)
+        {
+            // Set socket file permissions (owner + group read/write)
+            ::chmod(localaddr.toUnixPath().c_str(), 0660);
+            return;
+        }
+    }
     else
-        ret = ::bind(sockFd_, localaddr.getSockAddr(), sizeof(sockaddr_in));
+#endif
+    {
+        ret = ::bind(sockFd_,
+                     localaddr.getSockAddr(),
+                     localaddr.getSockAddrLen());
+    }
 
     if (ret == 0)
         return;
@@ -80,22 +104,40 @@ void Socket::listen()
 }
 int Socket::accept(InetAddress *peeraddr)
 {
-    struct sockaddr_in6 addr6;
-    memset(&addr6, 0, sizeof(addr6));
-    socklen_t size = sizeof(addr6);
+    // Use sockaddr_storage to accommodate all address types including
+    // AF_UNIX (sockaddr_un is 110 bytes, larger than sockaddr_in6's 28)
+    struct sockaddr_storage addr;
+    memset(&addr, 0, sizeof(addr));
+    socklen_t size = sizeof(addr);
 #ifdef __linux__
     int connfd = ::accept4(sockFd_,
-                           (struct sockaddr *)&addr6,
+                           (struct sockaddr *)&addr,
                            &size,
                            SOCK_NONBLOCK | SOCK_CLOEXEC);
 #else
     int connfd =
-        static_cast<int>(::accept(sockFd_, (struct sockaddr *)&addr6, &size));
+        static_cast<int>(::accept(sockFd_, (struct sockaddr *)&addr, &size));
     setNonBlockAndCloseOnExec(connfd);
 #endif
     if (connfd >= 0)
     {
-        peeraddr->setSockAddrInet6(addr6);
+#ifndef _WIN32
+        if (addr.ss_family == AF_UNIX)
+        {
+            auto *unAddr = reinterpret_cast<struct sockaddr_un *>(&addr);
+            if (unAddr->sun_path[0] != '\0')
+                *peeraddr =
+                    InetAddress(std::string(unAddr->sun_path), UnixDomainTag{});
+            else
+                *peeraddr =
+                    InetAddress(std::string("unix-peer"), UnixDomainTag{});
+        }
+        else
+#endif
+        {
+            peeraddr->setSockAddrInet6(
+                *reinterpret_cast<struct sockaddr_in6 *>(&addr));
+        }
     }
     return connfd;
 }
@@ -150,6 +192,16 @@ struct sockaddr_in6 Socket::getPeerAddr(int sockfd)
 
 void Socket::setTcpNoDelay(bool on)
 {
+#ifndef _WIN32
+    // TCP_NODELAY is not applicable to Unix domain sockets
+    {
+        struct sockaddr_storage addr;
+        socklen_t len = sizeof(addr);
+        if (::getsockname(sockFd_, (struct sockaddr *)&addr, &len) == 0 &&
+            addr.ss_family == AF_UNIX)
+            return;
+    }
+#endif
 #ifdef _WIN32
     char optval = on ? 1 : 0;
 #else
