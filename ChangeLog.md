@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.28] - 2026-05-06
+
+### Fixed
+
+- Avoid abort on closeWrite shutdown failure.
+
 ## [1.5.27] - 2026-05-06
 
 ### Changed
@@ -760,7 +766,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.27...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.28...HEAD
+
+[1.5.28]: https://github.com/an-tao/trantor/compare/v1.5.27...v1.5.28
 
 [1.5.27]: https://github.com/an-tao/trantor/compare/v1.5.26...v1.5.27
 
