@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.27] - 2026-05-06
+
+### Changed
+
+- Add automatic SSL.
+
+- Add getter for `TcpConnection::closeCallback_`.
+
+- Remove spurious executable permissions from non-script sources.
+
+### Fixed
+
+- Fix `TRANTOR_USE_TLS` cache setting in CMake.
+
+- Fix TLS implementation quirks.
+
+- Fix server-side mTLS client certificate hostname validation.
+
 ## [1.5.26] - 2026-01-26
 
 ### Changed
@@ -742,7 +760,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.26...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.27...HEAD
+
+[1.5.27]: https://github.com/an-tao/trantor/compare/v1.5.26...v1.5.27
 
 [1.5.26]: https://github.com/an-tao/trantor/compare/v1.5.25...v1.5.26
 
