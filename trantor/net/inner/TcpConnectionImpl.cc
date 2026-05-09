@@ -83,7 +83,12 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
     ioChannelPtr_->setErrorCallback([this]() { handleError(); });
     socketPtr_->setKeepAlive(true);
     name_ = localAddr.toIpPort() + "--" + peerAddr.toIpPort();
-
+#ifdef _WIN32
+    int size = sizeof(sendBufSize_);
+    ::getsockopt(
+        socketPtr_->fd(), SOL_SOCKET, SO_SNDBUF, (char *)&sendBufSize_, &size);
+    LOG_TRACE << "System sending buffer size: " << sendBufSize_ << " bytes";
+#endif
     if (policy != nullptr)
     {
         tlsProviderPtr_ =
@@ -317,6 +322,18 @@ void TcpConnectionImpl::setTcpNoDelay(bool on)
 {
     socketPtr_->setTcpNoDelay(on);
 }
+void TcpConnectionImpl::checkBufferedDataSize()
+{
+    loop_->assertInLoopThread();
+    if (highWaterMarkCallback_)
+    {
+        auto bufferedDataSize = getBufferedDataLength();
+        if (bufferedDataSize > highWaterMarkLen_)
+        {
+            highWaterMarkCallback_(shared_from_this(), bufferedDataSize);
+        }
+    }
+}
 void TcpConnectionImpl::connectDestroyed()
 {
     loop_->assertInLoopThread();
@@ -412,21 +429,7 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
         writeBufferList_.back()->append(static_cast<const char *>(buffer) +
                                             sendLen,
                                         length);
-        if (highWaterMarkCallback_ &&
-            writeBufferList_.back()->remainingBytes() >
-                static_cast<long long>(highWaterMarkLen_))
-        {
-            highWaterMarkCallback_(shared_from_this(),
-                                   writeBufferList_.back()->remainingBytes());
-        }
-        if (highWaterMarkCallback_ && tlsProviderPtr_ &&
-            tlsProviderPtr_->getBufferedData().readableBytes() >
-                highWaterMarkLen_)
-        {
-            highWaterMarkCallback_(
-                shared_from_this(),
-                tlsProviderPtr_->getBufferedData().readableBytes());
-        }
+        checkBufferedDataSize();
     }
 }
 // The order of data sending should be same as the order of calls of send()
@@ -595,12 +598,16 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
         {
             auto n = sendNodeInLoop(fileNode);
             if (fileNode->remainingBytes() > 0 && n >= 0)
+            {
                 writeBufferList_.push_back(std::move(fileNode));
+                checkBufferedDataSize();
+            }
             return;
         }
         else
         {
             writeBufferList_.push_back(std::move(fileNode));
+            checkBufferedDataSize();
         }
     }
     else
@@ -611,11 +618,15 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
             {
                 auto n = thisPtr->sendNodeInLoop(node);
                 if (node->remainingBytes() > 0 && n >= 0)
+                {
                     thisPtr->writeBufferList_.push_back(std::move(node));
+                    thisPtr->checkBufferedDataSize();
+                }
             }
             else
             {
                 thisPtr->writeBufferList_.push_back(std::move(node));
+                thisPtr->checkBufferedDataSize();
             }
         });
     }
@@ -631,7 +642,10 @@ void TcpConnectionImpl::sendStream(
         {
             auto n = sendNodeInLoop(node);
             if (node->remainingBytes() > 0 && n >= 0)
+            {
                 writeBufferList_.push_back(std::move(node));
+                checkBufferedDataSize();
+            }
             return;
         }
         else
@@ -648,11 +662,15 @@ void TcpConnectionImpl::sendStream(
                 {
                     auto n = thisPtr->sendNodeInLoop(node);
                     if (node->remainingBytes() > 0 && n >= 0)
+                    {
                         thisPtr->writeBufferList_.push_back(std::move(node));
+                        thisPtr->checkBufferedDataSize();
+                    }
                 }
                 else
                 {
                     thisPtr->writeBufferList_.push_back(std::move(node));
+                    thisPtr->checkBufferedDataSize();
                 }
             });
     }
@@ -732,6 +750,31 @@ ssize_t TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
 #ifndef _WIN32
 ssize_t TcpConnectionImpl::writeRaw(const void *buffer, size_t length)
 #else
+static int sendDataWin(int fd, const char *buffer, int length, int sendBufSize)
+{
+    int n = 0;
+    while (n < length)
+    {
+        auto toSend = length - n > sendBufSize ? sendBufSize : length - n;
+        int nWritten = ::send(fd, buffer + n, toSend, 0);
+        if (nWritten > 0)
+        {
+            n += nWritten;
+            if (nWritten < toSend)
+                break;
+        }
+        else if (nWritten == 0)
+        {
+            break;
+        }
+        else
+        {
+            errno = ::WSAGetLastError();
+            break;
+        }
+    }
+    return n;
+}
 ssize_t TcpConnectionImpl::writeRaw(const char *buffer, size_t length)
 #endif
 {
@@ -739,9 +782,10 @@ ssize_t TcpConnectionImpl::writeRaw(const char *buffer, size_t length)
 #ifndef _WIN32
     int nWritten = write(socketPtr_->fd(), buffer, length);
 #else
-    int nWritten =
-        ::send(socketPtr_->fd(), buffer, static_cast<int>(length), 0);
-    errno = (nWritten < 0) ? ::WSAGetLastError() : 0;
+    int nWritten = sendDataWin(socketPtr_->fd(),
+                               buffer,
+                               static_cast<int>(length),
+                               sendBufSize_);
 #endif
     if (nWritten > 0)
         bytesSent_ += nWritten;
@@ -934,8 +978,8 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
             idleTimeoutBackup_ = idleTimeout_;
             idleTimeout_ = 0;
         }
-
         writeBufferList_.push_back(asyncStreamNode);
+        checkBufferedDataSize();
     }
     else
     {
@@ -959,11 +1003,15 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
             {
                 auto n = thisPtr->sendNodeInLoop(node);
                 if (n >= 0 && (node->remainingBytes() > 0 || node->available()))
+                {
                     thisPtr->writeBufferList_.push_back(std::move(node));
+                    thisPtr->checkBufferedDataSize();
+                }
             }
             else
             {
                 thisPtr->writeBufferList_.push_back(std::move(node));
+                thisPtr->checkBufferedDataSize();
             }
         });
     }
