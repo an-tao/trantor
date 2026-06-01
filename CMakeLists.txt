@@ -20,7 +20,7 @@ set_property(
 option(USE_SPDLOG "Allow using the spdlog logging library" OFF)
 
 # Update default path for .cmake files.
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
 set(TRANTOR_MAJOR_VERSION 1)
