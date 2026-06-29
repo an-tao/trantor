@@ -16,11 +16,15 @@
 
 #include <trantor/utils/TaskQueue.h>
 #include <trantor/exports.h>
+#include <atomic>
+#include <condition_variable>
 #include <list>
 #include <memory>
-#include <vector>
+#include <mutex>
 #include <queue>
 #include <string>
+#include <thread>
+#include <vector>
 
 namespace trantor
 {
