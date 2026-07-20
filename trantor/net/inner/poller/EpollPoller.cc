@@ -22,6 +22,9 @@
 #include <assert.h>
 #include <strings.h>
 #include <iostream>
+#if (defined(__sparc__) || defined(__sparc))
+#define TRANTOR_RDHUP 0x2800 /* EPOLLRDHUP | POLLRDHUP */
+#endif
 #elif defined _WIN32
 #include "Wepoll.h"
 #include <assert.h>
@@ -38,7 +41,12 @@ namespace trantor
 static_assert(EPOLLIN == POLLIN, "EPOLLIN != POLLIN");
 static_assert(EPOLLPRI == POLLPRI, "EPOLLPRI != POLLPRI");
 static_assert(EPOLLOUT == POLLOUT, "EPOLLOUT != POLLOUT");
+#if (defined(__sparc__) || defined(__sparc))
+static_assert(EPOLLRDHUP & TRANTOR_RDHUP,
+              "EPOLLRDHUP not included in TRANTOR_RDHUP");
+#else
 static_assert(EPOLLRDHUP == POLLRDHUP, "EPOLLRDHUP != POLLRDHUP");
+#endif
 static_assert(EPOLLERR == POLLERR, "EPOLLERR != POLLERR");
 static_assert(EPOLLHUP == POLLHUP, "EPOLLHUP != POLLHUP");
 #endif
@@ -127,7 +135,15 @@ void EpollPoller::fillActiveChannels(int numEvents,
         assert(it != channels_.end());
         assert(it->second == channel);
 #endif
-        channel->setRevents(events_[i].events);
+        int revents = events_[i].events;
+#if defined(__linux__) && (defined(__sparc__) || defined(__sparc))
+        if (revents & EPOLLRDHUP)
+        {
+            revents &= ~EPOLLRDHUP;
+            revents |= POLLRDHUP;
+        }
+#endif
+        channel->setRevents(revents);
         activeChannels->push_back(channel);
     }
     // LOG_TRACE<<"active Channels num:"<<activeChannels->size();
@@ -205,6 +221,13 @@ void EpollPoller::update(int operation, Channel *channel)
     struct epoll_event event;
     memset(&event, 0, sizeof(event));
     event.events = channel->events();
+#if defined(__linux__) && (defined(__sparc__) || defined(__sparc))
+    if (event.events & TRANTOR_RDHUP)
+    {
+        event.events &= ~TRANTOR_RDHUP;
+        event.events |= EPOLLRDHUP;
+    }
+#endif
     event.data.ptr = channel;
     int fd = channel->fd();
     if (::epoll_ctl(epollfd_, operation, fd, &event) < 0)
