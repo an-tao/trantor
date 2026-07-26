@@ -196,8 +196,7 @@ struct SSLContext
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
             // Preserve stricter protocol settings from sslConfCmds while
             // enforcing TLS 1.2 as the minimum secure default.
-            const auto minProtoVersion =
-                SSL_CTX_get_min_proto_version(ctx_);
+            const auto minProtoVersion = SSL_CTX_get_min_proto_version(ctx_);
             if (minProtoVersion == 0 || minProtoVersion < TLS1_2_VERSION)
             {
                 SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
