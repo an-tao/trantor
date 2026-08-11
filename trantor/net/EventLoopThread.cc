@@ -42,6 +42,14 @@ EventLoopThread::~EventLoopThread()
     }
     if (thread_.joinable())
     {
+        if (std::this_thread::get_id() == thread_.get_id())
+        {
+            std::thread t([thread = std::move(thread_), loop]() mutable {
+                thread.join();
+            });
+            t.detach();
+            return;
+        }
         thread_.join();
     }
 }
