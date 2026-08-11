@@ -25,17 +25,15 @@ EventLoopThread::EventLoopThread(const std::string &threadName)
       thread_([this]() { loopFuncs(); })
 {
     auto f = promiseForLoopPointer_.get_future();
-    loop_ = f.get();
+    // Convert shared_ptr to weak_ptr
+    loop_ = std::weak_ptr<EventLoop>(f.get());
 }
 
 EventLoopThread::~EventLoopThread()
 {
     run();
     std::shared_ptr<EventLoop> loop;
-    {
-        std::unique_lock<std::mutex> lk(loopMutex_);
-        loop = loop_;
-    }
+    loop = loop_.lock();
     if (loop)
     {
         loop->quit();
@@ -71,10 +69,6 @@ void EventLoopThread::loopFuncs()
     auto f = promiseForRun_.get_future();
     (void)f.get();
     loop->loop();
-    {
-        std::unique_lock<std::mutex> lk(loopMutex_);
-        loop_ = nullptr;
-    }
 }
 
 void EventLoopThread::run()
