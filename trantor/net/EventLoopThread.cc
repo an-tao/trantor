@@ -20,13 +20,12 @@
 
 using namespace trantor;
 EventLoopThread::EventLoopThread(const std::string &threadName)
-    : loop_(nullptr),
-      loopThreadName_(threadName),
+    : loopThreadName_(threadName),
       thread_([this]() { loopFuncs(); })
 {
     auto f = promiseForLoopPointer_.get_future();
     // Convert shared_ptr to weak_ptr
-    loop_ = std::weak_ptr<EventLoop>(f.get());
+    loop_ = f.get();
 }
 
 EventLoopThread::~EventLoopThread()
