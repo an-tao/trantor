@@ -2,12 +2,17 @@
 #include <trantor/exports.h>
 
 #include <memory>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace trantor
 {
+using ServerCertificateReply = std::function<void(std::string)>;
+using ServerCertificateProvider =
+    std::function<void(std::string, ServerCertificateReply)>;
+
 struct TRANTOR_EXPORT TLSPolicy final
 {
     /**
@@ -62,6 +67,38 @@ struct TRANTOR_EXPORT TLSPolicy final
     TLSPolicy &setCaPath(const std::string &caPath)
     {
         caPath_ = caPath;
+        return *this;
+    }
+
+    // Request a peer certificate during a server handshake.  The argument
+    // controls whether a certificate is required: false requests one but
+    // permits anonymous peers; true rejects peers that omit it.
+    TLSPolicy &setPeerCertificateRequest(bool requireCertificate)
+    {
+        requestPeerCertificate_ = true;
+        requirePeerCertificate_ = requireCertificate;
+        return *this;
+    }
+
+    // Kept distinct from requesting a certificate: callers such as Gemini
+    // and Misfin perform application-level TOFU validation after TLS.
+    TLSPolicy &setCertificateVerification(bool enable)
+    {
+        return setValidate(enable);
+    }
+
+    TLSPolicy &setCertificatePem(std::string certificatePem,
+                                 std::string privateKeyPem)
+    {
+        certificatePem_ = std::move(certificatePem);
+        privateKeyPem_ = std::move(privateKeyPem);
+        return *this;
+    }
+
+    TLSPolicy &setServerCertificateProvider(
+        ServerCertificateProvider provider)
+    {
+        serverCertificateProvider_ = std::move(provider);
         return *this;
     }
 
@@ -180,6 +217,26 @@ struct TRANTOR_EXPORT TLSPolicy final
     {
         return useSystemCertStore_;
     }
+    bool getPeerCertificateRequest() const
+    {
+        return requestPeerCertificate_;
+    }
+    bool getRequirePeerCertificate() const
+    {
+        return requirePeerCertificate_;
+    }
+    const std::string &getCertificatePem() const
+    {
+        return certificatePem_;
+    }
+    const std::string &getPrivateKeyPem() const
+    {
+        return privateKeyPem_;
+    }
+    const ServerCertificateProvider &getServerCertificateProvider() const
+    {
+        return serverCertificateProvider_;
+    }
 
     static std::shared_ptr<TLSPolicy> defaultServerPolicy(
         const std::string &certPath,
@@ -216,6 +273,11 @@ struct TRANTOR_EXPORT TLSPolicy final
     bool validate_ = true;
     bool allowBrokenChain_ = false;
     bool useSystemCertStore_ = true;
+    bool requestPeerCertificate_ = false;
+    bool requirePeerCertificate_ = false;
+    std::string certificatePem_;
+    std::string privateKeyPem_;
+    ServerCertificateProvider serverCertificateProvider_;
 };
 using TLSPolicyPtr = std::shared_ptr<TLSPolicy>;
 }  // namespace trantor

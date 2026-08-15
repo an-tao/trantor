@@ -126,6 +126,20 @@ struct BotanCertificate : public Certificate
     Botan::X509_Certificate cert_;
 };
 
+CertificatePtr trantor::Certificate::fromPem(const std::string &pem)
+{
+    try
+    {
+        Botan::DataSource_Memory source(pem);
+        return std::make_shared<BotanCertificate>(
+            Botan::X509_Certificate(source));
+    }
+    catch (const Botan::Exception &)
+    {
+        return nullptr;
+    }
+}
+
 namespace trantor
 {
 struct SSLContext
@@ -134,6 +148,7 @@ struct SSLContext
     std::unique_ptr<Botan::X509_Certificate> cert;
     std::shared_ptr<Botan::Certificate_Store> certStore;
     bool isServer = false;
+    bool requestClientCert = false;
     bool requireClientCert = false;
 };
 }  // namespace trantor
@@ -150,14 +165,19 @@ class TrantorPolicy : public Botan::TLS::Policy
         return requireClientCert_;
     }
 
+    virtual bool request_client_certificate_authentication() const override
+    {
+        return requestClientCert_;
+    }
+
   public:
+    bool requestClientCert_ = false;
     bool requireClientCert_ = false;
 };
 
 struct BotanTLSProvider : public TLSProvider,
                           public NonCopyable,
-                          public Botan::TLS::Callbacks,
-                          public std::enable_shared_from_this<BotanTLSProvider>
+                          public Botan::TLS::Callbacks
 {
   public:
     BotanTLSProvider(TcpConnection *conn,
@@ -256,6 +276,14 @@ struct BotanTLSProvider : public TLSProvider,
 
     virtual void startEncryption() override
     {
+        // TODO: Implement TLSPolicy::setServerCertificateProvider() for
+        // Botan without changing its asynchronous API. Botan selects its
+        // credential through Credentials_Manager during the handshake, while
+        // the Trantor provider replies asynchronously. Do not "solve" this
+        // by blocking an event loop, treating a delayed reply as a rejection,
+        // or silently serving a default certificate. The correct recovery is
+        // a resumable handshake/provider bridge (or an equivalent Botan-native
+        // async credential mechanism) that preserves OpenSSL semantics.
         auto certStorePtr = contextPtr_->certStore.get();
         if (certStorePtr == nullptr)
         {
@@ -287,6 +315,8 @@ struct BotanTLSProvider : public TLSProvider,
             // TODO: Need a more scalable way to manage session validation rules
             validationPolicy_->requireClientCert_ =
                 contextPtr_->requireClientCert;
+            validationPolicy_->requestClientCert_ =
+                contextPtr_->requestClientCert;
             channel_ = std::make_unique<Botan::TLS::Server>(std::move(fakeThis),
                                                             sessionManager,
                                                             credsPtr_,
@@ -297,6 +327,8 @@ struct BotanTLSProvider : public TLSProvider,
         {
             validationPolicy_->requireClientCert_ =
                 contextPtr_->requireClientCert;
+            validationPolicy_->requestClientCert_ =
+                contextPtr_->requestClientCert;
             // technically Botan2 does support TLS 1.0 and 1.1, but Botan3 does
             // not. So we just disable them to keep compatibility.
             if (policyPtr_->getUseOldTLS())
@@ -389,6 +421,9 @@ struct BotanTLSProvider : public TLSProvider,
         LOG_TRACE << "tls_session_activated";
         tlsConnected_ = true;
         setApplicationProtocol(channel_->application_protocol());
+        if (contextPtr_->isServer && contextPtr_->cert)
+            setLocalCertificate(
+                std::make_shared<BotanCertificate>(*contextPtr_->cert));
         if (handshakeCallback_)
             handshakeCallback_(conn_);
     }
@@ -455,7 +490,16 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
 {
     auto ctx = std::make_shared<SSLContext>();
     ctx->isServer = server;
-    if (!policy.getKeyPath().empty())
+    if (!policy.getCertificatePem().empty())
+    {
+        Botan::DataSource_Memory keySource(
+            policy.getPrivateKeyPem().empty() ? policy.getCertificatePem() :
+                                                policy.getPrivateKeyPem());
+        ctx->key = Botan::PKCS8::load_key(keySource);
+        Botan::DataSource_Memory certSource(policy.getCertificatePem());
+        ctx->cert = std::make_unique<Botan::X509_Certificate>(certSource);
+    }
+    else if (!policy.getKeyPath().empty())
     {
         Botan::DataSource_Stream in(policy.getKeyPath());
         ctx->key = Botan::PKCS8::load_key(in);
@@ -482,8 +526,18 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
             ctx->certStore = systemCertStore;
         }
     }
-    if (server && policy.getValidate() && !policy.getCaPath().empty())
+    if (server && policy.getPeerCertificateRequest())
+    {
+        ctx->requestClientCert = true;
+        ctx->requireClientCert = policy.getRequirePeerCertificate();
+    }
+    else if (server && policy.getValidate() && !policy.getCaPath().empty())
+    {
+        // Preserve the legacy CA-path behaviour for callers that do not use
+        // the explicit request API.
+        ctx->requestClientCert = true;
         ctx->requireClientCert = true;
+    }
 
     if (policy.getUseOldTLS())
         LOG_WARN << "SSLPloicy have set useOldTLS to true. BUt Botan does not "

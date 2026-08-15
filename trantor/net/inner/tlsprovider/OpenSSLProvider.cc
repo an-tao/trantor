@@ -8,6 +8,7 @@
 #include <openssl/bio.h>
 #include <openssl/x509v3.h>
 
+#include <array>
 #include <memory>
 #include <mutex>
 #include <list>
@@ -181,6 +182,7 @@ struct SSLContext
         ctx_ = SSL_CTX_new(SSL_METHOD());
         if (ctx_ == nullptr)
             throw std::runtime_error("Failed to create SSL context");
+
         SSL_CONF_CTX *cctx = SSL_CONF_CTX_new();
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
         SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CLIENT);
@@ -208,6 +210,18 @@ struct SSLContext
                         "used for legacy purpose.";
         }
 #endif
+        if (isServer)
+        {
+            // A server that requests client certificates needs a non-empty
+            // context for resumable sessions. It separates sessions belonging
+            // to distinct TLS contexts and avoids OpenSSL aborting a handshake
+            // with SSL_R_SESSION_ID_CONTEXT_UNINITIALIZED.
+            std::array<unsigned char, SSL_MAX_SID_CTX_LENGTH> sessionIdContext;
+            if (!utils::secureRandomBytes(sessionIdContext.data(), sessionIdContext.size()) ||
+                SSL_CTX_set_session_id_context(ctx_, sessionIdContext.data(),
+                                               sessionIdContext.size()) != 1)
+                throw std::runtime_error("Failed to initialize SSL session-ID context");
+        }
     }
     ~SSLContext()
     {
@@ -307,6 +321,111 @@ struct OpenSSLCertificate : public Certificate
     }
     X509 *cert_ = nullptr;
 };
+
+CertificatePtr Certificate::fromPem(const std::string &pem)
+{
+    BIO *bio = BIO_new_mem_buf(pem.data(), static_cast<int>(pem.size()));
+    if (!bio)
+        return nullptr;
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+    if (!cert)
+        return nullptr;
+    return std::make_shared<OpenSSLCertificate>(cert);
+}
+
+namespace
+{
+bool loadCertificatePem(SSL_CTX *ctx,
+                        const std::string &certificatePem,
+                        const std::string &privateKeyPem)
+{
+    BIO *certBio = BIO_new_mem_buf(certificatePem.data(),
+                                   static_cast<int>(certificatePem.size()));
+    if (!certBio)
+        return false;
+    X509 *leaf = PEM_read_bio_X509_AUX(certBio, nullptr, nullptr, nullptr);
+    if (!leaf || SSL_CTX_use_certificate(ctx, leaf) != 1)
+    {
+        X509_free(leaf);
+        BIO_free(certBio);
+        return false;
+    }
+    X509_free(leaf);
+    while (X509 *chain = PEM_read_bio_X509(certBio, nullptr, nullptr, nullptr))
+    {
+        if (SSL_CTX_add_extra_chain_cert(ctx, chain) != 1)
+        {
+            X509_free(chain);
+            BIO_free(certBio);
+            return false;
+        }
+    }
+    ERR_clear_error();  // EOF terminates the PEM chain.
+    BIO_free(certBio);
+
+    const auto &keyPem = privateKeyPem.empty() ? certificatePem : privateKeyPem;
+    BIO *keyBio = BIO_new_mem_buf(keyPem.data(), static_cast<int>(keyPem.size()));
+    if (!keyBio)
+        return false;
+    EVP_PKEY *key = PEM_read_bio_PrivateKey(keyBio, nullptr, nullptr, nullptr);
+    BIO_free(keyBio);
+    if (!key || SSL_CTX_use_PrivateKey(ctx, key) != 1)
+    {
+        EVP_PKEY_free(key);
+        return false;
+    }
+    EVP_PKEY_free(key);
+    return SSL_CTX_check_private_key(ctx) == 1;
+}
+
+bool loadCertificatePem(SSL *ssl, const std::string &certificatePem)
+{
+    BIO *certBio = BIO_new_mem_buf(certificatePem.data(),
+                                   static_cast<int>(certificatePem.size()));
+    if (!certBio)
+        return false;
+    X509 *leaf = PEM_read_bio_X509_AUX(certBio, nullptr, nullptr, nullptr);
+    if (!leaf || SSL_use_certificate(ssl, leaf) != 1)
+    {
+        X509_free(leaf);
+        BIO_free(certBio);
+        return false;
+    }
+    X509_free(leaf);
+    while (X509 *chain = PEM_read_bio_X509(certBio, nullptr, nullptr, nullptr))
+    {
+        if (SSL_add1_chain_cert(ssl, chain) != 1)
+        {
+            X509_free(chain);
+            BIO_free(certBio);
+            return false;
+        }
+        X509_free(chain);
+    }
+    ERR_clear_error();
+    BIO_free(certBio);
+
+    BIO *keyBio = BIO_new_mem_buf(certificatePem.data(),
+                                  static_cast<int>(certificatePem.size()));
+    if (!keyBio)
+        return false;
+    EVP_PKEY *key = PEM_read_bio_PrivateKey(keyBio, nullptr, nullptr, nullptr);
+    BIO_free(keyBio);
+    if (!key || SSL_use_PrivateKey(ssl, key) != 1)
+    {
+        EVP_PKEY_free(key);
+        return false;
+    }
+    EVP_PKEY_free(key);
+    return SSL_check_private_key(ssl) == 1;
+}
+
+int acceptUnverifiedPeerCertificate(int, X509_STORE_CTX *)
+{
+    return 1;
+}
+}  // namespace
 
 class SessionManager
 {
@@ -435,6 +554,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         SSL_set_bio(ssl_, rbio_, wbio_);
         if (!policyPtr_->getHostname().empty())
             SSL_set_tlsext_host_name(ssl_, policyPtr_->getHostname().c_str());
+        if (contextPtr_->isServer && policyPtr_->getServerCertificateProvider())
+            SSL_set_cert_cb(ssl_, selectServerCertificate, this);
     }
 
     virtual ~OpenSSLProvider()
@@ -596,8 +717,10 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
                 SSL_SESSION *session = SSL_get0_session(ssl_);
-                assert(session);
-                if (SSL_SESSION_is_resumable(session))
+                // OpenSSL can complete a handshake without exposing a
+                // resumable session (notably while a TLS 1.3 ticket is still
+                // pending). There is nothing to cache in that case.
+                if (session && SSL_SESSION_is_resumable(session))
                 {
                     auto reused = SSL_session_reused(ssl_);
                     if (reused == 0)
@@ -613,6 +736,13 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             bool needCert = policyPtr_->getValidate();
             if (cert)
                 setPeerCertificate(std::make_shared<OpenSSLCertificate>(cert));
+            if (contextPtr_->isServer)
+            {
+                auto *local = SSL_get_certificate(ssl_);
+                if (local && X509_up_ref(local) == 1)
+                    setLocalCertificate(
+                        std::make_shared<OpenSSLCertificate>(local));
+            }
 
             if (needCert)
             {
@@ -665,6 +795,11 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 LOG_TRACE << "SSL handshake wants to write";
                 sendTLSData();
             }
+            else if (err == SSL_ERROR_WANT_X509_LOOKUP)
+            {
+                // The asynchronous SNI certificate provider will resume the
+                // handshake when it supplies its PEM bundle.
+            }
             else
             {
                 if (!processedHandshakeError_)
@@ -678,6 +813,41 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
         }
         return false;
+    }
+
+    static int selectServerCertificate(SSL *, void *arg)
+    {
+        return static_cast<OpenSSLProvider *>(arg)->selectServerCertificate();
+    }
+
+    int selectServerCertificate()
+    {
+        if (certificateProviderReady_)
+            return certificatePem_.empty() ? 0 :
+                   (loadCertificatePem(ssl_, certificatePem_) ? 1 : 0);
+        if (certificateProviderStarted_)
+            return -1;
+
+        certificateProviderStarted_ = true;
+        const char *name = SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
+        auto self = std::static_pointer_cast<OpenSSLProvider>(shared_from_this());
+        policyPtr_->getServerCertificateProvider()(name ? name : "",
+            [weak = std::weak_ptr<OpenSSLProvider>(self)](std::string pem) mutable {
+                if (const auto provider = weak.lock())
+                {
+                    provider->loop_->queueInLoop(
+                        [weak, pem = std::move(pem)]() mutable {
+                            if (const auto resumed = weak.lock())
+                            {
+                                resumed->certificatePem_ = std::move(pem);
+                                resumed->certificateProviderReady_ = true;
+                                if (!SSL_is_init_finished(resumed->ssl_))
+                                    resumed->processHandshake();
+                            }
+                        });
+                }
+            });
+        return -1;
     }
 
     void processApplicationData()
@@ -765,6 +935,9 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     BIO *wbio_;
     bool processedHandshakeError_{false};
     bool processedSslError_{false};
+    bool certificateProviderStarted_{false};
+    bool certificateProviderReady_{false};
+    std::string certificatePem_;
 };
 
 std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
@@ -781,7 +954,13 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
     auto ctx = std::make_shared<SSLContext>(policy.getUseOldTLS(),
                                             policy.getConfCmds(),
                                             isServer);
-    if (!policy.getCertPath().empty() && !policy.getKeyPath().empty())
+    if (!policy.getCertificatePem().empty())
+    {
+        if (!loadCertificatePem(ctx->ctx(), policy.getCertificatePem(),
+                                policy.getPrivateKeyPem()))
+            throw std::runtime_error("Failed to load certificate PEM");
+    }
+    else if (!policy.getCertPath().empty() && !policy.getKeyPath().empty())
     {
         if (SSL_CTX_use_certificate_chain_file(ctx->ctx(),
                                                policy.getCertPath().data()) <=
@@ -847,6 +1026,16 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
             }
             SSL_CTX_set_cert_store(ctx->ctx(), store);
         }
+    }
+
+    if (isServer && policy.getPeerCertificateRequest())
+    {
+        int mode = SSL_VERIFY_PEER;
+        if (policy.getRequirePeerCertificate())
+            mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+        SSL_CTX_set_verify(ctx->ctx(), mode,
+                           policy.getValidate() ? nullptr :
+                                                  acceptUnverifiedPeerCertificate);
     }
 
     if (!policy.getAlpnProtocols().empty() && isServer)

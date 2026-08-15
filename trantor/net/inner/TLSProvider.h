@@ -10,7 +10,7 @@
 
 namespace trantor
 {
-struct TLSProvider
+struct TLSProvider : public std::enable_shared_from_this<TLSProvider>
 {
     TLSProvider(TcpConnection* conn, TLSPolicyPtr policy, SSLContextPtr ctx)
         : conn_(conn),
@@ -125,6 +125,11 @@ struct TLSProvider
         return peerCertificate_;
     }
 
+    const CertificatePtr& localCertificate() const
+    {
+        return localCertificate_;
+    }
+
     const std::string& applicationProtocol() const
     {
         return applicationProtocol_;
@@ -139,6 +144,11 @@ struct TLSProvider
     void setPeerCertificate(CertificatePtr cert)
     {
         peerCertificate_ = std::move(cert);
+    }
+
+    void setLocalCertificate(CertificatePtr cert)
+    {
+        localCertificate_ = std::move(cert);
     }
 
     void setApplicationProtocol(std::string protocol)
@@ -162,6 +172,7 @@ struct TLSProvider
     MsgBuffer recvBuffer_;
     EventLoop* loop_ = nullptr;
     CertificatePtr peerCertificate_;
+    CertificatePtr localCertificate_;
     std::string applicationProtocol_;
     std::string sniName_;
     MsgBuffer writeBuffer_;

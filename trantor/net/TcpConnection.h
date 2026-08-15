@@ -276,6 +276,14 @@ class TRANTOR_EXPORT TcpConnection
     virtual CertificatePtr peerCertificate() const = 0;
 
     /**
+     * @brief Get the certificate selected by this TLS server connection.
+     *
+     * @return nullptr for clients, non-TLS connections, or when no server
+     * certificate was selected.
+     */
+    virtual CertificatePtr localCertificate() const = 0;
+
+    /**
      * @brief Get the SNI name (for server connections only)
      *
      * @return Empty string if no SNI name was provided (not an SSL connection

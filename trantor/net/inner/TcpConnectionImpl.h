@@ -176,6 +176,13 @@ class TcpConnectionImpl : public TcpConnection,
         return nullptr;
     }
 
+    CertificatePtr localCertificate() const override
+    {
+        if (tlsProviderPtr_)
+            return tlsProviderPtr_->localCertificate();
+        return nullptr;
+    }
+
     std::string sniName() const override
     {
         if (tlsProviderPtr_)
