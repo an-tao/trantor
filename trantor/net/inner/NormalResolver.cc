@@ -24,6 +24,14 @@ bool Resolver::isCAresUsed()
 void NormalResolver::resolve(const std::string &hostname,
                              const Callback &callback)
 {
+    resolve(hostname, [callback](const std::vector<trantor::InetAddress> &addresses) {
+        callback(addresses.empty() ? InetAddress{} : addresses.front());
+    });
+}
+
+void NormalResolver::resolve(const std::string &hostname,
+                             const ResolverResultsCallback &callback)
+{
     {
         std::lock_guard<std::mutex> guard(globalMutex());
         auto iter = globalCache().find(hostname);
@@ -33,7 +41,7 @@ void NormalResolver::resolve(const std::string &hostname,
             if (timeout_ == 0 || cachedAddr.second.after(static_cast<double>(
                                      timeout_)) > trantor::Date::date())
             {
-                callback(cachedAddr.first);
+                callback(*cachedAddr.first);
                 return;
             }
         }
@@ -51,7 +59,7 @@ void NormalResolver::resolve(const std::string &hostname,
                         cachedAddr.second.after(static_cast<double>(
                             thisPtr->timeout_)) > trantor::Date::date())
                     {
-                        callback(cachedAddr.first);
+                        callback(*cachedAddr.first);
                         return;
                     }
                 }
@@ -69,30 +77,29 @@ void NormalResolver::resolve(const std::string &hostname,
                 {
                     freeaddrinfo(res);
                 }
-                callback(InetAddress{});
+                callback({});
                 return;
             }
-            InetAddress inet;
-            if (res->ai_family == AF_INET)
+            auto addresses = std::make_shared<std::vector<InetAddress>>();
+            for (auto *item = res; item != nullptr; item = item->ai_next)
             {
-                struct sockaddr_in addr;
-                memset(&addr, 0, sizeof addr);
-                addr = *reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
-                inet = InetAddress(addr);
-            }
-            else if (res->ai_family == AF_INET6)
-            {
-                struct sockaddr_in6 addr;
-                memset(&addr, 0, sizeof addr);
-                addr = *reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
-                inet = InetAddress(addr);
+                if (item->ai_family == AF_INET)
+                {
+                    const auto *address = reinterpret_cast<const struct sockaddr_in *>(item->ai_addr);
+                    addresses->emplace_back(*address);
+                }
+                else if (item->ai_family == AF_INET6)
+                {
+                    const auto *address = reinterpret_cast<const struct sockaddr_in6 *>(item->ai_addr);
+                    addresses->emplace_back(*address);
+                }
             }
             freeaddrinfo(res);
-            callback(inet);
+            callback(*addresses);
             {
                 std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
                 auto &addrItem = thisPtr->globalCache()[hostname];
-                addrItem.first = inet;
+                addrItem.first = std::move(addresses);
                 addrItem.second = trantor::Date::date();
             }
             return;
