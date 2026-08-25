@@ -95,8 +95,15 @@ struct TRANTOR_EXPORT TLSPolicy final
         return *this;
     }
 
-    TLSPolicy &setServerCertificateProvider(
-        ServerCertificateProvider provider)
+    /**
+     * @brief Set an asynchronous provider for server certificates selected by
+     * the SNI hostname.
+     *
+     * @note This feature is supported only by the OpenSSL TLS provider. Botan
+     * requires synchronous credential selection during its handshake, so
+     * creating a Botan server TLS context with this option set throws.
+     */
+    TLSPolicy &setServerCertificateProvider(ServerCertificateProvider provider)
     {
         serverCertificateProvider_ = std::move(provider);
         return *this;
