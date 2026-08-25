@@ -81,8 +81,15 @@ static bool validatePeerCertificate(SSL *ssl,
 
     if (!isServer)
     {
-        const int rc =
-            X509_check_host(cert, hostname.data(), hostname.size(), 0, nullptr);
+        // X509_check_host() only matches DNS names. Try the textual IP helper
+        // first so IPv4 and IPv6 literals are checked against iPAddress SANs.
+        // X509_check_ip_asc() returns -2 when hostname is not an IP literal.
+        int rc = X509_check_ip_asc(cert, hostname.c_str(), 0);
+        if (rc == -2)
+        {
+            rc = X509_check_host(
+                cert, hostname.data(), hostname.size(), 0, nullptr);
+        }
         if (rc != 1)
         {
             LOG_TRACE << "Peer certificate does not match hostname: "
@@ -911,6 +918,14 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 {
                     handleSSLError(SSLError::kSSLProtocolError);
                 }
+                else if (err == SSL_ERROR_WANT_READ ||
+                         err == SSL_ERROR_WANT_WRITE)
+                {
+                    // SSL_read() can generate protocol output, for example a
+                    // TLS 1.3 KeyUpdate response. Do not leave it stranded in
+                    // the write BIO while waiting for more socket input.
+                    sendTLSData();
+                }
                 return;
             }
         }
@@ -924,6 +939,17 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             return -1;
         if (len == 0)
             return 0;
+
+        // Ciphertext already accepted by the transport must remain ahead of
+        // records generated later by SSL. In particular, SSL_read() may emit
+        // protocol records while an earlier socket write is still buffered.
+        if (getBufferedData().readableBytes() != 0)
+        {
+            appendToWriteBuffer(static_cast<const char *>(data), len);
+            (void)BIO_reset(wbio_);
+            return len;
+        }
+
         int n = writeCallback_(conn_, data, len);
 
         if (n >= 0)

@@ -39,7 +39,6 @@ int main()
                 auto policy =
                     TLSPolicy::defaultServerPolicy("server.crt", "server.key");
                 connectionPtr->startEncryption(policy, true);
-                connectionPtr->forwardToTLSBuffer(buffer);
                 return;
             }
             LOG_DEBUG << std::string{buffer->peek(), buffer->readableBytes()};

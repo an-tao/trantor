@@ -296,6 +296,12 @@ class TRANTOR_EXPORT TcpConnection
      * connection will be upgraded to a TLS server connection. If the connection
      * is specified as a client, the connection will be upgraded to a TLS client
      * @note This method is only available for non-SSL connections.
+     * @note Remove the plaintext upgrade request from the receive buffer before
+     * calling this method. Any remaining bytes are treated as pipelined TLS
+     * records. Plaintext already queued for sending is flushed before the TLS
+     * handshake starts.
+     * Application data sent while the upgrade is pending is buffered and sent
+     * over TLS after the handshake completes.
      */
     virtual void startEncryption(TLSPolicyPtr policy,
                                  bool isServer,

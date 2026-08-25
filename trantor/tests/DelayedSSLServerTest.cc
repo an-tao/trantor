@@ -21,13 +21,18 @@ int main()
     LOG_INFO << "start";
     server.setRecvMessageCallback(
         [](const TcpConnectionPtr &connectionPtr, MsgBuffer *buffer) {
-            LOG_DEBUG << std::string{buffer->peek(), buffer->readableBytes()};
+            const std::string message{buffer->peek(), buffer->readableBytes()};
+            LOG_DEBUG << message;
+            if (message != "EHLO mail.example\r\n")
+            {
+                LOG_ERROR << "Unexpected encrypted request: " << message;
+            }
             connectionPtr->send(*buffer);
             buffer->retrieveAll();
             connectionPtr->shutdown();
         });
     server.setConnectionCallback([](const TcpConnectionPtr &connPtr) {
-        if (connPtr->connected())
+        if (connPtr->connected() && !connPtr->isSSLConnection())
         {
             LOG_DEBUG << "New connection";
             connPtr->send("hello");

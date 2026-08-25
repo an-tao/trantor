@@ -410,9 +410,17 @@ struct BotanTLSProvider : public TLSProvider,
 
     void handleSSLError(SSLError err)
     {
+        if (processedSslError_)
+            return;
+        processedSslError_ = true;
         if (!errorCallback_)
             return;
-        loop_->queueInLoop([this, err]() { errorCallback_(conn_, err); });
+
+        // recvData() and startEncryption() run on the connection's loop. Keep
+        // the provider alive across the callback because the callback closes
+        // the owning connection synchronously.
+        auto guard = shared_from_this();
+        errorCallback_(conn_, err);
     }
 
     virtual ~BotanTLSProvider() override = default;
@@ -545,6 +553,7 @@ struct BotanTLSProvider : public TLSProvider,
     std::shared_ptr<Botan::Credentials_Manager> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
     bool tlsConnected_ = false;
+    bool processedSslError_ = false;
     ssize_t lastWriteSize_ = 0;
 };
 

@@ -242,6 +242,8 @@ class TcpConnectionImpl : public TcpConnection,
     std::list<BufferNodePtr> writeBufferList_;
     void readCallback();
     void writeCallback();
+    void startPendingEncryption();
+    void finishEncryptionHandshake();
     InetAddress localAddr_, peerAddr_;
     ConnStatus status_{ConnStatus::Connecting};
     void handleClose();
@@ -272,6 +274,12 @@ class TcpConnectionImpl : public TcpConnection,
     // std::unique_ptr<std::vector<char>> fileBufferPtr_;
     std::shared_ptr<TLSProvider> tlsProviderPtr_;
     std::function<void(const TcpConnectionPtr &)> upgradeCallback_;
+    std::list<BufferNodePtr> pendingTlsWriteBufferList_;
+    TLSPolicyPtr pendingTlsPolicy_;
+    std::function<void(const TcpConnectionPtr &)> pendingUpgradeCallback_;
+    bool pendingTlsIsServer_{false};
+    bool encryptionPending_{false};
+    bool tlsHandshakePending_{false};
 
     bool closeOnEmpty_{false};
 

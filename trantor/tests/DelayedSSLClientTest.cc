@@ -37,27 +37,36 @@ int main()
                         loop.quit();
                 }
             });
-        client[i]->setMessageCallback([](const TcpConnectionPtr &conn,
-                                         MsgBuffer *buf) {
-            auto msg = std::string(buf->peek(), buf->readableBytes());
+        client[i]->setMessageCallback(
+            [](const TcpConnectionPtr &conn, MsgBuffer *buf) {
+                auto msg = std::string(buf->peek(), buf->readableBytes());
 
-            LOG_INFO << msg;
-            if (msg == "hello")
-            {
-                buf->retrieveAll();
-                auto policy = TLSPolicy::defaultClientPolicy();
-                policy->setValidate(false);
-                conn->startEncryption(
-                    policy, false, [](const TcpConnectionPtr &encryptedConn) {
-                        LOG_INFO << "SSL established";
-                        encryptedConn->send("Hello");
-                    });
-            }
-            if (conn->isSSLConnection())
-            {
-                buf->retrieveAll();
-            }
-        });
+                LOG_INFO << msg;
+                if (msg == "hello")
+                {
+                    buf->retrieveAll();
+                    auto policy = TLSPolicy::defaultClientPolicy();
+                    policy->setValidate(false);
+                    conn->startEncryption(policy,
+                                          false,
+                                          [](const TcpConnectionPtr &) {
+                                              LOG_INFO << "SSL established";
+                                          });
+                    // STARTTLS users commonly send the next protocol command
+                    // immediately. It must be buffered until the handshake is
+                    // complete, not written as plaintext or dropped.
+                    conn->send("EHLO mail.example\r\n");
+                    return;
+                }
+                if (conn->isSSLConnection())
+                {
+                    if (msg != "EHLO mail.example\r\n")
+                    {
+                        LOG_ERROR << "Unexpected encrypted response: " << msg;
+                    }
+                    buf->retrieveAll();
+                }
+            });
         client[i]->connect();
     }
     loop.loop();
