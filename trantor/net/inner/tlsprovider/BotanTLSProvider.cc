@@ -527,9 +527,9 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
 
     if (!policy.getCertificatePem().empty())
     {
-        Botan::DataSource_Memory keySource(
-            policy.getPrivateKeyPem().empty() ? policy.getCertificatePem() :
-                                                policy.getPrivateKeyPem());
+        Botan::DataSource_Memory keySource(policy.getPrivateKeyPem().empty()
+                                               ? policy.getCertificatePem()
+                                               : policy.getPrivateKeyPem());
         ctx->key = Botan::PKCS8::load_key(keySource);
         Botan::DataSource_Memory certSource(policy.getCertificatePem());
         ctx->certChain = loadCertificateChain(certSource);

@@ -164,8 +164,8 @@ struct TRANTOR_EXPORT TLSPolicy final
     /**
      * @brief Accept a certificate with an untrusted or otherwise broken chain,
      * while still validating its hostname and validity period. This option has
-     * no effect if validate is false. When validate is true, the peer must still
-     * present a certificate.
+     * no effect if validate is false. When validate is true, the peer must
+     * still present a certificate.
      *
      * @note Chain trust, issuer, revocation, key usage, and other PKIX checks
      * are ignored. To also permit a peer that presents no certificate, use

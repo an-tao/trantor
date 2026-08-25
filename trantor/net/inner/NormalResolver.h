@@ -34,9 +34,10 @@ class NormalResolver : public Resolver,
     }
 
   private:
-    static std::unordered_map<std::string,
-                              std::pair<std::shared_ptr<std::vector<trantor::InetAddress>>,
-                                        trantor::Date>>&
+    static std::unordered_map<
+        std::string,
+        std::pair<std::shared_ptr<std::vector<trantor::InetAddress>>,
+                  trantor::Date>>&
     globalCache()
     {
         static std::unordered_map<

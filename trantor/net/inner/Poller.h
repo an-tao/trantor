@@ -28,7 +28,7 @@ using EventCallback = std::function<void(uint64_t)>;
 class Poller : NonCopyable
 {
   public:
-    explicit Poller(EventLoop *loop) : ownerLoop_(loop){};
+    explicit Poller(EventLoop *loop) : ownerLoop_(loop) {};
     virtual ~Poller()
     {
     }

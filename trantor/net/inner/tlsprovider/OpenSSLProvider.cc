@@ -218,10 +218,13 @@ struct SSLContext
             // to distinct TLS contexts and avoids OpenSSL aborting a handshake
             // with SSL_R_SESSION_ID_CONTEXT_UNINITIALIZED.
             std::array<unsigned char, SSL_MAX_SID_CTX_LENGTH> sessionIdContext;
-            if (!utils::secureRandomBytes(sessionIdContext.data(), sessionIdContext.size()) ||
-                SSL_CTX_set_session_id_context(ctx_, sessionIdContext.data(),
+            if (!utils::secureRandomBytes(sessionIdContext.data(),
+                                          sessionIdContext.size()) ||
+                SSL_CTX_set_session_id_context(ctx_,
+                                               sessionIdContext.data(),
                                                sessionIdContext.size()) != 1)
-                throw std::runtime_error("Failed to initialize SSL session-ID context");
+                throw std::runtime_error(
+                    "Failed to initialize SSL session-ID context");
         }
     }
     ~SSLContext()
@@ -366,7 +369,8 @@ bool loadCertificatePem(SSL_CTX *ctx,
     BIO_free(certBio);
 
     const auto &keyPem = privateKeyPem.empty() ? certificatePem : privateKeyPem;
-    BIO *keyBio = BIO_new_mem_buf(keyPem.data(), static_cast<int>(keyPem.size()));
+    BIO *keyBio =
+        BIO_new_mem_buf(keyPem.data(), static_cast<int>(keyPem.size()));
     if (!keyBio)
         return false;
     EVP_PKEY *key = PEM_read_bio_PrivateKey(keyBio, nullptr, nullptr, nullptr);
@@ -464,11 +468,11 @@ class SessionManager
             }
 
             SSL_SESSION_up_ref(session);
-            sessions_.push_front(SessionData{
-                session,
-                key,
-                std::chrono::steady_clock::now() +
-                    std::chrono::seconds(sessionTimeout_)});
+            sessions_.push_front(
+                SessionData{session,
+                            key,
+                            std::chrono::steady_clock::now() +
+                                std::chrono::seconds(sessionTimeout_)});
             sessionMap_[key] = sessions_.begin();
             removeExcessSession();
         }
@@ -828,16 +832,20 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     int selectServerCertificate()
     {
         if (certificateProviderReady_)
-            return certificatePem_.empty() ? 0 :
-                   (loadCertificatePem(ssl_, certificatePem_) ? 1 : 0);
+            return certificatePem_.empty()
+                       ? 0
+                       : (loadCertificatePem(ssl_, certificatePem_) ? 1 : 0);
         if (certificateProviderStarted_)
             return -1;
 
         certificateProviderStarted_ = true;
         const char *name = SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
-        auto self = std::static_pointer_cast<OpenSSLProvider>(shared_from_this());
-        policyPtr_->getServerCertificateProvider()(name ? name : "",
-            [weak = std::weak_ptr<OpenSSLProvider>(self)](std::string pem) mutable {
+        auto self =
+            std::static_pointer_cast<OpenSSLProvider>(shared_from_this());
+        policyPtr_->getServerCertificateProvider()(
+            name ? name : "",
+            [weak = std::weak_ptr<OpenSSLProvider>(self)](
+                std::string pem) mutable {
                 if (const auto provider = weak.lock())
                 {
                     provider->loop_->queueInLoop(
@@ -961,7 +969,8 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
                                             isServer);
     if (!policy.getCertificatePem().empty())
     {
-        if (!loadCertificatePem(ctx->ctx(), policy.getCertificatePem(),
+        if (!loadCertificatePem(ctx->ctx(),
+                                policy.getCertificatePem(),
                                 policy.getPrivateKeyPem()))
             throw std::runtime_error("Failed to load certificate PEM");
     }
@@ -1035,10 +1044,9 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
         {
             std::unique_ptr<X509_STORE, decltype(&X509_STORE_free)> store(
                 X509_STORE_new(), X509_STORE_free);
-            if (!store ||
-                !X509_STORE_load_locations(store.get(),
-                                           policy.getCaPath().data(),
-                                           nullptr))
+            if (!store || !X509_STORE_load_locations(store.get(),
+                                                     policy.getCaPath().data(),
+                                                     nullptr))
             {
                 throw std::runtime_error("Failed to load CA certificate");
             }
@@ -1051,9 +1059,9 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
         int mode = SSL_VERIFY_PEER;
         if (policy.getRequirePeerCertificate())
             mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-        SSL_CTX_set_verify(ctx->ctx(), mode,
-                           policy.getValidate() &&
-                                   !policy.getAllowBrokenChain()
+        SSL_CTX_set_verify(ctx->ctx(),
+                           mode,
+                           policy.getValidate() && !policy.getAllowBrokenChain()
                                ? nullptr
                                : acceptUnverifiedPeerCertificate);
     }
