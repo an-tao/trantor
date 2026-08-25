@@ -49,19 +49,6 @@ static bool certificateMatchesHostname(const Botan::X509_Certificate &cert,
     return matches;
 }
 
-static std::string join(const std::vector<std::string> &vec,
-                        const std::string &delim)
-{
-    std::string ret;
-    for (auto const &str : vec)
-    {
-        if (ret.empty() == false)
-            ret += delim;
-        ret += str;
-    }
-    return ret;
-}
-
 static std::vector<Botan::X509_Certificate> loadCertificateChain(
     Botan::DataSource &source)
 {
@@ -461,19 +448,14 @@ struct BotanTLSProvider : public TLSProvider,
         if (policyPtr_->getAlpnProtocols().empty() || client_protos.empty())
             return "";
 
-        for (auto const &proto : client_protos)
+        for (const auto &proto : policyPtr_->getAlpnProtocols())
         {
-            if (std::find(policyPtr_->getAlpnProtocols().begin(),
-                          policyPtr_->getAlpnProtocols().end(),
-                          proto) != policyPtr_->getAlpnProtocols().end())
+            if (std::find(client_protos.begin(), client_protos.end(), proto) !=
+                client_protos.end())
                 return proto;
         }
 
-        throw Botan::TLS::TLS_Exception(
-            Botan::TLS::Alert::NoApplicationProtocol,
-            "No supported application protocol found. Client offered: " +
-                join(client_protos, ", ") + " but we support: " +
-                join(policyPtr_->getAlpnProtocols(), ", "));
+        return "";
     }
 
     void tls_alert(Botan::TLS::Alert alert) override

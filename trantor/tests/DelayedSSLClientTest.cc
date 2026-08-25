@@ -3,7 +3,6 @@
 #include <trantor/net/EventLoopThread.h>
 #include <string>
 #include <iostream>
-#include <atomic>
 using namespace trantor;
 #define USE_IPV6 0
 int main()
@@ -17,23 +16,22 @@ int main()
     InetAddress serverAddr("127.0.0.1", 8888);
 #endif
     std::shared_ptr<trantor::TcpClient> client[10];
-    std::atomic_int connCount;
-    connCount = 1;
+    int connectionCount = 1;
     for (int i = 0; i < 1; ++i)
     {
         client[i] = std::make_shared<trantor::TcpClient>(&loop,
                                                          serverAddr,
                                                          "tcpclienttest");
         client[i]->setConnectionCallback(
-            [i, &loop, &connCount](const TcpConnectionPtr &conn) {
+            [i, &loop, &connectionCount](const TcpConnectionPtr &conn) {
                 if (conn->connected())
                 {
                 }
                 else
                 {
                     LOG_DEBUG << i << " disconnected";
-                    --connCount;
-                    if (connCount == 0)
+                    --connectionCount;
+                    if (connectionCount == 0)
                         loop.quit();
                 }
             });
@@ -47,11 +45,19 @@ int main()
                     buf->retrieveAll();
                     auto policy = TLSPolicy::defaultClientPolicy();
                     policy->setValidate(false);
-                    conn->startEncryption(policy,
-                                          false,
-                                          [](const TcpConnectionPtr &) {
-                                              LOG_INFO << "SSL established";
-                                          });
+                    policy->setAlpnProtocols(
+                        {"client-preferred", "server-preferred"});
+                    conn->startEncryption(
+                        policy, false, [](const TcpConnectionPtr &connection) {
+                            LOG_INFO << "SSL established";
+                            if (connection->applicationProtocol() !=
+                                "server-preferred")
+                            {
+                                LOG_ERROR << "Unexpected ALPN "
+                                             "protocol: "
+                                          << connection->applicationProtocol();
+                            }
+                        });
                     // STARTTLS users commonly send the next protocol command
                     // immediately. It must be buffered until the handshake is
                     // complete, not written as plaintext or dropped.

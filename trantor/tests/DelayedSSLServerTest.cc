@@ -38,7 +38,15 @@ int main()
             connPtr->send("hello");
             auto policy =
                 TLSPolicy::defaultServerPolicy("server.crt", "server.key");
-            connPtr->startEncryption(policy, true);
+            policy->setAlpnProtocols({"server-preferred", "client-preferred"});
+            connPtr->startEncryption(
+                policy, true, [](const TcpConnectionPtr &connection) {
+                    if (connection->applicationProtocol() != "server-preferred")
+                    {
+                        LOG_ERROR << "Unexpected ALPN protocol: "
+                                  << connection->applicationProtocol();
+                    }
+                });
         }
         else if (connPtr->disconnected())
         {

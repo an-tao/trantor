@@ -562,6 +562,15 @@ class SessionManager
 
 static SessionManager sessionManager;
 
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+static bool canCacheSessionAfterHandshake(SSL_SESSION *session)
+{
+    if (session == nullptr)
+        return false;
+    return SSL_SESSION_is_resumable(session) == 1;
+}
+#endif
+
 struct OpenSSLProvider : public TLSProvider, public NonCopyable
 {
     OpenSSLProvider(TcpConnection *conn, TLSPolicyPtr policy, SSLContextPtr ctx)
@@ -574,10 +583,9 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         assert(rbio_);
         assert(wbio_);
         SSL_set_bio(ssl_, rbio_, wbio_);
+        SSL_set_ex_data(ssl_, providerIndex(), this);
         if (!policyPtr_->getHostname().empty())
             SSL_set_tlsext_host_name(ssl_, policyPtr_->getHostname().c_str());
-        if (contextPtr_->isServer && policyPtr_->getServerCertificateProvider())
-            SSL_set_ex_data(ssl_, certificateProviderIndex(), this);
     }
 
     virtual ~OpenSSLProvider()
@@ -623,6 +631,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             if (cachedSession)
             {
                 // SSL_set_session takes its own reference; release ours.
+                LOG_TRACE << "Using cached TLS session";
                 SSL_set_session(ssl_, cachedSession);
                 SSL_SESSION_free(cachedSession);
             }
@@ -708,6 +717,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         if (ret == 1)
         {
             LOG_TRACE << "SSL handshake finished";
+            LOG_TRACE << "SSL session reused: "
+                      << (SSL_session_reused(ssl_) == 1);
             if (contextPtr_->isServer)
             {
                 const char *sniName =
@@ -742,7 +753,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 // OpenSSL can complete a handshake without exposing a
                 // resumable session (notably while a TLS 1.3 ticket is still
                 // pending). There is nothing to cache in that case.
-                if (session && SSL_SESSION_is_resumable(session))
+                if (canCacheSessionAfterHandshake(session))
                 {
                     auto reused = SSL_session_reused(ssl_);
                     if (reused == 0)
@@ -795,6 +806,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 }
             }
 
+            sessionCacheReady_ = true;
             if (handshakeCallback_)
                 handshakeCallback_(conn_);
             sendTLSData();  // Needed to send ChangeCipherSpec
@@ -836,11 +848,33 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     static int selectServerCertificate(SSL *ssl, int *alert, void *)
     {
         auto provider = static_cast<OpenSSLProvider *>(
-            SSL_get_ex_data(ssl, certificateProviderIndex()));
+            SSL_get_ex_data(ssl, providerIndex()));
         if (provider == nullptr)
             return SSL_TLSEXT_ERR_NOACK;
         return provider->selectServerCertificate(alert);
     }
+
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+    // NOTE: LibreSSL doesn't seem to have an resumption implementation
+    // and the API does nothing. Welp. Keeping it until supported I guess
+    static int newSession(SSL *ssl, SSL_SESSION *session)
+    {
+        auto provider = static_cast<OpenSSLProvider *>(
+            SSL_get_ex_data(ssl, providerIndex()));
+        if (provider != nullptr && provider->sessionCacheReady_ &&
+            !provider->contextPtr_->isServer &&
+            SSL_SESSION_is_resumable(session))
+        {
+            sessionManager.store(provider->policyPtr_->getHostname(),
+                                 provider->conn_->peerAddr(),
+                                 session);
+        }
+
+        // SessionManager::store() takes its own reference. Tell OpenSSL that
+        // the callback does not retain the reference supplied to it.
+        return 0;
+    }
+#endif
 
     int selectServerCertificate(int *alert)
     {
@@ -868,7 +902,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         return SSL_TLSEXT_ERR_ALERT_FATAL;
     }
 
-    static int certificateProviderIndex()
+    static int providerIndex()
     {
         static const int index =
             SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
@@ -979,6 +1013,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     BIO *wbio_;
     bool processedHandshakeError_{false};
     bool processedSslError_{false};
+    bool sessionCacheReady_{false};
 };
 
 std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
@@ -1111,8 +1146,17 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 
     if (!isServer)
     {
-        // We have our own session cache, so disable OpenSSL's
+        // Keep OpenSSL's client-side session notifications enabled while
+        // storing sessions only in Trantor's cache. TLS 1.3 tickets arrive
+        // after the main handshake and are delivered through this callback.
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+        SSL_CTX_set_session_cache_mode(ctx->ctx(),
+                                       SSL_SESS_CACHE_CLIENT |
+                                           SSL_SESS_CACHE_NO_INTERNAL_STORE);
+        SSL_CTX_sess_set_new_cb(ctx->ctx(), &OpenSSLProvider::newSession);
+#else
         SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);
+#endif
     }
 
     // Disable weak ciphers. Weak hash and ciphers can die in a fire.
