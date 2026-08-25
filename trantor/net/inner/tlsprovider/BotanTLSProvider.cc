@@ -62,13 +62,41 @@ static std::string join(const std::vector<std::string> &vec,
     return ret;
 }
 
+static std::vector<Botan::X509_Certificate> loadCertificateChain(
+    Botan::DataSource &source)
+{
+    std::vector<Botan::X509_Certificate> chain;
+    while (!source.end_of_data())
+    {
+        std::string label;
+        Botan::secure_vector<uint8_t> certBits;
+        try
+        {
+            certBits = Botan::PEM_Code::decode(source, label);
+        }
+        catch (const Botan::Decoding_Error &)
+        {
+            break;
+        }
+        if (label == "CERTIFICATE" || label == "TRUSTED CERTIFICATE")
+            chain.emplace_back(certBits);
+    }
+    if (chain.empty())
+        throw std::runtime_error("Failed to load certificate PEM");
+    return chain;
+}
+
 class Credentials : public Botan::Credentials_Manager
 {
   public:
     Credentials(std::shared_ptr<Botan::Private_Key> key,
                 const std::vector<Botan::X509_Certificate> *certChain,
-                Botan::Certificate_Store *certStore)
-        : certStore_(certStore), certChain_(certChain), key_(key)
+                Botan::Certificate_Store *certStore,
+                const ServerCertificateProvider *certificateProvider)
+        : certStore_(certStore),
+          certChain_(certChain),
+          key_(key),
+          certificateProvider_(certificateProvider)
     {
     }
     std::vector<Botan::Certificate_Store *> trusted_certificate_authorities(
@@ -90,13 +118,37 @@ class Credentials : public Botan::Credentials_Manager
         const std::string &context) override
     {
         (void)type;
-        (void)context;
         (void)cert_signature_schemes;
         (void)acceptable_CAs;
-        if (certChain_ == nullptr || certChain_->empty())
+        if (certificateProvider_ != nullptr && *certificateProvider_ &&
+            type == "tls-server")
+        {
+            try
+            {
+                const auto certificate = (*certificateProvider_)(context);
+                if (certificate.certificatePem.empty() ||
+                    certificate.privateKeyPem.empty())
+                    return {};
+                Botan::DataSource_Memory keySource(certificate.privateKeyPem);
+                selectedKey_ = Botan::PKCS8::load_key(keySource);
+                Botan::DataSource_Memory certSource(certificate.certificatePem);
+                selectedCertChain_ = loadCertificateChain(certSource);
+                selectedCertChainPtr_ = &selectedCertChain_;
+            }
+            catch (const std::exception &e)
+            {
+                LOG_ERROR << "Server certificate provider failed: " << e.what();
+                return {};
+            }
+        }
+
+        const auto *certChain = selectedCertChainPtr_ != nullptr
+                                    ? selectedCertChainPtr_
+                                    : certChain_;
+        if (certChain == nullptr || certChain->empty())
             return {};
 
-        auto key_algo = certChain_->front()
+        auto key_algo = certChain->front()
                             .subject_public_key_algo()
                             .oid()
                             .to_formatted_string();
@@ -104,7 +156,7 @@ class Credentials : public Botan::Credentials_Manager
             std::find(cert_key_types.begin(), cert_key_types.end(), key_algo);
         if (it == cert_key_types.end())
             return {};
-        return *certChain_;
+        return *certChain;
     }
 
     std::shared_ptr<Botan::Private_Key> private_key_for(
@@ -115,11 +167,15 @@ class Credentials : public Botan::Credentials_Manager
         (void)cert;
         (void)type;
         (void)context;
-        return key_;
+        return selectedKey_ ? selectedKey_ : key_;
     }
     Botan::Certificate_Store *certStore_ = nullptr;
     const std::vector<Botan::X509_Certificate> *certChain_ = nullptr;
     std::shared_ptr<Botan::Private_Key> key_ = nullptr;
+    const ServerCertificateProvider *certificateProvider_ = nullptr;
+    std::vector<Botan::X509_Certificate> selectedCertChain_;
+    const std::vector<Botan::X509_Certificate> *selectedCertChainPtr_ = nullptr;
+    std::shared_ptr<Botan::Private_Key> selectedKey_ = nullptr;
 };
 
 struct BotanCertificate : public Certificate
@@ -296,9 +352,11 @@ struct BotanTLSProvider : public TLSProvider,
     virtual void startEncryption() override
     {
         auto certStorePtr = contextPtr_->certStore.get();
-        credsPtr_ = std::make_shared<Credentials>(contextPtr_->key,
-                                                  &contextPtr_->certChain,
-                                                  certStorePtr);
+        credsPtr_ = std::make_shared<Credentials>(
+            contextPtr_->key,
+            &contextPtr_->certChain,
+            certStorePtr,
+            &policyPtr_->getServerCertificateProvider());
         if (policyPtr_->getConfCmds().empty() == false)
             LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
 
@@ -501,29 +559,8 @@ std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
 
 SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
 {
-    if (server && policy.getServerCertificateProvider())
-    {
-        throw std::runtime_error(
-            "TLSPolicy::setServerCertificateProvider is not supported by "
-            "the Botan TLS provider");
-    }
-
     auto ctx = std::make_shared<SSLContext>();
     ctx->isServer = server;
-
-    auto loadCertificateChain = [](Botan::DataSource &source) {
-        std::vector<Botan::X509_Certificate> chain;
-        while (!source.end_of_data())
-        {
-            std::string label;
-            auto certBits = Botan::PEM_Code::decode(source, label);
-            if (label == "CERTIFICATE" || label == "TRUSTED CERTIFICATE")
-                chain.emplace_back(certBits);
-        }
-        if (chain.empty())
-            throw std::runtime_error("Failed to load certificate PEM");
-        return chain;
-    };
 
     if (!policy.getCertificatePem().empty())
     {

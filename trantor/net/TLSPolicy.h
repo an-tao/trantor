@@ -9,9 +9,15 @@
 
 namespace trantor
 {
-using ServerCertificateReply = std::function<void(std::string)>;
-using ServerCertificateProvider =
-    std::function<void(std::string, ServerCertificateReply)>;
+struct ServerCertificate
+{
+    /// PEM-encoded leaf certificate followed by any intermediate certificates.
+    std::string certificatePem;
+    /// PEM-encoded private key matching certificatePem.
+    std::string privateKeyPem;
+};
+
+using ServerCertificateProvider = std::function<ServerCertificate(std::string)>;
 
 struct TRANTOR_EXPORT TLSPolicy final
 {
@@ -96,12 +102,13 @@ struct TRANTOR_EXPORT TLSPolicy final
     }
 
     /**
-     * @brief Set an asynchronous provider for server certificates selected by
+     * @brief Set a synchronous provider for server certificates selected by
      * the SNI hostname.
      *
-     * @note This feature is supported only by the OpenSSL TLS provider. Botan
-     * requires synchronous credential selection during its handshake, so
-     * creating a Botan server TLS context with this option set throws.
+     * The provider runs on the TLS handshake path, so it must return without
+     * blocking. It is intended to select a certificate already available in
+     * memory, for example from a runtime-updated vhost cache. Returning a
+     * value with an empty certificate or private key rejects the handshake.
      */
     TLSPolicy &setServerCertificateProvider(ServerCertificateProvider provider)
     {

@@ -384,7 +384,9 @@ bool loadCertificatePem(SSL_CTX *ctx,
     return SSL_CTX_check_private_key(ctx) == 1;
 }
 
-bool loadCertificatePem(SSL *ssl, const std::string &certificatePem)
+bool loadCertificatePem(SSL *ssl,
+                        const std::string &certificatePem,
+                        const std::string &privateKeyPem)
 {
     BIO *certBio = BIO_new_mem_buf(certificatePem.data(),
                                    static_cast<int>(certificatePem.size()));
@@ -411,8 +413,8 @@ bool loadCertificatePem(SSL *ssl, const std::string &certificatePem)
     ERR_clear_error();
     BIO_free(certBio);
 
-    BIO *keyBio = BIO_new_mem_buf(certificatePem.data(),
-                                  static_cast<int>(certificatePem.size()));
+    BIO *keyBio = BIO_new_mem_buf(privateKeyPem.data(),
+                                  static_cast<int>(privateKeyPem.size()));
     if (!keyBio)
         return false;
     EVP_PKEY *key = PEM_read_bio_PrivateKey(keyBio, nullptr, nullptr, nullptr);
@@ -568,7 +570,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         if (!policyPtr_->getHostname().empty())
             SSL_set_tlsext_host_name(ssl_, policyPtr_->getHostname().c_str());
         if (contextPtr_->isServer && policyPtr_->getServerCertificateProvider())
-            SSL_set_cert_cb(ssl_, selectServerCertificate, this);
+            SSL_set_ex_data(ssl_, certificateProviderIndex(), this);
     }
 
     virtual ~OpenSSLProvider()
@@ -824,43 +826,46 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         return false;
     }
 
-    static int selectServerCertificate(SSL *, void *arg)
+    static int selectServerCertificate(SSL *ssl, int *alert, void *)
     {
-        return static_cast<OpenSSLProvider *>(arg)->selectServerCertificate();
+        auto provider = static_cast<OpenSSLProvider *>(
+            SSL_get_ex_data(ssl, certificateProviderIndex()));
+        if (provider == nullptr)
+            return SSL_TLSEXT_ERR_NOACK;
+        return provider->selectServerCertificate(alert);
     }
 
-    int selectServerCertificate()
+    int selectServerCertificate(int *alert)
     {
-        if (certificateProviderReady_)
-            return certificatePem_.empty()
-                       ? 0
-                       : (loadCertificatePem(ssl_, certificatePem_) ? 1 : 0);
-        if (certificateProviderStarted_)
-            return -1;
-
-        certificateProviderStarted_ = true;
         const char *name = SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
-        auto self =
-            std::static_pointer_cast<OpenSSLProvider>(shared_from_this());
-        policyPtr_->getServerCertificateProvider()(
-            name ? name : "",
-            [weak = std::weak_ptr<OpenSSLProvider>(self)](
-                std::string pem) mutable {
-                if (const auto provider = weak.lock())
-                {
-                    provider->loop_->queueInLoop(
-                        [weak, pem = std::move(pem)]() mutable {
-                            if (const auto resumed = weak.lock())
-                            {
-                                resumed->certificatePem_ = std::move(pem);
-                                resumed->certificateProviderReady_ = true;
-                                if (!SSL_is_init_finished(resumed->ssl_))
-                                    resumed->processHandshake();
-                            }
-                        });
-                }
-            });
-        return -1;
+        try
+        {
+            const auto certificate =
+                policyPtr_->getServerCertificateProvider()(name ? name : "");
+            if (!certificate.certificatePem.empty() &&
+                !certificate.privateKeyPem.empty() &&
+                loadCertificatePem(ssl_,
+                                   certificate.certificatePem,
+                                   certificate.privateKeyPem))
+                return SSL_TLSEXT_ERR_OK;
+        }
+        catch (const std::exception &e)
+        {
+            LOG_ERROR << "Server certificate provider failed: " << e.what();
+        }
+        catch (...)
+        {
+            LOG_ERROR << "Server certificate provider failed";
+        }
+        *alert = SSL_AD_UNRECOGNIZED_NAME;
+        return SSL_TLSEXT_ERR_ALERT_FATAL;
+    }
+
+    static int certificateProviderIndex()
+    {
+        static const int index =
+            SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
+        return index;
     }
 
     void processApplicationData()
@@ -948,9 +953,6 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     BIO *wbio_;
     bool processedHandshakeError_{false};
     bool processedSslError_{false};
-    bool certificateProviderStarted_{false};
-    bool certificateProviderReady_{false};
-    std::string certificatePem_;
 };
 
 std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
@@ -1071,6 +1073,14 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
         SSL_CTX_set_alpn_select_cb(ctx->ctx(),
                                    internal::serverSelectProtocol,
                                    (void *)&policy.getAlpnProtocols());
+    }
+
+    if (isServer && policy.getServerCertificateProvider())
+    {
+        SSL_CTX_set_tlsext_servername_callback(
+            ctx->ctx(),
+            static_cast<int (*)(SSL *, int *, void *)>(
+                &OpenSSLProvider::selectServerCertificate));
     }
 
     if (!isServer)
