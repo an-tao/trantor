@@ -20,28 +20,28 @@
 
 using namespace trantor;
 EventLoopThread::EventLoopThread(const std::string &threadName)
-    : loop_(nullptr),
-      loopThreadName_(threadName),
-      thread_([this]() { loopFuncs(); })
+    : loopThreadName_(threadName), thread_([this]() { loopFuncs(); })
 {
     auto f = promiseForLoopPointer_.get_future();
+    // Convert shared_ptr to weak_ptr
     loop_ = f.get();
 }
 
 EventLoopThread::~EventLoopThread()
 {
     run();
-    std::shared_ptr<EventLoop> loop;
-    {
-        std::unique_lock<std::mutex> lk(loopMutex_);
-        loop = loop_;
-    }
+    auto loop = loop_.lock();
     if (loop)
     {
         loop->quit();
     }
     if (thread_.joinable())
     {
+        if (std::this_thread::get_id() == thread_.get_id())
+        {
+            thread_.detach();
+            return;
+        }
         thread_.join();
     }
 }
@@ -63,10 +63,6 @@ void EventLoopThread::loopFuncs()
     auto f = promiseForRun_.get_future();
     (void)f.get();
     loop->loop();
-    {
-        std::unique_lock<std::mutex> lk(loopMutex_);
-        loop_ = nullptr;
-    }
 }
 
 void EventLoopThread::run()
