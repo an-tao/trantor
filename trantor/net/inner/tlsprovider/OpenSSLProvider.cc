@@ -9,6 +9,8 @@
 #include <openssl/x509v3.h>
 
 #include <array>
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <list>
@@ -99,12 +101,18 @@ static bool validatePeerCertificate(SSL *ssl,
     }
 
     auto result = SSL_get_verify_result(ssl);
-    if (result == X509_V_ERR_CERT_NOT_YET_VALID ||
-        result == X509_V_ERR_CERT_HAS_EXPIRED)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+    const ASN1_TIME *notBeforeTime = X509_get_notBefore(cert);
+    const ASN1_TIME *notAfterTime = X509_get_notAfter(cert);
+#else
+    const ASN1_TIME *notBeforeTime = X509_get0_notBefore(cert);
+    const ASN1_TIME *notAfterTime = X509_get0_notAfter(cert);
+#endif
+    const int notBefore = X509_cmp_current_time(notBeforeTime);
+    const int notAfter = X509_cmp_current_time(notAfterTime);
+    if (notBefore == 0 || notAfter == 0 || notBefore > 0 || notAfter < 0)
     {
-        // What happens if cert is self-signed and expired?
-        LOG_TRACE << "cert error code: " << result
-                  << ", date validation failed";
+        LOG_TRACE << "Peer certificate date validation failed";
         return false;
     }
 
@@ -167,7 +175,7 @@ struct SSLContext
         bool useOldTLS,
         const std::vector<std::pair<std::string, std::string>> &sslConfCmds,
         bool server)
-        : isServer(server)
+        : isServer(server), sessionCacheId(nextSessionCacheId())
     {
         // Ungodly amount of preprocessor macros to support older versions of
         // OpenSSL and LibreSSL
@@ -246,7 +254,15 @@ struct SSLContext
         return ctx_;
     }
 
+    static uint64_t nextSessionCacheId()
+    {
+        static std::atomic<uint64_t> nextId{1};
+        return nextId.fetch_add(1, std::memory_order_relaxed);
+    }
+
     bool isServer{false};
+    const uint64_t sessionCacheId;
+    std::vector<std::string> alpnProtocols;
 };
 
 struct OpenSSLCertificate : public Certificate
@@ -407,6 +423,11 @@ bool loadCertificatePem(SSL *ssl,
         return false;
     }
     X509_free(leaf);
+    if (SSL_clear_chain_certs(ssl) != 1)
+    {
+        BIO_free(certBio);
+        return false;
+    }
     while (X509 *chain = PEM_read_bio_X509(certBio, nullptr, nullptr, nullptr))
     {
         if (SSL_add1_chain_cert(ssl, chain) != 1)
@@ -459,7 +480,8 @@ class SessionManager
         }
     }
 
-    void store(const std::string &hostname,
+    void store(uint64_t contextId,
+               const std::string &hostname,
                InetAddress peerAddr,
                SSL_SESSION *session)
     {
@@ -467,7 +489,7 @@ class SessionManager
         {
             std::lock_guard<std::mutex> lock(mutex_);
             removeExpiredSessions();
-            auto key = toKey(hostname, peerAddr);
+            auto key = toKey(contextId, hostname, peerAddr);
             auto it = sessionMap_.find(key);
             if (it != sessionMap_.end())
             {
@@ -486,6 +508,7 @@ class SessionManager
             removeExcessSession();
         }
 #else
+        (void)contextId;
         (void)hostname;
         (void)peerAddr;
         (void)session;
@@ -498,11 +521,13 @@ class SessionManager
     // in sessionMap_ may be evicted/replaced/expired by another thread the
     // moment we release the mutex, so the SessionManager's reference is not
     // a stable ownership root for the returned pointer.
-    SSL_SESSION *get(const std::string &hostname, InetAddress peerAddr)
+    SSL_SESSION *get(uint64_t contextId,
+                     const std::string &hostname,
+                     InetAddress peerAddr)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         removeExpiredSessions();
-        auto it = sessionMap_.find(toKey(hostname, peerAddr));
+        auto it = sessionMap_.find(toKey(contextId, hostname, peerAddr));
         if (it == sessionMap_.end())
             return nullptr;
         SSL_SESSION *s = it->second->session;
@@ -544,9 +569,13 @@ class SessionManager
         }
     }
 
-    std::string toKey(const std::string &hostname, InetAddress peerAddr)
+    std::string toKey(uint64_t contextId,
+                      const std::string &hostname,
+                      InetAddress peerAddr)
     {
-        return hostname + peerAddr.toIpPort();
+        return std::to_string(contextId) + ":" +
+               std::to_string(hostname.size()) + ":" + hostname +
+               peerAddr.toIpPort();
     }
 
     std::mutex mutex_;
@@ -626,7 +655,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
 
             SSL_SESSION *cachedSession =
-                sessionManager.get(policyPtr_->getHostname(),
+                sessionManager.get(contextPtr_->sessionCacheId,
+                                   policyPtr_->getHostname(),
                                    conn_->peerAddr());
             if (cachedSession)
             {
@@ -757,7 +787,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 {
                     auto reused = SSL_session_reused(ssl_);
                     if (reused == 0)
-                        sessionManager.store(sniName_,
+                        sessionManager.store(contextPtr_->sessionCacheId,
+                                             sniName_,
                                              conn_->peerAddr(),
                                              session);
                 }
@@ -865,7 +896,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             !provider->contextPtr_->isServer &&
             SSL_SESSION_is_resumable(session))
         {
-            sessionManager.store(provider->policyPtr_->getHostname(),
+            sessionManager.store(provider->contextPtr_->sessionCacheId,
+                                 provider->policyPtr_->getHostname(),
                                  provider->conn_->peerAddr(),
                                  session);
         }
@@ -1131,9 +1163,10 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 
     if (!policy.getAlpnProtocols().empty() && isServer)
     {
+        ctx->alpnProtocols = policy.getAlpnProtocols();
         SSL_CTX_set_alpn_select_cb(ctx->ctx(),
                                    internal::serverSelectProtocol,
-                                   (void *)&policy.getAlpnProtocols());
+                                   &ctx->alpnProtocols);
     }
 
     if (isServer && policy.getServerCertificateProvider())

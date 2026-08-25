@@ -254,11 +254,13 @@ struct BotanTLSProvider : public TLSProvider,
     {
         LOG_TRACE << "Low level connection received " << buffer->readableBytes()
                   << " bytes.";
+        bool receivedSuccessfully = false;
         try
         {
             assert(channel_ != nullptr);
             channel_->received_data((const uint8_t *)buffer->peek(),
                                     buffer->readableBytes());
+            receivedSuccessfully = true;
         }
         catch (const Botan::TLS::TLS_Exception &e)
         {
@@ -284,16 +286,24 @@ struct BotanTLSProvider : public TLSProvider,
             else
                 handleSSLError(SSLError::kSSLProtocolError);
         }
-        catch (const std::exception &e)
+        catch (...)
         {
-            LOG_ERROR << "Unexpected Generic Exception: " << e.what();
-            conn_->shutdown();
-            if (tlsConnected_ == false)
-                handleSSLError(SSLError::kSSLHandshakeError);
-            else
-                handleSSLError(SSLError::kSSLProtocolError);
+            messageCallbackPending_ = false;
+            buffer->retrieveAll();
+            throw;
         }
         buffer->retrieveAll();
+        if (!receivedSuccessfully)
+        {
+            messageCallbackPending_ = false;
+            return;
+        }
+        if (messageCallbackPending_)
+        {
+            messageCallbackPending_ = false;
+            if (messageCallback_)
+                messageCallback_(conn_, &recvBuffer_);
+        }
     }
 
     virtual ssize_t sendData(const char *ptr, size_t size) override
@@ -437,8 +447,7 @@ struct BotanTLSProvider : public TLSProvider,
     {
         (void)seq_no;
         recvBuffer_.append((const char *)data.data(), data.size_bytes());
-        if (messageCallback_)
-            messageCallback_(conn_, &recvBuffer_);
+        messageCallbackPending_ = true;
     }
 
     std::string tls_server_choose_app_protocol(
@@ -536,6 +545,7 @@ struct BotanTLSProvider : public TLSProvider,
     std::unique_ptr<Botan::TLS::Channel> channel_;
     bool tlsConnected_ = false;
     bool processedSslError_ = false;
+    bool messageCallbackPending_ = false;
     ssize_t lastWriteSize_ = 0;
 };
 
