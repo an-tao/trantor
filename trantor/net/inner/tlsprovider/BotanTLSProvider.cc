@@ -32,6 +32,23 @@ static thread_local std::shared_ptr<Botan::AutoSeeded_RNG> rng;
 
 using namespace trantor;
 
+static bool certificateMatchesHostname(const Botan::X509_Certificate &cert,
+                                       std::string_view hostname)
+{
+// The string overload is the only matcher available across the supported
+// Botan 3 releases, and unlike the newer typed overloads it also handles both
+// DNS names and IP literals.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+    const bool matches = cert.matches_dns_name(hostname);
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+    return matches;
+}
+
 static std::string join(const std::vector<std::string> &vec,
                         const std::string &delim)
 {
@@ -344,6 +361,12 @@ struct BotanTLSProvider : public TLSProvider,
 
     void tls_emit_data(std::span<const uint8_t> data) override
     {
+        if (getBufferedData().readableBytes() != 0)
+        {
+            appendToWriteBuffer((const char *)data.data(), data.size_bytes());
+            return;
+        }
+
         auto n = writeCallback_(conn_, data.data(), data.size_bytes());
         lastWriteSize_ = n;
 
@@ -423,33 +446,37 @@ struct BotanTLSProvider : public TLSProvider,
         const Botan::TLS::Policy &policy) override
     {
         setSniName(std::string(hostname));
-        if (policyPtr_->getValidate() && !policyPtr_->getAllowBrokenChain())
-            Botan::TLS::Callbacks::tls_verify_cert_chain(
-                certs, ocsp, trusted_roots, usage, hostname, policy);
-        else if (policyPtr_->getValidate())
+        if (policyPtr_->getValidate())
         {
             if (certs.size() == 0)
                 throw Botan::TLS::TLS_Exception(
                     Botan::TLS::Alert::NoCertificate,
                     "Certificate validation failed: no certificate");
-            // handle self-signed certificate
-            std::vector<Botan::X509_Certificate> selfSigned = {certs[0]};
-
-            Botan::Path_Validation_Restrictions restrictions(
-                false,  // require revocation
-                validationPolicy_->minimum_signature_strength());
-
-            auto now = std::chrono::system_clock::now();
-            const auto status = Botan::PKIX::check_chain(
-                selfSigned, now, hostname, usage, restrictions);
-
-            const auto result = Botan::PKIX::overall_status(status);
-
-            if (result != Botan::Certificate_Status_Code::OK)
-                throw Botan::TLS::TLS_Exception(
-                    Botan::TLS::Alert::BadCertificate,
-                    std::string("Certificate validation failed: ") +
-                        Botan::to_string(result));
+            if (policyPtr_->getAllowBrokenChain())
+            {
+                const auto &cert = certs[0];
+                const auto now = std::chrono::system_clock::now();
+                if (now < cert.not_before().to_std_timepoint() ||
+                    now > cert.not_after().to_std_timepoint())
+                {
+                    throw Botan::TLS::TLS_Exception(
+                        Botan::TLS::Alert::CertificateExpired,
+                        "Certificate validation failed: certificate is not "
+                        "currently valid");
+                }
+                if (!contextPtr_->isServer &&
+                    !certificateMatchesHostname(cert, hostname))
+                {
+                    throw Botan::TLS::TLS_Exception(
+                        Botan::TLS::Alert::BadCertificate,
+                        "Certificate validation failed: hostname mismatch");
+                }
+            }
+            else
+            {
+                Botan::TLS::Callbacks::tls_verify_cert_chain(
+                    certs, ocsp, trusted_roots, usage, hostname, policy);
+            }
         }
 
         if (certs.size() > 0)

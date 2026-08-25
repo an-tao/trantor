@@ -162,15 +162,14 @@ struct TRANTOR_EXPORT TLSPolicy final
     }
 
     /**
-     * @brief Allow broken chain (self-signed certificate, root CA not in
-     * allowed list, etc..) but still validate the domain name and date. This
-     * option has no effect if validate is false.
+     * @brief Accept a certificate with an untrusted or otherwise broken chain,
+     * while still validating its hostname and validity period. This option has
+     * no effect if validate is false. When validate is true, the peer must still
+     * present a certificate.
      *
-     * @note IMPORTANT: This option makes more then self signed certificates
-     * valid. It also allows certificates that are not signed by a trusted CA,
-     * the CA gets revoked. But the underlying implementation may still check
-     * for the type of certificate, date and hostname, etc.. To disable all
-     * certificate validation, use setValidate(false).
+     * @note Chain trust, issuer, revocation, key usage, and other PKIX checks
+     * are ignored. To also permit a peer that presents no certificate, use
+     * setValidate(false).
      */
     TLSPolicy &setAllowBrokenChain(bool allow)
     {

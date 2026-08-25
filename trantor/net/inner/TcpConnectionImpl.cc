@@ -797,6 +797,20 @@ void TcpConnectionImpl::startEncryption(
     bool isServer,
     std::function<void(const TcpConnectionPtr &)> upgradeCallback)
 {
+    if (!loop_->isInLoopThread())
+    {
+        loop_->queueInLoop(
+            [thisPtr = shared_from_this(),
+             policy = std::move(policy),
+             isServer,
+             upgradeCallback = std::move(upgradeCallback)]() mutable {
+                thisPtr->startEncryption(std::move(policy),
+                                         isServer,
+                                         std::move(upgradeCallback));
+            });
+        return;
+    }
+
     if (tlsProviderPtr_ || upgradeCallback_)
     {
         LOG_ERROR << "TLS is already started";
@@ -811,8 +825,8 @@ void TcpConnectionImpl::startEncryption(
     tlsProviderPtr_->setMessageCallback(onSslMessage);
     // This is triggered when peer sends a close alert
     tlsProviderPtr_->setCloseCallback(onSslCloseAlert);
-    tlsProviderPtr_->startEncryption();
     upgradeCallback_ = std::move(upgradeCallback);
+    tlsProviderPtr_->startEncryption();
 }
 
 void TcpConnectionImpl::onSslError(TcpConnection *self, SSLError err)

@@ -58,8 +58,9 @@ struct TLSProvider : public std::enable_shared_from_this<TLSProvider>
                                 writeBuffer_.readableBytes());
         if (n == -1)
         {
-            LOG_ERROR << "WTF! Failed to send buffered data. Error: "
+            LOG_ERROR << "Failed to send buffered TLS data. Error: "
                       << strerror(errno);
+            conn_->forceClose();
             return false;
         }
         else if ((size_t)n != writeBuffer_.readableBytes())

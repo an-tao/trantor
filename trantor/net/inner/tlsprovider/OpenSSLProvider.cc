@@ -130,7 +130,7 @@ static int serverSelectProtocol(SSL *ssl,
         while (cur < end)
         {
             unsigned int len = *cur++;
-            if (cur + len > end)
+            if (len > static_cast<unsigned int>(end - cur))
             {
                 LOG_ERROR << "Client provided invalid protocol list in APLN";
                 return SSL_TLSEXT_ERR_NOACK;
@@ -143,6 +143,7 @@ static int serverSelectProtocol(SSL *ssl,
                 LOG_TRACE << "Selected protocol: " << protocol;
                 return SSL_TLSEXT_ERR_OK;
             }
+            cur += len;
         }
     }
 
@@ -433,8 +434,7 @@ class SessionManager
     {
         SSL_SESSION *session = nullptr;
         std::string key;
-        TimerId timerId = 0;
-        EventLoop *loop = nullptr;
+        std::chrono::steady_clock::time_point expiresAt;
     };
 
   public:
@@ -448,42 +448,34 @@ class SessionManager
 
     void store(const std::string &hostname,
                InetAddress peerAddr,
-               SSL_SESSION *session,
-               EventLoop *loop)
+               SSL_SESSION *session)
     {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
         {
             std::lock_guard<std::mutex> lock(mutex_);
+            removeExpiredSessions();
             auto key = toKey(hostname, peerAddr);
             auto it = sessionMap_.find(key);
             if (it != sessionMap_.end())
             {
                 SSL_SESSION_free(it->second->session);
-                it->second->loop->invalidateTimer(it->second->timerId);
                 sessions_.erase(it->second);
                 sessionMap_.erase(it);
             }
 
             SSL_SESSION_up_ref(session);
-            TimerId tid = loop->runAfter(sessionTimeout_, [this, key]() {
-                std::lock_guard<std::mutex> lock(mutex_);
-                auto it = sessionMap_.find(key);
-                if (it != sessionMap_.end())
-                {
-                    SSL_SESSION_free(it->second->session);
-                    sessions_.erase(it->second);
-                    sessionMap_.erase(it);
-                }
-            });
-            sessions_.push_front(SessionData{session, key, tid, loop});
+            sessions_.push_front(SessionData{
+                session,
+                key,
+                std::chrono::steady_clock::now() +
+                    std::chrono::seconds(sessionTimeout_)});
             sessionMap_[key] = sessions_.begin();
+            removeExcessSession();
         }
-        removeExcessSession();
 #else
         (void)hostname;
         (void)peerAddr;
         (void)session;
-        (void)loop;
         assert(false && "not support under ancient openssl");
 #endif
     }
@@ -496,6 +488,7 @@ class SessionManager
     SSL_SESSION *get(const std::string &hostname, InetAddress peerAddr)
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        removeExpiredSessions();
         auto it = sessionMap_.find(toKey(hostname, peerAddr));
         if (it == sessionMap_.end())
             return nullptr;
@@ -504,9 +497,26 @@ class SessionManager
         return s;
     }
 
+    void removeExpiredSessions()
+    {
+        const auto now = std::chrono::steady_clock::now();
+        for (auto it = sessions_.begin(); it != sessions_.end();)
+        {
+            if (it->expiresAt <= now)
+            {
+                SSL_SESSION_free(it->session);
+                sessionMap_.erase(it->key);
+                it = sessions_.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+
     void removeExcessSession()
     {
-        std::lock_guard<std::mutex> lock(mutex_);
         assert(maxSessions_ > 0);
         assert(mexExtendSize_ > 0);
         if (sessions_.size() < size_t(maxSessions_ + mexExtendSize_))
@@ -516,7 +526,6 @@ class SessionManager
             auto it = sessions_.end();
             it--;
             SSL_SESSION_free(it->session);
-            it->loop->invalidateTimer(it->timerId);
             sessionMap_.erase(it->key);
             sessions_.erase(it);
         }
@@ -726,8 +735,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     if (reused == 0)
                         sessionManager.store(sniName_,
                                              conn_->peerAddr(),
-                                             session,
-                                             loop_);
+                                             session);
                 }
 #endif
             }
@@ -753,10 +761,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                         cert,
                         policyPtr_->getHostname(),
                         policyPtr_->getAllowBrokenChain(),
-                        !contextPtr_
-                             ->isServer);  // From the server's point of view,
-                                           // the client certificate is verified
-                                           // and vice versa
+                        contextPtr_->isServer);
                     if (!valid)
                     {
                         LOG_TRACE
@@ -991,6 +996,15 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 #endif
     }
 
+    if (!isServer && policy.getValidate())
+    {
+        SSL_CTX_set_verify(ctx->ctx(),
+                           SSL_VERIFY_PEER,
+                           policy.getAllowBrokenChain()
+                               ? acceptUnverifiedPeerCertificate
+                               : nullptr);
+    }
+
     if (!policy.getCaPath().empty())
     {
         if (isServer)
@@ -1012,19 +1026,23 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
             SSL_CTX_set_verify(ctx->ctx(),
                                SSL_VERIFY_PEER |
                                    SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-                               nullptr);
+                               policy.getAllowBrokenChain()
+                                   ? acceptUnverifiedPeerCertificate
+                                   : nullptr);
             LOG_TRACE << "Finished loading custom CA";
         }
         else
         {
-            auto *store = X509_STORE_new();
-            if (!X509_STORE_load_locations(store,
+            std::unique_ptr<X509_STORE, decltype(&X509_STORE_free)> store(
+                X509_STORE_new(), X509_STORE_free);
+            if (!store ||
+                !X509_STORE_load_locations(store.get(),
                                            policy.getCaPath().data(),
                                            nullptr))
             {
                 throw std::runtime_error("Failed to load CA certificate");
             }
-            SSL_CTX_set_cert_store(ctx->ctx(), store);
+            SSL_CTX_set_cert_store(ctx->ctx(), store.release());
         }
     }
 
@@ -1034,8 +1052,10 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
         if (policy.getRequirePeerCertificate())
             mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
         SSL_CTX_set_verify(ctx->ctx(), mode,
-                           policy.getValidate() ? nullptr :
-                                                  acceptUnverifiedPeerCertificate);
+                           policy.getValidate() &&
+                                   !policy.getAllowBrokenChain()
+                               ? nullptr
+                               : acceptUnverifiedPeerCertificate);
     }
 
     if (!policy.getAlpnProtocols().empty() && isServer)
