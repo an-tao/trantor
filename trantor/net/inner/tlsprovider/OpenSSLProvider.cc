@@ -8,6 +8,8 @@
 #include <openssl/bio.h>
 #include <openssl/x509v3.h>
 
+#include <sys/stat.h>
+
 #include <array>
 #include <atomic>
 #include <cstdint>
@@ -126,6 +128,79 @@ static bool validatePeerCertificate(SSL *ssl,
     return true;
 }
 
+static bool isCertificateHandshakeError(unsigned long error)
+{
+    if (error == 0 || ERR_GET_LIB(error) != ERR_LIB_SSL)
+        return false;
+    switch (ERR_GET_REASON(error))
+    {
+#ifdef SSL_R_CERTIFICATE_VERIFY_FAILED
+        case SSL_R_CERTIFICATE_VERIFY_FAILED:
+#endif
+#ifdef SSL_R_PEER_DID_NOT_RETURN_A_CERTIFICATE
+        case SSL_R_PEER_DID_NOT_RETURN_A_CERTIFICATE:
+#endif
+#ifdef SSL_R_TLSV13_ALERT_CERTIFICATE_REQUIRED
+        case SSL_R_TLSV13_ALERT_CERTIFICATE_REQUIRED:
+#endif
+#ifdef SSL_R_SSLV3_ALERT_BAD_CERTIFICATE
+        case SSL_R_SSLV3_ALERT_BAD_CERTIFICATE:
+#endif
+#ifdef SSL_R_SSLV3_ALERT_CERTIFICATE_EXPIRED
+        case SSL_R_SSLV3_ALERT_CERTIFICATE_EXPIRED:
+#endif
+#ifdef SSL_R_TLSV1_ALERT_UNKNOWN_CA
+        case SSL_R_TLSV1_ALERT_UNKNOWN_CA:
+#endif
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool isDirectory(const std::string &path)
+{
+#ifdef _WIN32
+    struct _stat info;
+    return _stat(path.c_str(), &info) == 0 && (info.st_mode & _S_IFDIR) != 0;
+#else
+    struct stat info;
+    return stat(path.c_str(), &info) == 0 && S_ISDIR(info.st_mode);
+#endif
+}
+
+static std::string lastOpenSSLError()
+{
+    const auto error = ERR_get_error();
+    if (error == 0)
+        return {};
+    std::array<char, 256> message{};
+    ERR_error_string_n(error, message.data(), message.size());
+    return message.data();
+}
+
+static void freeCertificateNames(STACK_OF(X509_NAME) * names)
+{
+    sk_X509_NAME_pop_free(names, X509_NAME_free);
+}
+
+static STACK_OF(X509_NAME) *
+    loadCertificateNames(const std::string &path, bool directory)
+{
+    STACK_OF(X509_NAME) *names = sk_X509_NAME_new_null();
+    if (names == nullptr)
+        return nullptr;
+    const int result =
+        directory ? SSL_add_dir_cert_subjects_to_stack(names, path.c_str())
+                  : SSL_add_file_cert_subjects_to_stack(names, path.c_str());
+    if (result != 1 || sk_X509_NAME_num(names) == 0)
+    {
+        freeCertificateNames(names);
+        return nullptr;
+    }
+    return names;
+}
+
 static int serverSelectProtocol(SSL *ssl,
                                 const unsigned char **out,
                                 unsigned char *outlen,
@@ -162,7 +237,9 @@ static int serverSelectProtocol(SSL *ssl,
         }
     }
 
-    return SSL_TLSEXT_ERR_NOACK;
+    // TLSPolicy requires the handshake to fail when both peers advertise
+    // ALPN but have no protocol in common. This also matches Botan.
+    return SSL_TLSEXT_ERR_ALERT_FATAL;
 }
 
 }  // namespace internal
@@ -186,37 +263,63 @@ struct SSLContext
 #endif
 
 #ifdef LIBRESSL_VERSION_NUMBER
-        ctx_ = SSL_CTX_new(SSL_METHOD());
+        ctx_.reset(SSL_CTX_new(SSL_METHOD()));
         if (ctx_ == nullptr)
             throw std::runtime_error("Failed to create SSL context");
         if (sslConfCmds.size() != 0)
             LOG_WARN << "LibreSSL does not support SSL configuration commands";
 
         if (!useOldTLS)
-            SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
+            SSL_CTX_set_min_proto_version(ctx_.get(), TLS1_2_VERSION);
 #else
-        ctx_ = SSL_CTX_new(SSL_METHOD());
+        ctx_.reset(SSL_CTX_new(SSL_METHOD()));
         if (ctx_ == nullptr)
             throw std::runtime_error("Failed to create SSL context");
 
-        SSL_CONF_CTX *cctx = SSL_CONF_CTX_new();
-        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
-        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CLIENT);
-        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CERTIFICATE);
-        SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_FILE);
-        SSL_CONF_CTX_set_ssl_ctx(cctx, ctx_);
+        std::unique_ptr<SSL_CONF_CTX, decltype(&SSL_CONF_CTX_free)> cctx(
+            SSL_CONF_CTX_new(), SSL_CONF_CTX_free);
+        if (!cctx)
+            throw std::runtime_error(
+                "Failed to create SSL configuration context");
+        SSL_CONF_CTX_set_flags(cctx.get(),
+                               server ? SSL_CONF_FLAG_SERVER
+                                      : SSL_CONF_FLAG_CLIENT);
+        SSL_CONF_CTX_set_flags(cctx.get(), SSL_CONF_FLAG_CERTIFICATE);
+        SSL_CONF_CTX_set_flags(cctx.get(), SSL_CONF_FLAG_FILE);
+        SSL_CONF_CTX_set_ssl_ctx(cctx.get(), ctx_.get());
         for (const auto &cmd : sslConfCmds)
-            SSL_CONF_cmd(cctx, cmd.first.data(), cmd.second.data());
-        SSL_CONF_CTX_finish(cctx);
-        SSL_CONF_CTX_free(cctx);
+        {
+            ERR_clear_error();
+            const int result =
+                SSL_CONF_cmd(cctx.get(), cmd.first.c_str(), cmd.second.c_str());
+            if (result <= 0)
+            {
+                auto message = "Invalid SSL configuration command '" +
+                               cmd.first + "' with value '" + cmd.second +
+                               "' (result " + std::to_string(result) + ")";
+                const auto detail = internal::lastOpenSSLError();
+                if (!detail.empty())
+                    message += ": " + detail;
+                throw std::runtime_error(message);
+            }
+        }
+        ERR_clear_error();
+        if (SSL_CONF_CTX_finish(cctx.get()) != 1)
+        {
+            auto message = std::string("Failed to finish SSL configuration");
+            const auto detail = internal::lastOpenSSLError();
+            if (!detail.empty())
+                message += ": " + detail;
+            throw std::runtime_error(message);
+        }
         if (useOldTLS == false)
         {
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
-            SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
+            SSL_CTX_set_min_proto_version(ctx_.get(), TLS1_2_VERSION);
 #else
             const auto opt = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 |
                              SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
-            SSL_CTX_set_options(ctx_, opt);
+            SSL_CTX_set_options(ctx_.get(), opt);
 #endif
         }
         else
@@ -235,23 +338,19 @@ struct SSLContext
             std::array<unsigned char, SSL_MAX_SID_CTX_LENGTH> sessionIdContext;
             if (!utils::secureRandomBytes(sessionIdContext.data(),
                                           sessionIdContext.size()) ||
-                SSL_CTX_set_session_id_context(ctx_,
+                SSL_CTX_set_session_id_context(ctx_.get(),
                                                sessionIdContext.data(),
                                                sessionIdContext.size()) != 1)
                 throw std::runtime_error(
                     "Failed to initialize SSL session-ID context");
         }
     }
-    ~SSLContext()
-    {
-        if (ctx_)
-            SSL_CTX_free(ctx_);
-    }
-    SSL_CTX *ctx_ = nullptr;
+    std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> ctx_{nullptr,
+                                                           SSL_CTX_free};
 
     SSL_CTX *ctx() const
     {
-        return ctx_;
+        return ctx_.get();
     }
 
     static uint64_t nextSessionCacheId()
@@ -263,6 +362,12 @@ struct SSLContext
     bool isServer{false};
     const uint64_t sessionCacheId;
     std::vector<std::string> alpnProtocols;
+    ServerCertificateProvider certificateProvider;
+    std::string hostname;
+    bool validate{true};
+    bool allowBrokenChain{false};
+    bool requestClientCertificate{false};
+    bool requireClientCertificate{false};
 };
 
 struct OpenSSLCertificate : public Certificate
@@ -613,8 +718,11 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         assert(wbio_);
         SSL_set_bio(ssl_, rbio_, wbio_);
         SSL_set_ex_data(ssl_, providerIndex(), this);
-        if (!policyPtr_->getHostname().empty())
-            SSL_set_tlsext_host_name(ssl_, policyPtr_->getHostname().c_str());
+        SSL_set_mode(ssl_,
+                     SSL_MODE_ENABLE_PARTIAL_WRITE |
+                         SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+        if (!contextPtr_->hostname.empty())
+            SSL_set_tlsext_host_name(ssl_, contextPtr_->hostname.c_str());
     }
 
     virtual ~OpenSSLProvider()
@@ -624,6 +732,9 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     virtual void startEncryption() override
     {
+        if (started_ || processedSslError_)
+            return;
+        started_ = true;
         if (contextPtr_->isServer)
         {
             assert(ssl_);
@@ -633,12 +744,12 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         {
             assert(ssl_);
 
-            const auto &protocols = policyPtr_->getAlpnProtocols();
+            const auto &protocols = contextPtr_->alpnProtocols;
             if (!protocols.empty())
             {
                 std::string alpnList;
                 alpnList.reserve(24);  // some reasonable size
-                for (const auto &proto : policyPtr_->getAlpnProtocols())
+                for (const auto &proto : contextPtr_->alpnProtocols)
                 {
                     char ch = static_cast<char>(proto.size());
                     alpnList.push_back(ch);
@@ -651,12 +762,14 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                 {
                     LOG_TRACE << "Failed to set ALPN";
                     handleSSLError(SSLError::kSSLHandshakeError);
+                    dispatchEvents();
+                    return;
                 }
             }
 
             SSL_SESSION *cachedSession =
                 sessionManager.get(contextPtr_->sessionCacheId,
-                                   policyPtr_->getHostname(),
+                                   contextPtr_->hostname,
                                    conn_->peerAddr());
             if (cachedSession)
             {
@@ -669,10 +782,16 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         }
 
         processHandshake();
+        dispatchEvents();
     }
 
     virtual void recvData(MsgBuffer *buffer) override
     {
+        if (!started_ || processedSslError_)
+        {
+            buffer->retrieveAll();
+            return;
+        }
         LOG_TRACE << "Received " << buffer->readableBytes()
                   << " bytes from lower layer";
         if (buffer->readableBytes() == 0)
@@ -685,6 +804,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             {
                 // TODO: make the status code more specific
                 handleSSLError(SSLError::kSSLHandshakeError);
+                dispatchEvents();
                 return;
             }
 
@@ -700,19 +820,38 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             {
                 processApplicationData();
             }
+            if (processedSslError_)
+            {
+                buffer->retrieveAll();
+                break;
+            }
         }
+        dispatchEvents();
     }
 
     virtual void close() override
     {
         if (!SSL_is_init_finished(ssl_))
             return;
-        SSL_shutdown(ssl_);
+        ERR_clear_error();
+        const auto result = SSL_shutdown(ssl_);
+        if (result < 0)
+        {
+            const auto error = SSL_get_error(ssl_, result);
+            if (error != SSL_ERROR_WANT_READ && error != SSL_ERROR_WANT_WRITE)
+                handleSSLError(SSLError::kSSLProtocolError);
+        }
         sendTLSData();
+        dispatchEvents();
     }
 
     virtual ssize_t sendData(const char *data, size_t len) override
     {
+        if (processedSslError_ || !SSL_is_init_finished(ssl_))
+        {
+            errno = processedSslError_ ? EPIPE : EAGAIN;
+            return processedSslError_ ? -1 : 0;
+        }
         if (getBufferedData().readableBytes() != 0)
         {
             errno = EAGAIN;
@@ -727,22 +866,57 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             auto trunkLen = len - hasSent;
             if (trunkLen > maxSend)
                 trunkLen = maxSend;
+            ERR_clear_error();
             int n = SSL_write(ssl_, data + hasSent, (int)trunkLen);
             if (n <= 0 && len != 0)
             {
-                handleSSLError(SSLError::kSSLProtocolError);
-                return -1;
+                const auto error = SSL_get_error(ssl_, n);
+                if (error != SSL_ERROR_WANT_READ &&
+                    error != SSL_ERROR_WANT_WRITE)
+                {
+                    handleSSLError(SSLError::kSSLProtocolError);
+                    dispatchEvents();
+                    return -1;
+                }
+                sendTLSData();
+                break;
             }
             auto num = sendTLSData();
             if (num == -1)
+            {
+                handleSSLError(SSLError::kSSLProtocolError);
+                dispatchEvents();
                 return -1;
-            hasSent += trunkLen;
+            }
+            hasSent += static_cast<size_t>(n);
         }
+        dispatchEvents();
         return static_cast<ssize_t>(hasSent);
+    }
+
+    bool sendBufferedData() override
+    {
+        auto &buffer = getBufferedData();
+        if (buffer.readableBytes() == 0)
+            return true;
+        const auto written =
+            writeCallback_(conn_, buffer.peek(), buffer.readableBytes());
+        if (written < 0)
+        {
+            handleSSLError(SSL_is_init_finished(ssl_)
+                               ? SSLError::kSSLProtocolError
+                               : SSLError::kSSLHandshakeError);
+            dispatchEvents();
+            return false;
+        }
+        buffer.retrieve(static_cast<size_t>(written));
+        dispatchEvents();
+        return buffer.readableBytes() == 0;
     }
 
     bool processHandshake()
     {
+        ERR_clear_error();
         int ret = SSL_do_handshake(ssl_);
         if (ret == 1)
         {
@@ -764,8 +938,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
             else
             {
-                setSniName(policyPtr_->getHostname());
-                if (policyPtr_->getAlpnProtocols().size() > 0)
+                setSniName(contextPtr_->hostname);
+                if (!contextPtr_->alpnProtocols.empty())
                 {
                     const unsigned char *alpn = nullptr;
                     unsigned int alpnlen = 0;
@@ -796,16 +970,13 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
 
             auto cert = SSL_get_peer_certificate(ssl_);
-            bool needCert = policyPtr_->getValidate();
+            bool needCert = contextPtr_->validate;
             if (cert)
                 setPeerCertificate(std::make_shared<OpenSSLCertificate>(cert));
-            if (contextPtr_->isServer)
-            {
-                auto *local = SSL_get_certificate(ssl_);
-                if (local && X509_up_ref(local) == 1)
-                    setLocalCertificate(
-                        std::make_shared<OpenSSLCertificate>(local));
-            }
+            auto *local = SSL_get_certificate(ssl_);
+            if (local && X509_up_ref(local) == 1)
+                setLocalCertificate(
+                    std::make_shared<OpenSSLCertificate>(local));
 
             if (needCert)
             {
@@ -814,8 +985,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     bool valid = internal::validatePeerCertificate(
                         ssl_,
                         cert,
-                        policyPtr_->getHostname(),
-                        policyPtr_->getAllowBrokenChain(),
+                        contextPtr_->hostname,
+                        contextPtr_->allowBrokenChain,
                         contextPtr_->isServer);
                     if (!valid)
                     {
@@ -826,7 +997,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                         return false;
                     }
                 }
-                else
+                else if (!contextPtr_->isServer ||
+                         contextPtr_->requireClientCertificate)
                 {
                     LOG_TRACE
                         << "SSL handshake error: no peer certificate. Cannot "
@@ -838,8 +1010,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
 
             sessionCacheReady_ = true;
-            if (handshakeCallback_)
-                handshakeCallback_(conn_);
+            handshakePending_ = true;
             sendTLSData();  // Needed to send ChangeCipherSpec
             return true;
         }
@@ -867,10 +1038,14 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     processedHandshakeError_ = true;
                 else
                     return false;
+                const auto opensslError = ERR_peek_error();
                 LOG_TRACE << "SSL handshake error: "
                           << ERR_error_string(ERR_get_error(), NULL);
-                conn_->shutdown();
-                handleSSLError(SSLError::kSSLHandshakeError);
+                handleSSLError(
+                    SSL_get_verify_result(ssl_) != X509_V_OK ||
+                            internal::isCertificateHandshakeError(opensslError)
+                        ? SSLError::kSSLInvalidCertificate
+                        : SSLError::kSSLHandshakeError);
             }
         }
         return false;
@@ -885,6 +1060,17 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         return provider->selectServerCertificate(alert);
     }
 
+    static int configureServerCertificate(SSL *ssl, void *)
+    {
+        auto *provider = static_cast<OpenSSLProvider *>(
+            SSL_get_ex_data(ssl, providerIndex()));
+        int alert = SSL_AD_UNRECOGNIZED_NAME;
+        return provider != nullptr && provider->selectServerCertificate(
+                                          &alert) == SSL_TLSEXT_ERR_OK
+                   ? 1
+                   : 0;
+    }
+
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
     // NOTE: LibreSSL doesn't seem to have an resumption implementation
     // and the API does nothing. Welp. Keeping it until supported I guess
@@ -897,7 +1083,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             SSL_SESSION_is_resumable(session))
         {
             sessionManager.store(provider->contextPtr_->sessionCacheId,
-                                 provider->policyPtr_->getHostname(),
+                                 provider->contextPtr_->hostname,
                                  provider->conn_->peerAddr(),
                                  session);
         }
@@ -910,17 +1096,24 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     int selectServerCertificate(int *alert)
     {
+        if (serverCertificateSelected_)
+            return serverCertificateValid_ ? SSL_TLSEXT_ERR_OK
+                                           : SSL_TLSEXT_ERR_ALERT_FATAL;
+        serverCertificateSelected_ = true;
         const char *name = SSL_get_servername(ssl_, TLSEXT_NAMETYPE_host_name);
         try
         {
             const auto certificate =
-                policyPtr_->getServerCertificateProvider()(name ? name : "");
+                contextPtr_->certificateProvider(name ? name : "");
             if (!certificate.certificatePem.empty() &&
                 !certificate.privateKeyPem.empty() &&
                 loadCertificatePem(ssl_,
                                    certificate.certificatePem,
                                    certificate.privateKeyPem))
+            {
+                serverCertificateValid_ = true;
                 return SSL_TLSEXT_ERR_OK;
+            }
         }
         catch (const std::exception &e)
         {
@@ -955,37 +1148,37 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             // clamp to int, because that's what SSL_read accepts
             const size_t wrtibleSize =
                 (std::min)(maxWritibleBytes, recvBuffer_.writableBytes());
+            ERR_clear_error();
             int n = SSL_read(ssl_, recvBuffer_.beginWrite(), (int)wrtibleSize);
-            int shutdownState = SSL_get_shutdown(ssl_);
+            const int error = n <= 0 ? SSL_get_error(ssl_, n) : SSL_ERROR_NONE;
+            const int shutdownState = SSL_get_shutdown(ssl_);
             if (n == 0 && (shutdownState & SSL_RECEIVED_SHUTDOWN))
             {
                 LOG_TRACE << "SSL connection closed by peer";
-                conn_->shutdown();
+                closePending_ = true;
                 return;
             }
             else if (n > 0)
             {
                 recvBuffer_.hasWritten(n);
                 LOG_TRACE << "Received " << n << " bytes from SSL";
-                if (messageCallback_)
-                    messageCallback_(conn_, &recvBuffer_);
+                plaintextPending_ = true;
             }
             else if (n <= 0)
             {
-                int err = SSL_get_error(ssl_, n);
-                if (err == SSL_ERROR_ZERO_RETURN)
+                if (error == SSL_ERROR_ZERO_RETURN)
                 {
                     // Clean shutdown
                     LOG_TRACE << "SSL connection closed cleanly";
-                    conn_->shutdown();
+                    closePending_ = true;
                     return;
                 }
-                if (err == SSL_ERROR_SSL || err == SSL_ERROR_SYSCALL)
+                if (error == SSL_ERROR_SSL || error == SSL_ERROR_SYSCALL)
                 {
                     handleSSLError(SSLError::kSSLProtocolError);
                 }
-                else if (err == SSL_ERROR_WANT_READ ||
-                         err == SSL_ERROR_WANT_WRITE)
+                else if (error == SSL_ERROR_WANT_READ ||
+                         error == SSL_ERROR_WANT_WRITE)
                 {
                     // SSL_read() can generate protocol output, for example a
                     // TLS 1.3 KeyUpdate response. Do not leave it stranded in
@@ -1024,7 +1217,17 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         }
         (void)BIO_reset(wbio_);
         if (n < 0)
+        {
+            if (!processedSslError_)
+            {
+                processedSslError_ = true;
+                pendingError_ = true;
+                pendingErrorValue_ = SSL_is_init_finished(ssl_)
+                                         ? SSLError::kSSLProtocolError
+                                         : SSLError::kSSLHandshakeError;
+            }
             return -1;
+        }
         return len;
     }
 
@@ -1036,9 +1239,58 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             processedSslError_ = true;
         else
             return;
-        if (errorCallback_)
-            errorCallback_(conn_, error);
+        pendingError_ = true;
+        pendingErrorValue_ = error;
     }
+
+    void dispatchEvents()
+    {
+        if (dispatchingEvents_)
+            return;
+        auto lifetime = shared_from_this();
+        DispatchGuard guard(dispatchingEvents_);
+        while (pendingError_ || handshakePending_ || plaintextPending_ ||
+               closePending_)
+        {
+            if (pendingError_)
+            {
+                pendingError_ = false;
+                if (errorCallback_)
+                    errorCallback_(conn_, pendingErrorValue_);
+                return;
+            }
+            if (handshakePending_)
+            {
+                handshakePending_ = false;
+                if (handshakeCallback_)
+                    handshakeCallback_(conn_);
+                continue;
+            }
+            if (plaintextPending_)
+            {
+                plaintextPending_ = false;
+                if (messageCallback_)
+                    messageCallback_(conn_, &recvBuffer_);
+                continue;
+            }
+            closePending_ = false;
+            if (closeCallback_)
+                closeCallback_(conn_);
+        }
+    }
+
+    struct DispatchGuard
+    {
+        explicit DispatchGuard(bool &flag) : flag_(flag)
+        {
+            flag_ = true;
+        }
+        ~DispatchGuard()
+        {
+            flag_ = false;
+        }
+        bool &flag_;
+    };
 
     SSL *ssl_;
     BIO *rbio_;
@@ -1046,6 +1298,15 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     bool processedHandshakeError_{false};
     bool processedSslError_{false};
     bool sessionCacheReady_{false};
+    bool serverCertificateSelected_{false};
+    bool serverCertificateValid_{false};
+    bool started_{false};
+    SSLError pendingErrorValue_{SSLError::kSSLHandshakeError};
+    bool pendingError_{false};
+    bool handshakePending_{false};
+    bool plaintextPending_{false};
+    bool closePending_{false};
+    bool dispatchingEvents_{false};
 };
 
 std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
@@ -1062,6 +1323,19 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
     auto ctx = std::make_shared<SSLContext>(policy.getUseOldTLS(),
                                             policy.getConfCmds(),
                                             isServer);
+    // Everything used by a connection is captured in the shared context.
+    // TcpServer snapshots this context in enableSSL(), just like Botan does.
+    ctx->certificateProvider = policy.getServerCertificateProvider();
+    ctx->alpnProtocols = policy.getAlpnProtocols();
+    for (const auto &protocol : ctx->alpnProtocols)
+    {
+        if (protocol.empty() || protocol.size() > 255)
+            throw std::runtime_error(
+                "ALPN protocol names must contain between 1 and 255 bytes");
+    }
+    ctx->hostname = policy.getHostname();
+    ctx->validate = policy.getValidate();
+    ctx->allowBrokenChain = policy.getAllowBrokenChain();
     if (!policy.getCertificatePem().empty())
     {
         if (!loadCertificatePem(ctx->ctx(),
@@ -1069,37 +1343,33 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
                                 policy.getPrivateKeyPem()))
             throw std::runtime_error("Failed to load certificate PEM");
     }
-    else if (!policy.getCertPath().empty() && !policy.getKeyPath().empty())
+    else
     {
-        if (SSL_CTX_use_certificate_chain_file(ctx->ctx(),
-                                               policy.getCertPath().data()) <=
-            0)
+        const bool hasCertificate = !policy.getCertPath().empty();
+        const bool hasPrivateKey = !policy.getKeyPath().empty();
+        if (hasCertificate &&
+            SSL_CTX_use_certificate_chain_file(ctx->ctx(),
+                                               policy.getCertPath().c_str()) <=
+                0)
         {
             throw std::runtime_error("Failed to load certificate " +
                                      policy.getCertPath());
         }
-        if (SSL_CTX_use_PrivateKey_file(ctx->ctx(),
-                                        policy.getKeyPath().data(),
+        if (hasPrivateKey &&
+            SSL_CTX_use_PrivateKey_file(ctx->ctx(),
+                                        policy.getKeyPath().c_str(),
                                         SSL_FILETYPE_PEM) <= 0)
         {
             throw std::runtime_error("Failed to load private key");
         }
-        if (SSL_CTX_check_private_key(ctx->ctx()) == 0)
+        if (hasCertificate && hasPrivateKey &&
+            SSL_CTX_check_private_key(ctx->ctx()) == 0)
         {
             throw std::runtime_error(
                 "Private key does not match the "
                 "certificate public key");
         }
     }
-    if (policy.getValidate() && policy.getUseSystemCertStore())
-    {
-#ifdef _WIN32
-        internal::loadWindowsSystemCert(SSL_CTX_get_cert_store(ctx->ctx()));
-#else
-        SSL_CTX_set_default_verify_paths(ctx->ctx());
-#endif
-    }
-
     if (!isServer && policy.getValidate())
     {
         SSL_CTX_set_verify(ctx->ctx(),
@@ -1111,46 +1381,59 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 
     if (!policy.getCaPath().empty())
     {
+        const bool caPathIsDirectory =
+            internal::isDirectory(policy.getCaPath());
+        const char *caFile =
+            caPathIsDirectory ? nullptr : policy.getCaPath().c_str();
+        const char *caDirectory =
+            caPathIsDirectory ? policy.getCaPath().c_str() : nullptr;
+        if (SSL_CTX_load_verify_locations(ctx->ctx(), caFile, caDirectory) != 1)
+            throw std::runtime_error("Failed to load CA certificate");
+
         if (isServer)
         {
-            if (SSL_CTX_load_verify_locations(ctx->ctx(),
-                                              policy.getCaPath().data(),
-                                              nullptr) <= 0)
+            if (policy.getValidate())
             {
-                throw std::runtime_error("Failed to load CA certificate");
+                ctx->requestClientCertificate = true;
+                ctx->requireClientCertificate = true;
             }
-
             STACK_OF(X509_NAME) *cert_names =
-                SSL_load_client_CA_file(policy.getCaPath().data());
+                internal::loadCertificateNames(policy.getCaPath(),
+                                               caPathIsDirectory);
             if (cert_names == nullptr)
-            {
-                throw std::runtime_error("Not CA names found in file");
-            }
+                throw std::runtime_error(
+                    "No CA names found in configured path");
             SSL_CTX_set_client_CA_list(ctx->ctx(), cert_names);
-            SSL_CTX_set_verify(ctx->ctx(),
-                               SSL_VERIFY_PEER |
-                                   SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
-                               policy.getAllowBrokenChain()
-                                   ? acceptUnverifiedPeerCertificate
-                                   : nullptr);
+            if (policy.getValidate())
+                SSL_CTX_set_verify(ctx->ctx(),
+                                   SSL_VERIFY_PEER |
+                                       SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                                   policy.getAllowBrokenChain()
+                                       ? acceptUnverifiedPeerCertificate
+                                       : nullptr);
             LOG_TRACE << "Finished loading custom CA";
         }
-        else
-        {
-            std::unique_ptr<X509_STORE, decltype(&X509_STORE_free)> store(
-                X509_STORE_new(), X509_STORE_free);
-            if (!store || !X509_STORE_load_locations(store.get(),
-                                                     policy.getCaPath().data(),
-                                                     nullptr))
-            {
-                throw std::runtime_error("Failed to load CA certificate");
-            }
-            SSL_CTX_set_cert_store(ctx->ctx(), store.release());
-        }
+    }
+    else if (policy.getValidate() && policy.getUseSystemCertStore())
+    {
+        // A configured CA path intentionally takes precedence over the system
+        // store, matching Botan and the historical OpenSSL backend.
+#ifdef _WIN32
+        if (!internal::loadWindowsSystemCert(
+                SSL_CTX_get_cert_store(ctx->ctx())))
+            throw std::runtime_error(
+                "Failed to load the Windows system certificate store");
+#else
+        if (SSL_CTX_set_default_verify_paths(ctx->ctx()) != 1)
+            throw std::runtime_error(
+                "Failed to load the system certificate store");
+#endif
     }
 
     if (isServer && policy.getPeerCertificateRequest())
     {
+        ctx->requestClientCertificate = true;
+        ctx->requireClientCertificate = policy.getRequirePeerCertificate();
         int mode = SSL_VERIFY_PEER;
         if (policy.getRequirePeerCertificate())
             mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
@@ -1163,18 +1446,24 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
 
     if (!policy.getAlpnProtocols().empty() && isServer)
     {
-        ctx->alpnProtocols = policy.getAlpnProtocols();
         SSL_CTX_set_alpn_select_cb(ctx->ctx(),
                                    internal::serverSelectProtocol,
                                    &ctx->alpnProtocols);
     }
 
-    if (isServer && policy.getServerCertificateProvider())
+    if (isServer && ctx->certificateProvider)
     {
         SSL_CTX_set_tlsext_servername_callback(
             ctx->ctx(),
             static_cast<int (*)(SSL *, int *, void *)>(
                 &OpenSSLProvider::selectServerCertificate));
+        SSL_CTX_set_cert_cb(ctx->ctx(),
+                            &OpenSSLProvider::configureServerCertificate,
+                            nullptr);
+        // A resumed handshake may not select a certificate at all. Do not
+        // resume one without consulting the current runtime provider.
+        SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);
+        SSL_CTX_set_options(ctx->ctx(), SSL_OP_NO_TICKET);
     }
 
     if (!isServer)

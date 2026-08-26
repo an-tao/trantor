@@ -57,6 +57,18 @@ set(targets_list
     sync_certificate_provider_test
 )
 
+if(TRANTOR_TLS_PROVIDER STREQUAL "OpenSSL")
+  add_executable(openssl_policy_test OpenSSLPolicyTest.cc)
+  list(APPEND targets_list openssl_policy_test)
+  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/openssl-policy-ca")
+  configure_file(server.crt server.crt COPYONLY)
+  configure_file(
+    server.crt
+    "${CMAKE_CURRENT_BINARY_DIR}/openssl-policy-ca/server.crt"
+    COPYONLY
+  )
+endif()
+
 if(HAVE_SPDLOG)
   add_executable(spdlogger_test SpdLoggerTest.cc)
   list(APPEND targets_list spdlogger_test)
@@ -70,12 +82,20 @@ foreach(T ${targets_list})
   target_link_libraries(${T} PRIVATE trantor)
 endforeach()
 
-# Only works on Botan for now... OpenSSL needs mroe fix
-if(TRANTOR_TLS_PROVIDER STREQUAL "Botan")
-  target_compile_definitions(sync_certificate_provider_test PRIVATE TEST_BOTAN_POLICY_SNAPSHOT)
+if(NOT TRANTOR_TLS_PROVIDER STREQUAL "None")
+  target_compile_definitions(sync_certificate_provider_test PRIVATE TEST_TLS_POLICY_SNAPSHOT)
 endif()
 
-if(TRANTOR_TLS_PROVIDER STREQUAL "Botan")
+if(TRANTOR_TLS_PROVIDER STREQUAL "OpenSSL")
+  add_test(NAME openssl_policy_test COMMAND openssl_policy_test)
+  set_tests_properties(
+    openssl_policy_test
+    PROPERTIES WORKING_DIRECTORY
+               ${CMAKE_CURRENT_BINARY_DIR}
+  )
+endif()
+
+if(NOT TRANTOR_TLS_PROVIDER STREQUAL "None")
   add_test(NAME sync_certificate_provider_test COMMAND sync_certificate_provider_test)
   set_tests_properties(
     sync_certificate_provider_test

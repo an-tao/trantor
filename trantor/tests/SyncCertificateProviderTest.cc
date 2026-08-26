@@ -43,7 +43,7 @@ int main()
             return ServerCertificate{certificatePem, privateKeyPem};
         });
     server.enableSSL(serverPolicy);
-#ifdef TEST_BOTAN_POLICY_SNAPSHOT
+#ifdef TEST_TLS_POLICY_SNAPSHOT
     // TLS settings are snapshotted by enableSSL(). Mutating the source policy
     // must not alter connections using the already-created context.
     serverPolicy->setServerCertificateProvider(
