@@ -48,7 +48,7 @@ struct TLSProvider : public std::enable_shared_from_this<TLSProvider>
 
     virtual void startEncryption() = 0;
 
-    bool sendBufferedData()
+    virtual bool sendBufferedData()
     {
         if (writeBuffer_.readableBytes() == 0)
             return true;

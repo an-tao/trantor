@@ -55,21 +55,22 @@ int main()
     std::atomic<bool> handshakeComplete{false};
     std::atomic<bool> serverSniComplete{false};
     std::atomic<bool> serverCertificateComplete{false};
-    server.setConnectionCallback([&loop,
-                                  &handshakeComplete,
-                                  &serverSniComplete,
-                                  &serverCertificateComplete,
-                                  &kHostname](const TcpConnectionPtr &connection) {
-        if (connection->connected())
-        {
-            serverSniComplete = connection->sniName() == kHostname;
-            serverCertificateComplete =
-                connection->localCertificate() != nullptr;
-            if (handshakeComplete && serverSniComplete &&
-                serverCertificateComplete)
-                loop.quit();
-        }
-    });
+    server.setConnectionCallback(
+        [&loop,
+         &handshakeComplete,
+         &serverSniComplete,
+         &serverCertificateComplete,
+         &kHostname](const TcpConnectionPtr &connection) {
+            if (connection->connected())
+            {
+                serverSniComplete = connection->sniName() == kHostname;
+                serverCertificateComplete =
+                    connection->localCertificate() != nullptr;
+                if (handshakeComplete && serverSniComplete &&
+                    serverCertificateComplete)
+                    loop.quit();
+            }
+        });
     auto client =
         std::make_shared<TcpClient>(&loop,
                                     InetAddress("127.0.0.1",
@@ -101,8 +102,8 @@ int main()
     client.reset();
 
     if (timedOut || !handshakeComplete || !serverSniComplete ||
-        !serverCertificateComplete ||
-        selectedHostname != kHostname || providerCalls != 1)
+        !serverCertificateComplete || selectedHostname != kHostname ||
+        providerCalls != 1)
     {
         std::cerr << "Synchronous SNI certificate selection failed: timeout="
                   << timedOut << ", handshake=" << handshakeComplete
@@ -125,14 +126,13 @@ int main()
         TLSPolicy::defaultClientPolicy("rejected.example.test");
     rejectedPolicy->setValidate(false);
     rejectedClient->enableSSL(rejectedPolicy);
-    rejectedClient->setSSLErrorCallback(
-        [&loop, &rejectionReported](SSLError) {
-            rejectionReported = true;
-            loop.quit();
-        });
+    rejectedClient->setSSLErrorCallback([&loop, &rejectionReported](SSLError) {
+        rejectionReported = true;
+        loop.quit();
+    });
     rejectedClient->setConnectionCallback(
-        [&loop, &rejectedConnectionEstablished](
-            const TcpConnectionPtr &connection) {
+        [&loop,
+         &rejectedConnectionEstablished](const TcpConnectionPtr &connection) {
             if (connection->connected())
             {
                 rejectedConnectionEstablished = true;

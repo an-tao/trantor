@@ -72,16 +72,16 @@ endforeach()
 
 # Only works on Botan for now... OpenSSL needs mroe fix
 if(TRANTOR_TLS_PROVIDER STREQUAL "Botan")
-  target_compile_definitions(sync_certificate_provider_test
-                             PRIVATE TEST_BOTAN_POLICY_SNAPSHOT)
+  target_compile_definitions(sync_certificate_provider_test PRIVATE TEST_BOTAN_POLICY_SNAPSHOT)
 endif()
 
 if(TRANTOR_TLS_PROVIDER STREQUAL "Botan")
-  add_test(NAME sync_certificate_provider_test
-           COMMAND sync_certificate_provider_test)
+  add_test(NAME sync_certificate_provider_test COMMAND sync_certificate_provider_test)
   set_tests_properties(
     sync_certificate_provider_test
-    PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-               TIMEOUT 10
+    PROPERTIES WORKING_DIRECTORY
+               ${CMAKE_CURRENT_SOURCE_DIR}
+               TIMEOUT
+               10
   )
 endif()
