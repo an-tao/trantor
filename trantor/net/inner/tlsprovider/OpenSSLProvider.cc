@@ -13,6 +13,7 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <list>
@@ -39,6 +40,14 @@ static bool sslInitFlag = []() {
 
 namespace internal
 {
+static bool isIpLiteral(const std::string &hostname)
+{
+    struct in_addr ipv4;
+    struct in6_addr ipv6;
+    return inet_pton(AF_INET, hostname.c_str(), &ipv4) == 1 ||
+           inet_pton(AF_INET6, hostname.c_str(), &ipv6) == 1;
+}
+
 #ifdef _WIN32
 // Code yanked from stackoverflow
 // https://stackoverflow.com/questions/9507184/can-openssl-on-windows-use-the-system-certificate-store
@@ -561,6 +570,11 @@ bool loadCertificatePem(SSL_CTX *ctx,
         return false;
     }
     X509_free(leaf);
+    if (SSL_CTX_clear_extra_chain_certs(ctx) != 1)
+    {
+        BIO_free(certBio);
+        return false;
+    }
     while (X509 *chain = PEM_read_bio_X509(certBio, nullptr, nullptr, nullptr))
     {
         if (SSL_CTX_add_extra_chain_cert(ctx, chain) != 1)
@@ -715,32 +729,53 @@ class SessionManager
             return nullptr;
         SSL_SESSION *s = it->second->session;
         SSL_SESSION_up_ref(s);
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+        // TLS 1.3 tickets should not be offered on multiple connections.
+        // Transfer the cache's reference out on checkout while retaining the
+        // caller reference acquired above. TLS 1.2 sessions remain reusable.
+        if (SSL_SESSION_get_protocol_version(s) >= TLS1_3_VERSION)
+        {
+            SSL_SESSION_free(it->second->session);
+            sessions_.erase(it->second);
+            sessionMap_.erase(it);
+        }
+#endif
         return s;
+    }
+
+    void remove(uint64_t contextId,
+                const std::string &hostname,
+                InetAddress peerAddr,
+                SSL_SESSION *expected)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto it = sessionMap_.find(toKey(contextId, hostname, peerAddr));
+        if (it == sessionMap_.end() || it->second->session != expected)
+            return;
+        SSL_SESSION_free(it->second->session);
+        sessions_.erase(it->second);
+        sessionMap_.erase(it);
     }
 
     void removeExpiredSessions()
     {
         const auto now = std::chrono::steady_clock::now();
-        for (auto it = sessions_.begin(); it != sessions_.end();)
+        while (!sessions_.empty())
         {
-            if (it->expiresAt <= now)
-            {
-                SSL_SESSION_free(it->session);
-                sessionMap_.erase(it->key);
-                it = sessions_.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
+            auto it = std::prev(sessions_.end());
+            if (it->expiresAt > now)
+                break;
+            SSL_SESSION_free(it->session);
+            sessionMap_.erase(it->key);
+            sessions_.erase(it);
         }
     }
 
     void removeExcessSession()
     {
         assert(maxSessions_ > 0);
-        assert(mexExtendSize_ > 0);
-        if (sessions_.size() < size_t(maxSessions_ + mexExtendSize_))
+        assert(maxExtendSize_ > 0);
+        if (sessions_.size() < size_t(maxSessions_ + maxExtendSize_))
             return;
         while (sessions_.size() > size_t(maxSessions_))
         {
@@ -763,7 +798,7 @@ class SessionManager
 
     std::mutex mutex_;
     int maxSessions_ = 150;
-    int mexExtendSize_ = 20;
+    int maxExtendSize_ = 20;
     int sessionTimeout_ = 3600;
     std::list<SessionData> sessions_;
     std::unordered_map<std::string, std::list<SessionData>::iterator>
@@ -799,12 +834,14 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         SSL_set_mode(ssl_,
                      SSL_MODE_ENABLE_PARTIAL_WRITE |
                          SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
-        if (!contextPtr_->hostname.empty())
+        if (!contextPtr_->isServer && !contextPtr_->hostname.empty() &&
+            !internal::isIpLiteral(contextPtr_->hostname))
             SSL_set_tlsext_host_name(ssl_, contextPtr_->hostname.c_str());
     }
 
     virtual ~OpenSSLProvider()
     {
+        releaseConfiguredSession(false);
         SSL_free(ssl_);
     }
 
@@ -851,10 +888,15 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                                    conn_->peerAddr());
             if (cachedSession)
             {
-                // SSL_set_session takes its own reference; release ours.
                 LOG_TRACE << "Using cached TLS session";
-                SSL_set_session(ssl_, cachedSession);
-                SSL_SESSION_free(cachedSession);
+                configuredSession_ = cachedSession;
+                if (SSL_set_session(ssl_, cachedSession) != 1)
+                {
+                    releaseConfiguredSession(true);
+                    handleSSLError(SSLError::kSSLHandshakeError);
+                    dispatchEvents();
+                    return;
+                }
             }
             SSL_set_connect_state(ssl_);
         }
@@ -876,8 +918,11 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             return;
         while (buffer->readableBytes() > 0)
         {
-            int n =
-                BIO_write(rbio_, buffer->peek(), (int)buffer->readableBytes());
+            const auto chunkSize =
+                (std::min)(buffer->readableBytes(),
+                           static_cast<size_t>(std::numeric_limits<int>::max()));
+            int n = BIO_write(
+                rbio_, buffer->peek(), static_cast<int>(chunkSize));
             if (n <= 0)
             {
                 // TODO: make the status code more specific
@@ -1030,24 +1075,14 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     }
                 }
 
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
-                SSL_SESSION *session = SSL_get0_session(ssl_);
-                // OpenSSL can complete a handshake without exposing a
-                // resumable session (notably while a TLS 1.3 ticket is still
-                // pending). There is nothing to cache in that case.
-                if (canCacheSessionAfterHandshake(session))
-                {
-                    auto reused = SSL_session_reused(ssl_);
-                    if (reused == 0)
-                        sessionManager.store(contextPtr_->sessionCacheId,
-                                             sniName_,
-                                             conn_->peerAddr(),
-                                             session);
-                }
-#endif
             }
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L && \
+    !defined(LIBRESSL_VERSION_NUMBER)
+            auto cert = SSL_get1_peer_certificate(ssl_);
+#else
             auto cert = SSL_get_peer_certificate(ssl_);
+#endif
             bool needCert = contextPtr_->validate;
             if (cert)
                 setPeerCertificate(std::make_shared<OpenSSLCertificate>(cert));
@@ -1071,6 +1106,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                         LOG_TRACE
                             << "SSL handshake error: invalid peer certificate";
                         SSL_shutdown(ssl_);
+                        releaseConfiguredSession(true);
                         handleSSLError(SSLError::kSSLInvalidCertificate);
                         return false;
                     }
@@ -1082,11 +1118,30 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                         << "SSL handshake error: no peer certificate. Cannot "
                            "perform validation";
                     SSL_shutdown(ssl_);
+                    releaseConfiguredSession(true);
                     handleSSLError(SSLError::kSSLInvalidCertificate);
                     return false;
                 }
             }
 
+            releaseConfiguredSession(false);
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+            if (!contextPtr_->isServer)
+            {
+                SSL_SESSION *session = SSL_get0_session(ssl_);
+                // Cache only after application-level certificate validation.
+                // TLS 1.3 may not expose a resumable session until a later
+                // NewSessionTicket callback.
+                if (canCacheSessionAfterHandshake(session) &&
+                    SSL_session_reused(ssl_) == 0)
+                {
+                    sessionManager.store(contextPtr_->sessionCacheId,
+                                         sniName_,
+                                         conn_->peerAddr(),
+                                         session);
+                }
+            }
+#endif
             sessionCacheReady_ = true;
             handshakePending_ = true;
             sendTLSData();  // Needed to send ChangeCipherSpec
@@ -1112,6 +1167,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             }
             else
             {
+                releaseConfiguredSession(true);
                 if (!processedHandshakeError_)
                     processedHandshakeError_ = true;
                 else
@@ -1310,6 +1366,8 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
 
     void handleSSLError(SSLError error)
     {
+        if (!SSL_is_init_finished(ssl_))
+            releaseConfiguredSession(true);
         sendTLSData();
 
         if (!processedSslError_)
@@ -1318,6 +1376,21 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             return;
         pendingError_ = true;
         pendingErrorValue_ = error;
+    }
+
+    void releaseConfiguredSession(bool removeFromCache)
+    {
+        if (configuredSession_ == nullptr)
+            return;
+        if (removeFromCache)
+        {
+            sessionManager.remove(contextPtr_->sessionCacheId,
+                                  contextPtr_->hostname,
+                                  conn_->peerAddr(),
+                                  configuredSession_);
+        }
+        SSL_SESSION_free(configuredSession_);
+        configuredSession_ = nullptr;
     }
 
     void dispatchEvents()
@@ -1372,6 +1445,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     SSL *ssl_;
     BIO *rbio_;
     BIO *wbio_;
+    SSL_SESSION *configuredSession_{nullptr};
     bool processedHandshakeError_{false};
     bool processedSslError_{false};
     bool sessionCacheReady_{false};
