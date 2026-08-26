@@ -121,6 +121,8 @@ static bool validatePeerCertificate(SSL *ssl,
 #endif
     const int notBefore = X509_cmp_current_time(notBeforeTime);
     const int notAfter = X509_cmp_current_time(notAfterTime);
+    // X509_cmp_current_time() returns zero for an invalid ASN.1 time, a
+    // positive value for a future time, and a negative value for a past time.
     if (notBefore == 0 || notAfter == 0 || notBefore > 0 || notAfter < 0)
     {
         LOG_TRACE << "Peer certificate date validation failed";
@@ -791,6 +793,8 @@ class SessionManager
                       const std::string &hostname,
                       InetAddress peerAddr)
     {
+        // Prefixing hostname with its length keeps the hostname/address
+        // boundary unambiguous even though no separator follows hostname.
         return std::to_string(contextId) + ":" +
                std::to_string(hostname.size()) + ":" + hostname +
                peerAddr.toIpPort();
@@ -1171,9 +1175,12 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                     processedHandshakeError_ = true;
                 else
                     return false;
-                const auto opensslError = ERR_peek_error();
+                const auto opensslError = ERR_get_error();
                 LOG_TRACE << "SSL handshake error: "
-                          << ERR_error_string(ERR_get_error(), NULL);
+                          << ERR_error_string(opensslError, nullptr);
+                // Do not make error-queue cleanup depend on LOG_TRACE being
+                // evaluated; it is compiled out in release builds.
+                ERR_clear_error();
                 handleSSLError(
                     SSL_get_verify_result(ssl_) != X509_V_OK ||
                             internal::isCertificateHandshakeError(opensslError)
