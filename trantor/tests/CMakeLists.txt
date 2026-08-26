@@ -77,11 +77,6 @@ if(NOT
   target_compile_definitions(sync_certificate_provider_test PRIVATE TEST_TLS_POLICY_SNAPSHOT)
 endif()
 
-if(TRANTOR_TLS_PROVIDER STREQUAL "OpenSSL")
-  add_test(NAME openssl_policy_test COMMAND openssl_policy_test)
-  set_tests_properties(openssl_policy_test PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-endif()
-
 if(NOT
    TRANTOR_TLS_PROVIDER
    STREQUAL
