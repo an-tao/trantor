@@ -62,11 +62,7 @@ if(TRANTOR_TLS_PROVIDER STREQUAL "OpenSSL")
   list(APPEND targets_list openssl_policy_test)
   file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/openssl-policy-ca")
   configure_file(server.crt server.crt COPYONLY)
-  configure_file(
-    server.crt
-    "${CMAKE_CURRENT_BINARY_DIR}/openssl-policy-ca/server.crt"
-    COPYONLY
-  )
+  configure_file(server.crt "${CMAKE_CURRENT_BINARY_DIR}/openssl-policy-ca/server.crt" COPYONLY)
 endif()
 
 if(HAVE_SPDLOG)
@@ -82,20 +78,24 @@ foreach(T ${targets_list})
   target_link_libraries(${T} PRIVATE trantor)
 endforeach()
 
-if(NOT TRANTOR_TLS_PROVIDER STREQUAL "None")
+if(NOT
+   TRANTOR_TLS_PROVIDER
+   STREQUAL
+   "None"
+)
   target_compile_definitions(sync_certificate_provider_test PRIVATE TEST_TLS_POLICY_SNAPSHOT)
 endif()
 
 if(TRANTOR_TLS_PROVIDER STREQUAL "OpenSSL")
   add_test(NAME openssl_policy_test COMMAND openssl_policy_test)
-  set_tests_properties(
-    openssl_policy_test
-    PROPERTIES WORKING_DIRECTORY
-               ${CMAKE_CURRENT_BINARY_DIR}
-  )
+  set_tests_properties(openssl_policy_test PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-if(NOT TRANTOR_TLS_PROVIDER STREQUAL "None")
+if(NOT
+   TRANTOR_TLS_PROVIDER
+   STREQUAL
+   "None"
+)
   add_test(NAME sync_certificate_provider_test COMMAND sync_certificate_provider_test)
   set_tests_properties(
     sync_certificate_provider_test

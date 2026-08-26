@@ -83,7 +83,7 @@ static bool validatePeerCertificate(SSL *ssl,
     assert(cert != nullptr);
     LOG_TRACE << "Validating peer certificate";
 
-    if (!isServer)
+    if (!isServer && !hostname.empty())
     {
         // X509_check_host() only matches DNS names. Try the textual IP helper
         // first so IPv4 and IPv6 literals are checked against iPAddress SANs.
@@ -132,30 +132,108 @@ static bool isCertificateHandshakeError(unsigned long error)
 {
     if (error == 0 || ERR_GET_LIB(error) != ERR_LIB_SSL)
         return false;
-    switch (ERR_GET_REASON(error))
-    {
+    const auto reason = ERR_GET_REASON(error);
 #ifdef SSL_R_CERTIFICATE_VERIFY_FAILED
-        case SSL_R_CERTIFICATE_VERIFY_FAILED:
+    if (reason == SSL_R_CERTIFICATE_VERIFY_FAILED)
+        return true;
 #endif
 #ifdef SSL_R_PEER_DID_NOT_RETURN_A_CERTIFICATE
-        case SSL_R_PEER_DID_NOT_RETURN_A_CERTIFICATE:
+    if (reason == SSL_R_PEER_DID_NOT_RETURN_A_CERTIFICATE)
+        return true;
+#endif
+#ifdef SSL_R_NO_CERTIFICATE_RETURNED
+    if (reason == SSL_R_NO_CERTIFICATE_RETURNED)
+        return true;
+#endif
+#ifdef SSL_R_NO_CERTIFICATES_RETURNED
+    if (reason == SSL_R_NO_CERTIFICATES_RETURNED)
+        return true;
 #endif
 #ifdef SSL_R_TLSV13_ALERT_CERTIFICATE_REQUIRED
-        case SSL_R_TLSV13_ALERT_CERTIFICATE_REQUIRED:
+    if (reason == SSL_R_TLSV13_ALERT_CERTIFICATE_REQUIRED)
+        return true;
 #endif
 #ifdef SSL_R_SSLV3_ALERT_BAD_CERTIFICATE
-        case SSL_R_SSLV3_ALERT_BAD_CERTIFICATE:
+    if (reason == SSL_R_SSLV3_ALERT_BAD_CERTIFICATE)
+        return true;
 #endif
 #ifdef SSL_R_SSLV3_ALERT_CERTIFICATE_EXPIRED
-        case SSL_R_SSLV3_ALERT_CERTIFICATE_EXPIRED:
+    if (reason == SSL_R_SSLV3_ALERT_CERTIFICATE_EXPIRED)
+        return true;
+#endif
+#ifdef SSL_R_SSLV3_ALERT_CERTIFICATE_REVOKED
+    if (reason == SSL_R_SSLV3_ALERT_CERTIFICATE_REVOKED)
+        return true;
+#endif
+#ifdef SSL_R_SSLV3_ALERT_CERTIFICATE_UNKNOWN
+    if (reason == SSL_R_SSLV3_ALERT_CERTIFICATE_UNKNOWN)
+        return true;
+#endif
+#ifdef SSL_R_SSLV3_ALERT_UNSUPPORTED_CERTIFICATE
+    if (reason == SSL_R_SSLV3_ALERT_UNSUPPORTED_CERTIFICATE)
+        return true;
+#endif
+#ifdef SSL_R_SSLV3_ALERT_NO_CERTIFICATE
+    if (reason == SSL_R_SSLV3_ALERT_NO_CERTIFICATE)
+        return true;
+#endif
+#ifdef SSL_R_TLS_ALERT_BAD_CERTIFICATE
+    if (reason == SSL_R_TLS_ALERT_BAD_CERTIFICATE)
+        return true;
+#endif
+#ifdef SSL_R_TLS_ALERT_CERTIFICATE_EXPIRED
+    if (reason == SSL_R_TLS_ALERT_CERTIFICATE_EXPIRED)
+        return true;
+#endif
+#ifdef SSL_R_TLS_ALERT_CERTIFICATE_REVOKED
+    if (reason == SSL_R_TLS_ALERT_CERTIFICATE_REVOKED)
+        return true;
+#endif
+#ifdef SSL_R_TLS_ALERT_CERTIFICATE_UNKNOWN
+    if (reason == SSL_R_TLS_ALERT_CERTIFICATE_UNKNOWN)
+        return true;
+#endif
+#ifdef SSL_R_TLS_ALERT_UNSUPPORTED_CERTIFICATE
+    if (reason == SSL_R_TLS_ALERT_UNSUPPORTED_CERTIFICATE)
+        return true;
+#endif
+#ifdef SSL_R_TLS_ALERT_NO_CERTIFICATE
+    if (reason == SSL_R_TLS_ALERT_NO_CERTIFICATE)
+        return true;
 #endif
 #ifdef SSL_R_TLSV1_ALERT_UNKNOWN_CA
-        case SSL_R_TLSV1_ALERT_UNKNOWN_CA:
+    if (reason == SSL_R_TLSV1_ALERT_UNKNOWN_CA)
+        return true;
 #endif
-            return true;
-        default:
-            return false;
-    }
+#ifdef SSL_R_TLSV1_ALERT_CERTIFICATE_REVOKED
+    if (reason == SSL_R_TLSV1_ALERT_CERTIFICATE_REVOKED)
+        return true;
+#endif
+#ifdef SSL_R_TLSV1_ALERT_CERTIFICATE_UNKNOWN
+    if (reason == SSL_R_TLSV1_ALERT_CERTIFICATE_UNKNOWN)
+        return true;
+#endif
+#ifdef SSL_R_TLSV1_ALERT_UNSUPPORTED_CERTIFICATE
+    if (reason == SSL_R_TLSV1_ALERT_UNSUPPORTED_CERTIFICATE)
+        return true;
+#endif
+#ifdef SSL_R_TLSV1_ALERT_CERTIFICATE_UNOBTAINABLE
+    if (reason == SSL_R_TLSV1_ALERT_CERTIFICATE_UNOBTAINABLE)
+        return true;
+#endif
+#ifdef SSL_R_TLSV1_CERTIFICATE_UNOBTAINABLE
+    if (reason == SSL_R_TLSV1_CERTIFICATE_UNOBTAINABLE)
+        return true;
+#endif
+#ifdef SSL_R_TLSV1_BAD_CERTIFICATE_STATUS_RESPONSE
+    if (reason == SSL_R_TLSV1_BAD_CERTIFICATE_STATUS_RESPONSE)
+        return true;
+#endif
+#ifdef SSL_R_TLSV1_BAD_CERTIFICATE_HASH_VALUE
+    if (reason == SSL_R_TLSV1_BAD_CERTIFICATE_HASH_VALUE)
+        return true;
+#endif
+    return false;
 }
 
 static bool isDirectory(const std::string &path)
@@ -254,28 +332,43 @@ struct SSLContext
         bool server)
         : isServer(server), sessionCacheId(nextSessionCacheId())
     {
-        // Ungodly amount of preprocessor macros to support older versions of
-        // OpenSSL and LibreSSL
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
-#define SSL_METHOD SSLv23_method
+        ctx_.reset(SSL_CTX_new(SSLv23_method()));
 #else
-#define SSL_METHOD TLS_method
+        ctx_.reset(SSL_CTX_new(TLS_method()));
 #endif
-
-#ifdef LIBRESSL_VERSION_NUMBER
-        ctx_.reset(SSL_CTX_new(SSL_METHOD()));
         if (ctx_ == nullptr)
             throw std::runtime_error("Failed to create SSL context");
-        if (sslConfCmds.size() != 0)
-            LOG_WARN << "LibreSSL does not support SSL configuration commands";
+
+        // Establish Trantor's defaults first. Explicit SSL configuration
+        // commands below are the final override.
+        if (SSL_CTX_set_cipher_list(ctx_.get(),
+                                    "MEDIUM:HIGH:!aNULL:!MD5:!RC4:!3DES") != 1)
+            throw std::runtime_error("Failed to select secure ciphers");
 
         if (!useOldTLS)
+        {
+#ifdef LIBRESSL_VERSION_NUMBER
+            SSL_CTX_set_min_proto_version(ctx_.get(), TLS1_2_VERSION);
+#elif OPENSSL_VERSION_NUMBER >= 0x10101000L
             SSL_CTX_set_min_proto_version(ctx_.get(), TLS1_2_VERSION);
 #else
-        ctx_.reset(SSL_CTX_new(SSL_METHOD()));
-        if (ctx_ == nullptr)
-            throw std::runtime_error("Failed to create SSL context");
+            const auto opt = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 |
+                             SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+            SSL_CTX_set_options(ctx_.get(), opt);
+#endif
+        }
+        else
+        {
+            LOG_WARN << "TLS 1.1 and below enabled. They are considered "
+                        "obsolete, insecure standards and should only be "
+                        "used for legacy purpose.";
+        }
 
+#ifdef LIBRESSL_VERSION_NUMBER
+        if (!sslConfCmds.empty())
+            LOG_WARN << "LibreSSL does not support SSL configuration commands";
+#else
         std::unique_ptr<SSL_CONF_CTX, decltype(&SSL_CONF_CTX_free)> cctx(
             SSL_CONF_CTX_new(), SSL_CONF_CTX_free);
         if (!cctx)
@@ -311,22 +404,6 @@ struct SSLContext
             if (!detail.empty())
                 message += ": " + detail;
             throw std::runtime_error(message);
-        }
-        if (useOldTLS == false)
-        {
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
-            SSL_CTX_set_min_proto_version(ctx_.get(), TLS1_2_VERSION);
-#else
-            const auto opt = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 |
-                             SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
-            SSL_CTX_set_options(ctx_.get(), opt);
-#endif
-        }
-        else
-        {
-            LOG_WARN << "TLS 1.1 and below enabled. They are considered "
-                        "obsolete, insecure standards and should only be "
-                        "used for legacy purpose.";
         }
 #endif
         if (isServer)
@@ -546,8 +623,9 @@ bool loadCertificatePem(SSL *ssl,
     ERR_clear_error();
     BIO_free(certBio);
 
-    BIO *keyBio = BIO_new_mem_buf(privateKeyPem.data(),
-                                  static_cast<int>(privateKeyPem.size()));
+    const auto &keyPem = privateKeyPem.empty() ? certificatePem : privateKeyPem;
+    BIO *keyBio =
+        BIO_new_mem_buf(keyPem.data(), static_cast<int>(keyPem.size()));
     if (!keyBio)
         return false;
     EVP_PKEY *key = PEM_read_bio_PrivateKey(keyBio, nullptr, nullptr, nullptr);
@@ -1106,7 +1184,6 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             const auto certificate =
                 contextPtr_->certificateProvider(name ? name : "");
             if (!certificate.certificatePem.empty() &&
-                !certificate.privateKeyPem.empty() &&
                 loadCertificatePem(ssl_,
                                    certificate.certificatePem,
                                    certificate.privateKeyPem))
@@ -1480,12 +1557,6 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
         SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);
 #endif
     }
-
-    // Disable weak ciphers. Weak hash and ciphers can die in a fire.
-    int status = SSL_CTX_set_cipher_list(ctx->ctx(),
-                                         "MEDIUM:HIGH:!aNULL:!MD5:!RC4:!3DES");
-    if (status != 1)
-        throw std::runtime_error("Failed to select secure ciphers");
 
     return ctx;
 }
