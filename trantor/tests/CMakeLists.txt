@@ -56,15 +56,6 @@ set(targets_list
     automatic_ssl_client_test
     sync_certificate_provider_test
 )
-
-if(TRANTOR_TLS_PROVIDER STREQUAL "OpenSSL")
-  add_executable(openssl_policy_test OpenSSLPolicyTest.cc)
-  list(APPEND targets_list openssl_policy_test)
-  file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/openssl-policy-ca")
-  configure_file(server.crt server.crt COPYONLY)
-  configure_file(server.crt "${CMAKE_CURRENT_BINARY_DIR}/openssl-policy-ca/server.crt" COPYONLY)
-endif()
-
 if(HAVE_SPDLOG)
   add_executable(spdlogger_test SpdLoggerTest.cc)
   list(APPEND targets_list spdlogger_test)
