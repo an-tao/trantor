@@ -45,7 +45,7 @@ class TRANTOR_EXPORT TcpConnection
     friend class TcpClient;
 
     TcpConnection() = default;
-    virtual ~TcpConnection() {};
+    virtual ~TcpConnection(){};
 
     /**
      * @brief Send some data to the peer.

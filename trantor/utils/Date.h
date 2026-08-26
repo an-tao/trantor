@@ -27,14 +27,14 @@ namespace trantor
 class TRANTOR_EXPORT Date
 {
   public:
-    Date() : microSecondsSinceEpoch_(0) {};
+    Date() : microSecondsSinceEpoch_(0){};
 
     /**
      * @brief Construct a new Date instance.
      *
      * @param microSec The microseconds from 1970-01-01 00:00:00.
      */
-    explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec) {};
+    explicit Date(int64_t microSec) : microSecondsSinceEpoch_(microSec){};
 
     /**
      * @brief Construct a new Date instance.
@@ -102,7 +102,7 @@ class TRANTOR_EXPORT Date
      */
     const Date roundDay() const;
 
-    ~Date() {};
+    ~Date(){};
 
     /**
      * @brief Return true if the time point is equal to another.
