@@ -920,9 +920,10 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         {
             const auto chunkSize =
                 (std::min)(buffer->readableBytes(),
-                           static_cast<size_t>(std::numeric_limits<int>::max()));
-            int n = BIO_write(
-                rbio_, buffer->peek(), static_cast<int>(chunkSize));
+                           static_cast<size_t>(
+                               std::numeric_limits<int>::max()));
+            int n =
+                BIO_write(rbio_, buffer->peek(), static_cast<int>(chunkSize));
             if (n <= 0)
             {
                 // TODO: make the status code more specific
@@ -1074,11 +1075,9 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
                             std::string((char *)alpn, alpnlen));
                     }
                 }
-
             }
 
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L && \
-    !defined(LIBRESSL_VERSION_NUMBER)
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L && !defined(LIBRESSL_VERSION_NUMBER)
             auto cert = SSL_get1_peer_certificate(ssl_);
 #else
             auto cert = SSL_get_peer_certificate(ssl_);
