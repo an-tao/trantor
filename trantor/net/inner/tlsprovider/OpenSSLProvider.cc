@@ -921,7 +921,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             const auto chunkSize =
                 (std::min)(buffer->readableBytes(),
                            static_cast<size_t>(
-                               std::numeric_limits<int>::max()));
+                               (std::numeric_limits<int>::max)()));
             int n =
                 BIO_write(rbio_, buffer->peek(), static_cast<int>(chunkSize));
             if (n <= 0)
