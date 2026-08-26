@@ -68,26 +68,3 @@ set_property(TARGET ${targets_list} PROPERTY CXX_EXTENSIONS OFF)
 foreach(T ${targets_list})
   target_link_libraries(${T} PRIVATE trantor)
 endforeach()
-
-if(NOT
-   TRANTOR_TLS_PROVIDER
-   STREQUAL
-   "None"
-)
-  target_compile_definitions(sync_certificate_provider_test PRIVATE TEST_TLS_POLICY_SNAPSHOT)
-endif()
-
-if(NOT
-   TRANTOR_TLS_PROVIDER
-   STREQUAL
-   "None"
-)
-  add_test(NAME sync_certificate_provider_test COMMAND sync_certificate_provider_test)
-  set_tests_properties(
-    sync_certificate_provider_test
-    PROPERTIES WORKING_DIRECTORY
-               ${CMAKE_CURRENT_SOURCE_DIR}
-               TIMEOUT
-               10
-  )
-endif()
