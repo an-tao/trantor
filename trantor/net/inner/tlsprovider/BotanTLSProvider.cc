@@ -15,22 +15,59 @@
 #include <botan/pkcs8.h>
 #include <botan/pem.h>
 #include <botan/tls_exceptn.h>
+#include <botan/tls_session.h>
 #include <botan/pkix_types.h>
 #include <botan/certstor_flatfile.h>
 #include <botan/x509path.h>
 #include <botan/tls_session_manager_memory.h>
+
+#include <algorithm>
+#include <cassert>
+#include <cerrno>
+#include <chrono>
+#include <cstdint>
 #include <memory>
+#include <optional>
+#include <span>
 #include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 using namespace trantor;
-using namespace std::placeholders;
 
-static std::once_flag sessionManagerInitFlag;
-static std::shared_ptr<Botan::AutoSeeded_RNG> sessionManagerRng;
-static std::shared_ptr<Botan::TLS::Session_Manager_In_Memory> sessionManager;
-static thread_local std::shared_ptr<Botan::AutoSeeded_RNG> rng;
+static thread_local auto threadRng = std::make_shared<Botan::AutoSeeded_RNG>();
 
-using namespace trantor;
+static bool isCertificateAlert(Botan::TLS::Alert::Type type)
+{
+    switch (type)
+    {
+        case Botan::TLS::Alert::NoCertificate:
+        case Botan::TLS::Alert::BadCertificate:
+        case Botan::TLS::Alert::UnsupportedCertificate:
+        case Botan::TLS::Alert::CertificateRevoked:
+        case Botan::TLS::Alert::CertificateExpired:
+        case Botan::TLS::Alert::CertificateUnknown:
+        case Botan::TLS::Alert::UnknownCA:
+        case Botan::TLS::Alert::CertificateUnobtainable:
+        case Botan::TLS::Alert::BadCertificateStatusResponse:
+        case Botan::TLS::Alert::BadCertificateHashValue:
+        case Botan::TLS::Alert::CertificateRequired:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static SSLError sslErrorForAlert(Botan::TLS::Alert::Type type,
+                                 bool tlsConnected)
+{
+    if (isCertificateAlert(type))
+        return SSLError::kSSLInvalidCertificate;
+    return tlsConnected ? SSLError::kSSLProtocolError
+                        : SSLError::kSSLHandshakeError;
+}
 
 static bool certificateMatchesHostname(const Botan::X509_Certificate &cert,
                                        std::string_view hostname)
@@ -73,28 +110,121 @@ static std::vector<Botan::X509_Certificate> loadCertificateChain(
     return chain;
 }
 
-class Credentials : public Botan::Credentials_Manager
+static bool certificateMatchesPrivateKey(
+    const Botan::X509_Certificate &certificate,
+    const Botan::Private_Key &privateKey)
+{
+    return certificate.subject_public_key_info() ==
+           privateKey.subject_public_key();
+}
+
+static void validateCertificateAndKey(
+    const std::vector<Botan::X509_Certificate> &certChain,
+    const Botan::Private_Key *key)
+{
+    if (!certChain.empty() && key != nullptr &&
+        !certificateMatchesPrivateKey(certChain.front(), *key))
+        throw std::runtime_error(
+            "The private key does not match the leaf certificate");
+}
+
+static bool certificateChainMatchesSignatureSchemes(
+    const std::vector<Botan::X509_Certificate> &certChain,
+    const std::vector<Botan::AlgorithmIdentifier> &signatureSchemes)
+{
+    if (signatureSchemes.empty())
+        return true;
+
+    return std::all_of(
+        certChain.begin(), certChain.end(), [&signatureSchemes](const auto &cert) {
+            return std::find(signatureSchemes.begin(),
+                             signatureSchemes.end(),
+                             cert.signature_algorithm()) !=
+                   signatureSchemes.end();
+        });
+}
+
+static bool certificateChainMatchesAuthorities(
+    const std::vector<Botan::X509_Certificate> &certChain,
+    const std::vector<Botan::X509_DN> &acceptableCAs)
+{
+    if (acceptableCAs.empty())
+        return true;
+
+    return std::any_of(
+        certChain.begin(), certChain.end(), [&acceptableCAs](const auto &cert) {
+            return std::find(acceptableCAs.begin(),
+                             acceptableCAs.end(),
+                             cert.issuer_dn()) != acceptableCAs.end();
+        });
+}
+
+class InputBufferDrainer
 {
   public:
-    Credentials(std::shared_ptr<Botan::Private_Key> key,
-                const std::vector<Botan::X509_Certificate> *certChain,
-                Botan::Certificate_Store *certStore,
-                const ServerCertificateProvider *certificateProvider)
-        : certStore_(certStore),
-          certChain_(certChain),
-          key_(key),
-          certificateProvider_(certificateProvider)
+    explicit InputBufferDrainer(MsgBuffer *buffer) : buffer_(buffer)
     {
     }
+
+    ~InputBufferDrainer()
+    {
+        drain();
+    }
+
+    void drain()
+    {
+        if (buffer_ != nullptr)
+        {
+            buffer_->retrieveAll();
+            buffer_ = nullptr;
+        }
+    }
+
+  private:
+    MsgBuffer *buffer_;
+};
+
+class Credentials : public Botan::Credentials_Manager
+{
+  private:
+    enum class SelectionSource
+    {
+        Unselected,
+        Configured,
+        Provider
+    };
+
+    struct SelectedCredentials
+    {
+        std::shared_ptr<Botan::Private_Key> key;
+        std::vector<Botan::X509_Certificate> certChain;
+        std::string serverName;
+        SelectionSource source = SelectionSource::Unselected;
+        bool certificateChainSelected = false;
+    };
+
+  public:
+    Credentials(std::shared_ptr<Botan::Private_Key> key,
+                std::vector<Botan::X509_Certificate> certChain,
+                std::shared_ptr<Botan::Certificate_Store> certStore,
+                ServerCertificateProvider certificateProvider)
+        : configuredKey_(std::move(key)),
+          configuredCertChain_(std::move(certChain)),
+          certStore_(std::move(certStore)),
+          certificateProvider_(std::move(certificateProvider))
+    {
+        resetHandshakeSelection();
+    }
+
     std::vector<Botan::Certificate_Store *> trusted_certificate_authorities(
         const std::string &type,
         const std::string &context) override
     {
         (void)type;
         (void)context;
-        if (certStore_ == nullptr)
+        if (!certStore_)
             return {};
-        return {certStore_};
+        return {certStore_.get()};
     }
 
     std::vector<Botan::X509_Certificate> find_cert_chain(
@@ -104,46 +234,26 @@ class Credentials : public Botan::Credentials_Manager
         const std::string &type,
         const std::string &context) override
     {
-        (void)type;
-        (void)cert_signature_schemes;
-        (void)acceptable_CAs;
-        if (certificateProvider_ != nullptr && *certificateProvider_ &&
-            type == "tls-server")
-        {
-            try
-            {
-                const auto certificate = (*certificateProvider_)(context);
-                if (certificate.certificatePem.empty() ||
-                    certificate.privateKeyPem.empty())
-                    return {};
-                Botan::DataSource_Memory keySource(certificate.privateKeyPem);
-                selectedKey_ = Botan::PKCS8::load_key(keySource);
-                Botan::DataSource_Memory certSource(certificate.certificatePem);
-                selectedCertChain_ = loadCertificateChain(certSource);
-                selectedCertChainPtr_ = &selectedCertChain_;
-            }
-            catch (const std::exception &e)
-            {
-                LOG_ERROR << "Server certificate provider failed: " << e.what();
-                return {};
-            }
-        }
-
-        const auto *certChain = selectedCertChainPtr_ != nullptr
-                                    ? selectedCertChainPtr_
-                                    : certChain_;
-        if (certChain == nullptr || certChain->empty())
+        const auto &credentials = activeCredentials(type, context);
+        if (credentials.certChain.empty())
             return {};
 
-        auto key_algo = certChain->front()
-                            .subject_public_key_algo()
-                            .oid()
-                            .to_formatted_string();
-        auto it =
+        const auto key_algo = credentials.certChain.front()
+                                  .subject_public_key_algo()
+                                  .oid()
+                                  .to_formatted_string();
+        const auto it =
             std::find(cert_key_types.begin(), cert_key_types.end(), key_algo);
-        if (it == cert_key_types.end())
+        if (!cert_key_types.empty() && it == cert_key_types.end())
             return {};
-        return *certChain;
+        if (!certificateChainMatchesSignatureSchemes(
+                credentials.certChain, cert_signature_schemes))
+            return {};
+        if (!certificateChainMatchesAuthorities(credentials.certChain,
+                                                acceptable_CAs))
+            return {};
+        selectedCredentials_.certificateChainSelected = true;
+        return credentials.certChain;
     }
 
     std::shared_ptr<Botan::Private_Key> private_key_for(
@@ -151,18 +261,113 @@ class Credentials : public Botan::Credentials_Manager
         const std::string &type,
         const std::string &context) override
     {
-        (void)cert;
         (void)type;
         (void)context;
-        return selectedKey_ ? selectedKey_ : key_;
+        const auto &credentials = activeCredentials();
+        if (credentials.certChain.empty() ||
+            cert != credentials.certChain.front())
+            return nullptr;
+        return credentials.key;
     }
-    Botan::Certificate_Store *certStore_ = nullptr;
-    const std::vector<Botan::X509_Certificate> *certChain_ = nullptr;
-    std::shared_ptr<Botan::Private_Key> key_ = nullptr;
-    const ServerCertificateProvider *certificateProvider_ = nullptr;
-    std::vector<Botan::X509_Certificate> selectedCertChain_;
-    const std::vector<Botan::X509_Certificate> *selectedCertChainPtr_ = nullptr;
-    std::shared_ptr<Botan::Private_Key> selectedKey_ = nullptr;
+
+    bool ensure_server_credentials(const std::string &serverName)
+    {
+        if (selectedCredentials_.source == SelectionSource::Unselected)
+            activeCredentials("tls-server", serverName);
+        return selectedCredentials_.key != nullptr &&
+               !selectedCredentials_.certChain.empty();
+    }
+
+    const Botan::X509_Certificate *selected_leaf_certificate() const
+    {
+        const auto &credentials = activeCredentials();
+        if (credentials.certChain.empty())
+            return nullptr;
+        return &credentials.certChain.front();
+    }
+
+    const std::string &selected_server_name() const
+    {
+        return activeCredentials().serverName;
+    }
+
+    const Botan::X509_Certificate *selected_client_leaf_certificate() const
+    {
+        const auto &credentials = activeCredentials();
+        if (!credentials.certificateChainSelected ||
+            credentials.certChain.empty())
+            return nullptr;
+        return &credentials.certChain.front();
+    }
+
+    void finish_handshake()
+    {
+        resetHandshakeSelection();
+    }
+
+  private:
+    void resetHandshakeSelection()
+    {
+        selectedCredentials_ = {};
+        selectedCredentials_.key = configuredKey_;
+        selectedCredentials_.certChain = configuredCertChain_;
+    }
+
+    const SelectedCredentials &activeCredentials(const std::string &type,
+                                                 const std::string &context)
+    {
+        if (type != "tls-server")
+            return selectedCredentials_;
+
+        if (!certificateProvider_)
+        {
+            selectedCredentials_.serverName = context;
+            selectedCredentials_.source = SelectionSource::Configured;
+            return selectedCredentials_;
+        }
+
+        if (selectedCredentials_.source == SelectionSource::Provider &&
+            selectedCredentials_.serverName == context)
+            return selectedCredentials_;
+
+        // Each Credentials instance belongs to one TLS connection. Remember
+        // both successful and failed provider results so Botan can repeat its
+        // lookup during a handshake without calling application code again.
+        selectedCredentials_ = {};
+        selectedCredentials_.serverName = context;
+        selectedCredentials_.source = SelectionSource::Provider;
+        try
+        {
+            const auto certificate = certificateProvider_(context);
+            if (certificate.certificatePem.empty() ||
+                certificate.privateKeyPem.empty())
+                return selectedCredentials_;
+
+            Botan::DataSource_Memory keySource(certificate.privateKeyPem);
+            auto key = Botan::PKCS8::load_key(keySource);
+            Botan::DataSource_Memory certSource(certificate.certificatePem);
+            auto certChain = loadCertificateChain(certSource);
+            validateCertificateAndKey(certChain, key.get());
+            selectedCredentials_.key = std::move(key);
+            selectedCredentials_.certChain = std::move(certChain);
+        }
+        catch (const std::exception &e)
+        {
+            LOG_ERROR << "Server certificate provider failed: " << e.what();
+        }
+        return selectedCredentials_;
+    }
+
+    const SelectedCredentials &activeCredentials() const
+    {
+        return selectedCredentials_;
+    }
+
+    std::shared_ptr<Botan::Private_Key> configuredKey_;
+    std::vector<Botan::X509_Certificate> configuredCertChain_;
+    std::shared_ptr<Botan::Certificate_Store> certStore_;
+    ServerCertificateProvider certificateProvider_;
+    SelectedCredentials selectedCredentials_;
 };
 
 struct BotanCertificate : public Certificate
@@ -171,17 +376,17 @@ struct BotanCertificate : public Certificate
     {
     }
 
-    virtual std::string sha1Fingerprint() const override
+    std::string sha1Fingerprint() const override
     {
         return cert_.fingerprint("SHA-1");
     }
 
-    virtual std::string sha256Fingerprint() const override
+    std::string sha256Fingerprint() const override
     {
         return cert_.fingerprint("SHA-256");
     }
 
-    virtual std::string pem() const override
+    std::string pem() const override
     {
         return cert_.PEM_encode();
     }
@@ -209,7 +414,13 @@ struct SSLContext
     std::shared_ptr<Botan::Private_Key> key;
     std::vector<Botan::X509_Certificate> certChain;
     std::shared_ptr<Botan::Certificate_Store> certStore;
+    std::shared_ptr<Botan::TLS::Session_Manager_In_Memory> sessionManager;
+    ServerCertificateProvider certificateProvider;
+    std::vector<std::string> alpnProtocols;
+    std::string hostname;
     bool isServer = false;
+    bool validate = true;
+    bool allowBrokenChain = false;
     bool requestClientCert = false;
     bool requireClientCert = false;
 };
@@ -217,24 +428,31 @@ struct SSLContext
 
 class TrantorPolicy : public Botan::TLS::Policy
 {
-    virtual bool require_cert_revocation_info() const override
+  public:
+    TrantorPolicy(bool requestClientCert, bool requireClientCert)
+        : requestClientCert_(requestClientCert),
+          requireClientCert_(requireClientCert)
+    {
+    }
+
+  private:
+    bool require_cert_revocation_info() const override
     {
         return false;
     }
 
-    virtual bool require_client_certificate_authentication() const override
+    bool require_client_certificate_authentication() const override
     {
         return requireClientCert_;
     }
 
-    virtual bool request_client_certificate_authentication() const override
+    bool request_client_certificate_authentication() const override
     {
         return requestClientCert_;
     }
 
-  public:
-    bool requestClientCert_ = false;
-    bool requireClientCert_ = false;
+    const bool requestClientCert_;
+    const bool requireClientCert_;
 };
 
 struct BotanTLSProvider : public TLSProvider,
@@ -247,53 +465,45 @@ struct BotanTLSProvider : public TLSProvider,
                      SSLContextPtr ctx)
         : TLSProvider(conn, std::move(policy), std::move(ctx))
     {
-        validationPolicy_ = std::make_shared<TrantorPolicy>();
+        validationPolicy_ =
+            std::make_shared<TrantorPolicy>(contextPtr_->requestClientCert,
+                                            contextPtr_->requireClientCert);
     }
 
-    virtual void recvData(MsgBuffer *buffer) override
+    void recvData(MsgBuffer *buffer) override
     {
         LOG_TRACE << "Low level connection received " << buffer->readableBytes()
                   << " bytes.";
+        InputBufferDrainer inputDrainer(buffer);
         bool receivedSuccessfully = false;
         try
         {
             assert(channel_ != nullptr);
-            channel_->received_data((const uint8_t *)buffer->peek(),
+            channel_->received_data(reinterpret_cast<const uint8_t *>(
+                                        buffer->peek()),
                                     buffer->readableBytes());
             receivedSuccessfully = true;
         }
         catch (const Botan::TLS::TLS_Exception &e)
         {
-            LOG_ERROR << "Unexpected TLS Exception: " << e.what();
-            conn_->shutdown();
-
-            if (tlsConnected_ == false)
-            {
-                if (e.type() == Botan::TLS::Alert::BadCertificate)
-                    handleSSLError(SSLError::kSSLInvalidCertificate);
-                else
-                    handleSSLError(SSLError::kSSLHandshakeError);
-            }
-            else
-                handleSSLError(SSLError::kSSLProtocolError);
+            handleBotanException("receiving TLS data", e);
         }
         catch (const Botan::Exception &e)
         {
-            LOG_ERROR << "Unexpected Botan Exception: " << e.what();
-            conn_->shutdown();
-            if (tlsConnected_ == false)
-                handleSSLError(SSLError::kSSLHandshakeError);
-            else
-                handleSSLError(SSLError::kSSLProtocolError);
+            handleBotanException("receiving TLS data", e);
         }
         catch (...)
         {
             messageCallbackPending_ = false;
-            buffer->retrieveAll();
             throw;
         }
-        buffer->retrieveAll();
+        inputDrainer.drain();
         if (!receivedSuccessfully)
+        {
+            messageCallbackPending_ = false;
+            return;
+        }
+        if (dispatchPendingAlert())
         {
             messageCallbackPending_ = false;
             return;
@@ -306,7 +516,7 @@ struct BotanTLSProvider : public TLSProvider,
         }
     }
 
-    virtual ssize_t sendData(const char *ptr, size_t size) override
+    ssize_t sendData(const char *ptr, size_t size) override
     {
         if (getBufferedData().readableBytes() != 0)
         {
@@ -320,10 +530,25 @@ struct BotanTLSProvider : public TLSProvider,
         size_t hasSent = 0;
         while (hasSent < size && getBufferedData().readableBytes() == 0)
         {
-            auto trunkLen = size - hasSent;
-            if (trunkLen > maxSend)
-                trunkLen = maxSend;
-            channel_->send((const uint8_t *)ptr + hasSent, trunkLen);
+            const auto chunkLen = (std::min)(size - hasSent, maxSend);
+            try
+            {
+                channel_->send(
+                    reinterpret_cast<const uint8_t *>(ptr) + hasSent,
+                    chunkLen);
+                if (dispatchPendingAlert())
+                    return -1;
+            }
+            catch (const Botan::TLS::TLS_Exception &e)
+            {
+                handleBotanException("sending TLS data", e);
+                return -1;
+            }
+            catch (const Botan::Exception &e)
+            {
+                handleBotanException("sending TLS data", e);
+                return -1;
+            }
             // HACK: Botan doesn't provide a way to know how much raw data has
             // been written to the underlying transport. So we have to assume
             // that all data has been written. And cache the unwritten data in
@@ -333,76 +558,108 @@ struct BotanTLSProvider : public TLSProvider,
             // all or nothing)
             if (lastWriteSize_ == -1)
                 return -1;
-            hasSent += trunkLen;
+            hasSent += chunkLen;
         }
         return static_cast<ssize_t>(hasSent);
     }
 
-    virtual void close() override
+    void close() override
     {
         if (channel_ && channel_->is_active())
         {
-            channel_->close();
+            try
+            {
+                channel_->close();
+                dispatchPendingAlert();
+            }
+            catch (const Botan::TLS::TLS_Exception &e)
+            {
+                handleBotanException("closing the TLS channel", e);
+            }
+            catch (const Botan::Exception &e)
+            {
+                handleBotanException("closing the TLS channel", e);
+            }
         }
     }
 
-    virtual void startEncryption() override
+    void startEncryption() override
     {
-        auto certStorePtr = contextPtr_->certStore.get();
         credsPtr_ = std::make_shared<Credentials>(
             contextPtr_->key,
-            &contextPtr_->certChain,
-            certStorePtr,
-            &policyPtr_->getServerCertificateProvider());
-        if (policyPtr_->getConfCmds().empty() == false)
-            LOG_WARN << "BotanTLSConnectionImpl does not support sslConfCmds.";
+            contextPtr_->certChain,
+            contextPtr_->certStore,
+            contextPtr_->certificateProvider);
 
-        // initialize rng and session manager if we haven't already
-        std::call_once(sessionManagerInitFlag, []() {
-            sessionManagerRng = std::make_shared<Botan::AutoSeeded_RNG>();
-            sessionManager =
-                std::make_shared<Botan::TLS::Session_Manager_In_Memory>(
-                    sessionManagerRng);
-        });
-        if (rng == nullptr)
-            rng = std::make_shared<Botan::AutoSeeded_RNG>();
+        // channel_ is a strict child of this provider, so its callbacks cannot
+        // outlive us. A genuinely owning shared_ptr would create a cycle:
+        // provider -> channel -> callbacks -> provider.
+        auto callbacks = std::shared_ptr<Botan::TLS::Callbacks>(
+            this, [](Botan::TLS::Callbacks *) {});
+        try
+        {
+            if (contextPtr_->isServer)
+            {
+                channel_ = std::make_unique<Botan::TLS::Server>(
+                    std::move(callbacks),
+                    contextPtr_->sessionManager,
+                    credsPtr_,
+                    validationPolicy_,
+                    threadRng);
+            }
+            else
+            {
+                channel_ = std::make_unique<Botan::TLS::Client>(
+                    std::move(callbacks),
+                    contextPtr_->sessionManager,
+                    credsPtr_,
+                    validationPolicy_,
+                    threadRng,
+                    Botan::TLS::Server_Information(
+                        contextPtr_->hostname, conn_->peerAddr().toPort()),
+                    Botan::TLS::Protocol_Version::latest_tls_version(),
+                    contextPtr_->alpnProtocols);
+                setSniName(contextPtr_->hostname);
+            }
+            dispatchPendingAlert();
+        }
+        catch (const Botan::TLS::TLS_Exception &e)
+        {
+            handleBotanException("starting TLS", e);
+        }
+        catch (const Botan::Exception &e)
+        {
+            handleBotanException("starting TLS", e);
+        }
+    }
 
-        auto fakeThis = std::shared_ptr<BotanTLSProvider>(this, [](auto) {});
-        if (contextPtr_->isServer)
-        {
-            // TODO: Need a more scalable way to manage session validation rules
-            validationPolicy_->requireClientCert_ =
-                contextPtr_->requireClientCert;
-            validationPolicy_->requestClientCert_ =
-                contextPtr_->requestClientCert;
-            channel_ = std::make_unique<Botan::TLS::Server>(std::move(fakeThis),
-                                                            sessionManager,
-                                                            credsPtr_,
-                                                            validationPolicy_,
-                                                            rng);
-        }
-        else
-        {
-            validationPolicy_->requireClientCert_ =
-                contextPtr_->requireClientCert;
-            validationPolicy_->requestClientCert_ =
-                contextPtr_->requestClientCert;
-            // technically Botan2 does support TLS 1.0 and 1.1, but Botan3 does
-            // not. So we just disable them to keep compatibility.
-            if (policyPtr_->getUseOldTLS())
-                LOG_WARN << "Old TLS not supported by Botan (only >= TLS 1.2)";
-            channel_ = std::make_unique<Botan::TLS::Client>(
-                std::move(fakeThis),
-                sessionManager,
-                credsPtr_,
-                validationPolicy_,
-                rng,
-                Botan::TLS::Server_Information(policyPtr_->getHostname(),
-                                               conn_->peerAddr().toPort()),
-                Botan::TLS::Protocol_Version::TLS_V12,
-                policyPtr_->getAlpnProtocols());
-            setSniName(policyPtr_->getHostname());
-        }
+    void handleBotanException(
+        const char *operation,
+        const Botan::TLS::TLS_Exception &exception)
+    {
+        handleBotanException(
+            operation,
+            exception,
+            sslErrorForAlert(exception.type(), tlsConnected_));
+    }
+
+    void handleBotanException(const char *operation,
+                              const Botan::Exception &exception)
+    {
+        handleBotanException(operation,
+                             exception,
+                             tlsConnected_ ? SSLError::kSSLProtocolError
+                                           : SSLError::kSSLHandshakeError);
+    }
+
+    void handleBotanException(const char *operation,
+                              const Botan::Exception &exception,
+                              SSLError error)
+    {
+        pendingAlert_.reset();
+        LOG_ERROR << "Botan failed while " << operation << ": "
+                  << exception.what();
+        handleSSLError(error);
     }
 
     void handleSSLError(SSLError err)
@@ -420,13 +677,14 @@ struct BotanTLSProvider : public TLSProvider,
         errorCallback_(conn_, err);
     }
 
-    virtual ~BotanTLSProvider() override = default;
+    ~BotanTLSProvider() override = default;
 
     void tls_emit_data(std::span<const uint8_t> data) override
     {
         if (getBufferedData().readableBytes() != 0)
         {
-            appendToWriteBuffer((const char *)data.data(), data.size_bytes());
+            appendToWriteBuffer(reinterpret_cast<const char *>(data.data()),
+                                data.size_bytes());
             return;
         }
 
@@ -434,11 +692,11 @@ struct BotanTLSProvider : public TLSProvider,
         lastWriteSize_ = n;
 
         // store the unsent data and send it later
-        if (n == ssize_t(data.size_bytes()))
+        if (n == static_cast<ssize_t>(data.size_bytes()))
             return;
         if (n == -1)
             n = 0;
-        appendToWriteBuffer((const char *)data.data() + n,
+        appendToWriteBuffer(reinterpret_cast<const char *>(data.data()) + n,
                             data.size_bytes() - n);
     }
 
@@ -446,7 +704,8 @@ struct BotanTLSProvider : public TLSProvider,
                              std::span<const uint8_t> data) override
     {
         (void)seq_no;
-        recvBuffer_.append((const char *)data.data(), data.size_bytes());
+        recvBuffer_.append(reinterpret_cast<const char *>(data.data()),
+                           data.size_bytes());
         messageCallbackPending_ = true;
     }
 
@@ -454,10 +713,10 @@ struct BotanTLSProvider : public TLSProvider,
         const std::vector<std::string> &client_protos) override
     {
         assert(contextPtr_->isServer);
-        if (policyPtr_->getAlpnProtocols().empty() || client_protos.empty())
+        if (contextPtr_->alpnProtocols.empty() || client_protos.empty())
             return "";
 
-        for (const auto &proto : policyPtr_->getAlpnProtocols())
+        for (const auto &proto : contextPtr_->alpnProtocols)
         {
             if (std::find(client_protos.begin(), client_protos.end(), proto) !=
                 client_protos.end())
@@ -471,15 +730,38 @@ struct BotanTLSProvider : public TLSProvider,
     {
         if (alert.type() == Botan::TLS::Alert::CloseNotify)
         {
-            LOG_TRACE << "TLS close notify received";
-            if (closeCallback_)
-                closeCallback_(conn_);
+            if (!pendingAlert_ || !pendingAlert_->is_fatal())
+                pendingAlert_ = std::move(alert);
+        }
+        else if (alert.is_fatal())
+        {
+            pendingAlert_ = std::move(alert);
         }
         else
         {
-            if (errorCallback_)
-                errorCallback_(conn_, SSLError::kSSLProtocolError);
+            LOG_TRACE << "Non-fatal TLS alert received: "
+                      << alert.type_string();
         }
+    }
+
+    bool dispatchPendingAlert()
+    {
+        if (!pendingAlert_)
+            return false;
+
+        auto guard = shared_from_this();
+        auto alert = std::move(*pendingAlert_);
+        pendingAlert_.reset();
+        if (alert.type() == Botan::TLS::Alert::CloseNotify)
+        {
+            LOG_TRACE << "TLS close notify received";
+            if (closeCallback_)
+                closeCallback_(conn_);
+            return false;
+        }
+
+        handleSSLError(sslErrorForAlert(alert.type(), tlsConnected_));
+        return true;
     }
 
     void tls_session_activated() override
@@ -487,11 +769,46 @@ struct BotanTLSProvider : public TLSProvider,
         LOG_TRACE << "tls_session_activated";
         tlsConnected_ = true;
         setApplicationProtocol(channel_->application_protocol());
-        if (contextPtr_->isServer && !contextPtr_->certChain.empty())
-            setLocalCertificate(std::make_shared<BotanCertificate>(
-                contextPtr_->certChain.front()));
         if (handshakeCallback_)
             handshakeCallback_(conn_);
+    }
+
+    void tls_session_established(
+        const Botan::TLS::Session_Summary &session) override
+    {
+        if (contextPtr_->isServer)
+        {
+            const auto serverName = session.server_info().hostname();
+            // Resumed handshakes may not request a certificate from
+            // Credentials. Select once here as well so metadata remains
+            // complete and a provider can reject a resumed connection.
+            if (!credsPtr_->ensure_server_credentials(serverName))
+                throw Botan::TLS::TLS_Exception(
+                    Botan::TLS::Alert::HandshakeFailure,
+                    "No server credentials are available for this connection");
+            updateServerMetadata();
+        }
+        else
+        {
+            const auto *localCertificate =
+                credsPtr_->selected_client_leaf_certificate();
+            if (localCertificate != nullptr)
+                setLocalCertificate(
+                    std::make_shared<BotanCertificate>(*localCertificate));
+            else
+                setLocalCertificate(nullptr);
+        }
+        credsPtr_->finish_handshake();
+    }
+
+    void updateServerMetadata()
+    {
+        setSniName(credsPtr_->selected_server_name());
+        const auto *localCertificate =
+            credsPtr_->selected_leaf_certificate();
+        if (localCertificate != nullptr)
+            setLocalCertificate(
+                std::make_shared<BotanCertificate>(*localCertificate));
     }
 
     void tls_verify_cert_chain(
@@ -502,14 +819,15 @@ struct BotanTLSProvider : public TLSProvider,
         std::string_view hostname,
         const Botan::TLS::Policy &policy) override
     {
-        setSniName(std::string(hostname));
-        if (policyPtr_->getValidate())
+        if (!contextPtr_->isServer)
+            setSniName(std::string(hostname));
+        if (contextPtr_->validate)
         {
-            if (certs.size() == 0)
+            if (certs.empty())
                 throw Botan::TLS::TLS_Exception(
                     Botan::TLS::Alert::NoCertificate,
                     "Certificate validation failed: no certificate");
-            if (policyPtr_->getAllowBrokenChain())
+            if (contextPtr_->allowBrokenChain)
             {
                 const auto &cert = certs[0];
                 const auto now = std::chrono::system_clock::now();
@@ -521,7 +839,7 @@ struct BotanTLSProvider : public TLSProvider,
                         "Certificate validation failed: certificate is not "
                         "currently valid");
                 }
-                if (!contextPtr_->isServer &&
+                if (!contextPtr_->isServer && !hostname.empty() &&
                     !certificateMatchesHostname(cert, hostname))
                 {
                     throw Botan::TLS::TLS_Exception(
@@ -536,17 +854,18 @@ struct BotanTLSProvider : public TLSProvider,
             }
         }
 
-        if (certs.size() > 0)
+        if (!certs.empty())
             setPeerCertificate(std::make_shared<BotanCertificate>(certs[0]));
     }
 
     std::shared_ptr<TrantorPolicy> validationPolicy_;
-    std::shared_ptr<Botan::Credentials_Manager> credsPtr_;
+    std::shared_ptr<Credentials> credsPtr_;
     std::unique_ptr<Botan::TLS::Channel> channel_;
     bool tlsConnected_ = false;
     bool processedSslError_ = false;
     bool messageCallbackPending_ = false;
     ssize_t lastWriteSize_ = 0;
+    std::optional<Botan::TLS::Alert> pendingAlert_;
 };
 
 std::shared_ptr<TLSProvider> trantor::newTLSProvider(TcpConnection *conn,
@@ -562,6 +881,17 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
 {
     auto ctx = std::make_shared<SSLContext>();
     ctx->isServer = server;
+    ctx->certificateProvider = policy.getServerCertificateProvider();
+    ctx->alpnProtocols = policy.getAlpnProtocols();
+    ctx->hostname = policy.getHostname();
+    ctx->validate = policy.getValidate();
+    ctx->allowBrokenChain = policy.getAllowBrokenChain();
+    auto sessionRng = std::make_shared<Botan::AutoSeeded_RNG>();
+    // This deliberately provides stateful TLS 1.2 resumption only. Botan's
+    // in-memory manager does not issue the server tickets needed for TLS 1.3
+    // resumption; changing that requires an explicit ticket-key policy.
+    ctx->sessionManager =
+        std::make_shared<Botan::TLS::Session_Manager_In_Memory>(sessionRng);
 
     if (!policy.getCertificatePem().empty())
     {
@@ -583,6 +913,8 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
         Botan::DataSource_Stream certSource(policy.getCertPath());
         ctx->certChain = loadCertificateChain(certSource);
     }
+
+    validateCertificateAndKey(ctx->certChain, ctx->key.get());
 
     if (policy.getValidate())
     {
@@ -613,7 +945,9 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool server)
     }
 
     if (policy.getUseOldTLS())
-        LOG_WARN << "SSLPloicy have set useOldTLS to true. BUt Botan does not "
-                    "support TLS/SSL below TLS 1.2. Ignoring this option.";
+        LOG_WARN << "TLSPolicy enables old TLS, but Botan does not support "
+                    "TLS/SSL below TLS 1.2. Ignoring this option.";
+    if (!policy.getConfCmds().empty())
+        LOG_WARN << "Botan does not support sslConfCmds; ignoring them.";
     return ctx;
 }

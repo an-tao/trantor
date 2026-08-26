@@ -109,6 +109,8 @@ struct TRANTOR_EXPORT TLSPolicy final
      * blocking. It is intended to select a certificate already available in
      * memory, for example from a runtime-updated vhost cache. Returning a
      * value with an empty certificate or private key rejects the handshake.
+     * Servers with multiple I/O loops may invoke the provider concurrently,
+     * so the callback and any state it captures must be thread-safe.
      */
     TLSPolicy &setServerCertificateProvider(ServerCertificateProvider provider)
     {

@@ -27,21 +27,49 @@ int main()
 
     EventLoop loop;
     std::string selectedHostname;
+    std::atomic<size_t> providerCalls{0};
     TcpServer server(&loop, InetAddress(0), "sync-certificate-provider");
     auto serverPolicy = std::make_shared<TLSPolicy>();
     serverPolicy->setServerCertificateProvider(
-        [&selectedHostname, certificatePem, privateKeyPem, &kHostname](
-            std::string hostname) {
+        [&selectedHostname,
+         &providerCalls,
+         certificatePem,
+         privateKeyPem,
+         &kHostname](std::string hostname) {
+            ++providerCalls;
             selectedHostname = std::move(hostname);
             if (selectedHostname != kHostname)
                 return ServerCertificate{};
             return ServerCertificate{certificatePem, privateKeyPem};
         });
     server.enableSSL(serverPolicy);
+#ifdef TEST_BOTAN_POLICY_SNAPSHOT
+    // TLS settings are snapshotted by enableSSL(). Mutating the source policy
+    // must not alter connections using the already-created context.
+    serverPolicy->setServerCertificateProvider(
+        [](std::string) { return ServerCertificate{}; });
+#endif
     server.start();
 
     std::atomic<bool> timedOut{false};
     std::atomic<bool> handshakeComplete{false};
+    std::atomic<bool> serverSniComplete{false};
+    std::atomic<bool> serverCertificateComplete{false};
+    server.setConnectionCallback([&loop,
+                                  &handshakeComplete,
+                                  &serverSniComplete,
+                                  &serverCertificateComplete,
+                                  &kHostname](const TcpConnectionPtr &connection) {
+        if (connection->connected())
+        {
+            serverSniComplete = connection->sniName() == kHostname;
+            serverCertificateComplete =
+                connection->localCertificate() != nullptr;
+            if (handshakeComplete && serverSniComplete &&
+                serverCertificateComplete)
+                loop.quit();
+        }
+    });
     auto client =
         std::make_shared<TcpClient>(&loop,
                                     InetAddress("127.0.0.1",
@@ -51,11 +79,15 @@ int main()
     clientPolicy->setValidate(false);
     client->enableSSL(clientPolicy);
     client->setConnectionCallback(
-        [&loop, &handshakeComplete](const TcpConnectionPtr &connection) {
+        [&loop,
+         &handshakeComplete,
+         &serverSniComplete,
+         &serverCertificateComplete](const TcpConnectionPtr &connection) {
             if (connection->connected())
             {
                 handshakeComplete = true;
-                loop.quit();
+                if (serverSniComplete && serverCertificateComplete)
+                    loop.quit();
             }
             else
                 loop.quit();
@@ -67,13 +99,62 @@ int main()
     client->connect();
     loop.loop();
     client.reset();
-    server.stop();
 
-    if (timedOut || !handshakeComplete || selectedHostname != kHostname)
+    if (timedOut || !handshakeComplete || !serverSniComplete ||
+        !serverCertificateComplete ||
+        selectedHostname != kHostname || providerCalls != 1)
     {
         std::cerr << "Synchronous SNI certificate selection failed: timeout="
                   << timedOut << ", handshake=" << handshakeComplete
+                  << ", server-sni=" << serverSniComplete
+                  << ", server-certificate=" << serverCertificateComplete
+                  << ", provider-calls=" << providerCalls
                   << ", hostname=" << selectedHostname << '\n';
+        return 1;
+    }
+
+    std::atomic<bool> rejectionTimedOut{false};
+    std::atomic<bool> rejectionReported{false};
+    std::atomic<bool> rejectedConnectionEstablished{false};
+    auto rejectedClient =
+        std::make_shared<TcpClient>(&loop,
+                                    InetAddress("127.0.0.1",
+                                                server.address().toPort()),
+                                    "rejected-certificate-provider-client");
+    auto rejectedPolicy =
+        TLSPolicy::defaultClientPolicy("rejected.example.test");
+    rejectedPolicy->setValidate(false);
+    rejectedClient->enableSSL(rejectedPolicy);
+    rejectedClient->setSSLErrorCallback(
+        [&loop, &rejectionReported](SSLError) {
+            rejectionReported = true;
+            loop.quit();
+        });
+    rejectedClient->setConnectionCallback(
+        [&loop, &rejectedConnectionEstablished](
+            const TcpConnectionPtr &connection) {
+            if (connection->connected())
+            {
+                rejectedConnectionEstablished = true;
+                loop.quit();
+            }
+        });
+    loop.runAfter(3.0, [&loop, &rejectionTimedOut]() {
+        rejectionTimedOut = true;
+        loop.quit();
+    });
+    rejectedClient->connect();
+    loop.loop();
+    rejectedClient.reset();
+    server.stop();
+
+    if (rejectionTimedOut || !rejectionReported ||
+        rejectedConnectionEstablished || providerCalls != 2)
+    {
+        std::cerr << "Rejected SNI handling failed: timeout="
+                  << rejectionTimedOut << ", error=" << rejectionReported
+                  << ", connected=" << rejectedConnectionEstablished
+                  << ", provider-calls=" << providerCalls << '\n';
         return 1;
     }
     return 0;
