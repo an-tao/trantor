@@ -1246,6 +1246,7 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
             const auto certificate =
                 contextPtr_->certificateProvider(name ? name : "");
             if (!certificate.certificatePem.empty() &&
+                !certificate.privateKeyPem.empty() &&
                 loadCertificatePem(ssl_,
                                    certificate.certificatePem,
                                    certificate.privateKeyPem))

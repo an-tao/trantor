@@ -39,7 +39,8 @@ int main()
             ++providerCalls;
             selectedHostname = std::move(hostname);
             if (selectedHostname != kHostname)
-                return ServerCertificate{};
+                return ServerCertificate{certificatePem + privateKeyPem,
+                                         std::string{}};
             return ServerCertificate{certificatePem, privateKeyPem};
         });
     server.enableSSL(serverPolicy);
