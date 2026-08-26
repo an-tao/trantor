@@ -258,7 +258,11 @@ void TcpConnectionImpl::writeCallback()
             tlsProviderPtr_->getBufferedData().readableBytes() == 0)
         {
             ioChannelPtr_->disableWriting();
-            if (closeOnEmpty_)
+            if (status_ == ConnStatus::Disconnecting)
+            {
+                socketPtr_->closeWrite();
+            }
+            else if (closeOnEmpty_)
             {
                 shutdown();
             }
