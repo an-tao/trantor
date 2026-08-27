@@ -48,7 +48,7 @@ class TRANTOR_EXPORT EventLoopThread : NonCopyable
      */
     EventLoop *getLoop() const
     {
-        return loop_.get();
+        return loop_.lock().get();
     }
 
     /**
@@ -60,8 +60,7 @@ class TRANTOR_EXPORT EventLoopThread : NonCopyable
 
   private:
     // With C++20, use std::atomic<std::shared_ptr<EventLoop>>
-    std::shared_ptr<EventLoop> loop_;
-    std::mutex loopMutex_;
+    std::weak_ptr<EventLoop> loop_;
 
     std::string loopThreadName_;
     void loopFuncs();

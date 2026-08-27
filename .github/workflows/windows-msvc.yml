@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: '${{matrix.link}}-${{matrix.build-type}}-${{matrix.tls-provider}}'
-    runs-on: windows-latest
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:

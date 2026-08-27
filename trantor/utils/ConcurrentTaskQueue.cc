@@ -83,7 +83,17 @@ void ConcurrentTaskQueue::stop()
 {
     if (!stop_)
     {
-        stop_ = true;
+        {
+            // Set the flag under taskMutex_. A worker evaluates the wait
+            // predicate while holding that mutex, and pthread_cond_wait only
+            // registers it on taskCond_ before releasing it. Storing the flag
+            // without the mutex lets notify_all() fire in between: the worker
+            // has already read stop_ == false, is not yet a waiter, and the
+            // notification wakes nobody. It then blocks with no further
+            // notification coming, and the join() below never returns.
+            std::lock_guard<std::mutex> lock(taskMutex_);
+            stop_ = true;
+        }
         taskCond_.notify_all();
         for (auto &t : threads_)
             t.join();

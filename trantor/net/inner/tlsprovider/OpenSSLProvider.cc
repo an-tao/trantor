@@ -359,10 +359,14 @@ struct SSLContext
 
         if (!useOldTLS)
         {
-#ifdef LIBRESSL_VERSION_NUMBER
-            SSL_CTX_set_min_proto_version(ctx_.get(), TLS1_2_VERSION);
-#elif OPENSSL_VERSION_NUMBER >= 0x10101000L
-            SSL_CTX_set_min_proto_version(ctx_.get(), TLS1_2_VERSION);
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+            // Preserve stricter protocol settings from sslConfCmds while
+            // enforcing TLS 1.2 as the minimum secure default.
+            const auto minProtoVersion = SSL_CTX_get_min_proto_version(ctx_);
+            if (minProtoVersion == 0 || minProtoVersion < TLS1_2_VERSION)
+            {
+                SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
+            }
 #else
             const auto opt = SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 |
                              SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;

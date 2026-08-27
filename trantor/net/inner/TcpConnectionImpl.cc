@@ -719,6 +719,13 @@ void TcpConnectionImpl::sendStream(
     }
 }
 
+// Most bytes one stream node may write before handing the event loop back to
+// its other connections. The stall a co-located connection sees is linear in
+// this value, while throughput is flat for anything above a single chunk, so
+// it is kept small: four of StreamBufferNode's 16KB chunks, which measured at
+// roughly a millisecond per turn.
+static constexpr ssize_t kMaxStreamBytesPerLoopTurn = 64 * 1024;
+
 ssize_t TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
 {
     loop_->assertInLoopThread();
@@ -764,6 +771,19 @@ ssize_t TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
     ssize_t hasSent = 0;
     while ((nodePtr->remainingBytes() > 0))
     {
+        // A peer that drains as fast as the producer fills never makes write()
+        // return EAGAIN, and a short write is this loop's only other exit.
+        // Without a budget one stream can push a whole multi-gigabyte response
+        // without once returning to the event loop, and every other connection
+        // sharing that loop is served nothing until it finishes. Yield instead:
+        // the channel is level triggered, so handleWrite() resumes this node on
+        // the next poll, after whatever else was ready has been served.
+        if (hasSent >= kMaxStreamBytesPerLoopTurn)
+        {
+            if (!ioChannelPtr_->isWriting())
+                ioChannelPtr_->enableWriting();
+            break;
+        }
         // get next chunk
         nodePtr->getData(data, len);
         if (len == 0)
