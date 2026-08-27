@@ -25,6 +25,7 @@ add_executable(delayed_ssl_client_test DelayedSSLClientTest.cc)
 add_executable(tcp_asyncstream_server_test TcpAsyncStreamServerTest.cc)
 add_executable(automatic_ssl_server_test AutomaticSSLServerTest.cc)
 add_executable(automatic_ssl_client_test AutomaticSSLClientTest.cc)
+add_executable(sync_certificate_provider_test SyncCertificateProviderTest.cc)
 set(targets_list
     ssl_server_test
     ssl_client_test
@@ -53,8 +54,8 @@ set(targets_list
     tcp_asyncstream_server_test
     automatic_ssl_server_test
     automatic_ssl_client_test
+    sync_certificate_provider_test
 )
-
 if(HAVE_SPDLOG)
   add_executable(spdlogger_test SpdLoggerTest.cc)
   list(APPEND targets_list spdlogger_test)

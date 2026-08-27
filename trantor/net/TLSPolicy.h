@@ -2,12 +2,23 @@
 #include <trantor/exports.h>
 
 #include <memory>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace trantor
 {
+struct ServerCertificate
+{
+    /// PEM-encoded leaf certificate followed by any intermediate certificates.
+    std::string certificatePem;
+    /// PEM-encoded private key matching certificatePem.
+    std::string privateKeyPem;
+};
+
+using ServerCertificateProvider = std::function<ServerCertificate(std::string)>;
+
 struct TRANTOR_EXPORT TLSPolicy final
 {
     /**
@@ -65,6 +76,48 @@ struct TRANTOR_EXPORT TLSPolicy final
         return *this;
     }
 
+    // Request a peer certificate during a server handshake.  The argument
+    // controls whether a certificate is required: false requests one but
+    // permits anonymous peers; true rejects peers that omit it.
+    TLSPolicy &setPeerCertificateRequest(bool requireCertificate)
+    {
+        requestPeerCertificate_ = true;
+        requirePeerCertificate_ = requireCertificate;
+        return *this;
+    }
+
+    // Kept distinct from requesting a certificate: callers such as Gemini
+    // and Misfin perform application-level TOFU validation after TLS.
+    TLSPolicy &setCertificateVerification(bool enable)
+    {
+        return setValidate(enable);
+    }
+
+    TLSPolicy &setCertificatePem(std::string certificatePem,
+                                 std::string privateKeyPem)
+    {
+        certificatePem_ = std::move(certificatePem);
+        privateKeyPem_ = std::move(privateKeyPem);
+        return *this;
+    }
+
+    /**
+     * @brief Set a synchronous provider for server certificates selected by
+     * the SNI hostname.
+     *
+     * The provider runs on the TLS handshake path, so it must return without
+     * blocking. It is intended to select a certificate already available in
+     * memory, for example from a runtime-updated vhost cache. Returning a
+     * value with an empty certificate or private key rejects the handshake.
+     * Servers with multiple I/O loops may invoke the provider concurrently,
+     * so the callback and any state it captures must be thread-safe.
+     */
+    TLSPolicy &setServerCertificateProvider(ServerCertificateProvider provider)
+    {
+        serverCertificateProvider_ = std::move(provider);
+        return *this;
+    }
+
     /**
      * @brief enables the use of the old TLS protocol (old meaning < TLS 1.2).
      * TLS providers may not support old protocols even if this option is set
@@ -118,15 +171,14 @@ struct TRANTOR_EXPORT TLSPolicy final
     }
 
     /**
-     * @brief Allow broken chain (self-signed certificate, root CA not in
-     * allowed list, etc..) but still validate the domain name and date. This
-     * option has no effect if validate is false.
+     * @brief Accept a certificate with an untrusted or otherwise broken chain,
+     * while still validating its hostname and validity period. This option has
+     * no effect if validate is false. When validate is true, the peer must
+     * still present a certificate.
      *
-     * @note IMPORTANT: This option makes more then self signed certificates
-     * valid. It also allows certificates that are not signed by a trusted CA,
-     * the CA gets revoked. But the underlying implementation may still check
-     * for the type of certificate, date and hostname, etc.. To disable all
-     * certificate validation, use setValidate(false).
+     * @note Chain trust, issuer, revocation, key usage, and other PKIX checks
+     * are ignored. To also permit a peer that presents no certificate, use
+     * setValidate(false).
      */
     TLSPolicy &setAllowBrokenChain(bool allow)
     {
@@ -180,6 +232,26 @@ struct TRANTOR_EXPORT TLSPolicy final
     {
         return useSystemCertStore_;
     }
+    bool getPeerCertificateRequest() const
+    {
+        return requestPeerCertificate_;
+    }
+    bool getRequirePeerCertificate() const
+    {
+        return requirePeerCertificate_;
+    }
+    const std::string &getCertificatePem() const
+    {
+        return certificatePem_;
+    }
+    const std::string &getPrivateKeyPem() const
+    {
+        return privateKeyPem_;
+    }
+    const ServerCertificateProvider &getServerCertificateProvider() const
+    {
+        return serverCertificateProvider_;
+    }
 
     static std::shared_ptr<TLSPolicy> defaultServerPolicy(
         const std::string &certPath,
@@ -216,6 +288,11 @@ struct TRANTOR_EXPORT TLSPolicy final
     bool validate_ = true;
     bool allowBrokenChain_ = false;
     bool useSystemCertStore_ = true;
+    bool requestPeerCertificate_ = false;
+    bool requirePeerCertificate_ = false;
+    std::string certificatePem_;
+    std::string privateKeyPem_;
+    ServerCertificateProvider serverCertificateProvider_;
 };
 using TLSPolicyPtr = std::shared_ptr<TLSPolicy>;
 }  // namespace trantor

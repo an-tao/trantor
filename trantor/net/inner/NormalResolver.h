@@ -24,12 +24,7 @@ class NormalResolver : public Resolver,
     virtual void resolve(const std::string& hostname,
                          const Callback& callback) override;
     virtual void resolve(const std::string& hostname,
-                         const ResolverResultsCallback& callback) override
-    {
-        resolve(hostname, [callback](const trantor::InetAddress& inet) {
-            callback(std::vector<trantor::InetAddress>{inet});
-        });
-    }
+                         const ResolverResultsCallback& callback) override;
     explicit NormalResolver(size_t timeout)
         : timeout_(timeout), resolveBuffer_(kResolveBufferLength)
     {
@@ -39,13 +34,16 @@ class NormalResolver : public Resolver,
     }
 
   private:
-    static std::unordered_map<std::string,
-                              std::pair<trantor::InetAddress, trantor::Date>>&
+    static std::unordered_map<
+        std::string,
+        std::pair<std::shared_ptr<std::vector<trantor::InetAddress>>,
+                  trantor::Date>>&
     globalCache()
     {
         static std::unordered_map<
             std::string,
-            std::pair<trantor::InetAddress, trantor::Date>>
+            std::pair<std::shared_ptr<std::vector<trantor::InetAddress>>,
+                      trantor::Date>>
             dnsCache_;
         return dnsCache_;
     }

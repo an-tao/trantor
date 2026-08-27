@@ -276,6 +276,14 @@ class TRANTOR_EXPORT TcpConnection
     virtual CertificatePtr peerCertificate() const = 0;
 
     /**
+     * @brief Get the certificate selected by this TLS server connection.
+     *
+     * @return nullptr for clients, non-TLS connections, or when no server
+     * certificate was selected.
+     */
+    virtual CertificatePtr localCertificate() const = 0;
+
+    /**
      * @brief Get the SNI name (for server connections only)
      *
      * @return Empty string if no SNI name was provided (not an SSL connection
@@ -288,6 +296,12 @@ class TRANTOR_EXPORT TcpConnection
      * connection will be upgraded to a TLS server connection. If the connection
      * is specified as a client, the connection will be upgraded to a TLS client
      * @note This method is only available for non-SSL connections.
+     * @note Remove the plaintext upgrade request from the receive buffer before
+     * calling this method. Any remaining bytes are treated as pipelined TLS
+     * records. Plaintext already queued for sending is flushed before the TLS
+     * handshake starts.
+     * Application data sent while the upgrade is pending is buffered and sent
+     * over TLS after the handshake completes.
      */
     virtual void startEncryption(TLSPolicyPtr policy,
                                  bool isServer,

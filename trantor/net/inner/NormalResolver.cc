@@ -24,6 +24,15 @@ bool Resolver::isCAresUsed()
 void NormalResolver::resolve(const std::string &hostname,
                              const Callback &callback)
 {
+    resolve(hostname,
+            [callback](const std::vector<trantor::InetAddress> &addresses) {
+                callback(addresses.empty() ? InetAddress{} : addresses.front());
+            });
+}
+
+void NormalResolver::resolve(const std::string &hostname,
+                             const ResolverResultsCallback &callback)
+{
     {
         std::lock_guard<std::mutex> guard(globalMutex());
         auto iter = globalCache().find(hostname);
@@ -33,68 +42,71 @@ void NormalResolver::resolve(const std::string &hostname,
             if (timeout_ == 0 || cachedAddr.second.after(static_cast<double>(
                                      timeout_)) > trantor::Date::date())
             {
-                callback(cachedAddr.first);
+                callback(*cachedAddr.first);
                 return;
             }
         }
     }
 
-    concurrentTaskQueue().runTaskInQueue(
-        [thisPtr = shared_from_this(), callback, hostname]() {
+    concurrentTaskQueue().runTaskInQueue([thisPtr = shared_from_this(),
+                                          callback,
+                                          hostname]() {
+        {
+            std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
+            auto iter = thisPtr->globalCache().find(hostname);
+            if (iter != thisPtr->globalCache().end())
             {
-                std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
-                auto iter = thisPtr->globalCache().find(hostname);
-                if (iter != thisPtr->globalCache().end())
+                auto &cachedAddr = iter->second;
+                if (thisPtr->timeout_ == 0 ||
+                    cachedAddr.second.after(static_cast<double>(
+                        thisPtr->timeout_)) > trantor::Date::date())
                 {
-                    auto &cachedAddr = iter->second;
-                    if (thisPtr->timeout_ == 0 ||
-                        cachedAddr.second.after(static_cast<double>(
-                            thisPtr->timeout_)) > trantor::Date::date())
-                    {
-                        callback(cachedAddr.first);
-                        return;
-                    }
+                    callback(*cachedAddr.first);
+                    return;
                 }
             }
-            struct addrinfo hints, *res = nullptr;
-            memset(&hints, 0, sizeof(hints));
-            hints.ai_family = PF_UNSPEC;
-            hints.ai_socktype = SOCK_STREAM;
-            hints.ai_flags = AI_PASSIVE;
-            auto error = getaddrinfo(hostname.data(), nullptr, &hints, &res);
-            if (error != 0 || res == nullptr)
+        }
+        struct addrinfo hints, *res = nullptr;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = PF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;
+        auto error = getaddrinfo(hostname.data(), nullptr, &hints, &res);
+        if (error != 0 || res == nullptr)
+        {
+            LOG_SYSERR << "InetAddress::resolve";
+            if (res != nullptr)
             {
-                LOG_SYSERR << "InetAddress::resolve";
-                if (res != nullptr)
-                {
-                    freeaddrinfo(res);
-                }
-                callback(InetAddress{});
-                return;
+                freeaddrinfo(res);
             }
-            InetAddress inet;
-            if (res->ai_family == AF_INET)
-            {
-                struct sockaddr_in addr;
-                memset(&addr, 0, sizeof addr);
-                addr = *reinterpret_cast<struct sockaddr_in *>(res->ai_addr);
-                inet = InetAddress(addr);
-            }
-            else if (res->ai_family == AF_INET6)
-            {
-                struct sockaddr_in6 addr;
-                memset(&addr, 0, sizeof addr);
-                addr = *reinterpret_cast<struct sockaddr_in6 *>(res->ai_addr);
-                inet = InetAddress(addr);
-            }
-            freeaddrinfo(res);
-            callback(inet);
-            {
-                std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
-                auto &addrItem = thisPtr->globalCache()[hostname];
-                addrItem.first = inet;
-                addrItem.second = trantor::Date::date();
-            }
+            callback({});
             return;
-        });
+        }
+        auto addresses = std::make_shared<std::vector<InetAddress>>();
+        for (auto *item = res; item != nullptr; item = item->ai_next)
+        {
+            if (item->ai_family == AF_INET)
+            {
+                const auto *address =
+                    reinterpret_cast<const struct sockaddr_in *>(item->ai_addr);
+                addresses->emplace_back(*address);
+            }
+            else if (item->ai_family == AF_INET6)
+            {
+                const auto *address =
+                    reinterpret_cast<const struct sockaddr_in6 *>(
+                        item->ai_addr);
+                addresses->emplace_back(*address);
+            }
+        }
+        freeaddrinfo(res);
+        callback(*addresses);
+        {
+            std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
+            auto &addrItem = thisPtr->globalCache()[hostname];
+            addrItem.first = std::move(addresses);
+            addrItem.second = trantor::Date::date();
+        }
+        return;
+    });
 }

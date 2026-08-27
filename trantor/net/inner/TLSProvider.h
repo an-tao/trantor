@@ -10,7 +10,7 @@
 
 namespace trantor
 {
-struct TLSProvider
+struct TLSProvider : public std::enable_shared_from_this<TLSProvider>
 {
     TLSProvider(TcpConnection* conn, TLSPolicyPtr policy, SSLContextPtr ctx)
         : conn_(conn),
@@ -48,7 +48,7 @@ struct TLSProvider
 
     virtual void startEncryption() = 0;
 
-    bool sendBufferedData()
+    virtual bool sendBufferedData()
     {
         if (writeBuffer_.readableBytes() == 0)
             return true;
@@ -58,8 +58,9 @@ struct TLSProvider
                                 writeBuffer_.readableBytes());
         if (n == -1)
         {
-            LOG_ERROR << "WTF! Failed to send buffered data. Error: "
+            LOG_ERROR << "Failed to send buffered TLS data. Error: "
                       << strerror(errno);
+            conn_->forceClose();
             return false;
         }
         else if ((size_t)n != writeBuffer_.readableBytes())
@@ -125,6 +126,11 @@ struct TLSProvider
         return peerCertificate_;
     }
 
+    const CertificatePtr& localCertificate() const
+    {
+        return localCertificate_;
+    }
+
     const std::string& applicationProtocol() const
     {
         return applicationProtocol_;
@@ -139,6 +145,11 @@ struct TLSProvider
     void setPeerCertificate(CertificatePtr cert)
     {
         peerCertificate_ = std::move(cert);
+    }
+
+    void setLocalCertificate(CertificatePtr cert)
+    {
+        localCertificate_ = std::move(cert);
     }
 
     void setApplicationProtocol(std::string protocol)
@@ -162,6 +173,7 @@ struct TLSProvider
     MsgBuffer recvBuffer_;
     EventLoop* loop_ = nullptr;
     CertificatePtr peerCertificate_;
+    CertificatePtr localCertificate_;
     std::string applicationProtocol_;
     std::string sniName_;
     MsgBuffer writeBuffer_;

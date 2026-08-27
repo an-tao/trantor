@@ -16,6 +16,7 @@
 #include "Socket.h"
 #include "Channel.h"
 #include <trantor/utils/Utilities.h>
+#include <algorithm>
 #ifdef __linux__
 #include <sys/sendfile.h>
 #include <poll.h>
@@ -86,6 +87,7 @@ TcpConnectionImpl::TcpConnectionImpl(EventLoop *loop,
 
     if (policy != nullptr)
     {
+        tlsHandshakePending_ = true;
         tlsProviderPtr_ =
             newTLSProvider(this, std::move(policy), std::move(ctx));
         tlsProviderPtr_->setWriteCallback(onSslWrite);
@@ -178,6 +180,12 @@ void TcpConnectionImpl::readCallback()
         {
             tlsProviderPtr_->recvData(&readBuffer_);
         }
+        else if (encryptionPending_)
+        {
+            // The peer may pipeline its first TLS record behind the plaintext
+            // STARTTLS exchange. Retain it until all pre-upgrade writes have
+            // drained and the TLS provider is installed.
+        }
         else if (recvMsgCallback_)
         {
             recvMsgCallback_(shared_from_this(), &readBuffer_);
@@ -240,11 +248,21 @@ void TcpConnectionImpl::writeCallback()
             }
         }
         assert(writeBufferList_.empty());
+
+        if (encryptionPending_)
+        {
+            startPendingEncryption();
+        }
+
         if (tlsProviderPtr_ == nullptr ||
             tlsProviderPtr_->getBufferedData().readableBytes() == 0)
         {
             ioChannelPtr_->disableWriting();
-            if (closeOnEmpty_)
+            if (status_ == ConnStatus::Disconnecting)
+            {
+                socketPtr_->closeWrite();
+            }
+            else if (closeOnEmpty_)
             {
                 shutdown();
             }
@@ -341,7 +359,8 @@ void TcpConnectionImpl::shutdown()
                 // connection just yet
                 if (thisPtr->tlsProviderPtr_->getBufferedData()
                             .readableBytes() != 0 ||
-                    !thisPtr->writeBufferList_.empty())
+                    !thisPtr->writeBufferList_.empty() ||
+                    !thisPtr->pendingTlsWriteBufferList_.empty())
                 {
                     thisPtr->closeOnEmpty_ = true;
                     return;
@@ -388,6 +407,28 @@ void TcpConnectionImpl::sendInLoop(const char *buffer, size_t length)
     if (status_ != ConnStatus::Connected)
     {
         LOG_DEBUG << "Connection is not connected,give up sending";
+        return;
+    }
+    if (encryptionPending_ || tlsHandshakePending_)
+    {
+        if (pendingTlsWriteBufferList_.empty() ||
+            pendingTlsWriteBufferList_.back()->isFile() ||
+            pendingTlsWriteBufferList_.back()->isStream())
+        {
+            pendingTlsWriteBufferList_.push_back(
+                BufferNode::newMemBufferNode());
+        }
+        pendingTlsWriteBufferList_.back()->append(static_cast<const char *>(
+                                                      buffer),
+                                                  length);
+        if (highWaterMarkCallback_ &&
+            pendingTlsWriteBufferList_.back()->remainingBytes() >
+                static_cast<long long>(highWaterMarkLen_))
+        {
+            highWaterMarkCallback_(
+                shared_from_this(),
+                pendingTlsWriteBufferList_.back()->remainingBytes());
+        }
         return;
     }
     ssize_t sendLen = 0;
@@ -591,6 +632,11 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
     assert(fileNode->isFile() && fileNode->remainingBytes() > 0);
     if (loop_->isInLoopThread())
     {
+        if (encryptionPending_ || tlsHandshakePending_)
+        {
+            pendingTlsWriteBufferList_.push_back(std::move(fileNode));
+            return;
+        }
         if (writeBufferList_.empty())
         {
             auto n = sendNodeInLoop(fileNode);
@@ -607,6 +653,11 @@ void TcpConnectionImpl::sendFile(BufferNodePtr &&fileNode)
     {
         loop_->queueInLoop([thisPtr = shared_from_this(),
                             node = std::move(fileNode)]() mutable {
+            if (thisPtr->encryptionPending_ || thisPtr->tlsHandshakePending_)
+            {
+                thisPtr->pendingTlsWriteBufferList_.push_back(std::move(node));
+                return;
+            }
             if (thisPtr->writeBufferList_.empty())
             {
                 auto n = thisPtr->sendNodeInLoop(node);
@@ -627,6 +678,11 @@ void TcpConnectionImpl::sendStream(
     auto node = BufferNode::newStreamBufferNode(std::move(callback));
     if (loop_->isInLoopThread())
     {
+        if (encryptionPending_ || tlsHandshakePending_)
+        {
+            pendingTlsWriteBufferList_.push_back(std::move(node));
+            return;
+        }
         if (writeBufferList_.empty())
         {
             auto n = sendNodeInLoop(node);
@@ -641,20 +697,25 @@ void TcpConnectionImpl::sendStream(
     }
     else
     {
-        loop_->queueInLoop(
-            [thisPtr = shared_from_this(), node = std::move(node)]() mutable {
-                LOG_TRACE << "Push send stream to list";
-                if (thisPtr->writeBufferList_.empty())
-                {
-                    auto n = thisPtr->sendNodeInLoop(node);
-                    if (node->remainingBytes() > 0 && n >= 0)
-                        thisPtr->writeBufferList_.push_back(std::move(node));
-                }
-                else
-                {
+        loop_->queueInLoop([thisPtr = shared_from_this(),
+                            node = std::move(node)]() mutable {
+            LOG_TRACE << "Push send stream to list";
+            if (thisPtr->encryptionPending_ || thisPtr->tlsHandshakePending_)
+            {
+                thisPtr->pendingTlsWriteBufferList_.push_back(std::move(node));
+                return;
+            }
+            if (thisPtr->writeBufferList_.empty())
+            {
+                auto n = thisPtr->sendNodeInLoop(node);
+                if (node->remainingBytes() > 0 && n >= 0)
                     thisPtr->writeBufferList_.push_back(std::move(node));
-                }
-            });
+            }
+            else
+            {
+                thisPtr->writeBufferList_.push_back(std::move(node));
+            }
+        });
     }
 }
 
@@ -817,11 +878,52 @@ void TcpConnectionImpl::startEncryption(
     bool isServer,
     std::function<void(const TcpConnectionPtr &)> upgradeCallback)
 {
-    if (tlsProviderPtr_ || upgradeCallback_)
+    if (!loop_->isInLoopThread())
+    {
+        loop_->queueInLoop(
+            [thisPtr = shared_from_this(),
+             policy = std::move(policy),
+             isServer,
+             upgradeCallback = std::move(upgradeCallback)]() mutable {
+                thisPtr->startEncryption(std::move(policy),
+                                         isServer,
+                                         std::move(upgradeCallback));
+            });
+        return;
+    }
+
+    if (tlsProviderPtr_ || encryptionPending_)
     {
         LOG_ERROR << "TLS is already started";
         return;
     }
+
+    pendingTlsPolicy_ = std::move(policy);
+    pendingTlsIsServer_ = isServer;
+    pendingUpgradeCallback_ = std::move(upgradeCallback);
+    encryptionPending_ = true;
+
+    // writeBufferList_ contains plaintext accepted before startEncryption().
+    // Its partial write already enabled the channel's write notification, so
+    // finish it before allowing a TLS handshake to write to the socket.
+    if (writeBufferList_.empty())
+        startPendingEncryption();
+}
+
+void TcpConnectionImpl::startPendingEncryption()
+{
+    loop_->assertInLoopThread();
+    assert(encryptionPending_);
+    assert(!tlsProviderPtr_);
+    assert(writeBufferList_.empty());
+    assert(pendingTlsPolicy_);
+
+    auto policy = std::move(pendingTlsPolicy_);
+    auto upgradeCallback = std::move(pendingUpgradeCallback_);
+    const bool isServer = pendingTlsIsServer_;
+    encryptionPending_ = false;
+    tlsHandshakePending_ = true;
+
     auto sslContextPtr = newSSLContext(*policy, isServer);
     tlsProviderPtr_ =
         newTLSProvider(this, std::move(policy), std::move(sslContextPtr));
@@ -831,8 +933,21 @@ void TcpConnectionImpl::startEncryption(
     tlsProviderPtr_->setMessageCallback(onSslMessage);
     // This is triggered when peer sends a close alert
     tlsProviderPtr_->setCloseCallback(onSslCloseAlert);
-    tlsProviderPtr_->startEncryption();
     upgradeCallback_ = std::move(upgradeCallback);
+    tlsProviderPtr_->startEncryption();
+
+    if (readBuffer_.readableBytes() != 0)
+        tlsProviderPtr_->recvData(&readBuffer_);
+}
+
+void TcpConnectionImpl::finishEncryptionHandshake()
+{
+    if (!tlsHandshakePending_)
+        return;
+    tlsHandshakePending_ = false;
+    writeBufferList_.splice(writeBufferList_.end(), pendingTlsWriteBufferList_);
+    if (!writeBufferList_.empty() && !ioChannelPtr_->isWriting())
+        ioChannelPtr_->enableWriting();
 }
 
 void TcpConnectionImpl::onSslError(TcpConnection *self, SSLError err)
@@ -844,6 +959,7 @@ void TcpConnectionImpl::onSslError(TcpConnection *self, SSLError err)
 void TcpConnectionImpl::onHandshakeFinished(TcpConnection *self)
 {
     auto connPtr = ((TcpConnectionImpl *)self)->shared_from_this();
+    connPtr->finishEncryptionHandshake();
     if (connPtr->upgradeCallback_)
     {
         connPtr->upgradeCallback_(connPtr);
@@ -955,7 +1071,10 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
             idleTimeout_ = 0;
         }
 
-        writeBufferList_.push_back(asyncStreamNode);
+        if (encryptionPending_ || tlsHandshakePending_)
+            pendingTlsWriteBufferList_.push_back(asyncStreamNode);
+        else
+            writeBufferList_.push_back(asyncStreamNode);
     }
     else
     {
@@ -975,7 +1094,12 @@ AsyncStreamPtr TcpConnectionImpl::sendAsyncStream(bool disableKickoff)
                 idleTimeout_ = 0;
             }
 
-            if (thisPtr->writeBufferList_.empty() && node->remainingBytes() > 0)
+            if (thisPtr->encryptionPending_ || thisPtr->tlsHandshakePending_)
+            {
+                thisPtr->pendingTlsWriteBufferList_.push_back(std::move(node));
+            }
+            else if (thisPtr->writeBufferList_.empty() &&
+                     node->remainingBytes() > 0)
             {
                 auto n = thisPtr->sendNodeInLoop(node);
                 if (n >= 0 && (node->remainingBytes() > 0 || node->available()))
@@ -994,12 +1118,16 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
                                             size_t len)
 {
     loop_->assertInLoopThread();
+    const bool isPendingTlsNode =
+        std::find(pendingTlsWriteBufferList_.begin(),
+                  pendingTlsWriteBufferList_.end(),
+                  node) != pendingTlsWriteBufferList_.end();
     if (data)
     {
         if (len > 0)
         {
-            if (!writeBufferList_.empty() && node == writeBufferList_.front() &&
-                node->remainingBytes() == 0)
+            if (!isPendingTlsNode && !writeBufferList_.empty() &&
+                node == writeBufferList_.front() && node->remainingBytes() == 0)
             {
                 auto nWritten = writeInLoop(data, len);
                 if (nWritten < 0)
@@ -1022,8 +1150,8 @@ void TcpConnectionImpl::sendAsyncDataInLoop(const BufferNodePtr &node,
     {
         // stream is closed
         node->done();
-        if (!writeBufferList_.empty() && node == writeBufferList_.front() &&
-            !ioChannelPtr_->isWriting())
+        if (!isPendingTlsNode && !writeBufferList_.empty() &&
+            node == writeBufferList_.front() && !ioChannelPtr_->isWriting())
             ioChannelPtr_->enableWriting();
 
         if (idleTimeoutBackup_ > 0)
