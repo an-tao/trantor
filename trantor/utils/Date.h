@@ -72,6 +72,26 @@ class TRANTOR_EXPORT Date
         return Date::date();
     }
 
+    /**
+     * @brief Return the offset between the local time zone and UTC (in
+     * seconds, east of Greenwich positive) that applies at a given instant.
+     *
+     * @param secondsSinceEpoch The instant to look the offset up for.
+     *
+     * @note The offset is a function of the instant, not a constant: it changes
+     * with daylight saving time and with historical changes to a zone's
+     * standard offset. Always pass the instant that is being converted.
+     */
+    static int64_t timezoneOffset(int64_t secondsSinceEpoch);
+
+    /**
+     * @brief Return the offset between the local time zone and UTC that is in
+     * effect right now.
+     *
+     * @note Equivalent to timezoneOffset(Date::now().secondsSinceEpoch()). The
+     * result is only meaningful for the current instant; use the overload above
+     * when converting some other point in time.
+     */
     static int64_t timezoneOffset();
 
     /**
