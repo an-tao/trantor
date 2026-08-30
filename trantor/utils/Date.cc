@@ -14,15 +14,14 @@
 
 #include "Date.h"
 #include "Funcs.h"
-#ifndef _WIN32
-#include <sys/time.h>
-#endif
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <time.h>
+#else
+#include <sys/time.h>
 #endif
 
 namespace trantor
@@ -51,10 +50,10 @@ int gettimeofday(timeval *tp, void *tzp)
 #endif
 
 // tm_gmtoff is a BSD extension that glibc, musl, macOS and every BSD provide.
+#ifdef _WIN32
 // The MSVC CRT has no such member.
-#if !defined(_WIN32) &&                                                  \
-    (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || \
-     defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__))
+#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || \
+    defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
 #define TRANTOR_HAS_TM_GMTOFF 1
 #endif
 
@@ -157,13 +156,13 @@ Date dateFromFields(const DateFields &f, int64_t utcOffsetSeconds)
 
 const Date Date::date()
 {
-#ifndef _WIN32
-    struct timeval tv;
+#ifdef _WIN32
+    timeval tv;
     gettimeofday(&tv, NULL);
     int64_t seconds = tv.tv_sec;
     return Date(seconds * MICRO_SECONDS_PER_SEC + tv.tv_usec);
 #else
-    timeval tv;
+    struct timeval tv;
     gettimeofday(&tv, NULL);
     int64_t seconds = tv.tv_sec;
     return Date(seconds * MICRO_SECONDS_PER_SEC + tv.tv_usec);
@@ -195,10 +194,10 @@ const Date Date::roundDay() const
     struct tm t;
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
-#ifndef _WIN32
-    localtime_r(&seconds, &t);
-#else
+#ifdef _WIN32
     localtime_s(&t, &seconds);
+#else
+    localtime_r(&seconds, &t);
 #endif
     t.tm_hour = 0;
     t.tm_min = 0;
@@ -210,10 +209,10 @@ struct tm Date::tmStruct() const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    gmtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     gmtime_s(&tm_time, &seconds);
+#else
+    gmtime_r(&seconds, &tm_time);
 #endif
     return tm_time;
 }
@@ -224,10 +223,10 @@ std::string Date::toFormattedString(bool showMicroseconds) const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    gmtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     gmtime_s(&tm_time, &seconds);
+#else
+    gmtime_r(&seconds, &tm_time);
 #endif
 
     if (showMicroseconds)
@@ -266,10 +265,10 @@ std::string Date::toCustomFormattedString(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    gmtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     gmtime_s(&tm_time, &seconds);
+#else
+    gmtime_r(&seconds, &tm_time);
 #endif
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
     if (!showMicroseconds)
@@ -288,10 +287,10 @@ void Date::toCustomFormattedString(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    gmtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     gmtime_s(&tm_time, &seconds);
+#else
+    gmtime_r(&seconds, &tm_time);
 #endif
     strftime(str, len, fmtStr.c_str(), &tm_time);
 }
@@ -302,10 +301,10 @@ std::string Date::toFormattedStringLocal(bool showMicroseconds) const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    localtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     localtime_s(&tm_time, &seconds);
+#else
+    localtime_r(&seconds, &tm_time);
 #endif
 
     if (showMicroseconds)
@@ -652,10 +651,10 @@ std::string Date::toCustomFormattedStringLocal(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    localtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     localtime_s(&tm_time, &seconds);
+#else
+    localtime_r(&seconds, &tm_time);
 #endif
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
     if (!showMicroseconds)
