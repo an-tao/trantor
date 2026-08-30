@@ -146,6 +146,16 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     }
 
     /**
+     * @brief Set the create socket error callback.
+     *
+     * @param cb The callback is called when an error occurs create socket
+     */
+    void setSocketErrorCallback(const SocketErrorCallback &cb)
+    {
+        socketErrorCallback_ = cb;
+    }
+
+    /**
      * @brief Set the message callback.
      *
      * @param cb The callback is called when some data is received from the
@@ -245,6 +255,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
     RecvMessageCallback messageCallback_;
     WriteCompleteCallback writeCompleteCallback_;
     SSLErrorCallback sslErrorCallback_;
+    SocketErrorCallback socketErrorCallback_;
     std::atomic_bool retry_;    // atomic
     std::atomic_bool connect_;  // atomic
     // always in loop thread

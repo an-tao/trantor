@@ -76,6 +76,8 @@ int main()
                 buf->retrieveAll();
                 conn->shutdown();
             });
+        client[i]->setSocketErrorCallback(
+            [](std::string error) { LOG_ERROR << error; });
         client[i]->connect();
     }
     loop.loop();
