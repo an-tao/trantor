@@ -1,6 +1,7 @@
 #include <trantor/net/inner/BufferNode.h>
 #include <windows.h>
 #include <fileapi.h>
+#include <algorithm>
 #if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 #define UWP 1
 #else
@@ -103,9 +104,12 @@ class FileBufferNode : public BufferNode
                                                    ? kMaxSendFileBufferSize
                                                    : fileBytesToSend_);
             DWORD n = 0;
+            const auto bytesToRead =
+                (std::min)(msgBufferPtr_->writableBytes(),
+                           static_cast<size_t>(fileBytesToSend_));
             if (!ReadFile(sendHandle_,
                           msgBufferPtr_->beginWrite(),
-                          (uint32_t)msgBufferPtr_->writableBytes(),
+                          static_cast<DWORD>(bytesToRead),
                           &n,
                           nullptr))
             {
