@@ -16,6 +16,7 @@
 
 #include <trantor/exports.h>
 #include <stdint.h>
+#include <time.h>
 #include <string>
 
 namespace trantor
