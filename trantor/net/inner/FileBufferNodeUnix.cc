@@ -88,9 +88,10 @@ class FileBufferNode : public BufferNode
             msgBufferPtr_->ensureWritableBytes(
                 (std::min)(kMaxSendFileBufferSize,
                            static_cast<size_t>(fileBytesToSend_)));
-            auto n = read(sendFd_,
-                          msgBufferPtr_->beginWrite(),
-                          msgBufferPtr_->writableBytes());
+            const auto bytesToRead =
+                (std::min)(msgBufferPtr_->writableBytes(),
+                           static_cast<size_t>(fileBytesToSend_));
+            auto n = read(sendFd_, msgBufferPtr_->beginWrite(), bytesToRead);
             if (n > 0)
             {
                 msgBufferPtr_->hasWritten(n);
