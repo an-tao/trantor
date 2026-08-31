@@ -14,15 +14,14 @@
 
 #include "Date.h"
 #include "Funcs.h"
-#ifndef _WIN32
-#include <sys/time.h>
-#endif
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <time.h>
+#else
+#include <sys/time.h>
 #endif
 
 namespace trantor
@@ -49,25 +48,135 @@ int gettimeofday(timeval *tp, void *tzp)
     return (0);
 }
 #endif
+
+// tm_gmtoff is a BSD extension that glibc, musl, macOS and every BSD provide.
+#ifdef _WIN32
+// The MSVC CRT has no such member.
+#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || \
+    defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
+#define TRANTOR_HAS_TM_GMTOFF 1
+#endif
+
+namespace
+{
+// Thread-safe wrappers over the platform's time conversions.
+inline bool localTimeOf(time_t seconds, struct tm &out)
+{
+    memset(&out, 0, sizeof(out));
+#ifdef _WIN32
+    // The MSVC signature is (tm *, const time_t *), the reverse of the C11
+    // Annex K one, and it fails for instants outside [1970, 3000].
+    return localtime_s(&out, &seconds) == 0;
+#else
+    return localtime_r(&seconds, &out) != nullptr;
+#endif
+}
+
+inline bool utcTimeOf(time_t seconds, struct tm &out)
+{
+    memset(&out, 0, sizeof(out));
+#ifdef _WIN32
+    return gmtime_s(&out, &seconds) == 0;
+#else
+    return gmtime_r(&seconds, &out) != nullptr;
+#endif
+}
+
+// Interpret the fields of tm as UTC; the inverse of utcTimeOf(). Available as
+// timegm() on Linux/macOS/BSD and as _mkgmtime() on Windows.
+inline time_t timeGm(struct tm &tm)
+{
+#ifdef _WIN32
+    return _mkgmtime(&tm);
+#else
+    return timegm(&tm);
+#endif
+}
+
+// The UTC offset (seconds, east of Greenwich positive) that the local time zone
+// actually uses at the instant `seconds`. This is a function of the instant,
+// not a constant: it changes with daylight saving time and with historical
+// changes to a zone's standard offset.
+int64_t utcOffsetAt(time_t seconds)
+{
+    struct tm localTm;
+    if (!localTimeOf(seconds, localTm))
+    {
+        // The MSVC CRT rejects instants outside [1970-01-01, 3000-12-31].
+        // Fall back to the epoch so we still report a plausible offset.
+        seconds = 0;
+        if (!localTimeOf(seconds, localTm))
+            return 0;
+    }
+#ifdef TRANTOR_HAS_TM_GMTOFF
+    return static_cast<int64_t>(localTm.tm_gmtoff);
+#else
+    // No tm_gmtoff: read the local wall clock back as if it were UTC; the
+    // difference to the original instant is the offset. localTimeOf() has
+    // already resolved DST, so nothing is guessed here.
+    struct tm asUtc = localTm;
+    const time_t reinterpreted = timeGm(asUtc);
+    if (reinterpreted == static_cast<time_t>(-1))
+        return 0;
+    return static_cast<int64_t>(reinterpreted) - static_cast<int64_t>(seconds);
+#endif
+}
+
+struct DateFields
+{
+    unsigned int year;
+    unsigned int month;
+    unsigned int day;
+    unsigned int hour;
+    unsigned int minute;
+    unsigned int second;
+    unsigned int microSecond;
+};
+
+// Build a Date from broken-down fields expressed in a time zone that is
+// `utcOffsetSeconds` east of UTC (0 means the fields are plain UTC). Unlike the
+// Date(year, month, ...) constructor this never consults the local time zone.
+Date dateFromFields(const DateFields &f, int64_t utcOffsetSeconds)
+{
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_year = static_cast<int>(f.year) - 1900;
+    tm.tm_mon = static_cast<int>(f.month) - 1;
+    tm.tm_mday = static_cast<int>(f.day);
+    tm.tm_hour = static_cast<int>(f.hour);
+    tm.tm_min = static_cast<int>(f.minute);
+    tm.tm_sec = static_cast<int>(f.second);
+    tm.tm_isdst = 0;  // unused by timegm()/_mkgmtime()
+    const time_t epoch = timeGm(tm);
+    return Date((static_cast<int64_t>(epoch) - utcOffsetSeconds) *
+                    Date::MICRO_SECONDS_PER_SEC +
+                f.microSecond);
+}
+}  // namespace
+
 const Date Date::date()
 {
-#ifndef _WIN32
-    struct timeval tv;
+#ifdef _WIN32
+    timeval tv;
     gettimeofday(&tv, NULL);
     int64_t seconds = tv.tv_sec;
     return Date(seconds * MICRO_SECONDS_PER_SEC + tv.tv_usec);
 #else
-    timeval tv;
+    struct timeval tv;
     gettimeofday(&tv, NULL);
     int64_t seconds = tv.tv_sec;
     return Date(seconds * MICRO_SECONDS_PER_SEC + tv.tv_usec);
 #endif
 }
 
+int64_t Date::timezoneOffset(int64_t secondsSinceEpoch)
+{
+    return utcOffsetAt(static_cast<time_t>(secondsSinceEpoch));
+}
+
 int64_t Date::timezoneOffset()
 {
-    static int64_t offset = -Date(1970, 1, 1).secondsSinceEpoch();
-    return offset;
+    return timezoneOffset(Date::date().secondsSinceEpoch());
 }
 
 const Date Date::after(double second) const
@@ -85,10 +194,10 @@ const Date Date::roundDay() const
     struct tm t;
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
-#ifndef _WIN32
-    localtime_r(&seconds, &t);
-#else
+#ifdef _WIN32
     localtime_s(&t, &seconds);
+#else
+    localtime_r(&seconds, &t);
 #endif
     t.tm_hour = 0;
     t.tm_min = 0;
@@ -100,10 +209,10 @@ struct tm Date::tmStruct() const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    gmtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     gmtime_s(&tm_time, &seconds);
+#else
+    gmtime_r(&seconds, &tm_time);
 #endif
     return tm_time;
 }
@@ -114,10 +223,10 @@ std::string Date::toFormattedString(bool showMicroseconds) const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    gmtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     gmtime_s(&tm_time, &seconds);
+#else
+    gmtime_r(&seconds, &tm_time);
 #endif
 
     if (showMicroseconds)
@@ -156,10 +265,10 @@ std::string Date::toCustomFormattedString(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    gmtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     gmtime_s(&tm_time, &seconds);
+#else
+    gmtime_r(&seconds, &tm_time);
 #endif
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
     if (!showMicroseconds)
@@ -178,10 +287,10 @@ void Date::toCustomFormattedString(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    gmtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     gmtime_s(&tm_time, &seconds);
+#else
+    gmtime_r(&seconds, &tm_time);
 #endif
     strftime(str, len, fmtStr.c_str(), &tm_time);
 }
@@ -192,10 +301,10 @@ std::string Date::toFormattedStringLocal(bool showMicroseconds) const
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    localtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     localtime_s(&tm_time, &seconds);
+#else
+    localtime_r(&seconds, &tm_time);
 #endif
 
     if (showMicroseconds)
@@ -227,23 +336,17 @@ std::string Date::toFormattedStringLocal(bool showMicroseconds) const
     }
     return buf;
 }
-std::string Date::toDbStringLocal() const
+namespace
+{
+// Shared by toDbStringLocal() and toDbString(); the two differ only in which
+// broken-down time they feed in.
+std::string formatDbString(const struct tm &tm_time,
+                           int64_t microSeconds,
+                           bool dateOnly)
 {
     char buf[128] = {0};
-    time_t seconds =
-        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
-    struct tm tm_time;
-#ifndef _WIN32
-    localtime_r(&seconds, &tm_time);
-#else
-    localtime_s(&tm_time, &seconds);
-#endif
-    bool showMicroseconds =
-        (microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC != 0);
-    if (showMicroseconds)
+    if (microSeconds != 0)
     {
-        int microseconds =
-            static_cast<int>(microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC);
         snprintf(buf,
                  sizeof(buf),
                  "%4d-%02d-%02d %02d:%02d:%02d.%06d",
@@ -253,43 +356,65 @@ std::string Date::toDbStringLocal() const
                  tm_time.tm_hour,
                  tm_time.tm_min,
                  tm_time.tm_sec,
-                 microseconds);
+                 static_cast<int>(microSeconds));
+    }
+    else if (dateOnly)
+    {
+        snprintf(buf,
+                 sizeof(buf),
+                 "%4d-%02d-%02d",
+                 tm_time.tm_year + 1900,
+                 tm_time.tm_mon + 1,
+                 tm_time.tm_mday);
     }
     else
     {
-        if (*this == roundDay())
-        {
-            snprintf(buf,
-                     sizeof(buf),
-                     "%4d-%02d-%02d",
-                     tm_time.tm_year + 1900,
-                     tm_time.tm_mon + 1,
-                     tm_time.tm_mday);
-        }
-        else
-        {
-            snprintf(buf,
-                     sizeof(buf),
-                     "%4d-%02d-%02d %02d:%02d:%02d",
-                     tm_time.tm_year + 1900,
-                     tm_time.tm_mon + 1,
-                     tm_time.tm_mday,
-                     tm_time.tm_hour,
-                     tm_time.tm_min,
-                     tm_time.tm_sec);
-        }
+        snprintf(buf,
+                 sizeof(buf),
+                 "%4d-%02d-%02d %02d:%02d:%02d",
+                 tm_time.tm_year + 1900,
+                 tm_time.tm_mon + 1,
+                 tm_time.tm_mday,
+                 tm_time.tm_hour,
+                 tm_time.tm_min,
+                 tm_time.tm_sec);
     }
     return buf;
 }
+}  // namespace
+
+std::string Date::toDbStringLocal() const
+{
+    time_t seconds =
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
+    struct tm tm_time;
+    localTimeOf(seconds, tm_time);
+    return formatDbString(tm_time,
+                          microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC,
+                          *this == roundDay());
+}
 std::string Date::toDbString() const
 {
-    return after(static_cast<double>(-timezoneOffset())).toDbStringLocal();
+    // Format the instant in UTC directly. Shifting by a single "timezone
+    // offset" and then formatting locally is wrong: the offset that applies
+    // depends on the instant, so the local and the UTC representation of the
+    // same Date do not share one.
+    time_t seconds =
+        static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
+    struct tm tm_time;
+    utcTimeOf(seconds, tm_time);
+    const bool dateOnly =
+        (tm_time.tm_hour == 0 && tm_time.tm_min == 0 && tm_time.tm_sec == 0);
+    return formatDbString(tm_time,
+                          microSecondsSinceEpoch_ % MICRO_SECONDS_PER_SEC,
+                          dateOnly);
 }
 
-Date Date::fromDbStringLocal(const std::string &datetime)
+// Parse a database datetime string into its calendar fields, without deciding
+// which time zone those fields are expressed in.
+static DateFields parseDbString(const std::string &datetime)
 {
-    unsigned int year = {0}, month = {0}, day = {0}, hour = {0}, minute = {0},
-                 second = {0}, microSecond = {0};
+    DateFields f{};
     std::vector<std::string> &&v = splitString(datetime, " ");
 
     if (v.size() == 0)
@@ -306,15 +431,15 @@ Date Date::fromDbStringLocal(const std::string &datetime)
         // Fromat YYYY-MM-DD is given
         try
         {
-            year = std::stol(date[0]);
-            month = std::stol(date[1]);
-            day = std::stol(date[2]);
+            f.year = std::stol(date[0]);
+            f.month = std::stol(date[1]);
+            f.day = std::stol(date[2]);
         }
         catch (...)
         {
             throw std::invalid_argument("Invalid date string: " + datetime);
         }
-        return Date(year, month, day, hour, minute, second, microSecond);
+        return f;
     }
 
     if (v.size() == 2)
@@ -322,16 +447,16 @@ Date Date::fromDbStringLocal(const std::string &datetime)
         // Format YYYY-MM-DD HH:MM:SS[.UUUUUU] is given
         try
         {
-            year = std::stol(date[0]);
-            month = std::stol(date[1]);
-            day = std::stol(date[2]);
+            f.year = std::stol(date[0]);
+            f.month = std::stol(date[1]);
+            f.day = std::stol(date[2]);
             std::vector<std::string> time = splitString(v[1], ":");
             if (2 < time.size())
             {
-                hour = std::stol(time[0]);
-                minute = std::stol(time[1]);
+                f.hour = std::stol(time[0]);
+                f.minute = std::stol(time[1]);
                 auto seconds = splitString(time[2], ".");
-                second = std::stol(seconds[0]);
+                f.second = std::stol(seconds[0]);
                 if (1 < seconds.size())
                 {
                     if (seconds[1].length() > 6)
@@ -342,7 +467,7 @@ Date Date::fromDbStringLocal(const std::string &datetime)
                     {
                         seconds[1].append(6 - seconds[1].length(), '0');
                     }
-                    microSecond = std::stol(seconds[1]);
+                    f.microSecond = std::stol(seconds[1]);
                 }
             }
         }
@@ -350,16 +475,25 @@ Date Date::fromDbStringLocal(const std::string &datetime)
         {
             throw std::invalid_argument("Invalid date string: " + datetime);
         }
-        return Date(year, month, day, hour, minute, second, microSecond);
+        return f;
     }
 
     throw std::invalid_argument("Invalid date string: " + datetime);
 }
 
+Date Date::fromDbStringLocal(const std::string &datetime)
+{
+    const DateFields f = parseDbString(datetime);
+    return Date(
+        f.year, f.month, f.day, f.hour, f.minute, f.second, f.microSecond);
+}
+
 Date Date::fromDbString(const std::string &datetime)
 {
-    return fromDbStringLocal(datetime).after(
-        static_cast<double>(timezoneOffset()));
+    // Interpret the fields as UTC directly. Parsing them as local time and then
+    // adding an offset cannot work: which offset applies depends on the instant
+    // being parsed, and that is only known after the parse.
+    return dateFromFields(parseDbString(datetime), 0);
 }
 
 static int parseTzOffset(std::string &tz, int tzSign)
@@ -496,18 +630,18 @@ Date Date::fromISOString(const std::string &datetime)
         }
     }
 
-    trantor::Date dt(year, month, day, hour, minute, second, microSecond);
-
     // timezone
     if (v.size() >= 3)
     {
+        // The string carries its own UTC offset, so the local time zone must
+        // not take part in the conversion at all.
         tzOffset = parseTzOffset(v[2], tzSign);
-        return dt.after(timezoneOffset() - tzOffset);
+        const DateFields fields{
+            year, month, day, hour, minute, second, microSecond};
+        return dateFromFields(fields, tzOffset);
     }
-    else
-    {
-        return dt;
-    }
+    // No time zone in the string: keep interpreting it as local time.
+    return trantor::Date(year, month, day, hour, minute, second, microSecond);
 }
 
 std::string Date::toCustomFormattedStringLocal(const std::string &fmtStr,
@@ -517,10 +651,10 @@ std::string Date::toCustomFormattedStringLocal(const std::string &fmtStr,
     time_t seconds =
         static_cast<time_t>(microSecondsSinceEpoch_ / MICRO_SECONDS_PER_SEC);
     struct tm tm_time;
-#ifndef _WIN32
-    localtime_r(&seconds, &tm_time);
-#else
+#ifdef _WIN32
     localtime_s(&tm_time, &seconds);
+#else
+    localtime_r(&seconds, &tm_time);
 #endif
     strftime(buf, sizeof(buf), fmtStr.c_str(), &tm_time);
     if (!showMicroseconds)
