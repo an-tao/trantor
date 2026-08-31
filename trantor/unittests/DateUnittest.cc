@@ -1,5 +1,6 @@
 #include <trantor/utils/Date.h>
 #include <gtest/gtest.h>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -156,6 +157,41 @@ TEST(Date, TimezoneTest)
     // only date part
     EXPECT_EQ(dateLocal.secondsSinceEpoch() - 4 * 3600,
               trantor::Date::fromISOString(dat0).secondsSinceEpoch());
+}
+
+TEST(Date, TimezoneOffsetTest)
+{
+#ifndef _WIN32
+
+    struct TestCase
+    {
+        std::string timezone;
+        std::string local_db_date;
+        std::string utc;
+        int offset;
+    };
+
+    // clang-format off
+    std::vector<TestCase> cases{
+        {"/usr/share/zoneinfo/Europe/Vienna", "2026-03-28 12:00:00", "2026-03-28 11:00:00", 1*60*60},
+        {"/usr/share/zoneinfo/Europe/Vienna", "2026-04-01 12:00:00", "2026-04-01 10:00:00", 2*60*60},
+        {"/usr/share/zoneinfo/Europe/Vienna", "2026-10-25 02:00:00", "2026-10-25 00:00:00", 2*60*60},
+        {"/usr/share/zoneinfo/Europe/Vienna", "2026-10-25 03:00:00", "2026-10-25 02:00:00", 1*60*60}
+    };
+    // clang-format on
+
+    for (auto &t : cases)
+    {
+        EXPECT_TRUE(setenv("TZ", t.timezone.c_str(), 1) != -1);
+        tzset();
+
+        auto local = trantor::Date::fromDbStringLocal(t.local_db_date);
+        auto utc = trantor::Date::fromDbString(t.utc);
+        EXPECT_EQ(local, utc);
+        auto offset = local.timezoneOffsetCurrentDate();
+        EXPECT_EQ(t.offset, offset);
+    }  // for
+#endif
 }
 
 int main(int argc, char **argv)
