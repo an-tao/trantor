@@ -312,10 +312,10 @@ std::shared_ptr<spdlog::logger> Logger::getDefaultSpdLogger(int index)
         return logger;
     // Create a new spdlog logger with the same sinks as the current default
     // Logger or spdlog logger
-    auto &sinks =
-        ((spdLoggers.begin() != spdLoggers.end() ? spdLoggers.begin()->second
-                                                 : spdlog::default_logger()))
-            ->sinks();
+    auto it = spdLoggers.begin();
+    auto &sinks = ((it != spdLoggers.end() && it->second) ? it->second
+                                                     : spdlog::default_logger())
+                  ->sinks();
     logger = std::make_shared<spdlog::logger>(loggerName,
                                               sinks.begin(),
                                               sinks.end());
@@ -390,7 +390,8 @@ void Logger::enableSpdLog(int index, std::shared_ptr<spdlog::logger> logger)
     if (index < -1)
         index = -1;
     std::lock_guard<std::mutex> lck(spdLoggersMtx);
-    spdLoggers[index] = logger ? logger : getDefaultSpdLogger(index);
+    auto newLogger = logger ? std::move(logger) : getDefaultSpdLogger(index);  // 先算右边
+    spdLoggers[index] = std::move(newLogger);
 #else
     (void)index;
     (void)logger;
