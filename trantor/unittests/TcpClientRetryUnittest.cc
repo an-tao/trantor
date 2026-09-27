@@ -126,11 +126,20 @@ class TcpClientRetry : public ::testing::Test
 };
 }  // namespace
 
+// A refused connection does not reliably reach the connection error callback:
+// when connect(2) fails synchronously, which is what loopback does on macOS and
+// on some Linux kernels, Connector::connect() schedules the retry without
+// calling errorCallback_. The tests below therefore observe connections rather
+// than errors.
+
 TEST_F(TcpClientRetry, RetriesFailedInitialConnection)
 {
     client_->connect();
-    ASSERT_TRUE(waitFor([this]() { return clientErrors_ >= 1; }, 3s));
+    // The port is bound but not listening, so the attempt is refused and a
+    // retry is scheduled. Nothing can connect until the server listens.
+    ASSERT_FALSE(waitFor([this]() { return clientConnects_ >= 1; }, 500ms));
     startServer();
+    // Only a retry can establish this connection.
     EXPECT_TRUE(waitFor([this]() { return clientConnects_ >= 1; }, 5s));
 }
 
@@ -157,8 +166,10 @@ TEST_F(TcpClientRetry, DisconnectDoesNotReconnect)
 TEST_F(TcpClientRetry, StopCancelsPendingRetry)
 {
     client_->connect();
-    // After two failures a retry is scheduled 1000 ms ahead.
-    ASSERT_TRUE(waitFor([this]() { return clientErrors_ >= 2; }, 3s));
+    // The first attempt is refused straight away and every failure schedules
+    // another try, so by now a retry is pending.
+    std::this_thread::sleep_for(1s);
+    ASSERT_EQ(clientConnects_, 0);
     client_->stop();
     startServer();
     std::this_thread::sleep_for(2500ms);
