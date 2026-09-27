@@ -247,3 +247,9 @@ void TcpClient::enableSSL(
         .setCaPath(caPath);
     sslContextPtr_ = newSSLContext(*tlsPolicyPtr_, false);
 }
+
+void TcpClient::enableRetry()
+{
+    retry_ = true;
+    connector_->enableRetry();
+}

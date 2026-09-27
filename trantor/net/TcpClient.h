@@ -104,10 +104,7 @@ class TRANTOR_EXPORT TcpClient : NonCopyable,
      * @brief Enable retrying.
      *
      */
-    void enableRetry()
-    {
-        retry_ = true;
-    }
+    void enableRetry();
 
     /**
      * @brief Get the name of the client.
