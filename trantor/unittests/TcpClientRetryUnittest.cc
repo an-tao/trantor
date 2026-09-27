@@ -150,10 +150,10 @@ class TcpClientRetry : public ::testing::Test
 }  // namespace
 
 // A refused connection does not reliably reach the connection error callback:
-// when connect(2) fails synchronously, which is what loopback does on macOS and
-// on some Linux kernels, Connector::connect() schedules the retry without
-// calling errorCallback_. The tests below therefore observe connections rather
-// than errors.
+// when connect(2) returns ECONNREFUSED synchronously, Connector::connect()
+// schedules the retry without calling errorCallback_. POSIX lets a
+// non-blocking connect(2) report a refusal either immediately or later, so the
+// tests below observe connections rather than errors.
 
 TEST_F(TcpClientRetry, RetriesFailedInitialConnection)
 {
