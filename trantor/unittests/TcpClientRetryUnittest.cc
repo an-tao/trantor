@@ -12,7 +12,11 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <cstring>
 #ifndef _WIN32
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #endif
 
@@ -43,6 +47,27 @@ void closeSocket(int sockfd)
 #endif
 }
 
+// Take an ephemeral port and hand it straight back. Connecting to the result
+// is refused until a server binds it again. A socket left bound but not
+// listening is not equivalent: some platforms drop the SYN instead of
+// refusing it, so the attempt hangs rather than failing, and no retry is ever
+// scheduled.
+uint16_t reserveClosedPort()
+{
+    int fd = static_cast<int>(::socket(AF_INET, SOCK_STREAM, 0));
+    sockaddr_in addr;
+    memset(&addr, 0, sizeof addr);
+    addr.sin_family = AF_INET;
+    addr.sin_port = 0;
+    addr.sin_addr.s_addr = ::inet_addr("127.0.0.1");
+    ::bind(fd, reinterpret_cast<sockaddr *>(&addr), sizeof addr);
+    socklen_t len = sizeof addr;
+    ::getsockname(fd, reinterpret_cast<sockaddr *>(&addr), &len);
+    uint16_t port = ntohs(addr.sin_port);
+    closeSocket(fd);
+    return port;
+}
+
 class TcpClientRetry : public ::testing::Test
 {
   protected:
@@ -50,11 +75,39 @@ class TcpClientRetry : public ::testing::Test
     {
         loopThread_.run();
         loop_ = loopThread_.getLoop();
-        // The acceptor binds in the constructor but only listens in start(),
-        // so until startServer() is called the port is reserved and any
-        // connection attempt to it is refused.
+        port_ = reserveClosedPort();
+
+        client_ = std::make_shared<TcpClient>(loop_,
+                                              InetAddress("127.0.0.1", port_),
+                                              "retry-test-client");
+        client_->enableRetry();
+        client_->setConnectionCallback([this](const TcpConnectionPtr &conn) {
+            if (conn->connected())
+                ++clientConnects_;
+        });
+        client_->setConnectionErrorCallback([this]() { ++clientErrors_; });
+        client_->setMessageCallback([](const TcpConnectionPtr &,
+                                       MsgBuffer *buf) { buf->retrieveAll(); });
+    }
+
+    void TearDown() override
+    {
+        client_->stop();
+        if (server_)
+            server_->stop();
+        std::promise<void> done;
+        loop_->runInLoop([this, &done]() {
+            client_.reset();
+            done.set_value();
+        });
+        done.get_future().wait();
+        std::this_thread::sleep_for(50ms);
+    }
+
+    void startServer()
+    {
         server_ = std::make_shared<TcpServer>(loop_,
-                                              InetAddress("127.0.0.1", 0),
+                                              InetAddress("127.0.0.1", port_),
                                               "retry-test-server");
         server_->setConnectionCallback([this](const TcpConnectionPtr &conn) {
             std::lock_guard<std::mutex> lock(mutex_);
@@ -74,36 +127,6 @@ class TcpClientRetry : public ::testing::Test
             [](const TcpConnectionPtr &, MsgBuffer *buf) {
                 buf->retrieveAll();
             });
-        port_ = server_->address().toPort();
-
-        client_ = std::make_shared<TcpClient>(loop_,
-                                              InetAddress("127.0.0.1", port_),
-                                              "retry-test-client");
-        client_->enableRetry();
-        client_->setConnectionCallback([this](const TcpConnectionPtr &conn) {
-            if (conn->connected())
-                ++clientConnects_;
-        });
-        client_->setConnectionErrorCallback([this]() { ++clientErrors_; });
-        client_->setMessageCallback([](const TcpConnectionPtr &,
-                                       MsgBuffer *buf) { buf->retrieveAll(); });
-    }
-
-    void TearDown() override
-    {
-        client_->stop();
-        server_->stop();
-        std::promise<void> done;
-        loop_->runInLoop([this, &done]() {
-            client_.reset();
-            done.set_value();
-        });
-        done.get_future().wait();
-        std::this_thread::sleep_for(50ms);
-    }
-
-    void startServer()
-    {
         server_->start();
     }
 
