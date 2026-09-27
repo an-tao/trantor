@@ -73,7 +73,15 @@ class TRANTOR_EXPORT Date
         return Date::date();
     }
 
+    /**
+     * @brief Difference between local time zone and UTC in seconds
+     * @warning Calculation belongs to 1970-01-01
+     *
+     * @return const Date
+     */
     static int64_t timezoneOffset();
+
+    int64_t timezoneOffsetCurrentDate() const;
 
     /**
      * @brief Return a new Date instance that represents the time after some

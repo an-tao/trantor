@@ -70,6 +70,19 @@ int64_t Date::timezoneOffset()
     return offset;
 }
 
+int64_t Date::timezoneOffsetCurrentDate() const
+{
+#if defined(__linux__) || defined(__APPLE)
+    struct tm tm;
+    auto seconds = secondsSinceEpoch();
+    localtime_r(&seconds,&tm);
+
+    return tm.tm_gmtoff;
+#else
+    return Date::timezoneOffset();
+#endif
+}
+
 const Date Date::after(double second) const
 {
     return Date(static_cast<int64_t>(microSecondsSinceEpoch_ +
@@ -283,7 +296,7 @@ std::string Date::toDbStringLocal() const
 }
 std::string Date::toDbString() const
 {
-    return after(static_cast<double>(-timezoneOffset())).toDbStringLocal();
+    return after(static_cast<double>(-timezoneOffsetCurrentDate())).toDbStringLocal();
 }
 
 Date Date::fromDbStringLocal(const std::string &datetime)
@@ -358,8 +371,20 @@ Date Date::fromDbStringLocal(const std::string &datetime)
 
 Date Date::fromDbString(const std::string &datetime)
 {
+#if defined(__linux__) || defined(__APPLE)
+    auto d=fromDbStringLocal(datetime);
+
+    struct tm tm;
+    auto seconds = d.secondsSinceEpoch();
+    localtime_r(&seconds,&tm);
+
+    return d.after(static_cast<double>(tm.tm_gmtoff));
+
+#else
+#warning "calculation offset of timezone ignores summer and wintertime"
     return fromDbStringLocal(datetime).after(
         static_cast<double>(timezoneOffset()));
+#endif
 }
 
 static int parseTzOffset(std::string &tz, int tzSign)
