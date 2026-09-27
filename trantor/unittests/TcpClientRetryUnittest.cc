@@ -1,6 +1,10 @@
 #include <trantor/net/EventLoopThread.h>
 #include <trantor/net/TcpClient.h>
 #include <trantor/net/TcpServer.h>
+// Connector.h is not an installed header; include it by path. TcpClient
+// exposes no way to invoke restart(), so the regression test below drives
+// the connector directly.
+#include "../net/inner/Connector.h"
 #include <gtest/gtest.h>
 #include <atomic>
 #include <chrono>
@@ -8,6 +12,9 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 using namespace trantor;
 using namespace std::chrono_literals;
@@ -25,6 +32,15 @@ bool waitFor(Pred pred, std::chrono::milliseconds timeout)
         std::this_thread::sleep_for(10ms);
     }
     return true;
+}
+
+void closeSocket(int sockfd)
+{
+#ifndef _WIN32
+    ::close(sockfd);
+#else
+    closesocket(sockfd);
+#endif
 }
 
 class TcpClientRetry : public ::testing::Test
@@ -148,6 +164,33 @@ TEST_F(TcpClientRetry, StopCancelsPendingRetry)
     std::this_thread::sleep_for(2500ms);
     EXPECT_EQ(serverAccepts_, 0);
     EXPECT_EQ(clientConnects_, 0);
+}
+
+TEST_F(TcpClientRetry, RestartAfterStopDoesNotReconnect)
+{
+    startServer();
+
+    auto connections = std::make_shared<std::atomic<int>>(0);
+    auto connector =
+        std::make_shared<Connector>(loop_,
+                                    InetAddress("127.0.0.1", port_),
+                                    true);
+    connector->setNewConnectionCallback([connections](int sockfd) {
+        ++(*connections);
+        closeSocket(sockfd);
+    });
+
+    connector->start();
+    ASSERT_TRUE(waitFor([&]() { return *connections == 1; }, 3s));
+
+    // stop() clears the connection intent before restart() is queued, so a
+    // restart must not connect again.
+    connector->stop();
+    loop_->queueInLoop([connector]() { connector->restart(); });
+
+    std::this_thread::sleep_for(1s);
+    EXPECT_EQ(*connections, 1);
+    EXPECT_EQ(serverAccepts_, 1);
 }
 
 int main(int argc, char **argv)
