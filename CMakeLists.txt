@@ -19,6 +19,8 @@ set_property(
 )
 option(USE_SPDLOG "Allow using the spdlog logging library" OFF)
 
+# Update default path for .cmake files.
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
 
 set(TRANTOR_MAJOR_VERSION 1)
@@ -45,6 +47,8 @@ set(INSTALL_TRANTOR_CMAKE_DIR
     ${DEF_INSTALL_TRANTOR_CMAKE_DIR}
     CACHE PATH "Installation directory for cmake files"
 )
+
+include(FetchContent)
 
 add_library(${PROJECT_NAME})
 if(BUILD_SHARED_LIBS)
@@ -254,6 +258,7 @@ endif(HAVE_SPDLOG)
 
 set(HAVE_C-ARES NO)
 if(BUILD_C-ARES)
+  include(c-ares)
   find_package(c-ares)
   if(c-ares_FOUND)
     message(STATUS "c-ares found!")
@@ -265,7 +270,7 @@ if(HAVE_C-ARES)
   if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME} PRIVATE CARES_STATICLIB)
   endif()
-  target_link_libraries(${PROJECT_NAME} PRIVATE c-ares_lib)
+  target_link_libraries(${PROJECT_NAME} PRIVATE c-ares::c-ares)
   set(TRANTOR_SOURCES ${TRANTOR_SOURCES} trantor/net/inner/AresResolver.cc)
   set(private_headers ${private_headers} trantor/net/inner/AresResolver.h)
   if(APPLE)
