@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.29] - 2026-10-08
+
+### Changed
+
+- Update the TLS subsystem and add synchronous certificate provider tests.
+
+### Fixed
+
+- Fix the Windows MSVC CI workflow.
+
+- Fix the `EPOLLRDHUP`/`POLLRDHUP` mismatch on Linux SPARC/SPARC64.
+
+- Bound stream-node writes per event loop turn.
+
+- Refine `EventLoopThread` behavior and resource handling.
+
+- Set the `ConcurrentTaskQueue` stop flag while holding the task mutex.
+
+- Respect stricter configured TLS minimum versions.
+
+- Add missing standard library includes to `ConcurrentTaskQueue.h`.
+
+- Include the complete `struct tm` definition for uClibc.
+
+- Fix file buffer range reads on Unix and Windows.
+
+- Fix TCP client retries.
+
+- Fix `Date::timezoneOffset()` to return the current offset instead of the 1970 offset.
+
+- Fix the crash when using -std=c++14 on aarch64.
+
+
 ## [1.5.28] - 2026-05-06
 
 ### Fixed
@@ -766,7 +799,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0-rc1] - 2019-06-11
 
-[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.28...HEAD
+[Unreleased]: https://github.com/an-tao/trantor/compare/v1.5.29...HEAD
+
+[1.5.29]: https://github.com/an-tao/trantor/compare/v1.5.28...v1.5.29
 
 [1.5.28]: https://github.com/an-tao/trantor/compare/v1.5.27...v1.5.28
 
