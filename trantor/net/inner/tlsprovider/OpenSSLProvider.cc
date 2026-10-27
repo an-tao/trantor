@@ -270,6 +270,7 @@ static bool isDirectory(const std::string &path)
 #endif
 }
 
+#ifndef LIBRESSL_VERSION_NUMBER
 static std::string lastOpenSSLError()
 {
     const auto error = ERR_get_error();
@@ -279,6 +280,7 @@ static std::string lastOpenSSLError()
     ERR_error_string_n(error, message.data(), message.size());
     return message.data();
 }
+#endif
 
 static void freeCertificateNames(STACK_OF(X509_NAME) * names)
 {
@@ -1632,9 +1634,14 @@ SSLContextPtr trantor::newSSLContext(const TLSPolicy &policy, bool isServer)
             ctx->ctx(),
             static_cast<int (*)(SSL *, int *, void *)>(
                 &OpenSSLProvider::selectServerCertificate));
+#ifndef LIBRESSL_VERSION_NUMBER
+        // LibreSSL lacks SSL_CTX_set_cert_cb(). There, the certificate is
+        // selected by the servername callback only, so clients not sending
+        // SNI won't get a certificate.
         SSL_CTX_set_cert_cb(ctx->ctx(),
                             &OpenSSLProvider::configureServerCertificate,
                             nullptr);
+#endif
         // A resumed handshake may not select a certificate at all. Do not
         // resume one without consulting the current runtime provider.
         SSL_CTX_set_session_cache_mode(ctx->ctx(), SSL_SESS_CACHE_OFF);
