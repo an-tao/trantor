@@ -112,6 +112,17 @@ static bool validatePeerCertificate(SSL *ssl,
     }
 
     auto result = SSL_get_verify_result(ssl);
+#if OPENSSL_VERSION_NUMBER >= 0x40000000L && !defined(LIBRESSL_VERSION_NUMBER)
+    // X509_check_certificate_times() returns 1 only if both notBefore and
+    // notAfter are valid ASN.1 times and the current time is within them.
+    int timeError = X509_V_OK;
+    if (X509_check_certificate_times(nullptr, cert, &timeError) != 1)
+    {
+        LOG_TRACE << "Peer certificate date validation failed: "
+                  << X509_verify_cert_error_string(timeError);
+        return false;
+    }
+#else
 #if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
     const ASN1_TIME *notBeforeTime = X509_get_notBefore(cert);
     const ASN1_TIME *notAfterTime = X509_get_notAfter(cert);
@@ -128,6 +139,7 @@ static bool validatePeerCertificate(SSL *ssl,
         LOG_TRACE << "Peer certificate date validation failed";
         return false;
     }
+#endif
 
     if (result != X509_V_OK && !allowBrokenChain)
     {
