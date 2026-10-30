@@ -33,6 +33,7 @@ void NormalResolver::resolve(const std::string &hostname,
 void NormalResolver::resolve(const std::string &hostname,
                              const ResolverResultsCallback &callback)
 {
+    std::shared_ptr<std::vector<InetAddress>> cachedAddresses;
     {
         std::lock_guard<std::mutex> guard(globalMutex());
         auto iter = globalCache().find(hostname);
@@ -42,15 +43,20 @@ void NormalResolver::resolve(const std::string &hostname,
             if (timeout_ == 0 || cachedAddr.second.after(static_cast<double>(
                                      timeout_)) > trantor::Date::date())
             {
-                callback(*cachedAddr.first);
-                return;
+                cachedAddresses = cachedAddr.first;
             }
         }
+    }
+    if (cachedAddresses)
+    {
+        callback(*cachedAddresses);
+        return;
     }
 
     concurrentTaskQueue().runTaskInQueue([thisPtr = shared_from_this(),
                                           callback,
                                           hostname]() {
+        std::shared_ptr<std::vector<InetAddress>> cachedAddresses;
         {
             std::lock_guard<std::mutex> guard(thisPtr->globalMutex());
             auto iter = thisPtr->globalCache().find(hostname);
@@ -61,10 +67,14 @@ void NormalResolver::resolve(const std::string &hostname,
                     cachedAddr.second.after(static_cast<double>(
                         thisPtr->timeout_)) > trantor::Date::date())
                 {
-                    callback(*cachedAddr.first);
-                    return;
+                    cachedAddresses = cachedAddr.first;
                 }
             }
+        }
+        if (cachedAddresses)
+        {
+            callback(*cachedAddresses);
+            return;
         }
         struct addrinfo hints, *res = nullptr;
         memset(&hints, 0, sizeof(hints));

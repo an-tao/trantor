@@ -846,12 +846,17 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
     OpenSSLProvider(TcpConnection *conn, TLSPolicyPtr policy, SSLContextPtr ctx)
         : TLSProvider(conn, std::move(policy), std::move(ctx))
     {
+        ssl_ = SSL_new(contextPtr_->ctx());
         rbio_ = BIO_new(BIO_s_mem());
         wbio_ = BIO_new(BIO_s_mem());
-        ssl_ = SSL_new(contextPtr_->ctx());
-        assert(ssl_);
-        assert(rbio_);
-        assert(wbio_);
+        if (!ssl_ || !rbio_ || !wbio_)
+        {
+            BIO_free(rbio_);
+            BIO_free(wbio_);
+            SSL_free(ssl_);
+            throw std::runtime_error("Failed to allocate OpenSSL connection");
+        }
+
         SSL_set_bio(ssl_, rbio_, wbio_);
         SSL_set_ex_data(ssl_, providerIndex(), this);
         SSL_set_mode(ssl_,
