@@ -67,22 +67,30 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peer)
     {
         nextLoopIdx_ = 0;
     }
+
+    // For UDS, getLocalAddr returns a sockaddr_in6 which is incorrect.
+    // Use the acceptor's address instead.
+    InetAddress localAddr;
+#ifndef _WIN32
+    if (acceptorPtr_->addr().isUnixDomain())
+        localAddr = acceptorPtr_->addr();
+    else
+#endif
+        localAddr = InetAddress(Socket::getLocalAddr(sockfd));
+
     TcpConnectionPtr newPtr;
     if (policyPtr_)
     {
         assert(sslContextPtr_);
         newPtr = std::make_shared<TcpConnectionImpl>(
-            ioLoop,
-            sockfd,
-            InetAddress(Socket::getLocalAddr(sockfd)),
-            peer,
-            policyPtr_,
-            sslContextPtr_);
+            ioLoop, sockfd, localAddr, peer, policyPtr_, sslContextPtr_);
     }
     else
     {
-        newPtr = std::make_shared<TcpConnectionImpl>(
-            ioLoop, sockfd, InetAddress(Socket::getLocalAddr(sockfd)), peer);
+        newPtr = std::make_shared<TcpConnectionImpl>(ioLoop,
+                                                     sockfd,
+                                                     localAddr,
+                                                     peer);
     }
 
     if (idleTimeout_ > 0)
