@@ -410,18 +410,22 @@ std::string Date::toDbString() const
                           dateOnly);
 }
 
-static std::string remove_timezone_suffix(const std::string& second){    
+static std::string remove_timezone_suffix(const std::string &second)
+{
     auto pos_plus = second.find("+");
     auto pos_minus = second.find("-");
-    if(pos_plus == std::string::npos && pos_minus == std::string::npos){
+    if (pos_plus == std::string::npos && pos_minus == std::string::npos)
+    {
         return second;
     }
-    if(pos_plus!=std::string::npos){
-        return second.substr(0,pos_plus);
+    if (pos_plus != std::string::npos)
+    {
+        return second.substr(0, pos_plus);
     }
-    
-    if(pos_minus!=std::string::npos){
-        return second.substr(0,pos_minus);
+
+    if (pos_minus != std::string::npos)
+    {
+        return second.substr(0, pos_minus);
     }
 
     throw std::invalid_argument("both + and - exist");
