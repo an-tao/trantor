@@ -410,6 +410,27 @@ std::string Date::toDbString() const
                           dateOnly);
 }
 
+static std::string remove_timezone_suffix(const std::string &second)
+{
+    auto pos_plus = second.find("+");
+    auto pos_minus = second.find("-");
+    if (pos_plus == std::string::npos && pos_minus == std::string::npos)
+    {
+        return second;
+    }
+    if (pos_plus != std::string::npos)
+    {
+        return second.substr(0, pos_plus);
+    }
+
+    if (pos_minus != std::string::npos)
+    {
+        return second.substr(0, pos_minus);
+    }
+
+    throw std::invalid_argument("both + and - exist");
+}
+
 // Parse a database datetime string into its calendar fields, without deciding
 // which time zone those fields are expressed in.
 static DateFields parseDbString(const std::string &datetime)
@@ -459,15 +480,17 @@ static DateFields parseDbString(const std::string &datetime)
                 f.second = std::stol(seconds[0]);
                 if (1 < seconds.size())
                 {
-                    if (seconds[1].length() > 6)
+                    auto second = remove_timezone_suffix(seconds[1]);
+
+                    if (second.length() > 6)
                     {
-                        seconds[1].resize(6);
+                        second.resize(6);
                     }
-                    else if (seconds[1].length() < 6)
+                    else if (second.length() < 6)
                     {
-                        seconds[1].append(6 - seconds[1].length(), '0');
+                        second.append(6 - second.length(), '0');
                     }
-                    f.microSecond = std::stol(seconds[1]);
+                    f.microSecond = std::stol(second);
                 }
             }
         }
