@@ -34,11 +34,24 @@ Acceptor::Acceptor(EventLoop *loop,
       loop_(loop),
       acceptChannel_(loop, sock_.fd())
 {
-    sock_.setReuseAddr(reUseAddr);
-    sock_.setReusePort(reUsePort);
+#ifndef _WIN32
+    // SO_REUSEADDR and SO_REUSEPORT are not meaningful for UDS
+    if (!addr_.isUnixDomain())
+    {
+#endif
+        sock_.setReuseAddr(reUseAddr);
+        sock_.setReusePort(reUsePort);
+#ifndef _WIN32
+    }
+#endif
     sock_.bindAddress(addr_);
     acceptChannel_.setReadCallback(std::bind(&Acceptor::readCallback, this));
+#ifndef _WIN32
+    // UDS has no port; skip auto-port detection
+    if (!addr_.isUnixDomain() && addr_.toPort() == 0)
+#else
     if (addr_.toPort() == 0)
+#endif
     {
         addr_ = InetAddress{Socket::getLocalAddr(sock_.fd())};
     }
