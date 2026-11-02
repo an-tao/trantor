@@ -80,8 +80,7 @@ TcpClient::~TcpClient()
         return;
     }
     assert(loop_ == connection_->getLoop());
-    auto conn =
-        std::atomic_load_explicit(&connection_, std::memory_order_relaxed);
+    auto conn = connection_;
     loop_->runInLoop([conn = std::move(conn)]() {
         conn->setCloseCallback([](const TcpConnectionPtr &connPtr) mutable {
             connPtr->getLoop()->queueInLoop(
@@ -113,6 +112,9 @@ void TcpClient::connect()
             ptr->connectionErrorCallback_();
         }
     });
+    if (socketErrorCallback_)
+        connector_->setSockErrorCallback(socketErrorCallback_);
+
     connect_ = true;
     connector_->start();
 }
