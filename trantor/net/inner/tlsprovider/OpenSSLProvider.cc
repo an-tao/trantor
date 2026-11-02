@@ -92,6 +92,7 @@ static bool validatePeerCertificate(SSL *ssl,
     assert(cert != nullptr);
     LOG_TRACE << "Validating peer certificate";
 
+#if OPENSSL_VERSION_NUMBER < 0x10002000L || defined(LIBRESSL_VERSION_NUMBER)
     if (!isServer && !hostname.empty())
     {
         // X509_check_host() only matches DNS names. Try the textual IP helper
@@ -110,6 +111,10 @@ static bool validatePeerCertificate(SSL *ssl,
             return false;
         }
     }
+#else
+    (void)hostname;
+    (void)isServer;
+#endif
 
     auto result = SSL_get_verify_result(ssl);
 #if OPENSSL_VERSION_NUMBER >= 0x40000000L && !defined(LIBRESSL_VERSION_NUMBER)
@@ -674,8 +679,17 @@ bool loadCertificatePem(SSL *ssl,
     return SSL_check_private_key(ssl) == 1;
 }
 
-int acceptUnverifiedPeerCertificate(int, X509_STORE_CTX *)
+int acceptUnverifiedPeerCertificate(int, X509_STORE_CTX *storeCtx)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L && !defined(LIBRESSL_VERSION_NUMBER)
+    // An untrusted chain may be accepted, but the requested name must match.
+    const int error = X509_STORE_CTX_get_error(storeCtx);
+    if (error == X509_V_ERR_HOSTNAME_MISMATCH ||
+        error == X509_V_ERR_IP_ADDRESS_MISMATCH)
+        return 0;
+#else
+    (void)storeCtx;
+#endif
     return 1;
 }
 }  // namespace
@@ -886,6 +900,28 @@ struct OpenSSLProvider : public TLSProvider, public NonCopyable
         else
         {
             assert(ssl_);
+
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L && !defined(LIBRESSL_VERSION_NUMBER)
+            if (contextPtr_->validate && !contextPtr_->hostname.empty())
+            {
+                // These verification-parameter APIs were added in OpenSSL
+                // 1.0.2; direct X509_check_* calls are deprecated in 4.1.
+                auto *param = SSL_get0_param(ssl_);
+                const auto &hostname = contextPtr_->hostname;
+                const int configured =
+                    internal::isIpLiteral(hostname)
+                        ? X509_VERIFY_PARAM_set1_ip_asc(param, hostname.c_str())
+                        : X509_VERIFY_PARAM_set1_host(param,
+                                                      hostname.data(),
+                                                      hostname.size());
+                if (configured != 1)
+                {
+                    handleSSLError(SSLError::kSSLInvalidCertificate);
+                    dispatchEvents();
+                    return;
+                }
+            }
+#endif
 
             const auto &protocols = contextPtr_->alpnProtocols;
             if (!protocols.empty())
