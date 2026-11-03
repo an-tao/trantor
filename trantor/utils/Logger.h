@@ -291,43 +291,48 @@ class TRANTOR_EXPORT Logger : public NonCopyable
     static std::function<void(const char *msg, const uint64_t len)> &
     outputFunc_()
     {
-        static std::function<void(const char *msg, const uint64_t len)>
-            outputFunc = Logger::defaultOutputFunction;
-        return outputFunc;
+        // Intentionally leaked: logging from destructors of other statics
+        // during process exit must never reach destroyed storage.
+        static auto *outputFunc =
+            new std::function<void(const char *msg, const uint64_t len)>(
+                Logger::defaultOutputFunction);
+        return *outputFunc;
     }
     static std::function<void()> &flushFunc_()
     {
-        static std::function<void()> flushFunc = Logger::defaultFlushFunction;
-        return flushFunc;
+        static auto *flushFunc =
+            new std::function<void()>(Logger::defaultFlushFunction);
+        return *flushFunc;
     }
     static std::function<void(const char *msg, const uint64_t len)> &
     outputFunc_(size_t index)
     {
-        static std::vector<
-            std::function<void(const char *msg, const uint64_t len)>>
-            outputFuncs;
-        if (index < outputFuncs.size())
+        // Intentionally leaked, see outputFunc_().
+        static auto *outputFuncs = new std::vector<
+            std::function<void(const char *msg, const uint64_t len)>>();
+        if (index < outputFuncs->size())
         {
-            return outputFuncs[index];
+            return (*outputFuncs)[index];
         }
-        while (index >= outputFuncs.size())
+        while (index >= outputFuncs->size())
         {
-            outputFuncs.emplace_back(outputFunc_());
+            outputFuncs->emplace_back(outputFunc_());
         }
-        return outputFuncs[index];
+        return (*outputFuncs)[index];
     }
     static std::function<void()> &flushFunc_(size_t index)
     {
-        static std::vector<std::function<void()>> flushFuncs;
-        if (index < flushFuncs.size())
+        // Intentionally leaked, see outputFunc_().
+        static auto *flushFuncs = new std::vector<std::function<void()>>();
+        if (index < flushFuncs->size())
         {
-            return flushFuncs[index];
+            return (*flushFuncs)[index];
         }
-        while (index >= flushFuncs.size())
+        while (index >= flushFuncs->size())
         {
-            flushFuncs.emplace_back(flushFunc_());
+            flushFuncs->emplace_back(flushFunc_());
         }
-        return flushFuncs[index];
+        return (*flushFuncs)[index];
     }
     friend class RawLogger;
     LogStream logStream_;
