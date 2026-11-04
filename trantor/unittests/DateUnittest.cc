@@ -149,6 +149,29 @@ TEST(Date, DatabaseStringFractionWithOffsetTest)
             << c.first;
     }
 }
+// Without a fractional part, a UTC offset right after the seconds must not
+// change the seconds. Offsets are whole minutes, so checking the position
+// within the minute does not depend on how the offset itself is handled.
+TEST(Date, DatabaseStringOffsetWithoutFractionTest)
+{
+    const std::vector<std::string> cases{
+        "1997-12-17 07:37:16-08",
+        "1997-12-17 07:37:16+09",
+        "1997-12-17 07:37:16-08:00",
+        "1997-12-17 07:37:16+05:30",
+    };
+    for (const auto &c : cases)
+    {
+        EXPECT_EQ(trantor::Date::fromDbString(c).microSecondsSinceEpoch() %
+                      60000000,
+                  16000000)
+            << c;
+        EXPECT_EQ(trantor::Date::fromDbStringLocal(c).microSecondsSinceEpoch() %
+                      60000000,
+                  16000000)
+            << c;
+    }
+}
 TEST(Date, TimezoneTest)
 {
     std::string dat0 = "2024-01-01";
