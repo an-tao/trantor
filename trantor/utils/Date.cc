@@ -412,7 +412,7 @@ std::string Date::toDbString() const
 
 static std::string remove_timezone_suffix(const std::string &second)
 {
-    return second.substr(0,second.find_first_of("+-"));
+    return second.substr(0, second.find_first_of("+-"));
 }
 
 // Parse a database datetime string into its calendar fields, without deciding
