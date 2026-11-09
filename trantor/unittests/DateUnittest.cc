@@ -1,6 +1,7 @@
 #include <trantor/utils/Date.h>
 #include <gtest/gtest.h>
 #include <string>
+#include <utility>
 #include <vector>
 #include <iostream>
 #ifndef _WIN32
@@ -116,6 +117,60 @@ TEST(Date, DatabaseStringTest)
     dbDateGMT = trantor::Date::fromDbString(dbString);
     auto epoch = dbDateGMT.microSecondsSinceEpoch();
     EXPECT_EQ(epoch, 0);
+}
+// A UTC offset after the fractional seconds must not take part in padding the
+// fraction to six digits.
+TEST(Date, DatabaseStringFractionWithOffsetTest)
+{
+    const std::vector<std::pair<std::string, int64_t>> cases{
+        {"2023-07-31 16:19:49.91874+09", 918740},
+        {"2023-07-31 16:19:49.91874+09:00", 918740},
+        {"2023-07-31 16:19:49.91874-05", 918740},
+        {"2023-07-31 16:19:49.91874-05:00", 918740},
+        {"2023-07-31 16:19:49.1+09", 100000},
+        {"2023-07-31 16:19:49.1-05", 100000},
+        {"2023-07-31 16:19:49.000123+09", 123},
+        {"2023-07-31 16:19:49.000123-05", 123},
+        // more digits than a microsecond can hold are truncated
+        {"2023-07-31 16:19:49.1234567+09", 123456},
+        {"2023-07-31 16:19:49.1234567-05", 123456},
+    };
+    for (const auto &c : cases)
+    {
+        EXPECT_EQ(
+            trantor::Date::fromDbString(c.first).microSecondsSinceEpoch() %
+                1000000,
+            c.second)
+            << c.first;
+        EXPECT_EQ(
+            trantor::Date::fromDbStringLocal(c.first).microSecondsSinceEpoch() %
+                1000000,
+            c.second)
+            << c.first;
+    }
+}
+// Without a fractional part, a UTC offset right after the seconds must not
+// change the seconds. Offsets are whole minutes, so checking the position
+// within the minute does not depend on how the offset itself is handled.
+TEST(Date, DatabaseStringOffsetWithoutFractionTest)
+{
+    const std::vector<std::string> cases{
+        "1997-12-17 07:37:16-08",
+        "1997-12-17 07:37:16+09",
+        "1997-12-17 07:37:16-08:00",
+        "1997-12-17 07:37:16+05:30",
+    };
+    for (const auto &c : cases)
+    {
+        EXPECT_EQ(trantor::Date::fromDbString(c).microSecondsSinceEpoch() %
+                      60000000,
+                  16000000)
+            << c;
+        EXPECT_EQ(trantor::Date::fromDbStringLocal(c).microSecondsSinceEpoch() %
+                      60000000,
+                  16000000)
+            << c;
+    }
 }
 TEST(Date, TimezoneTest)
 {
