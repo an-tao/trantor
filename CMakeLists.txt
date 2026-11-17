@@ -309,6 +309,25 @@ if(BUILD_TESTING)
   if(GTest_FOUND)
     enable_testing()
     add_subdirectory(trantor/unittests)
+    if(WIN32
+       AND BUILD_SHARED_LIBS
+       AND CMAKE_VERSION VERSION_LESS 3.29
+    )
+      # Fix for CMake < 3.29: manually copy the trantor DLL to the test executables' directory, so that they find it at
+      # runtime.
+      file(
+        GENERATE
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/copy_trantor_test_dll_$<CONFIG>.cmake"
+        CONTENT "file(COPY \"$<TARGET_FILE:trantor>\" DESTINATION \"$<TARGET_FILE_DIR:msgbuffer_unittest>\")\n"
+      )
+      add_custom_command(
+        TARGET ${PROJECT_NAME}
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/copy_trantor_test_dll_$<CONFIG>.cmake"
+        COMMENT "Copy Trantor DLL for unit tests"
+        VERBATIM
+      )
+    endif()
   endif()
 endif()
 
