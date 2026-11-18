@@ -109,6 +109,16 @@ void Connector::connect()
             {
                 retry(fd_);
             }
+            else
+            {
+#ifndef _WIN32
+                ::close(fd_);
+#else
+                closesocket(fd_);
+#endif
+                fd_ = -1;
+                socketHanded_ = true;
+            }
             break;
 
         case EACCES:
@@ -286,6 +296,13 @@ void Connector::retry(int sockfd)
 #else
     closesocket(sockfd);
 #endif
+    // connect() can reach retry() before handing the socket to a Channel.
+    // The destructor must not close this descriptor number again after it is
+    // reused by another socket (possibly a listening socket).
+    if (fd_ == sockfd)
+    {
+        fd_ = -1;
+    }
     status_ = Status::Disconnected;
     if (connect_)
     {
