@@ -69,6 +69,7 @@ EventLoop::EventLoop()
     : looping_(false),
       threadId_(std::this_thread::get_id()),
       quit_(false),
+      quitCallsInFlight_(0),
       poller_(Poller::newPoller(this)),
       currentActiveChannel_(nullptr),
       eventHandling_(false),
@@ -130,7 +131,11 @@ EventLoop::~EventLoop()
     // If this cannot be guaranteed then one option
     // might be to abort waiting and
     // assert(!looping_) after some delay;
-    while (looping_.load(std::memory_order_acquire))
+    //
+    // Also wait for the quit() calls made from other threads to return, as
+    // they may still be using the wakeup fd.
+    while (looping_.load(std::memory_order_acquire) ||
+           quitCallsInFlight_.load(std::memory_order_acquire) != 0)
     {
 #ifdef _WIN32
         Sleep(delay);
@@ -165,12 +170,18 @@ void EventLoop::removeChannel(Channel *channel)
 }
 void EventLoop::quit()
 {
+    // Register the call before raising the flag: once the loop thread has seen
+    // quit_ it may leave loop() and destroy this object, and the destructor
+    // must then wait for this call to finish waking the loop up.
+    quitCallsInFlight_.fetch_add(1, std::memory_order_acq_rel);
     quit_.store(true, std::memory_order_release);
 
     if (!isInLoopThread())
     {
         wakeup();
     }
+    // Must be the last access to the object.
+    quitCallsInFlight_.fetch_sub(1, std::memory_order_acq_rel);
 }
 
 // The event loop needs a scope exit, so here's the simplest most limited

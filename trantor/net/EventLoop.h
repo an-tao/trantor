@@ -302,6 +302,10 @@ class TRANTOR_EXPORT EventLoop : NonCopyable
     std::atomic<bool> looping_;
     std::thread::id threadId_;
     std::atomic<bool> quit_;
+    // Number of quit() calls currently running. The destructor waits for it
+    // to drop to zero so that a quit() call made from another thread never
+    // touches a destroyed loop.
+    std::atomic<int> quitCallsInFlight_;
     std::unique_ptr<Poller> poller_;
 
     ChannelList activeChannels_;
