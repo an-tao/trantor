@@ -111,8 +111,35 @@ InetAddress::InetAddress(const std::string &ip, uint16_t port, bool ipv6)
     isUnspecified_ = false;
 }
 
+#ifndef _WIN32
+InetAddress::InetAddress(const std::string &unixPath, UnixDomainTag)
+    : isUnspecified_(false), isUnixDomain_(true)
+{
+    memset(&addrUn_, 0, sizeof(addrUn_));
+    addrUn_.sun_family = AF_UNIX;
+    if (unixPath.size() >= sizeof(addrUn_.sun_path))
+    {
+        LOG_FATAL << "Unix socket path too long: " << unixPath << " (max "
+                  << sizeof(addrUn_.sun_path) - 1 << " chars)";
+        abort();
+    }
+    strncpy(addrUn_.sun_path, unixPath.c_str(), sizeof(addrUn_.sun_path) - 1);
+}
+
+std::string InetAddress::toUnixPath() const
+{
+    if (isUnixDomain_)
+        return addrUn_.sun_path;
+    return "";
+}
+#endif
+
 std::string InetAddress::toIpPort() const
 {
+#ifndef _WIN32
+    if (isUnixDomain_)
+        return "unix:" + std::string(addrUn_.sun_path);
+#endif
     char buf[64] = "";
     uint16_t port = ntohs(addr_.sin_port);
     snprintf(buf, sizeof(buf), ":%u", port);
@@ -120,6 +147,10 @@ std::string InetAddress::toIpPort() const
 }
 std::string InetAddress::toIpPortNetEndian() const
 {
+#ifndef _WIN32
+    if (isUnixDomain_)
+        return std::string(addrUn_.sun_path);
+#endif
     std::string buf;
     static constexpr auto bytes = sizeof(addr_.sin_port);
     buf.resize(bytes);
@@ -132,6 +163,10 @@ std::string InetAddress::toIpPortNetEndian() const
 }
 bool InetAddress::isIntranetIp() const
 {
+#ifndef _WIN32
+    if (isUnixDomain_)
+        return true;  // Unix domain sockets are always local
+#endif
     if (addr_.sin_family == AF_INET)
     {
         uint32_t ip_addr = ntohl(addr_.sin_addr.s_addr);
@@ -174,6 +209,10 @@ bool InetAddress::isIntranetIp() const
 
 bool InetAddress::isLoopbackIp() const
 {
+#ifndef _WIN32
+    if (isUnixDomain_)
+        return true;  // Unix domain sockets are always local
+#endif
     if (!isIpV6())
     {
         uint32_t ip_addr = ntohl(addr_.sin_addr.s_addr);
@@ -229,6 +268,10 @@ static std::string iptos(unsigned inet_addr)
 
 std::string InetAddress::toIp() const
 {
+#ifndef _WIN32
+    if (isUnixDomain_)
+        return addrUn_.sun_path;
+#endif
     char buf[INET6_ADDRSTRLEN]{};
     if (addr_.sin_family == AF_INET)
     {
@@ -248,6 +291,10 @@ std::string InetAddress::toIp() const
 
 std::string InetAddress::toIpNetEndian() const
 {
+#ifndef _WIN32
+    if (isUnixDomain_)
+        return std::string(addrUn_.sun_path);
+#endif
     std::string buf;
     if (addr_.sin_family == AF_INET)
     {
@@ -297,5 +344,9 @@ const uint32_t *InetAddress::ip6NetEndian() const
 }
 uint16_t InetAddress::toPort() const
 {
+#ifndef _WIN32
+    if (isUnixDomain_)
+        return 0;
+#endif
     return ntohs(portNetEndian());
 }
