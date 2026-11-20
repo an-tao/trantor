@@ -160,7 +160,13 @@ TEST_F(TcpClientRetry, RetriesFailedInitialConnection)
     client_->connect();
     // The port is bound but not listening, so the attempt is refused and a
     // retry is scheduled. Nothing can connect until the server listens.
+#ifdef _WIN32
+    // A Windows nonblocking connect may still be pending after 500 ms - use a
+    // heuristic higher timeout.
+    ASSERT_TRUE(waitFor([this]() { return clientErrors_ > 0; }, 5s));
+#else
     ASSERT_FALSE(waitFor([this]() { return clientConnects_ >= 1; }, 500ms));
+#endif
     startServer();
     // Only a retry can establish this connection.
     EXPECT_TRUE(waitFor([this]() { return clientConnects_ >= 1; }, 5s));
@@ -188,12 +194,28 @@ TEST_F(TcpClientRetry, DisconnectDoesNotReconnect)
 
 TEST_F(TcpClientRetry, StopCancelsPendingRetry)
 {
+#ifdef _WIN32
+    auto stopped = std::make_shared<std::promise<void>>();
+    auto stoppedFuture = stopped->get_future();
+    client_->setConnectionErrorCallback([this, stopped]() {
+        if (++clientErrors_ == 1)
+        {
+            // Cancel the scheduled retry in the loop, before another connect.
+            client_->stop();
+            stopped->set_value();
+        }
+    });
+#endif
     client_->connect();
+#ifdef _WIN32
+    ASSERT_EQ(stoppedFuture.wait_for(5s), std::future_status::ready);
+#else
     // The first attempt is refused straight away and every failure schedules
     // another try, so by now a retry is pending.
     std::this_thread::sleep_for(1s);
     ASSERT_EQ(clientConnects_, 0);
     client_->stop();
+#endif
     startServer();
     std::this_thread::sleep_for(2500ms);
     EXPECT_EQ(serverAccepts_, 0);

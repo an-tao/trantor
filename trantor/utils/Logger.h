@@ -552,5 +552,5 @@ class TRANTOR_EXPORT RawLogger : public NonCopyable
     trantor::Logger(__FILE__, __LINE__, trantor::Logger::kFatal).stream()
 #endif
 
-const char *strerror_tl(int savedErrno);
+TRANTOR_EXPORT const char *strerror_tl(int savedErrno);
 }  // namespace trantor
