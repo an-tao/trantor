@@ -263,8 +263,9 @@ TEST_F(TcpConnectionTest, ForceCloseInStreamCallbackDoesNotSendReturnedData)
 
     auto closed = std::make_shared<std::promise<std::size_t>>();
     auto closedFuture = closed->get_future();
+    InetAddress serverAddress("127.0.0.1", server_->address().toPort());
     client_ = std::make_shared<TcpClient>(loop_,
-                                          server_->address(),
+                                          serverAddress,
                                           "stream-close-client");
     client_->setConnectionCallback(
         [closed](const TcpConnectionPtr &connection) {
