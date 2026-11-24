@@ -40,26 +40,35 @@ using namespace trantor;
 #endif
 static inline bool isEAGAIN()
 {
-    if (errno == EWOULDBLOCK || errno == EAGAIN || errno == 0)
+    const int savedErrno = errno;
+    if (savedErrno == EWOULDBLOCK || savedErrno == EAGAIN || savedErrno == 0)
     {
         LOG_TRACE << "write buffer is full";
         return true;
     }
-    else if (errno == EPIPE || errno == ECONNRESET)
+    else if (savedErrno == EPIPE || savedErrno == ECONNRESET)
     {
 #ifdef _WIN32
-        LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << errno;
+        LOG_TRACE << "WSAENOTCONN or WSAECONNRESET, errno=" << savedErrno;
 #else
-        LOG_TRACE << "EPIPE or ECONNRESET, errno=" << errno;
+        LOG_TRACE << "EPIPE or ECONNRESET, errno=" << savedErrno;
 #endif
         LOG_TRACE << "send node in loop: return on connection closed";
         return false;
     }
+#ifdef _WIN32
+    else if (savedErrno == WSAECONNABORTED)
+    {
+        LOG_TRACE << "send node in loop: return on connection aborted, errno="
+                  << savedErrno;
+        return false;
+    }
+#endif
     else
     {
         // TODO: any others?
-        LOG_SYSERR << "send node in loop: return on unexpected error(" << errno
-                   << ")";
+        LOG_SYSERR << "send node in loop: return on unexpected error("
+                   << savedErrno << ")";
         return false;
     }
 }
@@ -786,6 +795,11 @@ ssize_t TcpConnectionImpl::sendNodeInLoop(const BufferNodePtr &nodePtr)
         }
         // get next chunk
         nodePtr->getData(data, len);
+        // A stream callback can close the connection while producing this
+        // chunk.
+        if (status_ == ConnStatus::Disconnected)
+            return -1;
+
         if (len == 0)
         {
             nodePtr->done();
