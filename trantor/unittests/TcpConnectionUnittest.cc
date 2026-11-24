@@ -3,8 +3,10 @@
 #include <trantor/net/TcpServer.h>
 #include <trantor/utils/Logger.h>
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <cstring>
 #include <functional>
 #include <future>
 #include <memory>
@@ -42,6 +44,46 @@ class TcpConnectionTest : public ::testing::Test
         doneFuture.wait();
         loop_->quit();
         loopThread_.wait();
+    }
+
+    void startStreamConnection(std::future<TcpConnectionPtr> &accepted,
+                               std::future<std::size_t> &closed)
+    {
+        auto acceptedConnection =
+            std::make_shared<std::promise<TcpConnectionPtr>>();
+        accepted = acceptedConnection->get_future();
+        server_ = std::make_shared<TcpServer>(loop_,
+                                              InetAddress("127.0.0.1", 0),
+                                              "stream-close-server",
+                                              true,
+                                              false);
+        server_->setConnectionCallback(
+            [acceptedConnection](const TcpConnectionPtr &connection) {
+                if (connection->connected())
+                    acceptedConnection->set_value(connection);
+            });
+        server_->setRecvMessageCallback(
+            [](const TcpConnectionPtr &, MsgBuffer *buffer) {
+                buffer->retrieveAll();
+            });
+        server_->start();
+
+        auto peerClosed = std::make_shared<std::promise<std::size_t>>();
+        closed = peerClosed->get_future();
+        InetAddress serverAddress("127.0.0.1", server_->address().toPort());
+        client_ = std::make_shared<TcpClient>(loop_,
+                                              serverAddress,
+                                              "stream-close-client");
+        client_->setConnectionCallback(
+            [peerClosed](const TcpConnectionPtr &connection) {
+                if (connection->disconnected())
+                    peerClosed->set_value(connection->bytesReceived());
+            });
+        client_->setMessageCallback(
+            [](const TcpConnectionPtr &, MsgBuffer *buffer) {
+                buffer->retrieveAll();
+            });
+        client_->connect();
     }
 
     EventLoopThread loopThread_;
@@ -137,6 +179,7 @@ struct AbortedSendResult
 }  // namespace
 
 #ifdef _WIN32
+// A Winsock connection abort is an expected send error.
 TEST_F(TcpConnectionTest, AbortedSendDoesNotLogUnexpectedError)
 {
     ScopedNativeSocket listener(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
@@ -238,6 +281,7 @@ TEST_F(TcpConnectionTest, AbortedSendDoesNotLogUnexpectedError)
 }
 #endif
 
+// An inline stream callback may close the connection before its data is sent.
 TEST_F(TcpConnectionTest, ForceCloseInStreamCallbackDoesNotSendReturnedData)
 {
     struct CallbackResult
@@ -246,37 +290,9 @@ TEST_F(TcpConnectionTest, ForceCloseInStreamCallbackDoesNotSendReturnedData)
         bool disconnected;
     };
 
-    auto accepted = std::make_shared<std::promise<TcpConnectionPtr>>();
-    auto acceptedFuture = accepted->get_future();
-    server_ = std::make_shared<TcpServer>(
-        loop_, InetAddress("127.0.0.1", 0), "stream-close-server", true, false);
-    server_->setConnectionCallback(
-        [accepted](const TcpConnectionPtr &connection) {
-            if (connection->connected())
-                accepted->set_value(connection);
-        });
-    server_->setRecvMessageCallback(
-        [](const TcpConnectionPtr &, MsgBuffer *buffer) {
-            buffer->retrieveAll();
-        });
-    server_->start();
-
-    auto closed = std::make_shared<std::promise<std::size_t>>();
-    auto closedFuture = closed->get_future();
-    InetAddress serverAddress("127.0.0.1", server_->address().toPort());
-    client_ = std::make_shared<TcpClient>(loop_,
-                                          serverAddress,
-                                          "stream-close-client");
-    client_->setConnectionCallback(
-        [closed](const TcpConnectionPtr &connection) {
-            if (connection->disconnected())
-                closed->set_value(connection->bytesReceived());
-        });
-    client_->setMessageCallback(
-        [](const TcpConnectionPtr &, MsgBuffer *buffer) {
-            buffer->retrieveAll();
-        });
-    client_->connect();
+    std::future<TcpConnectionPtr> acceptedFuture;
+    std::future<std::size_t> closedFuture;
+    startStreamConnection(acceptedFuture, closedFuture);
     ASSERT_EQ(acceptedFuture.wait_for(5s), std::future_status::ready);
 
     auto produced = std::make_shared<std::promise<CallbackResult>>();
@@ -305,6 +321,59 @@ TEST_F(TcpConnectionTest, ForceCloseInStreamCallbackDoesNotSendReturnedData)
     ASSERT_TRUE(result.disconnected);
     ASSERT_EQ(closedFuture.wait_for(5s), std::future_status::ready);
     EXPECT_EQ(closedFuture.get(), 0u);
+}
+
+// Closing from a queued stream must release its callback so the peer sees EOF.
+TEST_F(TcpConnectionTest, ForceCloseInQueuedStreamReleasesCallback)
+{
+    std::future<TcpConnectionPtr> acceptedFuture;
+    std::future<std::size_t> closedFuture;
+    startStreamConnection(acceptedFuture, closedFuture);
+    ASSERT_EQ(acceptedFuture.wait_for(5s), std::future_status::ready);
+
+    constexpr std::size_t streamBytes = 64 * 1024;
+    struct StreamState
+    {
+        bool sendStreamReturned{false};
+        std::promise<bool> closedFromQueuedStream;
+        std::promise<void> released;
+    };
+    auto state = std::make_shared<StreamState>();
+    auto forcedClose = state->closedFromQueuedStream.get_future();
+    auto released = state->released.get_future();
+
+    loop_->queueInLoop([connection = acceptedFuture.get(), state]() {
+        // The send budget forces the loop to resume this stream before
+        // requesting another chunk, even when the socket never blocks.
+        connection->sendStream(
+            [connection, state, remaining = streamBytes](
+                char *buffer, std::size_t capacity) mutable -> std::size_t {
+                if (buffer == nullptr)
+                {
+                    state->released.set_value();
+                    return 0;
+                }
+                if (remaining == 0)
+                {
+                    connection->forceClose();
+                    state->closedFromQueuedStream.set_value(
+                        state->sendStreamReturned &&
+                        connection->disconnected());
+                    return 0;
+                }
+                const auto size = std::min(remaining, capacity);
+                std::memset(buffer, 'x', size);
+                remaining -= size;
+                return size;
+            });
+        state->sendStreamReturned = true;
+    });
+
+    ASSERT_EQ(forcedClose.wait_for(5s), std::future_status::ready);
+    ASSERT_TRUE(forcedClose.get());
+    EXPECT_EQ(released.wait_for(5s), std::future_status::ready);
+    ASSERT_EQ(closedFuture.wait_for(5s), std::future_status::ready);
+    EXPECT_EQ(closedFuture.get(), streamBytes);
 }
 
 int main(int argc, char **argv)
