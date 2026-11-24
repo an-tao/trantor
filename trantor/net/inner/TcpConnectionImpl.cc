@@ -312,6 +312,13 @@ void TcpConnectionImpl::handleClose()
     ioChannelPtr_->disableAll();
     //  ioChannelPtr_->remove();
     auto guardThis = shared_from_this();
+    // A stream callback may close while writeCallback still references its
+    // queued node. Release callbacks retaining the connection after it unwinds.
+    loop_->queueInLoop([guardThis]() {
+        std::list<BufferNodePtr> pendingTls, pending;
+        pendingTls.swap(guardThis->pendingTlsWriteBufferList_);
+        pending.swap(guardThis->writeBufferList_);
+    });
     if (connectionCallback_)
         connectionCallback_(guardThis);
     if (closeCallback_)
