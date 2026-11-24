@@ -6,6 +6,7 @@ add_executable(split_string_unittest splitStringUnittest.cc)
 add_executable(string_encoding_unittest stringEncodingUnittest.cc)
 add_executable(hash_unittest HashUnittest.cc)
 add_executable(tcp_client_retry_unittest TcpClientRetryUnittest.cc)
+add_executable(tcp_connection_unittest TcpConnectionUnittest.cc)
 set(UNITTEST_TARGETS
     msgbuffer_unittest
     inetaddress_unittest
@@ -14,10 +15,15 @@ set(UNITTEST_TARGETS
     string_encoding_unittest
     hash_unittest
     tcp_client_retry_unittest
+    tcp_connection_unittest
 )
 set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_STANDARD 14)
 set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${UNITTEST_TARGETS} PROPERTY CXX_EXTENSIONS OFF)
+
+if(WIN32)
+  target_link_libraries(tcp_connection_unittest PRIVATE ws2_32)
+endif()
 
 include(GoogleTest)
 foreach(T ${UNITTEST_TARGETS})
