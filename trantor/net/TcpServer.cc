@@ -170,7 +170,6 @@ void TcpServer::stop()
         });
         f.get();
     }
-    loopPoolPtr_.reset();
     for (auto &iter : timingWheelMap_)
     {
         std::promise<void> pro;
